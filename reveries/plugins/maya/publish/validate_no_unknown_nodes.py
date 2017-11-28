@@ -27,7 +27,6 @@ class ValidateNoUnknownNodes(pyblish.api.InstancePlugin):
         invalid = self.get_invalid(instance)
         if invalid:
             self.log.warning("Unknown nodes found: {0}".format(invalid))
-            self.log.warning("<No Unknown Nodes> Warned.")
         else:
             self.log.info("%s <No Unknown Nodes> Passed." % instance)
 

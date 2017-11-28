@@ -4,7 +4,9 @@ from pyblish import api as pyblish
 PACKAGE_DIR = os.path.dirname(__file__)
 PLUGINS_DIR = os.path.join(PACKAGE_DIR, "plugins")
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
-PYBLISH_DEFAULT = "%s/plugins" % os.path.dirname(pyblish.__file__)
+
+PYBLISH_PATH = os.path.dirname(pyblish.__file__)
+PYBLISH_DEFAULT = os.path.join(PYBLISH_PATH, "plugins")
 
 
 def install():

@@ -15,6 +15,6 @@ class RigCreator(avalon.maya.Creator):
 
         self.log.info("Creating Rig instance set up ...")
 
-        controls = cmds.sets(name="controls_set", empty=True)
-        pointcache = cmds.sets(name="out_set", empty=True)
+        controls = cmds.sets(name="controls_SET", empty=True)
+        pointcache = cmds.sets(name="out_SET", empty=True)
         cmds.sets([controls, pointcache], forceElement=instance)

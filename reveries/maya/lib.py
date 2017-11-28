@@ -10,6 +10,12 @@ from avalon import maya
 log = logging.getLogger(__name__)
 
 
+DEFAULT_MATRIX = [1.0, 0.0, 0.0, 0.0,
+                  0.0, 1.0, 0.0, 0.0,
+                  0.0, 0.0, 1.0, 0.0,
+                  0.0, 0.0, 0.0, 1.0]
+
+
 def temp_dir():
     """Provide a temporary directory
     This temporary directory is generated through `tempfile.mkdtemp()`
