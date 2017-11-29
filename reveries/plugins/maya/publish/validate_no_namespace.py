@@ -7,7 +7,10 @@ from reveries.maya import action
 class ValidateNoNamespace(pyblish.api.InstancePlugin):
     """Ensure the nodes don't have a namespace"""
 
-    families = ["reveries.model"]
+    families = [
+        "reveries.model",
+        "reveries.rig"
+    ]
     order = pyblish.api.ValidatorOrder + 0.45
     actions = [action.SelectInvalidAction,
                action.RepairAction]

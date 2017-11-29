@@ -1,28 +1,28 @@
-import os
-
-from maya import cmds
-
-import avalon.maya
-import colorbleed.api
+import pyblish.api
 
 
-class ExtractColorbleedRig(colorbleed.api.Extractor):
+class ExtractRig(pyblish.api.InstancePlugin):
     """Extract rig as Maya Ascii"""
 
     label = "Extract Rig (Maya ASCII)"
+    order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
-    families = ["colorbleed.rig"]
+    families = ["reveries.rig"]
 
     def process(self, instance):
+        import os
+        from maya import cmds
+        from avalon import maya
+        from reveries.maya import lib
 
         # Define extract output file path
-        dir_path = self.staging_dir(instance)
+        dirname = lib.temp_dir()
         filename = "{0}.ma".format(instance.name)
-        path = os.path.join(dir_path, filename)
+        path = os.path.join(dirname, filename)
 
         # Perform extraction
         self.log.info("Performing extraction..")
-        with avalon.maya.maintained_selection():
+        with maya.maintained_selection():
             cmds.select(instance, noExpand=True)
             cmds.file(path,
                       force=True,

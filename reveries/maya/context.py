@@ -36,6 +36,23 @@ def no_display_layers(node_list):
 
 
 @contextlib.contextmanager
+def no_smooth_preview():
+    """
+    disable mesh smooth preview
+    """
+    cmds.undoInfo(ock=True)
+
+    try:
+        smooth_mesh = cmds.ls("*.displaySmoothMesh", recursive=True)
+        for attr in set(smooth_mesh):
+            cmds.setAttr(attr, False)
+        yield
+    finally:
+        cmds.undoInfo(cck=True)
+        cmds.undo()
+
+
+@contextlib.contextmanager
 def assign_shader(node_list, shadingEngine):
     """
     assign model to shading group
@@ -48,3 +65,18 @@ def assign_shader(node_list, shadingEngine):
     finally:
         cmds.undoInfo(cck=True)
         cmds.undo()
+
+
+@contextlib.contextmanager
+def renderlayer(layer):
+    """
+    Set the renderlayer during the context
+    """
+
+    original = cmds.editRenderLayerGlobals(query=True, currentRenderLayer=True)
+
+    try:
+        cmds.editRenderLayerGlobals(currentRenderLayer=layer)
+        yield
+    finally:
+        cmds.editRenderLayerGlobals(currentRenderLayer=original)
