@@ -12,7 +12,7 @@ class ValidateNoUnknownNodes(pyblish.api.InstancePlugin):
         because it's a lightweight node.
 
     validate instance.data:
-        unknown_nodes
+        mayaNodes
 
     """
 
@@ -32,4 +32,8 @@ class ValidateNoUnknownNodes(pyblish.api.InstancePlugin):
 
     @staticmethod
     def get_invalid(instance):
-        return instance.data["unknown_nodes"]
+        unknown = list()
+        for node in instance.data["mayaNodes"].values():
+            if node["nodeType"] == "unknown":
+                unknown.append(node["dagPath"])
+        return unknown

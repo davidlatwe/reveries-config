@@ -5,14 +5,12 @@ import uuid
 from maya import cmds, OpenMaya
 from pyblish import api as pyblish
 from avalon import maya, api as avalon
+
+from .. import PLUGINS_DIR
 from . import menu
 
 
 log = logging.getLogger("reveries.maya")
-
-PARENT_DIR = os.path.dirname(__file__)
-PACKAGE_DIR = os.path.dirname(PARENT_DIR)
-PLUGINS_DIR = os.path.join(PACKAGE_DIR, "plugins")
 
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "maya", "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "maya", "load")
@@ -64,7 +62,9 @@ def on_task_changed(_, *args):
 
 
 def on_init(_):
-    pass
+    avalon.logger.info("Running callback on init..")
+    cmds.loadPlugin("AbcImport", quiet=True)
+    cmds.loadPlugin("AbcExport", quiet=True)
 
 
 def on_new(_):

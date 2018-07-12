@@ -1,7 +1,7 @@
 import pyblish.api
 
 
-class CollectModelDAG(pyblish.api.InstancePlugin):
+class CollectIntermediateObject(pyblish.api.InstancePlugin):
     """Collect maya DAG hierarchy for model valitation
 
     ```
@@ -18,10 +18,9 @@ class CollectModelDAG(pyblish.api.InstancePlugin):
     families = ["reveries.model"]
     order = pyblish.api.CollectorOrder + 0.1
     hosts = ["maya"]
-    label = "Model DAG"
+    label = "Intermediate Object"
 
     def process(self, instance):
-        hierarchy = self._get_hierarchy(instance)
         instance.data.update(
             {
                 "hierarchy": hierarchy,
@@ -30,21 +29,6 @@ class CollectModelDAG(pyblish.api.InstancePlugin):
                 "mesh_count": self._get_mesh_count(hierarchy)
             }
         )
-
-    @staticmethod
-    def _get_hierarchy(instance):
-        from maya import cmds
-        return instance + (cmds.listRelatives(instance, ad=True) or [])
-
-    @staticmethod
-    def _get_transforms(hierarchy):
-        from maya import cmds
-        return cmds.ls(hierarchy, type="transform", long=True) or []
-
-    @staticmethod
-    def _get_meshes(hierarchy):
-        from maya import cmds
-        return cmds.ls(hierarchy, type="mesh", long=True) or []
 
     @staticmethod
     def _get_mesh_count(hierarchy):
