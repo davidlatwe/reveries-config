@@ -9,14 +9,17 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
 
     """
 
-    families = ["reveries.model"]
     order = pyblish.api.ValidatorOrder + 0.45
     hosts = ["maya"]
-    label = "Model Transform"
+    label = "Transform Freezed"
+    families = [
+        "reveries.model",
+        "reveries.rig",
+    ]
 
     def process(self, instance):
 
-        invalid = list()
+        invalid = dict()
 
         transform_attrs = {
             ".translate": [(0.0, 0.0, 0.0)],
@@ -25,22 +28,29 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
             ".shear": [(0.0, 0.0, 0.0)]
         }
 
-        for transform in instance.data['transforms']:
-            has_freeze = (
-                all([cmds.getAttr(transform + attr) == transform_attrs[attr]
-                    for attr in transform_attrs.keys()])
-            )
+        for node in instance:
+            if not cmds.nodeType(node) == "transform":
+                continue
 
-            if not has_freeze:
-                invalid.append(transform)
+            not_freezed = dict()
+
+            for attr, values in transform_attrs.items():
+                node_values = cmds.getAttr(node + attr)
+                if not node_values == values:
+                    not_freezed[attr] = node_values
+
+            if not_freezed:
+                invalid[node] = not_freezed
 
         if invalid:
             self.log.error(
-                "'%s' has not freezed transforms:\n%s" % (
-                    instance,
-                    ",\n".join(
-                        "'" + member + "'" for member in invalid))
+                "{!r} has not freezed transform:".format(instance)
             )
-            raise Exception("%s <Model Transform> Failed." % instance)
+            for node, not_freezed in invalid.items():
+                print(node)
+                for attr, values in not_freezed.items():
+                    print("{0}: {1}".format(attr, values))
 
-        self.log.info("%s <Model Transform> Passed." % instance)
+            raise ValueError("%s <Transform Freezed> Failed." % instance)
+
+        self.log.info("%s <Transform Freezed> Passed." % instance)

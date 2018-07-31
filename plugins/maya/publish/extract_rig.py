@@ -1,23 +1,24 @@
+
+import os
 import pyblish.api
+
+from maya import cmds
+from avalon import maya
+from reveries import pipeline
 
 
 class ExtractRig(pyblish.api.InstancePlugin):
     """Extract rig as Maya Ascii"""
 
-    label = "Extract Rig (Maya ASCII)"
+    label = "Extract Rig (Maya Binary)"
     order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
     families = ["reveries.rig"]
 
     def process(self, instance):
-        import os
-        from maya import cmds
-        from avalon import maya
-        from reveries.maya import lib
-
         # Define extract output file path
-        dirname = lib.temp_dir()
-        filename = "{0}.ma".format(instance.name)
+        dirname = pipeline.temp_dir()
+        filename = "{0}.mb".format(instance.name)
         path = os.path.join(dirname, filename)
 
         # Perform extraction
@@ -26,7 +27,7 @@ class ExtractRig(pyblish.api.InstancePlugin):
             cmds.select(instance, noExpand=True)
             cmds.file(path,
                       force=True,
-                      typ="mayaAscii",
+                      typ="mayaBinary",
                       exportSelected=True,
                       preserveReferences=False,
                       channels=True,
@@ -38,5 +39,6 @@ class ExtractRig(pyblish.api.InstancePlugin):
             instance.data["files"] = list()
 
         instance.data["files"].append(filename)
+        instance.data["stagingDir"] = dirname
 
         self.log.info("Extracted instance '%s' to: %s" % (instance.name, path))

@@ -1,4 +1,5 @@
 import pyblish.api
+import avalon
 
 
 class CollectMayaInstances(pyblish.api.ContextPlugin):
@@ -34,14 +35,15 @@ class CollectMayaInstances(pyblish.api.ContextPlugin):
                                                     # than its members
             # verify objectSet has valid id
             if cmds.getAttr(objset + ".id") != "pyblish.avalon.instance":
-                self.log.info("Skipped non-avalon Set: \"%s\" " % objset)
+                self.log.debug("Skipped non-avalon Set: \"%s\" " % objset)
                 continue
 
-            # verify objectSet has members to collect
-            members = cmds.sets(objset, query=True)
-            if members is None:
-                self.log.info("Skipped empty Set: \"%s\" " % objset)
-                continue
+            try:
+                if not cmds.getAttr(objset + ".active"):
+                    continue
+            except ValueError:
+                # objectSet has no active switch
+                pass
 
             # The developer is responsible for specifying
             # the family of each instance.
@@ -50,20 +52,13 @@ class CollectMayaInstances(pyblish.api.ContextPlugin):
                                              exists=True)
             assert has_family, "\"%s\" was missing a family" % objset
 
-            data = dict()
+            # verify objectSet has members to collect
+            members = cmds.sets(objset, query=True)
+            if members is None:
+                self.log.warning("Skipped empty Set: \"%s\" " % objset)
+                continue
 
-            # Apply each user defined attribute as data
-            for attr in cmds.listAttr(objset, userDefined=True) or list():
-                try:
-                    value = cmds.getAttr("%s.%s" % (objset, attr))
-                except Exception:
-                    # Some attributes cannot be read directly,
-                    # such as mesh and color attributes. These
-                    # are considered non-essential to this
-                    # particular publishing pipeline.
-                    value = None
-
-                data[attr] = value
+            data = avalon.maya.lib.read(objset)
 
             # Create the instance
             self.log.info("Creating instance for {}".format(objset))

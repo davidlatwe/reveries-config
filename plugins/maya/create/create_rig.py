@@ -10,11 +10,25 @@ class RigCreator(avalon.maya.Creator):
     family = "reveries.rig"
     icon = "sitemap"
 
-    def process(self):
-        instance = super(RigCreator, self).process()
+    rig_subsets = [
+        name,
+        "rigXGen",
+        "rigCloth",
+    ]
 
+    def process(self):
+        subset_name = self.data["subset"]
+
+        # Check subset name, prevent typo
+        if subset_name not in self.rig_subsets:
+            err_msg = "Invalid subset name: {}".format(subset_name)
+            raise RuntimeError(err_msg)
+
+        container = super(RigCreator, self).process()
         self.log.info("Creating Rig instance set up ...")
 
-        controls = cmds.sets(name="controls_SET", empty=True)
-        pointcache = cmds.sets(name="out_SET", empty=True)
-        cmds.sets([controls, pointcache], forceElement=instance)
+        sub_object_sets = ["OutSet", "ControlSet"]
+
+        for set_name in sub_object_sets:
+            cmds.sets(cmds.sets(name=set_name, empty=True),
+                      forceElement=container)

@@ -1,6 +1,14 @@
 import pyblish.api
-from reveries.maya import action
 from maya import cmds
+
+
+class SelectInvalid(pyblish.api.Action):
+    label = "Select Invalid"
+    on = "failed"
+    icon = "hand-o-up"
+
+    def process(self, context, plugin):
+        cmds.select(plugin.invalid)
 
 
 class ValidateNoSmoothPreview(pyblish.api.InstancePlugin):
@@ -8,24 +16,24 @@ class ValidateNoSmoothPreview(pyblish.api.InstancePlugin):
 
     families = ["reveries.model"]
     order = pyblish.api.ValidatorOrder + 0.45
-    actions = [action.SelectInvalidAction]
     hosts = ['maya']
     label = "No Smooth Preview"
+    actions = [
+        pyblish.api.Category("Select"),
+        SelectInvalid,
+    ]
 
-    @staticmethod
-    def get_invalid(instance):
-        invalid = list()
-        for mesh in instance.data['meshes']:
-            if cmds.getAttr("{0}.displaySmoothMesh".format(mesh)):
-                invalid.append(mesh)
-        return invalid
+    invalid = []
 
     def process(self, instance):
         """Process all the nodes in the instance"""
 
-        invalid = self.get_invalid(instance)
-        if invalid:
-            self.log.warning("Smooth Preview found: {0}".format(invalid))
+        for mesh in cmds.ls(instance, type="mesh", long=True):
+            if cmds.getAttr("{0}.displaySmoothMesh".format(mesh)):
+                self.invalid.append(mesh)
+
+        if self.invalid:
+            self.log.warning("Smooth Preview found: {0}".format(self.invalid))
             self.log.warning("<No Smooth Preview> Warned.")
         else:
             self.log.info("%s <No Smooth Preview> Passed." % instance)

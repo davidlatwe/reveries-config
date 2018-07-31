@@ -17,32 +17,15 @@ class ValidateModelContent(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Model Content"
 
-    @classmethod
-    def get_invalid(cls, instance):
-
-        hierarchy = instance.data.get("hierarchy", None)
-        if not hierarchy:
-            cls.log.error("Instance has no nodes!")
-            return instance
-
-        if not instance.data.get("meshes", None):
-            cls.log.error("Instance has no meshes!")
-            return instance
-
+    def process(self, instance):
         # Ensure only valid node types
         allowed = ('mesh', 'transform')
-        nodes = cmds.ls(hierarchy, long=True)
-        valid = cmds.ls(hierarchy, long=True, type=allowed)
+        nodes = cmds.ls(instance, long=True)
+        valid = cmds.ls(instance, long=True, type=allowed)
         invalid = set(nodes) - set(valid)
 
         if invalid:
-            cls.log.error("These nodes are not allowed: %s" % invalid)
-
-        return list(invalid)
-
-    def process(self, instance):
-        invalid = self.get_invalid(instance)
-        if invalid:
+            self.log.error("These nodes are not allowed: %s" % invalid)
             raise Exception("%s <Model Content> Failed." % instance)
 
         self.log.info("%s <Model Content> Passed." % instance)

@@ -8,10 +8,10 @@ class ValidateTransformDisplay(pyblish.api.InstancePlugin):
 
     """
 
-    families = ["reveries.model"]
     order = pyblish.api.ValidatorOrder + 0.45
     hosts = ["maya"]
     label = "Hidden Transform"
+    families = ["reveries.model"]
 
     def process(self, instance):
         from maya import cmds
@@ -27,15 +27,17 @@ class ValidateTransformDisplay(pyblish.api.InstancePlugin):
             ".ghosting": False
         }
 
-        for transform in instance.data['transforms']:
+        for node in instance:
+            if not cmds.nodeType(node) == "transforms":
+                continue
             # Ensure transform shape is not hidden
             not_hidden = (
-                all([cmds.getAttr(transform + attr) is display_attrs[attr]
+                all([cmds.getAttr(node + attr) is display_attrs[attr]
                     for attr in display_attrs.keys()])
             )
 
             if not not_hidden:
-                invalid.append(transform)
+                invalid.append(node)
 
         if invalid:
             self.log.error(

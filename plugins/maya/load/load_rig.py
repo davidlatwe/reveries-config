@@ -1,10 +1,10 @@
 from maya import cmds
 
-import reveries.maya.plugin
+import reveries.maya.io
 from avalon import api, maya
 
 
-class RigLoader(reveries.maya.plugin.ReferenceLoader):
+class RigLoader(reveries.maya.io.ReferenceLoader):
     """Specific loader for rigs
 
     This automatically creates an instance for animators upon load.
@@ -12,7 +12,7 @@ class RigLoader(reveries.maya.plugin.ReferenceLoader):
     """
 
     families = ["reveries.rig"]
-    representations = ["ma"]
+    representations = ["mb"]
 
     label = "Reference rig"
     order = -10
@@ -37,18 +37,18 @@ class RigLoader(reveries.maya.plugin.ReferenceLoader):
 
     def _post_process(self, name, namespace, context, data):
 
-        # TODO(marcus): We are hardcoding the name "out_SET" here.
+        # TODO(marcus): We are hardcoding the name "OutSet" here.
         #   Better register this keyword, so that it can be used
         #   elsewhere, such as in the Integrator plug-in,
         #   without duplication.
 
         output = next((node for node in self if
-                       node.endswith("out_SET")), None)
+                       node.endswith("OutSet")), None)
         controls = next((node for node in self if
-                         node.endswith("controls_SET")), None)
+                         node.endswith("ControlSet")), None)
 
-        assert output, "No out_SET in rig, this is a bug."
-        assert controls, "No controls_SET in rig, this is a bug."
+        assert output, "No OutSet in rig, this is a bug."
+        assert controls, "No ControlSet in rig, this is a bug."
 
         # Find the roots amongst the loaded nodes
         roots = cmds.ls(self[:], assemblies=True, long=True)

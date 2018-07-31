@@ -1,13 +1,13 @@
 import avalon.api
 import avalon.maya
-import reveries.maya.plugin
+import reveries.maya.io
 
 
-class ModelLoader(reveries.maya.plugin.ReferenceLoader):
+class ModelLoader(reveries.maya.io.ReferenceLoader):
     """Load the model"""
 
     families = ["reveries.model"]
-    representations = ["ma"]
+    representations = ["mb"]
 
     label = "Reference Model"
     order = -10
@@ -43,7 +43,7 @@ class ImportModelLoader(avalon.maya.Loader):
      """
 
     families = ["reveries.model"]
-    representations = ["ma"]
+    representations = ["mb"]
 
     label = "Import Model"
     order = 10

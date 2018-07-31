@@ -1,4 +1,10 @@
+
+import os
 import pyblish.api
+import reveries.pipeline
+import reveries.maya.capsule as capsule
+import maya.cmds as cmds
+import avalon.maya as maya
 
 
 class ExtractModel(pyblish.api.InstancePlugin):
@@ -10,28 +16,24 @@ class ExtractModel(pyblish.api.InstancePlugin):
 
     """
 
-    families = ["reveries.model"]
     order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
     label = "Extract Model"
+    families = ["reveries.model"]
 
     def process(self, instance):
-        import os
-        from maya import cmds
-        from avalon import maya
-        from reveries.maya import lib, context
 
-        dirname = lib.temp_dir()
+        dirname = reveries.pipeline.temp_dir()
         filename = "{name}.mb".format(**instance.data)
 
         path = os.path.join(dirname, filename)
 
         # Perform extraction
         self.log.info("Performing extraction..")
-        with context.no_display_layers(instance.data["hierarchy"]):
-            with context.no_smooth_preview():
-                with context.assign_shader(
-                    instance.data["meshes"],
+        with capsule.no_display_layers(instance[:]):
+            with capsule.no_smooth_preview():
+                with capsule.assign_shader(
+                    cmds.ls(instance, type='mesh', ni=True, long=True),
                     shadingEngine="initialShadingGroup"
                 ):
                     with maya.maintained_selection(), maya.without_extension():

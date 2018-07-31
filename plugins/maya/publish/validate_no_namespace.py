@@ -1,7 +1,32 @@
 
 import pymel.core as pm
 import pyblish.api
-from reveries.maya import action
+
+
+class SelectInvalid(pyblish.api.Action):
+    label = "Select Invalid"
+    on = "failed"
+    icon = "hand-o-up"
+
+    def process(self, context, plugin):
+        pm.select(plugin.invalid)
+
+
+class RepairInvalid(pyblish.api.Action):
+    label = "Regenerate AvalonUUID"
+    on = "failed"
+
+    def process(self, context, plugin):
+        # Get nodes with pymel since we'll be renaming them
+        # Since we don't want to keep checking the hierarchy
+        # or full paths
+        nodes = pm.ls(plugin.invalid)
+
+        for node in nodes:
+            namespace = node.namespace()
+            if namespace:
+                name = node.nodeName()
+                node.rename(name[len(namespace):])
 
 
 class ValidateNoNamespace(pyblish.api.InstancePlugin):
@@ -12,42 +37,20 @@ class ValidateNoNamespace(pyblish.api.InstancePlugin):
         "reveries.rig"
     ]
     order = pyblish.api.ValidatorOrder + 0.45
-    actions = [action.SelectInvalidAction,
-               action.RepairAction]
     hosts = ['maya']
     label = 'No Namespaces'
 
-    @staticmethod
-    def get_invalid(instance):
-        nodes = instance.data.get("hierarchy", None)
-        return [node for node in nodes if get_namespace(node)]
+    invalid = []
 
     def process(self, instance):
         """Process all the nodes in the instance"""
-        invalid = self.get_invalid(instance)
+        self.invalid[:] = [node for node in instance if get_namespace(node)]
 
-        if invalid:
-            self.log.error("Namespaces found: {0}".format(invalid))
+        if self.invalid:
+            self.log.error("Namespaces found: {0}".format(self.invalid))
             raise Exception("<No Namespaces> Failed.")
 
         self.log.info("%s <No Namespaces> Passed." % instance)
-
-    @classmethod
-    def repair(cls, instance):
-        """Remove all namespaces from the nodes in the instance"""
-
-        invalid = cls.get_invalid(instance)
-
-        # Get nodes with pymel since we'll be renaming them
-        # Since we don't want to keep checking the hierarchy
-        # or full paths
-        nodes = pm.ls(invalid)
-
-        for node in nodes:
-            namespace = node.namespace()
-            if namespace:
-                name = node.nodeName()
-                node.rename(name[len(namespace):])
 
 
 def get_namespace(node_name):

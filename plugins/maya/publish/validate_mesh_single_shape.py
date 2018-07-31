@@ -16,13 +16,12 @@ class ValidateMeshSingleShape(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        assert instance.data.get("meshes", None), (
-            "Instance has no meshes!")
-
         invalid = list()
 
+        meshes = cmds.ls(instance, type='mesh', ni=True, long=True)
+
         # get meshes transform
-        transforms = cmds.listRelatives(instance.data['meshes'], parent=True)
+        transforms = cmds.listRelatives(meshes, parent=True)
 
         for transform in set(transforms):
             shapes = cmds.listRelatives(transform, shapes=True) or list()

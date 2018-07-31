@@ -1,0 +1,46 @@
+schema = "avalon-core:inventory-1.0"
+
+
+# project settings
+
+resolution_width = 1920
+resolution_height = 1080
+fps = 30
+handles = 1
+edit_in = 101
+edit_out = 200
+
+[pipeline]
+[pipeline.maya]
+animation_cache = "FBXCache"
+
+[deadline]
+[deadline.job]
+maya_cache_pool = "1---less_than_15minutes"
+maya_cache_priority = 95
+maya_render_pool = "1---less_than_15minutes"
+maya_render_priority = 60
+
+
+# asset settings
+
+[[assets]]
+label = "Victor Bike"
+name = "VictorBike"
+tasks = [ "lookdev", "model", "rig",]
+
+[[assets]]
+label = "Victor"
+tasks = [ "lookdev", "model", "rig",]
+name = "Victor"
+
+
+# shot settings
+
+[[shots]]
+label = "Example"
+tasks = [ "animate", "layout",]
+name = "Example"
+edit_in = 101
+edit_out = 122
+
