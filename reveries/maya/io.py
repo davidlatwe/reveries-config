@@ -268,6 +268,7 @@ def export_alembic(file,
                    selected=True,
                    uvWrite=True,
                    eulerFilter=True,
+                   writeVisibility=True,
                    dataFormat="ogawa",
                    verbose=False,
                    **kwargs):
@@ -316,6 +317,10 @@ def export_alembic(file,
             rotations especially if X, Y, and Z rotations exceed 360 degrees.
             Defaults to True.
 
+        writeVisibility (bool): If this flag is present, visibility state will
+            be stored in the Alembic file.
+            Otherwise everything written out is treated as visible.
+
     """
 
     # Ensure alembic exporter is loaded
@@ -350,6 +355,7 @@ def export_alembic(file,
         "selection": selected,
         "uvWrite": uvWrite,
         "eulerFilter": eulerFilter,
+        "writeVisibility": writeVisibility,
         "dataFormat": dataFormat
     }
     options.update(kwargs)
@@ -415,13 +421,15 @@ def export_alembic(file,
 
 
 def export_gpu(out_path, startFrame, endFrame):
-    cmds.gpuCache(cmds.ls(sl=True, long=True, noExpand=True),
+    cmds.gpuCache(cmds.ls(sl=True, long=True),
                   startTime=startFrame,
                   endTime=endFrame,
-                  optimize=1,
+                  optimize=True,
                   optimizationThreshold=40000,
-                  writeMaterials=1,
+                  writeMaterials=True,
+                  writeUVs=True,
                   dataFormat="ogawa",
                   saveMultipleFiles=False,
                   directory=os.path.dirname(out_path),
-                  fileName=os.path.basename(out_path))
+                  fileName=os.path.splitext(os.path.basename(out_path))[0]
+                  )
