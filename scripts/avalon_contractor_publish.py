@@ -49,7 +49,8 @@ def publish():
         log.info("Assigned subset {0!r}\n\tVer. Num: {1!r}\n\tVer. OID: {2}"
                  "".format(subset_name, num, oid))
 
-    log.info("Found {} delegated instances.".format(len(assignment)))
+    assignment_count = len(assignment)
+    log.info("Found {} delegated instances.".format(assignment_count))
 
     # Continue publish
     #
@@ -58,6 +59,7 @@ def publish():
     # set flag
     context.data["contractor_accepted"] = True
 
+    log.info("Collecting instances ...")
     instances = context[:]
     for i, instance in enumerate(instances):
         name = instance.data["name"]
@@ -65,11 +67,16 @@ def publish():
             # version lock
             instance.data["version_id"] = assignment[name][0]
             instance.data["version_next"] = assignment[name][1]
+            log.info("{} collected.")
         else:
             # Remove not assigned subset instance
             context.pop(i)
 
-    log.info("Collected {} instances.".format(len(context)))
+    collected_count = len(context)
+    log.info("Collected {} instances.".format(collected_count))
+
+    if not collected_count == assignment_count:
+        log.warning("Subset count did not match, this is a bug.")
 
     if len(context) == 0:
         raise ValueError("No instance to publish, this is a bug.")
