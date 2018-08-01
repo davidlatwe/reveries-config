@@ -49,8 +49,7 @@ def before_save(return_code, _):
     # Manually override message given by default dialog
     # Tested with Maya 2013-2017
     dialog_id = "s_TfileIOStrings.rFileOpCancelledByUser"
-    message = ("Scene is locked, please save under a new name "
-               "or run cmds.remove(\"lock\") to override")
+    message = ("Scene is locked, please save under a new name.")
     cmds.displayString(dialog_id, replace=True, value=message)
 
     # Returning false in C++ causes this to abort a save in-progress,
