@@ -414,5 +414,14 @@ def export_alembic(file,
     return file
 
 
-def export_gpu(nodes, out_path, frame_range=None):
-    raise NotImplementedError
+def export_gpu(out_path, startFrame, endFrame):
+    cmds.gpuCache(cmds.ls(sl=True, long=True, noExpand=True),
+                  startTime=startFrame,
+                  endTime=endFrame,
+                  optimize=1,
+                  optimizationThreshold=40000,
+                  writeMaterials=1,
+                  dataFormat="ogawa",
+                  saveMultipleFiles=False,
+                  directory=os.path.dirname(out_path),
+                  fileName=os.path.basename(out_path))
