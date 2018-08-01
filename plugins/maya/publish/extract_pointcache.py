@@ -3,6 +3,7 @@ import os
 import pyblish.api
 import reveries.pipeline
 import reveries.maya.io as io
+import reveries.maya.lib as lib
 import reveries.maya.capsule as capsule
 
 from maya import cmds
@@ -88,6 +89,10 @@ class ExtractPointCache(reveries.pipeline.ExtractionDelegator):
 
     def extract_FBXCache(self, out_path):
         out_path = out_path.format("fbx")
+        # bake visible key
+        with capsule.maintained_selection():
+            lib.bake_hierarchy_visibility(
+                cmds.ls(sl=True), self.start_frame, self.end_frame)
         io.export_fbx_set_pointcache("ReveriesCache")
         io.export_fbx(out_path)
         return os.path.basename(out_path)

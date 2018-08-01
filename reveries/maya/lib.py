@@ -80,6 +80,23 @@ def is_visible(node,
     return True
 
 
+def bake_hierarchy_visibility(nodes, start_frame, end_frame):
+    curve_map = {node: cmds.createNode("animCurveTU",
+                                       name=node + "_visibility")
+                 for node in cmds.ls(nodes)
+                 if cmds.attributeQuery('visibility', node=node, exists=True)}
+
+    # Bake to animCurve
+    for frame in range(start_frame, end_frame + 1):
+        cmds.currentTime(frame)
+        for node, curve in curve_map.items():
+            cmds.setKeyframe(curve, time=(frame,), value=is_visible(node))
+
+    # Connect baked result curve
+    for node, curve in curve_map.items():
+        cmds.connectAttr(curve + ".output", node + ".visibility", force=True)
+
+
 def set_avalon_uuid(node, renew=False):
     """Add or renew avID ( Avalon ID ) to `node`
     """
@@ -229,7 +246,3 @@ def lock_transform(node):
 
     for attr in TRANSFORM_ATTRS:
         cmds.setAttr(node + attr, lock=True)
-
-
-def bake_hierarchy_visibility():
-    pass
