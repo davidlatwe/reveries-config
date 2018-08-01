@@ -10,6 +10,7 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
 
     label = "Validate Timeline"
     order = pyblish.api.ValidatorOrder
+    hosts = ["maya"]
     families = [
         "reveries.animation",
         "reveries.pointcache",
