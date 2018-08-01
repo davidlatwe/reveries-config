@@ -160,3 +160,30 @@ def solo_renderable(solo_cam):
         # Revert to original state
         for cam, state in states.items():
             cmds.setAttr(cam + ".rnd", state)
+
+
+@contextlib.contextmanager
+def maintained_selection():
+    """Maintain selection during context
+
+    Example:
+        >>> scene = cmds.file(new=True, force=True)
+        >>> node = cmds.createNode("transform", name="Test")
+        >>> cmds.select("persp")
+        >>> with maintained_selection():
+        ...     cmds.select("Test", replace=True)
+        >>> "Test" in cmds.ls(selection=True)
+        False
+
+    """
+
+    previous_selection = cmds.ls(selection=True)
+    try:
+        yield
+    finally:
+        if previous_selection:
+            cmds.select(previous_selection,
+                        replace=True,
+                        noExpand=True)
+        else:
+            cmds.select(clear=True)
