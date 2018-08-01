@@ -6,6 +6,7 @@ import avalon
 from maya import cmds
 
 from . import capsule
+from .vendor import capture
 from ..pipeline import PENDING_SUFFIX
 
 
@@ -433,3 +434,45 @@ def export_gpu(out_path, startFrame, endFrame):
                   directory=os.path.dirname(out_path),
                   fileName=os.path.splitext(os.path.basename(out_path))[0]
                   )
+
+
+def capture_seq(camera,
+                filename,
+                start_frame,
+                end_frame,
+                width=None,
+                height=None,
+                isolate=None,
+                frame_padding=4,
+                display_options=None,
+                viewport_options=None):
+
+    viewport_options = viewport_options or {
+        "headsUpDisplay": False,
+    }
+
+    output = capture.capture(
+        camera,
+        filename=filename,
+        start_frame=start_frame,
+        end_frame=end_frame,
+        width=width,
+        height=height,
+        format='image',
+        compression='png',
+        quality=100,
+        off_screen=True,
+        viewer=False,
+        show_ornaments=False,
+        sound=None,
+        isolate=isolate,
+        maintain_aspect_ratio=True,
+        overwrite=True,
+        frame_padding=frame_padding,
+        raw_frame_numbers=False,
+        camera_options=None,
+        display_options=display_options,
+        viewport_options=viewport_options,
+        viewport2_options=None
+    )
+    return output
