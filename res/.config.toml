@@ -24,4 +24,4 @@ name = "layout"
 
 [template]
 work = "{root}/{project}/Maya/Avalon/{silo}/{asset}/work/{task}"
-publish = "{root}/{project}/Maya/Avalon/{silo}/{asset}/publish/{subset}/v{version:0>3}/{subset}.{representation}"
+publish = "{root}/{project}/Maya/Avalon/{silo}/{asset}/publish/{subset}/v{version:0>3}/{representation}"

@@ -17,8 +17,8 @@ class CreateAnimation(avalon.maya.Creator):
     def process(self):
         project = avalon.io.find_one({"type": "project"},
                                      projection={"data": True})
-        pipeline = project["data"]["pipeline"]["maya"]
-        cache_mode = pipeline.get("animation_cache", "Alembic")
+        settings = project["data"]["pipeline"]["maya"]
+        cache_mode = settings.get("animation_cache", "Alembic")
         self.data["format"] = cache_mode
 
         self.data["publish_contractor"] = self.contractor

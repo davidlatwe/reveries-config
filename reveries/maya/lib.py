@@ -4,7 +4,7 @@ import uuid
 
 from maya import cmds
 
-from .. import pipeline
+from .. import utils
 
 
 log = logging.getLogger(__name__)
@@ -150,7 +150,7 @@ FPS_MAP = {
 def set_scene_timeline():
     log.info("Timeline setting...")
 
-    start_frame, end_frame, fps = pipeline.compose_timeline_data()
+    start_frame, end_frame, fps = utils.compose_timeline_data()
     fps = FPS_MAP.get(fps)
 
     if fps is None:

@@ -7,7 +7,7 @@ import logging
 import pyblish.api
 import pyblish.util
 
-from reveries.pipeline import publish_results_formatting
+from reveries.utils import publish_results_formatting
 
 
 log = logging.getLogger("Contractor")

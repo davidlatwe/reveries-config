@@ -2,9 +2,7 @@ import sys
 import os
 import subprocess
 
-from avalon import api
-
-from reveries.pipeline import with_pending_ext
+import reveries.base as base
 
 
 def open(filepath):
@@ -17,7 +15,7 @@ def open(filepath):
         subprocess.call(('xdg-open', filepath))
 
 
-class PlayImageSequence(api.Loader):
+class PlayImageSequence(base.PendableLoader):
     """Open Image Sequence with system default"""
 
     label = "Play sequence"
@@ -25,15 +23,18 @@ class PlayImageSequence(api.Loader):
     icon = "play-circle"
     color = "orange"
 
-    representations = with_pending_ext(["png", "mov"])
     families = [
         "reveries.playblast",
     ]
 
-    def load(self, context, name, namespace, data):
-        self.fname = os.path.normpath(self.fname)
+    representations = base.pendable_reprs([
+        ("PNGSequence", "png"),
+        ("QuickTime", "mov"),
+    ])
 
-        directory = self.fname
+    def pendable_load(self, context, name, namespace, data):
+
+        directory = self.repr_dir
         from avalon.vendor import clique
 
         pattern = clique.PATTERNS["frames"]

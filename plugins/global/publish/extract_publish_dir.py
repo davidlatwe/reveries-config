@@ -8,6 +8,17 @@ import avalon.io
 class ExtractPublishDir(pyblish.api.InstancePlugin):
     """
     Does not create publish dir, only generate the path.
+
+    This is mainly for representations that have auxiliary files and requires
+    to directly extract to final location due to the exporter of that format
+    embed auxiliary files' abs path into the main file.
+
+    keys in instance.data:
+        * asset_id
+        * template
+        * publish_dir
+        * version_next
+
     """
 
     label = "Publish Dir"
@@ -62,11 +73,17 @@ class ExtractPublishDir(pyblish.api.InstancePlugin):
 
         template_publish = project["config"]["template"]["publish"]
 
+        # Lacking the representation, extract version dir instead
         publish_dir = os.path.dirname(template_publish).format(**template_data)
         # Clean the path
         publish_dir = os.path.abspath(os.path.normpath(publish_dir))
 
+        if os.path.isdir(publish_dir):
+            self.log.error("Version dir exists: {}".format(publish_dir))
+            self.log.error("Version dir existed, publish abort.")
+            raise
+
         instance.data["asset_id"] = asset["_id"]
         instance.data["template"] = (template_data, template_publish)
-        instance.data["publish_dir"] = publish_dir
+        instance.data["publish_dir"] = publish_dir  # version dir, actually
         instance.data["version_next"] = version_number

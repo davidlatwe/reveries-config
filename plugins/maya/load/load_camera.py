@@ -1,25 +1,30 @@
-import reveries.maya.io
+
 import reveries.maya.lib
+import reveries.base as base
+import reveries.base.maya_plugins as maya_plugins
 
 
-class CameraLoader(reveries.maya.io.ReferenceLoader):
+class CameraLoader(maya_plugins.ReferenceLoader):
     """Specific loader for the reveries.camera family"""
 
-    families = ["reveries.camera"]
     label = "Reference camera"
-    representations = ["abc", "fbx", "ma"]
     order = -10
     icon = "code-fork"
     color = "orange"
 
+    families = ["reveries.camera"]
+
+    representations = base.pendable_reprs([
+        ("mayaAscii", "ma"),
+        ("Alembic", "abc"),
+        ("FBX", "fbx"),
+    ])
+
     def process_reference(self, context, name, namespace, data):
-
         import maya.cmds as cmds
-        # Get family type from the context
 
-        cmds.loadPlugin("AbcImport.mll", quiet=True)
         group_name = "{}:{}".format(namespace, name)
-        nodes = cmds.file(self.fname,
+        nodes = cmds.file(self.entry_path,
                           namespace=namespace,
                           sharedReferenceFile=False,
                           groupReference=True,
@@ -30,8 +35,6 @@ class CameraLoader(reveries.maya.io.ReferenceLoader):
 
         reveries.maya.lib.lock_transform(group_name)
         self[:] = nodes
-
-        return nodes
 
     def switch(self, container, representation):
         self.update(container, representation)

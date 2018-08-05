@@ -1,5 +1,6 @@
 
 import avalon.maya
+from maya import cmds
 
 
 class CreateCamera(avalon.maya.Creator):
@@ -10,7 +11,13 @@ class CreateCamera(avalon.maya.Creator):
     family = "reveries.camera"
     icon = "video-camera"
 
-    def process(self):
-        self.data["with_playblast"] = True
+    contractor = "deadline.maya.script"
 
-        super(CreateCamera, self).process()
+    def process(self):
+        self.data["capture_png"] = True
+
+        self.data["publish_contractor"] = self.contractor
+        self.data["use_contractor"] = True
+
+        container = super(CreateCamera, self).process()
+        cmds.setAttr(container + ".publish_contractor", lock=True)

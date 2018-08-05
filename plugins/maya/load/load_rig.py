@@ -1,27 +1,33 @@
-from maya import cmds
 
-import reveries.maya.io
-from avalon import api, maya
+import avalon.api
+import avalon.maya
+
+import reveries.base as base
+import reveries.base.maya_plugins as maya_plugins
 
 
-class RigLoader(reveries.maya.io.ReferenceLoader):
+class RigLoader(maya_plugins.ReferenceLoader):
     """Specific loader for rigs
 
     This automatically creates an instance for animators upon load.
 
     """
-
-    families = ["reveries.rig"]
-    representations = ["mb"]
-
     label = "Reference rig"
     order = -10
     icon = "code-fork"
     color = "orange"
 
+    families = ["reveries.rig"]
+
+    representations = base.pendable_reprs([
+        ("mayaBinary", "mb"),
+    ])
+
     def process_reference(self, context, name, namespace, data):
 
-        nodes = cmds.file(self.fname,
+        import maya.cmds as cmds
+
+        nodes = cmds.file(self.entry_path,
                           namespace=namespace,
                           reference=True,
                           returnNewNodes=True,
@@ -33,14 +39,14 @@ class RigLoader(reveries.maya.io.ReferenceLoader):
         if data.get("post_process", True):
             self._post_process(name, namespace, context, data)
 
-        return nodes
-
     def _post_process(self, name, namespace, context, data):
 
         # TODO(marcus): We are hardcoding the name "OutSet" here.
         #   Better register this keyword, so that it can be used
         #   elsewhere, such as in the Integrator plug-in,
         #   without duplication.
+
+        import maya.cmds as cmds
 
         output = next((node for node in self if
                        node.endswith("OutSet")), None)
@@ -54,14 +60,14 @@ class RigLoader(reveries.maya.io.ReferenceLoader):
         roots = cmds.ls(self[:], assemblies=True, long=True)
         assert roots, "No root nodes in rig, this is a bug."
 
-        asset = api.Session["AVALON_ASSET"]
+        asset = avalon.api.Session["AVALON_ASSET"]
         dependency = str(context["representation"]["_id"])
 
         # Create the animation instance
-        with maya.maintained_selection():
+        with avalon.maya.maintained_selection():
             cmds.select([output, controls] + roots, noExpand=True)
-            api.create(name=namespace,
-                       asset=asset,
-                       family="reveries.animation",
-                       options={"useSelection": True},
-                       data={"dependencies": dependency})
+            avalon.api.create(name=namespace,
+                              asset=asset,
+                              family="reveries.animation",
+                              options={"useSelection": True},
+                              data={"dependencies": dependency})

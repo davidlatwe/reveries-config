@@ -20,6 +20,8 @@ class CreatePointCache(avalon.maya.Creator):
             "FBXCache",
         ]
 
+        self.data["static_cache"] = False
+
         self.data["publish_contractor"] = self.contractor
         self.data["use_contractor"] = True
 

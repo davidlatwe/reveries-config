@@ -1,19 +1,14 @@
 
 import tempfile
-import pyblish.api
 import avalon
-
 from pyblish_qml.ipc import formatting
 
 
-PENDING_SUFFIX = "__pending"
-
-
-def temp_dir():
+def temp_dir(prefix=""):
     """Provide a temporary directory
     This temporary directory is generated through `tempfile.mkdtemp()`
     """
-    return tempfile.mkdtemp()
+    return tempfile.mkdtemp(prefix=prefix)
 
 
 def get_timeline_data():
@@ -54,40 +49,6 @@ def get_resolution_data():
     resolution_width = project["data"].get("resolution_width", 1920)
     resolution_height = project["data"].get("resolution_height", 1080)
     return resolution_width, resolution_height
-
-
-class ExtractionDelegator(pyblish.api.InstancePlugin):
-
-    delegating = False
-
-    def delegation_check(self, instance):
-        use_contractor = instance.data.get("use_contractor")
-        accepted = instance.context.data.get("contractor_accepted")
-        if use_contractor and not accepted:
-            self.delegating = True
-        else:
-            self.delegating = False
-
-    def process(self, instance):
-        self.delegation_check(instance)
-
-        if "files" not in instance.data:
-            instance.data["files"] = list()
-
-        if self.delegating:
-            self.delegate(instance)
-        else:
-            self.extract(instance)
-
-    def delegate(self, instance):
-        raise NotImplementedError
-
-    def extract(self, instance):
-        raise NotImplementedError
-
-
-def with_pending_ext(ext_list):
-    return ext_list[:] + [ext + PENDING_SUFFIX for ext in ext_list]
 
 
 def publish_results_formatting(context):

@@ -12,6 +12,8 @@ LOADER_PATH = os.path.join(PLUGINS_DIR, "global", "load")
 PYBLISH_PATH = os.path.dirname(pyblish.__file__)
 PYBLISH_DEFAULT = os.path.join(PYBLISH_PATH, "plugins")
 
+CONTRACTOR_PATH = os.path.join(PLUGINS_DIR, "global", "contractor")
+
 
 def install():
     print("Registering global plug-ins..")

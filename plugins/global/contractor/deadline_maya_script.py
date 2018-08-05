@@ -1,79 +1,17 @@
 
 import os
-import sys
-import inspect
-import logging
-
 import getpass
 import platform
 import json
 
 import avalon.api
 import avalon.io
+import reveries.base
 
 from avalon.vendor import requests
 
 
-class BaseContractor(object):
-
-    def __init__(self):
-        self.log = logging.getLogger(self.name)
-
-    def assemble_environment(self, context):
-        """Include critical variables with submission
-        """
-        environment = dict({
-            # This will trigger `userSetup.py` on the slave
-            # such that proper initialisation happens the same
-            # way as it does on a local machine.
-            # TODO(marcus): This won't work if the slaves don't
-            # have accesss to these paths, such as if slaves are
-            # running Linux and the submitter is on Windows.
-            "PYTHONPATH": os.getenv("PYTHONPATH", ""),
-
-            "AVALON_FFMPEG": os.getenv("AVALON_FFMPEG", ""),
-        }, **avalon.api.Session)
-
-        # Write instances' name and version
-        for ind, instance in enumerate(context):
-            if not instance.data.get("publish_contractor") == self.name:
-                continue
-
-            # instance subset name
-            key = "AVALON_DELEGATED_SUBSET_%d" % ind
-            environment[key] = instance.data["name"]
-            # instance subset version next (for monitor eye debug)
-            key = "AVALON_DELEGATED_VERSION_NUM_%d" % ind
-            environment[key] = instance.data["version_next"]
-            #
-            # instance subset version object id
-            #
-            # This should prevent version bump when re-running publish with
-            # same params.
-            #
-            key = "AVALON_DELEGATED_VERSION_ID_%d" % ind
-            environment[key] = instance.data["version_id"]
-
-        return environment
-
-
-def find_contractor(name):
-    clsmembers = inspect.getmembers(sys.modules[__name__], inspect.isclass)
-    for cls_name, cls in clsmembers:
-        if (cls_name.startswith("Contractor") and
-                hasattr(cls, "assemble_environment") and
-                hasattr(cls, "fulfill") and
-                hasattr(cls, "name")):
-            if cls.name == name:
-                return cls
-    return None
-
-
-"""TODO: Move all contractor to each .py file as plugin
-"""
-
-
-class ContractorDeadlineMayaScript(BaseContractor):
+class ContractorDeadlineMayaScript(reveries.base.BaseContractor):
 
     name = "deadline.maya.script"
 
@@ -95,9 +33,11 @@ class ContractorDeadlineMayaScript(BaseContractor):
         project = avalon.io.find_one({"type": "project"})
         deadline_job = project["data"]["deadline"]["job"]
         pool = deadline_job["maya_cache_pool"]
+        group = deadline_job["maya_cache_group"]
         priority = deadline_job["maya_cache_priority"]
 
-        config_root = os.path.dirname(os.path.dirname(__file__))
+        plugin_root = os.path.dirname(os.path.dirname(__file__))
+        config_root = os.path.dirname(os.path.dirname(plugin_root))
         script_file = os.path.join(config_root,
                                    "scripts",
                                    "avalon_contractor_publish.py")
@@ -122,6 +62,7 @@ class ContractorDeadlineMayaScript(BaseContractor):
                 "MachineName": platform.node(),
                 "Comment": comment,
                 "Pool": pool,
+                "Group": group,
                 "Priority": priority,
             },
             "PluginInfo": {
@@ -162,11 +103,3 @@ class ContractorDeadlineMayaScript(BaseContractor):
             msg = response.text
             self.log.error(msg)
             raise Exception(msg)
-
-
-class ContractorDeadlineMayaRender(BaseContractor):
-
-    name = "deadline.maya.render"
-
-    def fulfill(self, context):
-        pass

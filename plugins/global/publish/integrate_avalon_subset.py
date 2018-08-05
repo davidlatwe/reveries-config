@@ -7,7 +7,7 @@ import errno
 import pyblish.api
 from avalon import api, io
 
-from reveries.pipeline import PENDING_SUFFIX
+from reveries.base import PENDING_SUFFIX
 
 
 log = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         all_files = instance.data.get("files")
 
         if not all_files:
-            raise RuntimeError("No files to publish.")
+            raise RuntimeError("No representation to publish.")
 
         stagingdir = instance.data.get("stagingDir")
         assert stagingdir, ("Incomplete instance \"%s\": "
@@ -139,73 +139,85 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #
         representations = []
 
+        # `template` extracted from `ExtractPublishDir` plugin
         template_data = instance.data["template"][0]
         template_publish = instance.data["template"][1]
 
-        for files in all_files:
+        # Should not have any kind of check on files here, that should be done
+        # by extractors, here only need to publish representation dirs.
 
-            # Collection
-            #   _______
-            #  |______|\
-            # |      |\|
-            # |       ||
-            # |       ||
-            # |       ||
-            # |_______|
-            #
-            if isinstance(files, list):
-                collection = files
-                # Assert that each member has identical suffix
-                _, ext = os.path.splitext(collection[0])
-                assert all(ext == os.path.splitext(name)[1]
-                           for name in collection), (
-                    "Files had varying suffixes, this is a bug"
-                )
+        for repr_ in all_files:
 
-                assert not any(os.path.isabs(name) for name in collection)
+            representation_dir = str(repr_)
 
-                template_data["representation"] = ext[1:]
-                publish_path = template_publish.format(**template_data)
+            template_data["representation"] = representation_dir
+            publish_path = template_publish.format(**template_data)
 
-                for fname in collection:
+            src = os.path.join(stagingdir, representation_dir)
+            dst = publish_path
 
-                    src = os.path.join(stagingdir, fname)
-                    dst = os.path.join(publish_path, fname)
-
-                    instance.data["transfers"].append([src, dst])
-
-            else:
-                # Single file
-                #  _______
-                # |      |\
-                # |       |
-                # |       |
-                # |       |
-                # |_______|
-                #
-                fname = files
-                assert not os.path.isabs(fname)
-                _, ext = os.path.splitext(fname)
-
-                template_data["representation"] = ext[1:]
-                publish_path = template_publish.format(**template_data)
-
-                src = os.path.join(stagingdir, fname)
-                dst = publish_path
-
-                instance.data["transfers"].append([src, dst])
+            instance.data["transfers"].append([src, dst])
 
             representation = {
                 "schema": "avalon-core:representation-2.0",
                 "type": "representation",
                 "parent": None,  # write this later
-                "name": ext[1:],
+                "name": representation_dir,
                 "data": {},
                 "dependencies": instance.data.get("dependencies", "").split(),
             }
             representations.append(representation)
 
         return version, representations
+
+    def integrate(self, instance):
+        """Move the files
+
+        Through `instance.data["transfers"]`
+
+        Args:
+            instance: the instance to integrate
+        """
+
+        # Write to disk
+        #          _
+        #         | |
+        #        _| |_
+        #    ____\   /
+        #   |\    \ / \
+        #   \ \    v   \
+        #    \ \________.
+        #     \|________|
+        #
+
+        transfers = instance.data["transfers"]
+
+        for src, dst in transfers:
+            # normpath
+            src = os.path.abspath(os.path.normpath(src))
+            dst = os.path.abspath(os.path.normpath(dst))
+
+            self.log.info("Copying dir .. {} -> {}".format(src, dst))
+            self.copy_dir(src, dst)
+
+    def copy_dir(self, src, dst):
+        """ Copy given source to destination
+
+        Arguments:
+            src (str): the source dir which needs to be copied
+            dst (str): the destination of the sourc dir
+        Returns:
+            None
+        """
+        try:
+            shutil.copytree(src, dst)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                self.log.warning("Representation dir existed, this should not "
+                                 "happen. Copy skipped.")
+            else:
+                self.log.critical("An unexpected error occurred.")
+                raise
 
     def write_database(self, instance, version, representations):
         """Write version and representations to database
@@ -242,63 +254,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                                 "parent": version_id,
                                 "name": name},
                                representation)
-
-    def integrate(self, instance):
-        """Move the files
-
-        Through `instance.data["transfers"]`
-
-        Args:
-            instance: the instance to integrate
-        """
-
-        # Write to disk
-        #          _
-        #         | |
-        #        _| |_
-        #    ____\   /
-        #   |\    \ / \
-        #   \ \    v   \
-        #    \ \________.
-        #     \|________|
-        #
-
-        transfers = instance.data["transfers"]
-
-        for src, dst in transfers:
-            # normpath
-            src = os.path.abspath(os.path.normpath(src))
-            dst = os.path.abspath(os.path.normpath(dst))
-            # Skip same file.
-            # `src` and `dst` might be the same by directly write into
-            # publish area for some reason during extraction.
-            if os.path.normpath(src) == os.path.normpath(dst):
-                continue
-
-            self.log.info("Copying file .. {} -> {}".format(src, dst))
-            self.copy_file(src, dst)
-
-    def copy_file(self, src, dst):
-        """ Copy given source to destination
-
-        Arguments:
-            src (str): the source file which needs to be copied
-            dst (str): the destination of the sourc file
-        Returns:
-            None
-        """
-
-        dirname = os.path.dirname(dst)
-        try:
-            os.makedirs(dirname)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                pass
-            else:
-                self.log.critical("An unexpected error occurred.")
-                raise
-
-        shutil.copy(src, dst)
 
     def get_subset(self, instance):
 

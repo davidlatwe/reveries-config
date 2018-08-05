@@ -1,7 +1,7 @@
 
 import pyblish.api
 
-from reveries import pipeline
+from reveries import utils
 
 
 class ValidateTimeline(pyblish.api.InstancePlugin):
@@ -20,7 +20,7 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        start_frame, end_frame, fps = pipeline.compose_timeline_data()
+        start_frame, end_frame, fps = utils.compose_timeline_data()
 
         context_data = instance.context.data
         start = context_data.get("startFrame")

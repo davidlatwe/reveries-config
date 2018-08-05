@@ -54,9 +54,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
             )
             raise Exception("%s <Avalon UUID> Failed." % instance)
 
-        self.log.info("%s <Avalon UUID> Passed." % instance)
-
-        self.invalid = [n for _id, nds in uuids if len(nds) > 1 for n in nds]
+        self.invalid = [n for _id, nds in uuids.items()
+                        if len(nds) > 1 for n in nds]
         if self.invalid:
             self.log.error(
                 "'%s' Duplicated IDs on:\n%s" % (

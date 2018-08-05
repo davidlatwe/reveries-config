@@ -1,7 +1,7 @@
 
 import os
 import pyblish.api
-import reveries.pipeline
+import reveries.base
 import reveries.maya.io as io
 import reveries.maya.lib as lib
 import reveries.maya.capsule as capsule
@@ -9,7 +9,7 @@ import reveries.maya.capsule as capsule
 from maya import cmds
 
 
-class ExtractPointCache(reveries.pipeline.ExtractionDelegator):
+class ExtractPointCache(reveries.base.DelegatableExtractor):
     """
     """
 
@@ -21,83 +21,59 @@ class ExtractPointCache(reveries.pipeline.ExtractionDelegator):
         "reveries.pointcache",
     ]
 
+    representations = [
+        reveries.base.repr_obj("Alembic", "abc"),
+        reveries.base.repr_obj("FBXCache", "fbx"),
+        reveries.base.repr_obj("GPUCache", "abc"),
+    ]
+
     start_frame = 0
     end_frame = 0
 
-    def extract(self, instance):
-        cache_format = instance.data.get("format", "None")
-        name = instance.data["subset"]
+    def dispatch(self):
 
-        context_data = instance.context.data
-        self.start_frame = context_data.get("startFrame")
-        self.end_frame = context_data.get("endFrame")
-
-        extractor = getattr(self, "extract_" + cache_format, None)
-        if extractor is None:
-            msg = "Cache format {!r} not supported."
-            raise TypeError(msg.format(cache_format))
-
-        self.log.info("Exporting {0} of {1}...".format(cache_format, name))
-
-        dirname = self.get_staging_dir(instance, cache_format)
-        fname = name + ".{}"
-        out_path = os.path.join(dirname, fname)
+        if self.data.get("static_cache"):
+            self.start_frame = cmds.currentTime(query=True)
+            self.end_frame = cmds.currentTime(query=True)
+        else:
+            context_data = self.context.data
+            self.start_frame = context_data.get("startFrame")
+            self.end_frame = context_data.get("endFrame")
 
         with capsule.no_refresh(with_undo=True):
             with capsule.evaluation("off"):
-                out_geo = instance.data.get("out_animation", instance[:])
+                out_geo = self.data.get("out_animation", self.member)
                 cmds.select(out_geo, replace=True, noExpand=True)
-                instance.data["files"].append(extractor(out_path))
+                self.extract()
 
-    def delegate(self, instance):
-        cache_format = instance.data.get("format")
-        name = instance.data["subset"]
-        fname = name + ".{}"
+    def extract_Alembic(self, representation):
+        dirname = self.extraction_dir(representation)
+        filename = self.extraction_fname(representation)
 
-        # for debug, give a fake path
-        instance.data["stagingDir"] = os.path.join("on", "delegating")
-        # `PENDING_SUFFIX` is a keyword for Loader
-        fake_name = fname + reveries.pipeline.PENDING_SUFFIX
-
-        if cache_format == "Alembic" or cache_format == "GPUCache":
-            fake_name = fake_name.format("abc")
-        elif cache_format == "FBXCache":
-            fake_name = fake_name.format("fbx")
-        else:
-            msg = "Cache format {!r} not supported."
-            raise TypeError(msg.format(cache_format))
-
-        instance.data["files"].append(fake_name)
-
-    def get_staging_dir(self, instance, cache_format):
-        if cache_format == "FBXCache":
-            # FBX GeoCache can not export to stagingDir, because the
-            # exporter write the absolute path of cacheDir _fpc inside
-            # .fbx
-            dirname = instance.data["publish_dir"]
-            if not os.path.isdir:
-                os.makedirs(dirname)
-        else:
-            dirname = reveries.pipeline.temp_dir()
-        instance.data["stagingDir"] = dirname
-        return dirname
-
-    def extract_Alembic(self, out_path):
-        out_path = out_path.format("abc")
+        out_path = os.path.join(dirname, filename)
         io.export_alembic(out_path, self.start_frame, self.end_frame)
-        return os.path.basename(out_path)
 
-    def extract_FBXCache(self, out_path):
-        out_path = out_path.format("fbx")
+        self.stage_files(representation)
+
+    def extract_FBXCache(self, representation):
+        dirname = self.extraction_dir(representation)
+        filename = self.extraction_fname(representation)
+
+        out_path = os.path.join(dirname, filename)
         # bake visible key
         with capsule.maintained_selection():
             lib.bake_hierarchy_visibility(
                 cmds.ls(sl=True), self.start_frame, self.end_frame)
         io.export_fbx_set_pointcache("ReveriesCache")
         io.export_fbx(out_path)
-        return os.path.basename(out_path)
 
-    def extract_GPUCache(self, out_path):
-        out_path = out_path.format("abc")
+        self.stage_files(representation)
+
+    def extract_GPUCache(self, representation):
+        dirname = self.extraction_dir(representation)
+        filename = self.extraction_fname(representation)
+
+        out_path = os.path.join(dirname, filename)
         io.export_gpu(out_path, self.start_frame, self.end_frame)
-        return os.path.basename(out_path)
+
+        self.stage_files(representation)

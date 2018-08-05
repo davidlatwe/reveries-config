@@ -1,27 +1,33 @@
-import reveries.maya.io
+
+import os
 import reveries.maya.lib
+import reveries.base as base
+import reveries.base.maya_plugins as maya_plugins
 
-from reveries.pipeline import with_pending_ext
 
+class PointCacheReferenceLoader(maya_plugins.ReferenceLoader):
 
-class PointCacheLoader(reveries.maya.io.ReferenceLoader):
-    """Specific loader of Alembic for the reveries.pointcache family"""
-
-    families = ["reveries.pointcache"]
     label = "Reference PointCache"
-    representations = with_pending_ext(["abc", "fbx"])
     order = -10
     icon = "code-fork"
     color = "orange"
 
+    families = [
+        "reveries.model",
+        "reveries.animation",
+        "reveries.pointcache",
+    ]
+
+    representations = base.pendable_reprs([
+        ("Alembic", "abc"),
+        ("FBXCache", "fbx"),
+    ])
+
     def process_reference(self, context, name, namespace, data):
-
         import maya.cmds as cmds
-        # Get family type from the context
 
-        cmds.loadPlugin("AbcImport.mll", quiet=True)
         group_name = "{}:{}".format(namespace, name)
-        nodes = cmds.file(self.fname,
+        nodes = cmds.file(self.entry_path,
                           namespace=namespace,
                           sharedReferenceFile=False,
                           groupReference=True,
@@ -37,3 +43,125 @@ class PointCacheLoader(reveries.maya.io.ReferenceLoader):
 
     def switch(self, container, representation):
         self.update(container, representation)
+
+
+class PointCacheImportLoader(maya_plugins.ImportLoader):
+
+    label = "Import PointCache"
+    order = -10
+    icon = "code-fork"
+    color = "orange"
+
+    families = [
+        "reveries.model",
+        "reveries.animation",
+        "reveries.pointcache",
+    ]
+
+    representations = reveries.base.pendable_reprs([
+        ("GPUCache", "abc"),
+        ("FBXCache", "fbx"),
+    ])
+
+    def process_import(self, context, name, namespace, data):
+        import maya.cmds as cmds
+
+        # Root group
+        label = "{}:{}".format(namespace, name)
+        root = cmds.group(name=label, empty=True)
+
+        representation_name = context["representation"]
+
+        if representation_name == "GPUCache":
+            # Create transform with shape
+            transform_name = label + "_GPU"
+            transform = cmds.createNode("transform", name=transform_name,
+                                        parent=root)
+            cache = cmds.createNode("gpuCache",
+                                    parent=transform,
+                                    name="{0}Shape".format(transform_name))
+
+            # Set the cache filepath
+            cmds.setAttr(cache + '.cacheFileName',
+                         self.entry_path,
+                         type="string")
+            cmds.setAttr(cache + '.cacheGeomPath', "|", type="string")  # root
+
+            # Lock parenting of the transform and cache
+            cmds.lockNode([transform, cache], lock=True)
+
+            nodes = [root, transform, cache]
+
+        elif representation_name == "FBXCache":
+            nodes = cmds.file(self.entry_path,
+                              i=True,
+                              namespace=namespace,
+                              returnNewNodes=True,
+                              groupReference=True,
+                              groupName="{}:{}".format(namespace, name))
+        else:
+            raise RuntimeError("This is a bug.")
+
+        self[:] = nodes
+
+    def pendable_update(self, container, representation):
+        import maya.cmds as cmds
+
+        representation_name = representation["name"]
+
+        # Update the cache
+        members = cmds.sets(container['objectName'], query=True)
+
+        if representation_name == "GPUCache":
+            caches = cmds.ls(members, type="gpuCache", long=True)
+
+            assert len(caches) == 1, "This is a bug"
+
+            for cache in caches:
+                cmds.setAttr(cache + ".cacheFileName",
+                             self.entry_file,
+                             type="string")
+
+        elif representation_name == "FBXCache":
+            geo_cache_dir = self.entry_path[:-4] + "_fpc"
+            in_coming_cache_count = len([f for f in os.listdir(geo_cache_dir)
+                                         if f.endswith(".mcx")])
+
+            caches = cmds.ls(members, type="cacheFile", long=True)
+
+            if not in_coming_cache_count == len(caches):
+                title = "FBXCache Update Warning"
+                message = ("The FBXCache geometry count does not match with "
+                           "current asset.\nUpdate will proceed, but the "
+                           "result may incomplete.\n\nBetter to remove "
+                           "and re-import, or use referencing.")
+                res = base.loader_warning_box(title, message, optional=True)
+
+                if not res:
+                    return
+
+            for cache in caches:
+                cmds.setAttr(cache + ".cachePath",
+                             self.repr_dir,
+                             type="string")
+
+        else:
+            raise RuntimeError("This is a bug.")
+
+        cmds.setAttr(container["objectName"] + ".representation",
+                     str(representation["_id"]),
+                     type="string")
+
+    def remove(self, container):
+        import maya.cmds as cmds
+
+        members = cmds.sets(container['objectName'], query=True)
+        cmds.lockNode(members, lock=False)
+        cmds.delete([container['objectName']] + members)
+
+        # Clean up the namespace
+        try:
+            cmds.namespace(removeNamespace=container['namespace'],
+                           deleteNamespaceContent=True)
+        except RuntimeError:
+            pass
