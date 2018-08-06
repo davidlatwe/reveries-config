@@ -814,6 +814,10 @@ def _in_standalone():
 #
 # --------------------------------
 
+if _in_standalone():
+    # Required for Maya 2016
+    Viewport2Options["floatingPointRTEnable"] = False
+
 version = mel.eval("getApplicationVersionAsFloat")
 if version > 2015:
     Viewport2Options.update({
