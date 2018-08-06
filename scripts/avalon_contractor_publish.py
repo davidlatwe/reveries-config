@@ -1,6 +1,5 @@
 
 import os
-import bson
 import json
 import copy
 import logging
@@ -29,64 +28,60 @@ def check_success(context):
             raise RuntimeError(result["error"]["message"])
 
 
-def publish():
-    # Collect instance name
-    #
+def parse_environment(context):
     assignment = dict()
-
     os_environ = os.environ
+
+    context_prefix = "AVALON_CONTEXT_"
+    instance_prefix = "AVALON_DELEGATED_SUBSET_"
+    version_prefix = "AVALON_DELEGATED_VERSION_NUM_"
+
     for key in os_environ:
-        if not key.startswith("AVALON_DELEGATED_SUBSET_"):
-            continue
-        oid_key = key.replace("AVALON_DELEGATED_SUBSET_",
-                              "AVALON_DELEGATED_VERSION_ID_")
-        num_key = key.replace("AVALON_DELEGATED_SUBSET_",
-                              "AVALON_DELEGATED_VERSION_NUM_")
-        subset_name = os_environ[key]
-        oid = os_environ[oid_key]
-        num = int(os_environ[num_key])
-        assignment[subset_name] = (bson.ObjectId(oid), num)
-        log.info("Assigned subset {0!r}\n\tVer. Num: {1!r}\n\tVer. OID: {2}"
-                 "".format(subset_name, num, oid))
 
-    assignment_count = len(assignment)
-    log.info("Found {} delegated instances.".format(assignment_count))
+        if key.startswith(context_prefix):
+            # Read Context data
+            #
+            entry = key[len(context_prefix):]
+            context.data[entry] = os_environ[key]
 
-    # Continue publish
-    #
-    log.info("Continuing publish.")
-    context = pyblish.util.collect()
+        if key.startswith(instance_prefix):
+            # Read Instances' name and version
+            #
+            num_key = key.replace(instance_prefix, version_prefix)
+            subset_name = os_environ[key]
+            version_num = int(os_environ[num_key])
+
+            assignment[subset_name] = version_num
+            log.info("Assigned subset {0!r}\n\tVer. Num: {1!r}"
+                     "".format(subset_name, version_num))
+
+    log.info("Found {} delegated instances.".format(len(assignment)))
+
     # set flag
     context.data["contractor_accepted"] = True
+    context.data["contractor_assignment"] = assignment
+
+
+def publish():
+
+    context = pyblish.api.Context()
+
+    log.info("Parsing environment ...")
+    parse_environment(context)
 
     log.info("Collecting instances ...")
-    instances = context[:]
-    for i, instance in enumerate(instances):
-        name = instance.data["name"]
-        if name in assignment:
-            # version lock
-            instance.data["version_id"] = assignment[name][0]
-            instance.data["version_next"] = assignment[name][1]
-            log.info("{} collected.")
-        else:
-            # Remove not assigned subset instance
-            context.pop(i)
+    pyblish.util.collect(context)
+    check_success(context)
 
-    collected_count = len(context)
-    log.info("Collected {} instances.".format(collected_count))
-
-    if not collected_count == assignment_count:
-        log.warning("Subset count did not match, this is a bug.")
-
-    if len(context) == 0:
-        raise ValueError("No instance to publish, this is a bug.")
-
+    log.info("Validating ...")
     pyblish.util.validate(context)
     check_success(context)
 
+    log.info("Extracting ...")
     pyblish.util.extract(context)
     check_success(context)
 
+    log.info("Integrating ...")
     pyblish.util.integrate(context)
     check_success(context)
 

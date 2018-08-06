@@ -15,7 +15,7 @@ def open(filepath):
         subprocess.call(('xdg-open', filepath))
 
 
-class PlayImageSequence(base.PendableLoader):
+class PlayImageSequence(base.EntryFileLoader):
     """Open Image Sequence with system default"""
 
     label = "Play sequence"
@@ -24,15 +24,16 @@ class PlayImageSequence(base.PendableLoader):
     color = "orange"
 
     families = [
+        "reveries.camera",
         "reveries.playblast",
     ]
 
-    representations = base.pendable_reprs([
+    representations = base.repr_obj_list([
         ("PNGSequence", "png"),
         ("QuickTime", "mov"),
     ])
 
-    def pendable_load(self, context, name, namespace, data):
+    def load(self, context, name, namespace, data):
 
         directory = self.repr_dir
         from avalon.vendor import clique

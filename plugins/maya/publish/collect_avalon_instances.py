@@ -20,7 +20,7 @@ class CollectMayaInstances(pyblish.api.ContextPlugin):
 
     """
 
-    order = pyblish.api.CollectorOrder - 0.2
+    order = pyblish.api.CollectorOrder - 0.49
     hosts = ["maya"]
     label = "Avalon Instances"
 

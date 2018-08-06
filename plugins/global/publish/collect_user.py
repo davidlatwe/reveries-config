@@ -12,4 +12,5 @@ class CollectUser(pyblish.api.ContextPlugin):
         # (NOTE) Pyblish-QML also provide this info by default with others
         # to the `context.data`, this plugin make sure we are safe without
         # Pyblish-QML's service.
-        context.data["user"] = getpass.getuser()
+        if not context.data.get("user"):
+            context.data["user"] = getpass.getuser()

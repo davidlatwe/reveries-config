@@ -12,7 +12,7 @@ class AnimationLoader(base.maya.ReferenceLoader):
 
     families = ["reveries.animation"]
 
-    representations = base.pendable_reprs([
+    representations = base.repr_obj_list([
         ("mayaAscii", "ma"),
     ])
 

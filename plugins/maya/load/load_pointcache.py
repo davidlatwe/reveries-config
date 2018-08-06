@@ -18,7 +18,7 @@ class PointCacheReferenceLoader(maya_plugins.ReferenceLoader):
         "reveries.pointcache",
     ]
 
-    representations = base.pendable_reprs([
+    representations = base.repr_obj_list([
         ("Alembic", "abc"),
         ("FBXCache", "fbx"),
     ])
@@ -58,7 +58,7 @@ class PointCacheImportLoader(maya_plugins.ImportLoader):
         "reveries.pointcache",
     ]
 
-    representations = reveries.base.pendable_reprs([
+    representations = reveries.base.repr_obj_list([
         ("GPUCache", "abc"),
         ("FBXCache", "fbx"),
     ])
@@ -70,7 +70,7 @@ class PointCacheImportLoader(maya_plugins.ImportLoader):
         label = "{}:{}".format(namespace, name)
         root = cmds.group(name=label, empty=True)
 
-        representation_name = context["representation"]
+        representation_name = context["representation"]["name"]
 
         if representation_name == "GPUCache":
             # Create transform with shape
@@ -100,14 +100,17 @@ class PointCacheImportLoader(maya_plugins.ImportLoader):
                               groupReference=True,
                               groupName="{}:{}".format(namespace, name))
         else:
-            raise RuntimeError("This is a bug.")
+            raise RuntimeError("Unsupported format: {}\nThis is a bug."
+                               "".format(representation_name))
 
         self[:] = nodes
 
-    def pendable_update(self, container, representation):
+    def update(self, container, representation):
         import maya.cmds as cmds
 
         representation_name = representation["name"]
+
+        self.update_entry_path(representation)
 
         # Update the cache
         members = cmds.sets(container['objectName'], query=True)

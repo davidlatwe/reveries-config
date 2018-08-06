@@ -1,6 +1,14 @@
 import pyblish.api
-from reveries.maya import action
 from maya import cmds
+
+
+class SelectInvalid(pyblish.api.Action):
+    label = "Select Invalid"
+    on = "failed"
+    icon = "hand-o-up"
+
+    def process(self, context, plugin):
+        cmds.select(plugin.invalid)
 
 
 class ValidateModelContent(pyblish.api.InstancePlugin):
@@ -13,19 +21,21 @@ class ValidateModelContent(pyblish.api.InstancePlugin):
 
     families = ["reveries.model"]
     order = pyblish.api.ValidatorOrder + 0.1
-    actions = [action.SelectInvalidAction]
+    actions = [SelectInvalid]
     hosts = ["maya"]
     label = "Model Content"
+
+    invalid = []
 
     def process(self, instance):
         # Ensure only valid node types
         allowed = ('mesh', 'transform')
         nodes = cmds.ls(instance, long=True)
         valid = cmds.ls(instance, long=True, type=allowed)
-        invalid = set(nodes) - set(valid)
+        self.invalid[:] = set(nodes) - set(valid)
 
-        if invalid:
-            self.log.error("These nodes are not allowed: %s" % invalid)
+        if self.invalid:
+            self.log.error("These nodes are not allowed: %s" % self.invalid)
             raise Exception("%s <Model Content> Failed." % instance)
 
         self.log.info("%s <Model Content> Passed." % instance)

@@ -17,7 +17,7 @@ class PublishDelegator(pyblish.api.ContextPlugin):
     def process(self, context):
 
         if context.data.get("contractor_accepted"):
-            # Already in contractors hand.
+            # Already in contractor's hand.
             return
 
         assert all(result["success"] for result in context.data["results"]), (

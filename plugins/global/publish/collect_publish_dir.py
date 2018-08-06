@@ -5,7 +5,7 @@ import avalon.api
 import avalon.io
 
 
-class ExtractPublishDir(pyblish.api.InstancePlugin):
+class CollectPublishDir(pyblish.api.InstancePlugin):
     """
     Does not create publish dir, only generate the path.
 
@@ -22,7 +22,7 @@ class ExtractPublishDir(pyblish.api.InstancePlugin):
     """
 
     label = "Publish Dir"
-    order = pyblish.api.ExtractorOrder - 0.499
+    order = pyblish.api.CollectorOrder + 0.499
 
     def process(self, instance):
 
@@ -66,7 +66,7 @@ class ExtractPublishDir(pyblish.api.InstancePlugin):
         root = avalon.api.registered_root()
         template_data = {"root": root,
                          "project": PROJECT,
-                         "silo": asset['silo'],
+                         "silo": asset["silo"],
                          "asset": ASSET,
                          "subset": SUBSET,
                          "version": version_number}
@@ -78,12 +78,11 @@ class ExtractPublishDir(pyblish.api.InstancePlugin):
         # Clean the path
         publish_dir = os.path.abspath(os.path.normpath(publish_dir))
 
-        if os.path.isdir(publish_dir):
-            self.log.error("Version dir exists: {}".format(publish_dir))
-            self.log.error("Version dir existed, publish abort.")
-            raise
-
+        instance.data["subset_doc"] = subset
         instance.data["asset_id"] = asset["_id"]
         instance.data["template"] = (template_data, template_publish)
         instance.data["publish_dir"] = publish_dir  # version dir, actually
         instance.data["version_next"] = version_number
+
+        self.log.debug("Next version: {}".format(version_number))
+        self.log.debug("Publish dir: {}".format(publish_dir))

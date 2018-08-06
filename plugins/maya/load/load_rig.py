@@ -19,7 +19,7 @@ class RigLoader(maya_plugins.ReferenceLoader):
 
     families = ["reveries.rig"]
 
-    representations = base.pendable_reprs([
+    representations = base.repr_obj_list([
         ("mayaBinary", "mb"),
     ])
 

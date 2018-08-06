@@ -7,8 +7,6 @@ import errno
 import pyblish.api
 from avalon import api, io
 
-from reveries.base import PENDING_SUFFIX
-
 
 log = logging.getLogger(__name__)
 
@@ -31,46 +29,25 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     label = "Integrate Subset"
     order = pyblish.api.IntegratorOrder
 
-    delegating = False
-    delegated = False
-
     def process(self, instance):
 
         # Check Delegation
         #
         # Contractor completed long-run publish process
-        self.delegated = instance.context.data.get("contractor_accepted")
-        # Delegating long-run publish process
-        self.delegating = (bool(instance.data.get("use_contractor")) and
-                           not self.delegated)
-
-        self.log.debug("Delegating: {}".format(self.delegating))
-        self.log.debug("Delegated: {}".format(self.delegated))
-
-        if self.delegating and self.delegated:
-            raise RuntimeError("Flag `delegating` and `delegated` can not "
-                               "both be True, this is a bug.")
+        delegated = instance.context.data.get("contractor_accepted")
+        # Is delegating long-run publish process
+        if instance.data.get("use_contractor") and not delegated:
+            return
 
         # Assemble data and create version, representations
         version, representations = self.register(instance)
 
         # Integrate representations' files to shareable space
-        if not self.delegating:
-            self.log.info("Integrating representations to shareable space ...")
-            self.integrate(instance)
+        self.log.info("Integrating representations to shareable space ...")
+        self.integrate(instance)
 
         # Write version and representations to database
         self.write_database(instance, version, representations)
-
-    def version_bumpable(self):
-        # `version_bump` will remain False if:
-        # `delegating is False and delegated is True`
-        #
-        bumpable = False
-        if self.delegating or not any([self.delegating, self.delegated]):
-            bumpable = True
-
-        return bumpable
 
     def register(self, instance):
 
@@ -112,27 +89,19 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #       ^
         #       |
         #
+
+        # It's okay to create subset before integration complete if not exists
         subset = self.get_subset(instance)
 
-        if self.version_bumpable():
-            # get next version
+        # get next version
+        version_data = self.create_version_data(context, instance)
 
-            version_data = self.create_version_data(context, instance)
-
-            locations = [api.Session["AVALON_LOCATION"]]
-            next_version = instance.data["version_next"]
-            version = self.create_version(subset=subset,
-                                          version_number=next_version,
-                                          locations=locations,
-                                          data=version_data)
-
-        else:
-            self.log.info("Publish contractor updating version ...")
-            # Retrive exact version
-            version = io.find_one({"_id": instance.data["version_id"]})
-
-            if version is None:
-                raise RuntimeError("No verison found, this is a bug.")
+        locations = [api.Session["AVALON_LOCATION"]]
+        next_version = instance.data["version_next"]
+        version = self.create_version(subset=subset,
+                                      version_number=next_version,
+                                      locations=locations,
+                                      data=version_data)
 
         # Find the representations to transfer amongst the files
         # Each should be a single representation (as such, a single extension)
@@ -228,32 +197,18 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         """
         # Write version
         #
-        if self.version_bumpable():
-            self.log.debug("Inserting version to database ...")
-            version_id = io.insert_one(version).inserted_id
-        else:
-            version_id = version["_id"]
+        self.log.info("Registering version {} to database ..."
+                      "".format(version["name"]))
+        version_id = io.insert_one(version).inserted_id
 
         # Write representations
         #
-        action_name = "Delegating" if self.delegating else "Registering"
-        self.log.info("{0} {1} representations ..."
-                      "".format(action_name, len(representations)))
+        self.log.info("Registering {} representations ..."
+                      "".format(len(representations)))
+        for representation in representations:
+            representation["parent"] = version_id
 
-        if not self.delegated:
-            for representation in representations:
-                representation["parent"] = version_id
-            io.insert_many(representations)
-            instance.data["version_id"] = version_id
-
-        else:
-            for representation in representations:
-                representation["parent"] = version_id
-                name = representation["name"] + PENDING_SUFFIX
-                io.replace_one({"type": "representation",
-                                "parent": version_id,
-                                "name": name},
-                               representation)
+        io.insert_many(representations)
 
     def get_subset(self, instance):
 

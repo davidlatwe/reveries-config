@@ -2,7 +2,7 @@
 import reveries.base as base
 
 
-class CopyToClipboardLoader(base.PendableLoader):
+class CopyToClipboardLoader(base.EntryFileLoader):
     """Copy published file to clipboard to allow to paste the content"""
     representations = ["*"]
     families = ["*"]
@@ -12,7 +12,7 @@ class CopyToClipboardLoader(base.PendableLoader):
     icon = "clipboard"
     color = "#999999"
 
-    def pendable_load(self, context, name=None, namespace=None, data=None):
+    def load(self, context, name=None, namespace=None, data=None):
         self.log.info("Added to clipboard: {0}".format(self.repr_dir))
         self.copy_path_to_clipboard(self.repr_dir)
 

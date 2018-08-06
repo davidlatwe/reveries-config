@@ -14,7 +14,7 @@ class CameraLoader(maya_plugins.ReferenceLoader):
 
     families = ["reveries.camera"]
 
-    representations = base.pendable_reprs([
+    representations = base.repr_obj_list([
         ("mayaAscii", "ma"),
         ("Alembic", "abc"),
         ("FBX", "fbx"),

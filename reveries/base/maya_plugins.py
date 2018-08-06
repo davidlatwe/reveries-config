@@ -1,5 +1,5 @@
 
-from . import PendableLoader, loader_error_box
+from . import EntryFileLoader, loader_error_box
 
 
 REPRS_PLUGIN_MAPPING = {
@@ -25,7 +25,7 @@ def load_plugin(representation):
         cmds.loadPlugin(plugin, quiet=True)
 
 
-class ReferenceLoader(PendableLoader):
+class ReferenceLoader(EntryFileLoader):
     """A basic ReferenceLoader for Maya
 
     This will implement the basic behavior for a loader to inherit from that
@@ -37,7 +37,7 @@ class ReferenceLoader(PendableLoader):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
-    def pendable_load(self, context, name=None, namespace=None, data=None):
+    def load(self, context, name=None, namespace=None, data=None):
         from avalon.maya import lib
         from avalon.maya.pipeline import containerise
 
@@ -68,7 +68,7 @@ class ReferenceLoader(PendableLoader):
             context=context,
             loader=self.__class__.__name__)
 
-    def pendable_update(self, container, representation):
+    def update(self, container, representation):
         import os
         from maya import cmds
 
@@ -90,6 +90,8 @@ class ReferenceLoader(PendableLoader):
                        "referenced.")
             loader_error_box(title, message)
             return
+
+        self.update_entry_path(representation)
 
         path = self.entry_path
         assert os.path.exists(path), "%s does not exist." % path
@@ -149,13 +151,13 @@ class ReferenceLoader(PendableLoader):
             pass
 
 
-class ImportLoader(PendableLoader):
+class ImportLoader(EntryFileLoader):
 
     def process_import(self, context, name, namespace, data):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
-    def pendable_load(self, context, name=None, namespace=None, data=None):
+    def load(self, context, name=None, namespace=None, data=None):
         from avalon.maya import lib
         from avalon.maya.pipeline import containerise
 
@@ -186,7 +188,7 @@ class ImportLoader(PendableLoader):
             context=context,
             loader=self.__class__.__name__)
 
-    def pendable_update(self, container, representation):
+    def update(self, container, representation):
 
         title = "Can Not Update"
         message = ("The content of this asset was imported. "

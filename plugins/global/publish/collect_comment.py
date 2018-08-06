@@ -15,11 +15,12 @@ class CollectComment(pyblish.api.ContextPlugin):
     """
 
     label = "Publish Comment"
-    order = pyblish.api.CollectorOrder - 0.45
+    order = pyblish.api.CollectorOrder - 0.5
 
     def process(self, context):
         global _COMMENT
-        context.data["comment"] = _COMMENT
+        if not context.data.get("comment"):
+            context.data["comment"] = _COMMENT
 
 
 def fetch_comment(comment):

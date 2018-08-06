@@ -13,7 +13,7 @@ class ModelLoader(maya_plugins.ReferenceLoader):
 
     families = ["reveries.model"]
 
-    representations = base.pendable_reprs([
+    representations = base.repr_obj_list([
         ("mayaBinary", "mb"),
     ])
 

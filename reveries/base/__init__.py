@@ -16,9 +16,6 @@ from .. import CONTRACTOR_PATH
 log = logging.getLogger(__name__)
 
 
-PENDING_SUFFIX = "..Pending.."
-
-
 class BaseContractor(object):
 
     def __init__(self):
@@ -27,6 +24,9 @@ class BaseContractor(object):
     def assemble_environment(self, context):
         """Include critical variables with submission
         """
+
+        # Save Session
+        #
         environment = dict({
             # This will trigger `userSetup.py` on the slave
             # such that proper initialisation happens the same
@@ -37,25 +37,33 @@ class BaseContractor(object):
             "PYTHONPATH": os.getenv("PYTHONPATH", ""),
         }, **avalon.api.Session)
 
-        # Write instances' name and version
+        # Save Context data
+        #
+        context_data_entry = ["comment", "user"]
+        for entry in context_data_entry:
+            key = "AVALON_CONTEXT_" + entry
+            environment[key] = context.data[entry]
+
+        # Save Instances' name and version
+        #
         for ind, instance in enumerate(context):
             if not instance.data.get("publish_contractor") == self.name:
+                continue
+
+            if instance.data.get("publish") is False:
                 continue
 
             # instance subset name
             key = "AVALON_DELEGATED_SUBSET_%d" % ind
             environment[key] = instance.data["name"]
-            # instance subset version next (for monitor eye debug)
-            key = "AVALON_DELEGATED_VERSION_NUM_%d" % ind
-            environment[key] = instance.data["version_next"]
             #
-            # instance subset version object id
+            # instance subset version
             #
             # This should prevent version bump when re-running publish with
             # same params.
             #
-            key = "AVALON_DELEGATED_VERSION_ID_%d" % ind
-            environment[key] = instance.data["version_id"]
+            key = "AVALON_DELEGATED_VERSION_NUM_%d" % ind
+            environment[key] = instance.data["version_next"]
 
         return environment
 
@@ -154,12 +162,10 @@ def repr_obj(name, ext, abs_embed=False):
     return Representation()
 
 
-def pendable_reprs(reprs_prarms):
+def repr_obj_list(reprs_prarms):
     reprs = []
     for prarms in reprs_prarms:
         reprs.append(repr_obj(*prarms))
-        reprs.append(repr_obj(prarms[0] + PENDING_SUFFIX,
-                              prarms[1]))
 
     return reprs
 
@@ -176,7 +182,7 @@ class EntryFileLoader(avalon.api.Loader):
         super(EntryFileLoader, self).__init__(context)
         self.repr_dir = self.fname
 
-        repr_name = os.path.basename(self.fname)
+        repr_name = os.path.basename(self.repr_dir)
         try:
             index = self.representations.index(repr_name)
             representation = self.representations[index]
@@ -192,54 +198,15 @@ class EntryFileLoader(avalon.api.Loader):
 
         self.update_entry_path()
 
-    def update_entry_path(self):
-        self.entry_path = os.path.join(self.fname, self.entry_file)
-
-
-class PendableLoader(EntryFileLoader):
-
-    def is_pending(self):
-        if self.repr_dir.endswith(PENDING_SUFFIX):
-            title = "File Pending"
-            message = "Pending, wait publish process to complete."
-            loader_warning_box(title, message)
-            return True
-        return False
-
-    def load(self, context, name=None, namespace=None, data=None):
-        if self.is_pending():
-            return
-        self.pendable_load(context, name, namespace, data)
+    def update_entry_path(self, representation=None):
+        if representation is not None:
+            self.repr_dir = avalon.api.get_representation_path(representation)
+        self.entry_path = os.path.join(self.repr_dir, self.entry_file)
 
     def update(self, container, representation):
-        self.fname = avalon.api.get_representation_path(representation)
-        self.update_entry_path()
+        self.update_entry_path(representation)
 
-        if self.is_pending():
-            return
         self.pendable_update(container, representation)
-
-    def switch(self, container, representation):
-        self.fname = avalon.api.get_representation_path(representation)
-        self.update_entry_path()
-
-        if self.is_pending():
-            return
-        self.pendable_switch(container, representation)
-
-    def pendable_load(self, context, name, namespace, data):
-        """To be implemented by subclass"""
-        raise NotImplementedError("Must be implemented by subclass")
-
-    def pendable_update(self, container, representation):
-        """To be implemented by subclass"""
-        raise NotImplementedError("Must be implemented by subclass")
-
-    def pendable_switch(self, container, representation):
-        """To be implemented by subclass"""
-        raise RuntimeError("Loader '{}' does not support 'switch'".format(
-            self.label
-        ))
 
 
 class BaseExtractor(pyblish.api.InstancePlugin):
@@ -381,8 +348,6 @@ class DelegatableExtractor(BaseExtractor):
         self.delegation_check()
 
         if self.delegating:
-            # give a fake path
-            self.data['stagingDir'] = "/delegating"
             self.pend()
         else:
             self.dispatch()
@@ -397,6 +362,5 @@ class DelegatableExtractor(BaseExtractor):
 
     def pend(self):
         for repr_ in self.active_representations:
-            # Integrator will not and should not create any dir or copy any
-            # file when the representation is on pending
-            self.stage_files(repr_ + PENDING_SUFFIX)
+            self.log.info("Delegating representation {0} of {1}"
+                          "".format(repr_, self.data["name"]))
