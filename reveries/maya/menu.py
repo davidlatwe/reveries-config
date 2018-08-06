@@ -5,7 +5,7 @@ from avalon.vendor.Qt import QtCore
 from maya import cmds
 
 self = sys.modules[__name__]
-self._menu = api.Session["AVALON_LABEL"] + "menu"
+self._menu = api.Session.get("AVALON_LABEL", "Avalon") + "menu"
 
 log = logging.getLogger(__name__)
 
