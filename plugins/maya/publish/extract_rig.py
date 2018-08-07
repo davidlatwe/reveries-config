@@ -8,9 +8,9 @@ from avalon import maya
 
 
 class ExtractRig(reveries.base.BaseExtractor):
-    """Extract rig as Maya Ascii"""
+    """Extract rig as mayaBinary"""
 
-    label = "Extract Rig (Maya Binary)"
+    label = "Extract Rig (mayaBinary)"
     order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
     families = ["reveries.rig"]
