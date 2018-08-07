@@ -18,6 +18,16 @@ DEFAULT_MATRIX = [1.0, 0.0, 0.0, 0.0,
                   0.0, 0.0, 1.0, 0.0,
                   0.0, 0.0, 0.0, 1.0]
 
+TRANSFORM_ATTRS = [
+    "translateX", "translateY", "translateZ",
+    "rotateX", "rotateY", "rotateZ",
+    "scaleX", "scaleY", "scaleZ",
+]
+
+CAMERA_SHAPE_KEYABLES = [
+    "focalLength",
+]
+
 
 def is_visible(node,
                displayLayer=True,
@@ -175,13 +185,6 @@ def node_type_check(node, node_type):
     return False
 
 
-TRANSFORM_ATTRS = [
-    ".translateX", ".translateY", ".translateZ",
-    ".rotateX", ".rotateY", ".rotateZ",
-    ".scaleX", ".scaleY", ".scaleZ",
-]
-
-
 def bake_to_worldspace(node, startFrame, endFrame, bake_shape=True):
     """Bake transform to worldspace
     """
@@ -230,14 +233,11 @@ def bake_camera(camera, startFrame, endFrame):
         raise TypeError("{} is not a camera.".format(camera))
 
     # make sure attrs all keyable
-    shape_keyables = [
-        ".focalLength",
-    ]
     cmds.setAttr(transform + ".visibility", keyable=True, lock=False)
     for attr in TRANSFORM_ATTRS:
-        cmds.setAttr(transform + attr, keyable=True, lock=False)
-    for attr in shape_keyables:
-        cmds.setAttr(shape + attr, keyable=True, lock=False)
+        cmds.setAttr(transform + "." + attr, keyable=True, lock=False)
+    for attr in CAMERA_SHAPE_KEYABLES:
+        cmds.setAttr(shape + "." + attr, keyable=True, lock=False)
 
     bake_to_worldspace(transform, startFrame, endFrame)
 
@@ -247,4 +247,4 @@ def lock_transform(node):
         raise TypeError("{} is not a transform node.".format(node))
 
     for attr in TRANSFORM_ATTRS:
-        cmds.setAttr(node + attr, lock=True)
+        cmds.setAttr(node + "." + attr, lock=True)
