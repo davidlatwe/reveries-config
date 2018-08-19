@@ -6,12 +6,12 @@ import json
 
 import avalon.api
 import avalon.io
-import reveries.base
 
 from avalon.vendor import requests
+from reveries.plugins import BaseContractor
 
 
-class ContractorDeadlineMayaScript(reveries.base.BaseContractor):
+class ContractorDeadlineMayaScript(BaseContractor):
 
     name = "deadline.maya.script"
 
@@ -36,9 +36,7 @@ class ContractorDeadlineMayaScript(reveries.base.BaseContractor):
         group = deadline_job["maya_cache_group"]
         priority = deadline_job["maya_cache_priority"]
 
-        plugin_root = os.path.dirname(os.path.dirname(__file__))
-        config_root = os.path.dirname(os.path.dirname(plugin_root))
-        script_file = os.path.join(config_root,
+        script_file = os.path.join(os.path.dirname(__file__),
                                    "scripts",
                                    "avalon_contractor_publish.py")
 

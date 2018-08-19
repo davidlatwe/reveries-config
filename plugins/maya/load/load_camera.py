@@ -1,10 +1,10 @@
 
 import reveries.maya.lib
-import reveries.base as base
-import reveries.base.maya_plugins as maya_plugins
+from reveries.plugins import repr_obj
+from reveries.maya.plugins import ReferenceLoader
 
 
-class CameraLoader(maya_plugins.ReferenceLoader):
+class CameraLoader(ReferenceLoader):
     """Specific loader for the reveries.camera family"""
 
     label = "Reference camera"
@@ -14,11 +14,11 @@ class CameraLoader(maya_plugins.ReferenceLoader):
 
     families = ["reveries.camera"]
 
-    representations = base.repr_obj_list([
-        ("mayaAscii", "ma"),
-        ("Alembic", "abc"),
-        ("FBX", "fbx"),
-    ])
+    representations = [
+        repr_obj("mayaAscii", "ma"),
+        repr_obj("Alembic", "abc"),
+        repr_obj("FBX", "fbx"),
+    ]
 
     def process_reference(self, context, name, namespace, data):
         import maya.cmds as cmds

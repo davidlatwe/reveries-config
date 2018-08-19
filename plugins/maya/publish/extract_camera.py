@@ -3,15 +3,14 @@ import os
 import pyblish.api
 import avalon
 import reveries.utils
-import reveries.base
-import reveries.maya.capsule
-import reveries.maya.lib
-import reveries.maya.io
+
+from reveries.maya import io, lib, capsule
+from reveries.plugins import repr_obj, DelegatableExtractor
 
 from maya import cmds
 
 
-class ExtractCamera(reveries.base.DelegatableExtractor):
+class ExtractCamera(DelegatableExtractor):
     """
     TODO: publish multiple cameras
     """
@@ -24,10 +23,10 @@ class ExtractCamera(reveries.base.DelegatableExtractor):
     ]
 
     representations = [
-        reveries.base.repr_obj("mayaAscii", "ma"),
-        reveries.base.repr_obj("Alembic", "abc"),
-        reveries.base.repr_obj("FBX", "fbx"),
-        reveries.base.repr_obj("PNGSequence", "png"),
+        repr_obj("mayaAscii", "ma"),
+        repr_obj("Alembic", "abc"),
+        repr_obj("FBX", "fbx"),
+        repr_obj("PNGSequence", "png"),
     ]
 
     def dispatch(self):
@@ -36,10 +35,10 @@ class ExtractCamera(reveries.base.DelegatableExtractor):
         self.end = context_data.get("endFrame")
         camera = cmds.ls(self.member, type="camera")[0]
 
-        with reveries.maya.capsule.no_refresh(with_undo=True):
-            with reveries.maya.capsule.evaluation("off"):
+        with capsule.no_refresh(with_undo=True):
+            with capsule.evaluation("off"):
                 # bake to worldspace
-                reveries.maya.lib.bake_camera(camera, self.start, self.end)
+                lib.bake_camera(camera, self.start, self.end)
                 cmds.select(camera, replace=True, noExpand=True)
 
                 self.extract()
@@ -70,7 +69,7 @@ class ExtractCamera(reveries.base.DelegatableExtractor):
 
         out_path = os.path.join(dirname, filename)
         with avalon.maya.maintained_selection():
-            reveries.maya.io.export_alembic(out_path, self.start, self.end)
+            io.export_alembic(out_path, self.start, self.end)
 
         self.stage_files(representation)
 
@@ -81,8 +80,8 @@ class ExtractCamera(reveries.base.DelegatableExtractor):
 
         out_path = os.path.join(dirname, filename)
         with avalon.maya.maintained_selection():
-            reveries.maya.io.export_fbx_set_camera()
-            reveries.maya.io.export_fbx(out_path)
+            io.export_fbx_set_camera()
+            io.export_fbx(out_path)
 
         self.stage_files(representation)
 
@@ -97,11 +96,11 @@ class ExtractCamera(reveries.base.DelegatableExtractor):
         out_path = os.path.join(dirname, filename)
         width, height = reveries.utils.get_resolution_data()
         camera = cmds.ls(self.member, type="camera")[0]
-        reveries.maya.io.capture_seq(camera,
-                                     out_path,
-                                     self.start,
-                                     self.end,
-                                     width,
-                                     height)
+        io.capture_seq(camera,
+                       out_path,
+                       self.start,
+                       self.end,
+                       width,
+                       height)
 
         self.stage_files(representation)

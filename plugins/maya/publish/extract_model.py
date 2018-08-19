@@ -2,14 +2,15 @@
 import os
 import contextlib
 import pyblish.api
-import reveries.utils
-import reveries.base
-import reveries.maya.capsule as capsule
+
 import maya.cmds as cmds
 import avalon.maya as maya
 
+from reveries.maya import capsule
+from reveries.plugins import repr_obj, BaseExtractor
 
-class ExtractModel(reveries.base.BaseExtractor):
+
+class ExtractModel(BaseExtractor):
     """Produce a stripped down Maya file from instance
 
     This plug-in takes into account only nodes relevant to models
@@ -24,7 +25,7 @@ class ExtractModel(reveries.base.BaseExtractor):
     families = ["reveries.model"]
 
     representations = [
-        reveries.base.repr_obj("mayaBinary", "mb")
+        repr_obj("mayaBinary", "mb")
     ]
 
     def dispatch(self):

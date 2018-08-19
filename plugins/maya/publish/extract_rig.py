@@ -1,13 +1,14 @@
 
 import os
 import pyblish.api
-import reveries.base
 
 from maya import cmds
 from avalon import maya
 
+from reveries.plugins import repr_obj, BaseExtractor
 
-class ExtractRig(reveries.base.BaseExtractor):
+
+class ExtractRig(BaseExtractor):
     """Extract rig as mayaBinary"""
 
     label = "Extract Rig (mayaBinary)"
@@ -16,7 +17,7 @@ class ExtractRig(reveries.base.BaseExtractor):
     families = ["reveries.rig"]
 
     representations = [
-        reveries.base.repr_obj("mayaBinary", "mb")
+        repr_obj("mayaBinary", "mb")
     ]
 
     def dispatch(self):

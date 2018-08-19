@@ -2,11 +2,11 @@
 import avalon.api
 import avalon.maya
 
-import reveries.base as base
-import reveries.base.maya_plugins as maya_plugins
+from reveries.plugins import repr_obj
+from reveries.maya.plugins import ReferenceLoader
 
 
-class RigLoader(maya_plugins.ReferenceLoader):
+class RigLoader(ReferenceLoader):
     """Specific loader for rigs
 
     This automatically creates an instance for animators upon load.
@@ -19,9 +19,9 @@ class RigLoader(maya_plugins.ReferenceLoader):
 
     families = ["reveries.rig"]
 
-    representations = base.repr_obj_list([
-        ("mayaBinary", "mb"),
-    ])
+    representations = [
+        repr_obj("mayaBinary", "mb"),
+    ]
 
     def process_reference(self, context, name, namespace, data):
 

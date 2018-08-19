@@ -4,68 +4,25 @@ from maya import cmds
 import pyblish.api
 
 from reveries.maya.lib import AVALON_ID_ATTR_SHORT, set_avalon_uuid
+from reveries.plugins import RepairInstanceAction
+from reveries.maya.plugins import MayaSelectInvalidAction
 
 
-class SelectInvalid(pyblish.api.Action):
-    label = "Select Invalid"
-    on = "failed"
-    icon = "hand-o-up"
+class SelectMissing(MayaSelectInvalidAction):
 
-    def process(self, context, plugin):
-        cmds.select(plugin.invalid)
+    label = "Select ID Missing"
+    symptom = "missing"
 
 
-class RepairInvalid(pyblish.api.Action):
+class SelectDuplicated(MayaSelectInvalidAction):
+
+    label = "Select ID Duplicated"
+    symptom = "duplicated"
+
+
+class RepairInvalid(RepairInstanceAction):
+
     label = "Regenerate AvalonUUID"
-    on = "failed"
-
-    def process(self, context, plugin):
-        for node in plugin.invalid:
-            set_avalon_uuid(node, renew=True)
-
-
-class ValidateAvalonUUID(pyblish.api.InstancePlugin):
-    """All models ( mesh node's transfrom ) must have an UUID
-    """
-
-    families = ["reveries.model"]
-    order = pyblish.api.ValidatorOrder
-    hosts = ["maya"]
-    label = "Avalon UUID"
-    actions = [
-        pyblish.api.Category("Select"),
-        SelectInvalid,
-        pyblish.api.Category("Fix It"),
-        RepairInvalid,
-    ]
-
-    invalid = []
-
-    def process(self, instance):
-        uuids = get_avalon_uuid(instance)
-
-        self.invalid = uuids[None]
-        if self.invalid:
-            self.log.error(
-                "'%s' Missing ID attribute on:\n%s" % (
-                    instance,
-                    ",\n".join(
-                        "'" + member + "'" for member in self.invalid))
-            )
-            raise Exception("%s <Avalon UUID> Failed." % instance)
-
-        self.invalid = [n for _id, nds in uuids.items()
-                        if len(nds) > 1 for n in nds]
-        if self.invalid:
-            self.log.error(
-                "'%s' Duplicated IDs on:\n%s" % (
-                    instance,
-                    ",\n".join(
-                        "'" + member + "'" for member in self.invalid))
-            )
-            raise Exception("%s <Avalon UUID> Failed." % instance)
-
-        self.log.info("%s <Avalon UUID> Passed." % instance)
 
 
 def get_avalon_uuid(instance):
@@ -90,3 +47,78 @@ def get_avalon_uuid(instance):
         uuids[uuid].append(node)
 
     return uuids
+
+
+class ValidateAvalonUUID(pyblish.api.InstancePlugin):
+    """All models ( mesh node's transfrom ) must have an UUID
+    """
+
+    order = pyblish.api.ValidatorOrder
+    hosts = ["maya"]
+    label = "Avalon UUID"
+    actions = [
+        pyblish.api.Category("Select"),
+        SelectMissing,
+        SelectDuplicated,
+        pyblish.api.Category("Fix It"),
+        RepairInvalid,
+    ]
+
+    families = [
+        "reveries.model",
+        "reveries.look",
+    ]
+
+    @staticmethod
+    def get_invalid_missing(instance, uuids=None):
+
+        if uuids is None:
+            uuids = get_avalon_uuid(instance)
+
+        invalid = uuids[None]
+
+        return invalid
+
+    @staticmethod
+    def get_invalid_duplicated(instance, uuids=None):
+
+        if uuids is None:
+            uuids = get_avalon_uuid(instance)
+
+        invalid = [n for _id, nds in uuids.items()
+                   if len(nds) > 1 for n in nds]
+
+        return invalid
+
+    def process(self, instance):
+
+        uuids_dict = get_avalon_uuid(instance)
+
+        invalid = self.get_invalid_missing(instance, uuids_dict)
+        if invalid:
+            self.log.error(
+                "'%s' Missing ID attribute on:\n%s" % (
+                    instance,
+                    ",\n".join(
+                        "'" + member + "'" for member in invalid))
+            )
+            raise Exception("%s <Avalon UUID> Failed." % instance)
+
+        invalid = self.get_invalid_duplicated(instance, uuids_dict)
+        if invalid:
+            self.log.error(
+                "'%s' Duplicated IDs on:\n%s" % (
+                    instance,
+                    ",\n".join(
+                        "'" + member + "'" for member in invalid))
+            )
+            raise Exception("%s <Avalon UUID> Failed." % instance)
+
+        self.log.info("%s <Avalon UUID> Passed." % instance)
+
+    @classmethod
+    def repair(cls, instance):
+        invalid = (cls.get_invalid_missing(instance) +
+                   cls.get_invalid_duplicated(instance))
+        for node in invalid:
+            set_avalon_uuid(node, renew=True)

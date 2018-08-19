@@ -2,7 +2,7 @@ import sys
 import os
 import subprocess
 
-import reveries.base as base
+from reveries.plugins import EntryFileLoader, repr_obj
 
 
 def open(filepath):
@@ -15,7 +15,7 @@ def open(filepath):
         subprocess.call(('xdg-open', filepath))
 
 
-class PlayImageSequence(base.EntryFileLoader):
+class PlayImageSequence(EntryFileLoader):
     """Open Image Sequence with system default"""
 
     label = "Play sequence"
@@ -28,10 +28,10 @@ class PlayImageSequence(base.EntryFileLoader):
         "reveries.playblast",
     ]
 
-    representations = base.repr_obj_list([
-        ("PNGSequence", "png"),
-        ("QuickTime", "mov"),
-    ])
+    representations = [
+        repr_obj("PNGSequence", "png"),
+        repr_obj("QuickTime", "mov"),
+    ]
 
     def load(self, context, name, namespace, data):
 

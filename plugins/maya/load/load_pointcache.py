@@ -1,11 +1,11 @@
 
 import os
 import reveries.maya.lib
-import reveries.base as base
-import reveries.base.maya_plugins as maya_plugins
+from reveries.plugins import repr_obj, message_box_warning
+from reveries.maya.plugins import ReferenceLoader, ImportLoader
 
 
-class PointCacheReferenceLoader(maya_plugins.ReferenceLoader):
+class PointCacheReferenceLoader(ReferenceLoader):
 
     label = "Reference PointCache"
     order = -10
@@ -18,10 +18,10 @@ class PointCacheReferenceLoader(maya_plugins.ReferenceLoader):
         "reveries.pointcache",
     ]
 
-    representations = base.repr_obj_list([
-        ("Alembic", "abc"),
-        ("FBXCache", "fbx"),
-    ])
+    representations = [
+        repr_obj("Alembic", "abc"),
+        repr_obj("FBXCache", "fbx"),
+    ]
 
     def process_reference(self, context, name, namespace, data):
         import maya.cmds as cmds
@@ -45,7 +45,7 @@ class PointCacheReferenceLoader(maya_plugins.ReferenceLoader):
         self.update(container, representation)
 
 
-class PointCacheImportLoader(maya_plugins.ImportLoader):
+class PointCacheImportLoader(ImportLoader):
 
     label = "Import PointCache"
     order = -10
@@ -58,10 +58,10 @@ class PointCacheImportLoader(maya_plugins.ImportLoader):
         "reveries.pointcache",
     ]
 
-    representations = reveries.base.repr_obj_list([
-        ("GPUCache", "abc"),
-        ("FBXCache", "fbx"),
-    ])
+    representations = [
+        repr_obj("GPUCache", "abc"),
+        repr_obj("FBXCache", "fbx"),
+    ]
 
     def process_import(self, context, name, namespace, data):
         import maya.cmds as cmds
@@ -138,7 +138,8 @@ class PointCacheImportLoader(maya_plugins.ImportLoader):
                            "current asset.\nUpdate will proceed, but the "
                            "result may incomplete.\n\nBetter to remove "
                            "and re-import, or use referencing.")
-                res = base.loader_warning_box(title, message, optional=True)
+                self.log.Warning(message)
+                res = message_box_warning(title, message, optional=True)
 
                 if not res:
                     return

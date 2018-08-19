@@ -1,8 +1,8 @@
 
 import pyblish.api
 
-from avalon.vendor.six import string_types
-from reveries.base import find_contractor
+from reveries.vendor.six import string_types
+from reveries.plugins import find_contractor
 
 
 class PublishDelegator(pyblish.api.ContextPlugin):

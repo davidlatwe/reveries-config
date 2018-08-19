@@ -1,11 +1,15 @@
 import os
 import logging
 
+try:
+    from maya import mel
+except ImportError:
+    raise ImportError("Module 'reveries.maya' require Autodesk Maya.")
+
 import avalon.maya.commands as commands
 import avalon.api as avalon
 
 from pyblish import api as pyblish
-from maya import mel
 
 from .. import PLUGINS_DIR
 from . import menu, callbacks

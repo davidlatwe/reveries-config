@@ -1,5 +1,9 @@
 
-from . import EntryFileLoader, loader_error_box
+from ..plugins import (
+    EntryFileLoader,
+    message_box_error,
+    SelectInvalidAction,
+)
 
 
 REPRS_PLUGIN_MAPPING = {
@@ -88,7 +92,8 @@ class ReferenceLoader(EntryFileLoader):
             title = "Update Abort"
             message = ("Imported container not supported; container must be "
                        "referenced.")
-            loader_error_box(title, message)
+            self.log.error(message)
+            message_box_error(title, message)
             return
 
         self.update_entry_path(representation)
@@ -128,7 +133,8 @@ class ReferenceLoader(EntryFileLoader):
             title = "Remove Abort"
             message = ("Imported container not supported; container must be "
                        "referenced.")
-            loader_error_box(title, message)
+            self.log.error(message)
+            message_box_error(title, message)
             return
 
         self.log.info("Removing '%s' from Maya.." % container["name"])
@@ -197,8 +203,8 @@ class ImportLoader(EntryFileLoader):
                    "Please remove and reimport the asset."
                    "\n\nIf you really need to update a lot we "
                    "recommend referencing.")
-
-        loader_error_box(title, message)
+        self.log.error(message)
+        message_box_error(title, message)
         return
 
     def remove(self, container):
@@ -221,3 +227,14 @@ class ImportLoader(EntryFileLoader):
             pass
 
         cmds.namespace(removeNamespace=namespace, deleteNamespaceContent=True)
+
+
+class MayaSelectInvalidAction(SelectInvalidAction):
+
+    def select(self, invalid):
+        from maya import cmds
+        cmds.select(invalid, replace=True, noExpand=True)
+
+    def deselect(self):
+        from maya import cmds
+        cmds.select(deselect=True)

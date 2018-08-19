@@ -1,15 +1,14 @@
 
 import os
 import pyblish.api
-import reveries.base
-import reveries.maya.io as io
-import reveries.maya.lib as lib
-import reveries.maya.capsule as capsule
+
+from reveries.maya import io, lib, capsule
+from reveries.plugins import repr_obj, DelegatableExtractor
 
 from maya import cmds
 
 
-class ExtractPointCache(reveries.base.DelegatableExtractor):
+class ExtractPointCache(DelegatableExtractor):
     """
     """
 
@@ -22,9 +21,9 @@ class ExtractPointCache(reveries.base.DelegatableExtractor):
     ]
 
     representations = [
-        reveries.base.repr_obj("Alembic", "abc"),
-        reveries.base.repr_obj("FBXCache", "fbx"),
-        reveries.base.repr_obj("GPUCache", "abc"),
+        repr_obj("Alembic", "abc"),
+        repr_obj("FBXCache", "fbx"),
+        repr_obj("GPUCache", "abc"),
     ]
 
     start_frame = 0

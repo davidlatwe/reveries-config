@@ -1,9 +1,9 @@
 
-import reveries.base as base
-import reveries.base.maya_plugins as maya_plugins
+from reveries.plugins import repr_obj
+from reveries.maya.plugins import ReferenceLoader
 
 
-class MayaShareLoader(maya_plugins.ReferenceLoader):
+class MayaShareLoader(ReferenceLoader):
     """Specific loader for the reveries.mayaShare family"""
 
     label = "Reference MayaShare"
@@ -13,9 +13,9 @@ class MayaShareLoader(maya_plugins.ReferenceLoader):
 
     families = ["reveries.mayaShare"]
 
-    representations = base.repr_obj_list([
-        ("mayaAscii", "ma"),
-    ])
+    representations = [
+        repr_obj("mayaAscii", "ma"),
+    ]
 
     def process_reference(self, context, name, namespace, data):
         import maya.cmds as cmds

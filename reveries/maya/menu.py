@@ -19,6 +19,11 @@ def install():
 
         cmds.menuItem("Snap!", command=interactive.active_view_snapshot)
 
+        cmds.menuItem("V-Ray Attributes", command="""
+import reveries.maya.tools
+reveries.maya.tools.show('vray_attrs_setter')
+""")
+
     # Allow time for uninstallation to finish.
     QtCore.QTimer.singleShot(200, deferred)
 

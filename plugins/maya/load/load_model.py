@@ -1,9 +1,9 @@
 
-import reveries.base as base
-import reveries.base.maya_plugins as maya_plugins
+from reveries.plugins import repr_obj
+from reveries.maya.plugins import ReferenceLoader
 
 
-class ModelLoader(maya_plugins.ReferenceLoader):
+class ModelLoader(ReferenceLoader):
     """Load the model"""
 
     label = "Reference Model"
@@ -13,9 +13,9 @@ class ModelLoader(maya_plugins.ReferenceLoader):
 
     families = ["reveries.model"]
 
-    representations = base.repr_obj_list([
-        ("mayaBinary", "mb"),
-    ])
+    representations = [
+        repr_obj("mayaBinary", "mb"),
+    ]
 
     def process_reference(self, context, name, namespace, data):
 

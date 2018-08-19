@@ -1,8 +1,8 @@
 
-import reveries.base as base
+from reveries.plugins import EntryFileLoader
 
 
-class CopyToClipboardLoader(base.EntryFileLoader):
+class CopyToClipboardLoader(EntryFileLoader):
     """Copy published file to clipboard to allow to paste the content"""
     representations = ["*"]
     families = ["*"]

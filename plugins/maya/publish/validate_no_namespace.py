@@ -34,7 +34,8 @@ class ValidateNoNamespace(pyblish.api.InstancePlugin):
 
     families = [
         "reveries.model",
-        "reveries.rig"
+        "reveries.rig",
+        "reveries.look",
     ]
     order = pyblish.api.ValidatorOrder + 0.45
     hosts = ['maya']

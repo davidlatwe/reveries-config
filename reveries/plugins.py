@@ -7,13 +7,9 @@ import logging
 import pyblish.api
 import avalon.api
 
-from avalon.vendor import six
-
-from ..utils import temp_dir
-from .. import CONTRACTOR_PATH
-
-
-log = logging.getLogger(__name__)
+from .vendor import six
+from .utils import temp_dir
+from . import CONTRACTOR_PATH
 
 
 class BaseContractor(object):
@@ -120,20 +116,17 @@ def find_contractor(contractor_name=""):
     return None
 
 
-def loader_error_box(title, message):
+def message_box_error(title, message):
     from avalon.vendor.Qt import QtWidgets
 
-    log.error(message)
     QtWidgets.QMessageBox.critical(None,
                                    title,
                                    message,
                                    QtWidgets.QMessageBox.Ok)
 
 
-def loader_warning_box(title, message, optional=False):
+def message_box_warning(title, message, optional=False):
     from avalon.vendor.Qt import QtWidgets
-
-    log.warning(message)
 
     opt_btn = QtWidgets.QMessageBox.NoButton
     if optional:
@@ -149,9 +142,15 @@ def loader_warning_box(title, message, optional=False):
 
 
 def repr_obj(name, ext, abs_embed=False):
-    """
-    name: Representation long name
-    ext: The file ext of this Representation's entry file
+    """Generate representation object for asset I/O plugins
+
+    Arguments:
+        name (str): Representation long name, also as representation dir name
+        ext (str): The file ext of this Representation's entry file
+        abs_embed (bool): Indicate this representation require directly write
+            into final location, due to the absolute path of the representation
+            components are embedded in entry file.
+
     """
     attrs = dict(
         __new__=lambda cls: str.__new__(cls, name),
@@ -160,14 +159,6 @@ def repr_obj(name, ext, abs_embed=False):
     )
     Representation = type("Representation", (str,), attrs)
     return Representation()
-
-
-def repr_obj_list(reprs_prarms):
-    reprs = []
-    for prarms in reprs_prarms:
-        reprs.append(repr_obj(*prarms))
-
-    return reprs
 
 
 class EntryFileLoader(avalon.api.Loader):
@@ -364,3 +355,149 @@ class DelegatableExtractor(BaseExtractor):
         for repr_ in self.active_representations:
             self.log.info("Delegating representation {0} of {1}"
                           "".format(repr_, self.data["name"]))
+
+
+def get_errored_instances_from_context(context):
+
+    instances = list()
+    for result in context.data["results"]:
+        if result["instance"] is None:
+            # When instance is None we are on the "context" result
+            continue
+
+        if result["error"]:
+            instances.append(result["instance"])
+
+    return instances
+
+
+def get_errored_plugins_from_data(context):
+    """Get all failed validation plugins
+
+    Args:
+        context (object):
+
+    Returns:
+        list of plugins which failed during validation
+
+    """
+
+    plugins = list()
+    results = context.data.get("results", [])
+    for result in results:
+        if result["success"] is True:
+            continue
+        plugins.append(result["plugin"])
+
+    return plugins
+
+
+class RepairInstanceAction(pyblish.api.Action):
+    """Repair instances
+
+    To process the repairing this requires a `fix(instance)` classmethod
+    is available on the plugin.
+
+    """
+    label = "Repair"
+    on = "failed"  # This action is only available on a failed plug-in
+    icon = "wrench"  # Icon from Awesome Icon
+
+    def process(self, context, plugin):
+
+        if not hasattr(plugin, "fix"):
+            raise RuntimeError("Plug-in does not have fix method.")
+
+        # Get the errored instances
+        self.log.info("Finding failed instances..")
+        errored_instances = get_errored_instances_from_context(context)
+
+        # Apply pyblish.logic to get the instances for the plug-in
+        instances = pyblish.api.instances_by_plugin(errored_instances, plugin)
+        for instance in instances:
+            plugin.fix(instance)
+
+
+class RepairContextAction(pyblish.api.Action):
+    """Repair context
+
+    To process the repairing this requires a `fix()` classmethod
+    is available on the plugin.
+
+    """
+    label = "Repair Context"
+    on = "failed"  # This action is only available on a failed plug-in
+    icon = "wrench"  # Icon from Awesome Icon
+
+    def process(self, context, plugin):
+
+        if not hasattr(plugin, "fix"):
+            raise RuntimeError("Plug-in does not have fix method.")
+
+        # Get the errored instances
+        self.log.info("Finding failed instances..")
+        errored_plugins = get_errored_plugins_from_data(context)
+
+        # Apply pyblish.logic to get the instances for the plug-in
+        if plugin in errored_plugins:
+            self.log.info("Attempting fix ...")
+            plugin.fix(context)
+
+
+class SelectInvalidAction(pyblish.api.Action):
+    """Select invalid nodes from instance
+
+    To retrieve the invalid nodes this assumes a static `get_invalid()`
+    method is available on the plugin.
+
+    """
+    label = "Select invalid"
+    on = "failed"  # This action is only available on a failed plug-in
+    icon = "search"  # Icon from Awesome Icon
+
+    symptom = ""
+
+    def process(self, context, plugin):
+
+        errored_instances = get_errored_instances_from_context(context)
+
+        # Apply pyblish.logic to get the instances for the plug-in
+        instances = pyblish.api.instances_by_plugin(errored_instances, plugin)
+
+        invalid_getter_name = "get_invalid"
+        if self.symptom:
+            invalid_getter_name = "get_invalid_" + self.symptom
+
+        if not hasattr(plugin, invalid_getter_name):
+            raise RuntimeError("Plug-in does not have {!r} method."
+                               "".format(invalid_getter_name))
+
+        invalid_getter = getattr(plugin, invalid_getter_name)
+
+        # Get the invalid nodes for the plug-ins
+        self.log.info("Finding invalid nodes..")
+        invalid = list()
+        for instance in instances:
+            invalid_nodes = invalid_getter(instance)
+            if invalid_nodes:
+                if isinstance(invalid_nodes, (list, tuple)):
+                    invalid.extend(invalid_nodes)
+                else:
+                    self.log.warning("Plug-in returned to be invalid, "
+                                     "but has no selectable nodes.")
+
+        # Ensure unique (process each node only once)
+        invalid = list(set(invalid))
+
+        if invalid:
+            self.log.info("Selecting invalid nodes: %s" % ", ".join(invalid))
+            self.select(invalid)
+        else:
+            self.log.info("No invalid nodes found.")
+            self.deselect()
+
+    def select(self, invalid):
+        raise NotImplementedError
+
+    def deselect(self):
+        raise NotImplementedError

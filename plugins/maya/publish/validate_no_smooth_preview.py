@@ -4,7 +4,7 @@ from maya import cmds
 
 class SelectInvalid(pyblish.api.Action):
     label = "Select Invalid"
-    on = "failed"
+    on = "processed"
     icon = "hand-o-up"
 
     def process(self, context, plugin):

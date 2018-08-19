@@ -1,13 +1,14 @@
 
 import os
 import pyblish.api
-import reveries.base
 
 from maya import cmds
 from avalon import maya
 
+from reveries.plugins import repr_obj, BaseExtractor
 
-class ExtractRig(reveries.base.BaseExtractor):
+
+class ExtractRig(BaseExtractor):
     """Extract as Maya Ascii"""
 
     label = "Extract MayaShare (mayaAscii)"
@@ -16,7 +17,7 @@ class ExtractRig(reveries.base.BaseExtractor):
     families = ["reveries.mayaShare"]
 
     representations = [
-        reveries.base.repr_obj("mayaAscii", "ma")
+        repr_obj("mayaAscii", "ma")
     ]
 
     def dispatch(self):

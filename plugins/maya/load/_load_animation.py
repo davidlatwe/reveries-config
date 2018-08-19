@@ -1,8 +1,9 @@
 
-import reveries.base as base
+from reveries.plugins import repr_obj
+from reveries.maya.plugins import ReferenceLoader
 
 
-class AnimationLoader(base.maya.ReferenceLoader):
+class AnimationLoader(ReferenceLoader):
     """Specific loader of Alembic for the reveries.animation family"""
 
     label = "Reference Animation Edit"
@@ -12,9 +13,9 @@ class AnimationLoader(base.maya.ReferenceLoader):
 
     families = ["reveries.animation"]
 
-    representations = base.repr_obj_list([
-        ("mayaAscii", "ma"),
-    ])
+    representations = [
+        repr_obj("mayaAscii", "ma"),
+    ]
 
     def process_reference(self, context, name, namespace, data):
         # (TODO) load curves and other.
