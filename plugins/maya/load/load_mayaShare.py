@@ -1,5 +1,4 @@
 
-from reveries.plugins import repr_obj
 from reveries.maya.plugins import ReferenceLoader
 
 
@@ -14,14 +13,16 @@ class MayaShareLoader(ReferenceLoader):
     families = ["reveries.mayaShare"]
 
     representations = [
-        repr_obj("mayaAscii", "ma"),
+        "mayaAscii",
     ]
 
     def process_reference(self, context, name, namespace, data):
         import maya.cmds as cmds
 
+        entry_path = self.file_path(data["entry_fname"])
+
         group_name = "{}:{}".format(namespace, name)
-        nodes = cmds.file(self.entry_path,
+        nodes = cmds.file(entry_path,
                           namespace=namespace,
                           sharedReferenceFile=False,
                           groupReference=True,

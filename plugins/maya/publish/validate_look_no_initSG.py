@@ -1,15 +1,13 @@
 
 import pyblish.api
-from maya import cmds
+
+from reveries.maya.plugins import MayaSelectInvalidAction
 
 
-class SelectInvalid(pyblish.api.Action):
-    label = "Select Invalid"
-    on = "failed"
-    icon = "hand-o-up"
-
-    def process(self, context, plugin):
-        cmds.select(plugin.invalid)
+DEFAULT_SHADERS = (
+    "initialShadingGroup",
+    "initialParticleSE",
+)
 
 
 class ValidateLookNoInitSG(pyblish.api.InstancePlugin):
@@ -21,28 +19,31 @@ class ValidateLookNoInitSG(pyblish.api.InstancePlugin):
 
     actions = [
         pyblish.api.Category("Select"),
-        SelectInvalid,
+        MayaSelectInvalidAction,
     ]
 
-    DEFAULT_SHADERS = (
-        "initialShadingGroup",
-        "initialParticleSE",
-    )
+    @staticmethod
+    def get_invalid(instance):
 
-    invalid = []
+        from maya import cmds
 
-    def process(self, instance):
+        invalid = list()
 
         for shape in cmds.ls(instance, type="mesh", noIntermediate=True):
             shaders = cmds.listConnections(shape, type="shadingEngine") or []
-            if any(shd in self.DEFAULT_SHADERS for shd in shaders):
-                self.invalid.append(shape)
+            if any(shd in DEFAULT_SHADERS for shd in shaders):
+                invalid.append(shape)
 
-        if self.invalid:
+        return invalid
+
+    def process(self, instance):
+
+        invalid = self.get_invalid(instance)
+        if invalid:
             self.log.error(
                 "'%s' has shapes assigned initialShadingGroup:\n%s" % (
                     instance,
                     ",\n".join(
-                        "'" + member + "'" for member in self.invalid))
+                        "'" + member + "'" for member in invalid))
             )
             raise Exception("%s <No InitShadingGroup> Failed." % instance)

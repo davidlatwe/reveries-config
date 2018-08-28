@@ -5,10 +5,10 @@ import pyblish.api
 from maya import cmds
 from avalon import maya
 
-from reveries.plugins import repr_obj, BaseExtractor
+from reveries.plugins import PackageExtractor
 
 
-class ExtractRig(BaseExtractor):
+class ExtractRig(PackageExtractor):
     """Extract rig as mayaBinary"""
 
     label = "Extract Rig (mayaBinary)"
@@ -17,25 +17,25 @@ class ExtractRig(BaseExtractor):
     families = ["reveries.rig"]
 
     representations = [
-        repr_obj("mayaBinary", "mb")
+        "mayaBinary",
     ]
 
     def dispatch(self):
         self.extract()
 
-    def extract_mayaBinary(self, representation):
+    def extract_mayaBinary(self):
         # Define extract output file path
-        dirname = self.extraction_dir(representation)
-        filename = self.extraction_fname(representation)
+        entry_file = self.file_name("mb")
+        package_path = self.create_package(entry_file)
+        entry_path = os.path.join(package_path, entry_file)
 
-        out_path = os.path.join(dirname, filename)
         # Perform extraction
         self.log.info("Performing extraction..")
         with maya.maintained_selection():
             cmds.select(self.member, noExpand=True)
-            cmds.file(out_path,
+            cmds.file(entry_path,
                       force=True,
-                      typ=representation,
+                      typ="mayaBinary",
                       exportSelected=True,
                       preserveReferences=False,
                       channels=True,
@@ -43,9 +43,7 @@ class ExtractRig(BaseExtractor):
                       expressions=True,
                       constructionHistory=True)
 
-        self.stage_files(representation)
-
         self.log.info("Extracted {name} to {path}".format(
             name=self.data["subset"],
-            path=out_path)
+            path=entry_path)
         )

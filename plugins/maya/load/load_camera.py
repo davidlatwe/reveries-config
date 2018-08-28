@@ -1,6 +1,5 @@
 
 import reveries.maya.lib
-from reveries.plugins import repr_obj
 from reveries.maya.plugins import ReferenceLoader
 
 
@@ -15,16 +14,18 @@ class CameraLoader(ReferenceLoader):
     families = ["reveries.camera"]
 
     representations = [
-        repr_obj("mayaAscii", "ma"),
-        repr_obj("Alembic", "abc"),
-        repr_obj("FBX", "fbx"),
+        "mayaAscii",
+        "Alembic",
+        "FBX",
     ]
 
     def process_reference(self, context, name, namespace, data):
         import maya.cmds as cmds
 
+        entry_path = self.file_path(data["entry_fname"])
+
         group_name = "{}:{}".format(namespace, name)
-        nodes = cmds.file(self.entry_path,
+        nodes = cmds.file(entry_path,
                           namespace=namespace,
                           sharedReferenceFile=False,
                           groupReference=True,

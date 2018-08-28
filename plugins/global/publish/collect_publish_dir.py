@@ -22,7 +22,7 @@ class CollectPublishDir(pyblish.api.InstancePlugin):
     """
 
     label = "Publish Dir"
-    order = pyblish.api.CollectorOrder + 0.499
+    order = pyblish.api.CollectorOrder
 
     def process(self, instance):
 

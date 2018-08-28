@@ -1,14 +1,7 @@
+
 import pyblish.api
-from maya import cmds
 
-
-class SelectInvalid(pyblish.api.Action):
-    label = "Select Invalid"
-    on = "failed"
-    icon = "hand-o-up"
-
-    def process(self, context, plugin):
-        cmds.select(plugin.invalid)
+from reveries.maya.plugins import MayaSelectInvalidAction
 
 
 class ValidateShapeDisplay(pyblish.api.InstancePlugin):
@@ -24,12 +17,15 @@ class ValidateShapeDisplay(pyblish.api.InstancePlugin):
     label = "Hidden Shape"
     actions = [
         pyblish.api.Category("Select"),
-        SelectInvalid,
+        MayaSelectInvalidAction,
     ]
 
-    invalid = []
+    @staticmethod
+    def get_invalid(instance):
 
-    def process(self, instance):
+        from maya import cmds
+
+        invalid = list()
 
         display_attrs = {
             ".visibility": True,
@@ -51,14 +47,20 @@ class ValidateShapeDisplay(pyblish.api.InstancePlugin):
             )
 
             if not not_hidden:
-                self.invalid.append(node)
+                invalid.append(node)
 
-        if self.invalid:
+        return invalid
+
+    def process(self, instance):
+
+        invalid = self.get_invalid(instance)
+
+        if invalid:
             self.log.error(
                 "'%s' has hidden shapes:\n%s" % (
                     instance,
                     ",\n".join(
-                        "'" + member + "'" for member in self.invalid))
+                        "'" + member + "'" for member in invalid))
             )
             raise Exception("%s <Hidden Shape> Failed." % instance)
 

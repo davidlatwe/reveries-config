@@ -1,32 +1,13 @@
 
-import pymel.core as pm
 import pyblish.api
 
-
-class SelectInvalid(pyblish.api.Action):
-    label = "Select Invalid"
-    on = "failed"
-    icon = "hand-o-up"
-
-    def process(self, context, plugin):
-        pm.select(plugin.invalid)
+from reveries.plugins import RepairInstanceAction
+from reveries.maya.plugins import MayaSelectInvalidAction
 
 
-class RepairInvalid(pyblish.api.Action):
-    label = "Regenerate AvalonUUID"
-    on = "failed"
+class RepairInvalid(RepairInstanceAction):
 
-    def process(self, context, plugin):
-        # Get nodes with pymel since we'll be renaming them
-        # Since we don't want to keep checking the hierarchy
-        # or full paths
-        nodes = pm.ls(plugin.invalid)
-
-        for node in nodes:
-            namespace = node.namespace()
-            if namespace:
-                name = node.nodeName()
-                node.rename(name[len(namespace):])
+    label = "Remove Namespaces"
 
 
 class ValidateNoNamespace(pyblish.api.InstancePlugin):
@@ -38,20 +19,50 @@ class ValidateNoNamespace(pyblish.api.InstancePlugin):
         "reveries.look",
     ]
     order = pyblish.api.ValidatorOrder + 0.45
-    hosts = ['maya']
-    label = 'No Namespaces'
+    hosts = ["maya"]
+    label = "No Namespaces"
+    actions = [
+        pyblish.api.Category("Select"),
+        MayaSelectInvalidAction,
+        pyblish.api.Category("Fix It"),
+        RepairInvalid,
+    ]
 
-    invalid = []
+    @staticmethod
+    def get_invalid(instance):
+
+        invalid = [node for node in instance if get_namespace(node)]
+
+        return invalid
 
     def process(self, instance):
         """Process all the nodes in the instance"""
-        self.invalid[:] = [node for node in instance if get_namespace(node)]
 
-        if self.invalid:
-            self.log.error("Namespaces found: {0}".format(self.invalid))
+        invalid = self.get_invalid(instance)
+
+        if invalid:
+            self.log.error("Namespaces found: {0}".format(invalid))
             raise Exception("<No Namespaces> Failed.")
 
         self.log.info("%s <No Namespaces> Passed." % instance)
+
+    @classmethod
+    def fix(cls, instance):
+
+        import pymel.core as pm
+
+        # Get nodes with pymel since we'll be renaming them
+        # Since we don't want to keep checking the hierarchy
+        # or full paths
+        invalid = cls.get_invalid(instance)
+
+        invalid_nodes = pm.ls(invalid)
+
+        for node in invalid_nodes:
+            namespace = node.namespace()
+            if namespace:
+                name = node.nodeName()
+                node.rename(name[len(namespace):])
 
 
 def get_namespace(node_name):

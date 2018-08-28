@@ -1,5 +1,4 @@
 
-from reveries.plugins import repr_obj
 from reveries.maya.plugins import ReferenceLoader
 
 
@@ -14,7 +13,7 @@ class ModelLoader(ReferenceLoader):
     families = ["reveries.model"]
 
     representations = [
-        repr_obj("mayaBinary", "mb"),
+        "mayaBinary",
     ]
 
     def process_reference(self, context, name, namespace, data):
@@ -22,8 +21,10 @@ class ModelLoader(ReferenceLoader):
         import maya.cmds as cmds
         from avalon import maya
 
+        entry_path = self.file_path(data["entry_fname"])
+
         with maya.maintained_selection():
-            nodes = cmds.file(self.entry_path,
+            nodes = cmds.file(entry_path,
                               namespace=namespace,
                               reference=True,
                               returnNewNodes=True,

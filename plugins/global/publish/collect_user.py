@@ -6,7 +6,7 @@ class CollectUser(pyblish.api.ContextPlugin):
     """Store user name"""
 
     label = "Collect Current User"
-    order = pyblish.api.CollectorOrder
+    order = pyblish.api.CollectorOrder - 0.5
 
     def process(self, context):
         # (NOTE) Pyblish-QML also provide this info by default with others

@@ -2,7 +2,7 @@ import sys
 import os
 import subprocess
 
-from reveries.plugins import EntryFileLoader, repr_obj
+from reveries.plugins import PackageLoader
 
 
 def open(filepath):
@@ -15,7 +15,7 @@ def open(filepath):
         subprocess.call(('xdg-open', filepath))
 
 
-class PlayImageSequence(EntryFileLoader):
+class PlayImageSequence(PackageLoader):
     """Open Image Sequence with system default"""
 
     label = "Play sequence"
@@ -29,14 +29,15 @@ class PlayImageSequence(EntryFileLoader):
     ]
 
     representations = [
-        repr_obj("PNGSequence", "png"),
-        repr_obj("QuickTime", "mov"),
+        "PNGSequence",
+        "QuickTime",
     ]
 
     def load(self, context, name, namespace, data):
 
-        directory = self.repr_dir
         from avalon.vendor import clique
+
+        directory = self.package_path
 
         pattern = clique.PATTERNS["frames"]
         files = os.listdir(directory)

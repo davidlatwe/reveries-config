@@ -1,4 +1,7 @@
+
 import pyblish.api
+
+from reveries.maya.plugins import MayaSelectInvalidAction
 
 
 class ValidateTransformDisplay(pyblish.api.InstancePlugin):
@@ -12,8 +15,14 @@ class ValidateTransformDisplay(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Hidden Transform"
     families = ["reveries.model"]
+    actions = [
+        pyblish.api.Category("Select"),
+        MayaSelectInvalidAction,
+    ]
 
-    def process(self, instance):
+    @staticmethod
+    def get_invalid(instance):
+
         from maya import cmds
 
         invalid = list()
@@ -39,6 +48,11 @@ class ValidateTransformDisplay(pyblish.api.InstancePlugin):
             if not not_hidden:
                 invalid.append(node)
 
+        return invalid
+
+    def process(self, instance):
+
+        invalid = self.get_invalid(instance)
         if invalid:
             self.log.error(
                 "'%s' has hidden transforms:\n%s" % (

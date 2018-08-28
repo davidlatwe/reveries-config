@@ -1,8 +1,8 @@
 
-from reveries.plugins import EntryFileLoader
+from reveries.plugins import PackageLoader
 
 
-class CopyToClipboardLoader(EntryFileLoader):
+class CopyToClipboardLoader(PackageLoader):
     """Copy published file to clipboard to allow to paste the content"""
     representations = ["*"]
     families = ["*"]
@@ -13,8 +13,8 @@ class CopyToClipboardLoader(EntryFileLoader):
     color = "#999999"
 
     def load(self, context, name=None, namespace=None, data=None):
-        self.log.info("Added to clipboard: {0}".format(self.repr_dir))
-        self.copy_path_to_clipboard(self.repr_dir)
+        self.log.info("Added to clipboard: {0}".format(self.package_path))
+        self.copy_path_to_clipboard(self.package_path)
 
     @staticmethod
     def copy_path_to_clipboard(path):

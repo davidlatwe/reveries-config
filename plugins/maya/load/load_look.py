@@ -1,5 +1,4 @@
 
-from reveries.plugins import repr_obj
 from reveries.maya.plugins import ReferenceLoader
 
 
@@ -14,7 +13,7 @@ class LookLoader(ReferenceLoader):
     families = ["reveries.look"]
 
     representations = [
-        repr_obj("mayaAscii", "ma"),
+        "mayaAscii",
     ]
 
     def process_reference(self, context, name, namespace, data):
@@ -24,8 +23,10 @@ class LookLoader(ReferenceLoader):
         from maya import cmds
         from reveries.maya import lib
 
+        entry_path = self.file_path(data["entry_fname"])
+
         try:
-            existing_reference = cmds.file(self.entry_file,
+            existing_reference = cmds.file(entry_path,
                                            query=True,
                                            referenceNode=True)
         except RuntimeError as e:
@@ -34,7 +35,7 @@ class LookLoader(ReferenceLoader):
 
             self.log.info("Loading lookdev for the first time..")
             nodes = cmds.file(
-                self.entry_file,
+                entry_path,
                 namespace=namespace,
                 reference=True,
                 returnNewNodes=True
@@ -45,7 +46,8 @@ class LookLoader(ReferenceLoader):
             namespace = nodes[0].split(":", 1)[0]
 
         # Assign shaders
-        relationship = self.entry_file.rsplit(".", 1)[0] + ".json"
+        #
+        relationship = self.file_path(data["link_fname"])
 
         # Expand $AVALON_PROJECT and friends, if used
         relationship = os.path.expandvars(relationship)

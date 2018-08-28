@@ -1,7 +1,7 @@
 
 import os
 import reveries.maya.lib
-from reveries.plugins import repr_obj, message_box_warning
+from reveries.plugins import message_box_warning
 from reveries.maya.plugins import ReferenceLoader, ImportLoader
 
 
@@ -19,15 +19,17 @@ class PointCacheReferenceLoader(ReferenceLoader):
     ]
 
     representations = [
-        repr_obj("Alembic", "abc"),
-        repr_obj("FBXCache", "fbx"),
+        "Alembic",
+        "FBXCache",
     ]
 
     def process_reference(self, context, name, namespace, data):
         import maya.cmds as cmds
 
+        entry_path = self.file_path(data["entry_fname"])
+
         group_name = "{}:{}".format(namespace, name)
-        nodes = cmds.file(self.entry_path,
+        nodes = cmds.file(entry_path,
                           namespace=namespace,
                           sharedReferenceFile=False,
                           groupReference=True,
@@ -59,12 +61,14 @@ class PointCacheImportLoader(ImportLoader):
     ]
 
     representations = [
-        repr_obj("GPUCache", "abc"),
-        repr_obj("FBXCache", "fbx"),
+        "GPUCache",
+        "FBXCache",
     ]
 
     def process_import(self, context, name, namespace, data):
         import maya.cmds as cmds
+
+        entry_path = self.file_path(data["entry_fname"])
 
         # Root group
         label = "{}:{}".format(namespace, name)
@@ -83,7 +87,7 @@ class PointCacheImportLoader(ImportLoader):
 
             # Set the cache filepath
             cmds.setAttr(cache + '.cacheFileName',
-                         self.entry_path,
+                         entry_path,
                          type="string")
             cmds.setAttr(cache + '.cacheGeomPath', "|", type="string")  # root
 
@@ -93,7 +97,7 @@ class PointCacheImportLoader(ImportLoader):
             nodes = [root, transform, cache]
 
         elif representation_name == "FBXCache":
-            nodes = cmds.file(self.entry_path,
+            nodes = cmds.file(entry_path,
                               i=True,
                               namespace=namespace,
                               returnNewNodes=True,
@@ -110,7 +114,7 @@ class PointCacheImportLoader(ImportLoader):
 
         representation_name = representation["name"]
 
-        self.update_entry_path(representation)
+        entry_path = self.file_path(representation["data"]["entry_fname"])
 
         # Update the cache
         members = cmds.sets(container['objectName'], query=True)
@@ -126,7 +130,7 @@ class PointCacheImportLoader(ImportLoader):
                              type="string")
 
         elif representation_name == "FBXCache":
-            geo_cache_dir = self.entry_path[:-4] + "_fpc"
+            geo_cache_dir = entry_path[:-4] + "_fpc"
             in_coming_cache_count = len([f for f in os.listdir(geo_cache_dir)
                                          if f.endswith(".mcx")])
 

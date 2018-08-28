@@ -7,10 +7,10 @@ import maya.cmds as cmds
 import avalon.maya as maya
 
 from reveries.maya import capsule
-from reveries.plugins import repr_obj, BaseExtractor
+from reveries.plugins import PackageExtractor
 
 
-class ExtractModel(BaseExtractor):
+class ExtractModel(PackageExtractor):
     """Produce a stripped down Maya file from instance
 
     This plug-in takes into account only nodes relevant to models
@@ -25,10 +25,10 @@ class ExtractModel(BaseExtractor):
     families = ["reveries.model"]
 
     representations = [
-        repr_obj("mayaBinary", "mb")
+        "mayaBinary",
     ]
 
-    def dispatch(self):
+    def extract(self):
         mesh_nodes = cmds.ls(self.member, type='mesh', ni=True, long=True)
         clay_shader = "initialShadingGroup"
 
@@ -39,20 +39,20 @@ class ExtractModel(BaseExtractor):
             maya.maintained_selection(),
             maya.without_extension(),
         ):
-            self.extract()
+            super(ExtractModel, self).extract()
 
-    def extract_mayaBinary(self, representation):
-        dirname = self.extraction_dir(representation)
-        filename = self.extraction_fname(representation)
+    def extract_mayaBinary(self):
+        entry_file = self.file_name("ma")
+        package_path = self.create_package(entry_file)
+        entry_path = os.path.join(package_path, entry_file)
 
-        out_path = os.path.join(dirname, filename)
         # Perform extraction
         self.log.info("Extracting %s" % str(self.member))
         cmds.select(self.member, noExpand=True)
         cmds.file(
-            out_path,
+            entry_path,
             force=True,
-            typ=representation,
+            typ="mayaBinary",
             exportSelected=True,
             preserveReferences=False,
             # Shader assignment is the responsibility of
@@ -65,9 +65,7 @@ class ExtractModel(BaseExtractor):
             constructionHistory=False
         )
 
-        self.stage_files(representation)
-
         self.log.info("Extracted {name} to {path}".format(
             name=self.data["subset"],
-            path=out_path)
+            path=entry_path)
         )

@@ -2,12 +2,14 @@
 import os
 import json
 import pyblish.api
+import avalon.api
 
-from reveries.plugins import repr_obj, BaseExtractor
+from reveries.plugins import PackageExtractor
 from reveries.maya import vray
+from reveries.utils import hash_file
 
 
-class ExtractLook(BaseExtractor):
+class ExtractLook(PackageExtractor):
     """Export shaders for rendering
 
     Shaders are associated with an "mdID" attribute on each *transform* node.
@@ -22,35 +24,70 @@ class ExtractLook(BaseExtractor):
     families = ["reveries.look"]
 
     representations = [
-        repr_obj("LookDev", "ma")
+        "LookDev"
     ]
 
-    def dispatch(self):
-        self.extract()
-
-    def extract_LookDev(self, representation):
+    def extract_LookDev(self):
 
         from maya import cmds
         from avalon import maya
         from reveries.maya import lib, capsule
 
-        dirname = self.extraction_dir(representation)
+        entry_file = self.file_name("ma")
+        package_path = self.create_package(entry_file)
 
-        # Extract Textures ?
-        # perhapes, texture itself should be a family ?
-        # able to publish alone, and able to publish with lookDev ?
+        publish_dir = self.data["publish_dir"].replace(
+            avalon.api.registered_root(), "$AVALON_PROJECTS"
+        )
 
         # Extract shaders
         #
-        filename = self.extraction_fname(representation)
-        out_path = os.path.join(dirname, filename)
+        entry_path = os.path.join(package_path, entry_file)
 
         self.log.info("Extracting shaders..")
 
         with maya.maintained_selection():
             with capsule.no_refresh(with_undo=True):
-                # Change texture file path to publish path
-                cmds.ls(self.data["look_members"], type="file")
+
+                # Extract Textures
+                #
+                file_nodes = cmds.ls(self.data["look_members"], type="file")
+                file_hashes = self.data["look_textures"]
+
+                # hash file to check which to copy and which to remain old link
+                for node in file_nodes:
+                    attr_name = node + ".fileTextureName"
+
+                    img_path = cmds.getAttr(attr_name,
+                                            expandEnvironmentVariables=True)
+
+                    hash_value = hash_file(img_path)
+                    try:
+                        final_path = file_hashes[hash_value]
+                    except KeyError:
+                        paths = [
+                            publish_dir,
+                            "textures",
+                        ]
+                        paths += node.split(":")  # Namespace as fsys hierarchy
+                        paths.append(os.path.basename(img_path))  # image name
+                        #
+                        # Include node name as part of the path should prevent
+                        # file name collision which may introduce by two or
+                        # more file nodes sourcing from different directory
+                        # with same file name but different file content.
+                        #
+                        # For example:
+                        #   File_A.fileTextureName = "asset/a/texture.png"
+                        #   File_B.fileTextureName = "asset/b/texture.png"
+                        #
+                        final_path = os.path.join(*paths)
+
+                        file_hashes[hash_value] = final_path
+                        self.data["auxiliaries"].append((img_path, final_path))
+
+                    # Set texture file path to publish location
+                    cmds.setAttr(attr_name, final_path, type="string")
 
                 # Select full shading network
                 # If only select shadingGroups, and if there are any node
@@ -61,7 +98,7 @@ class ExtractLook(BaseExtractor):
                             replace=True,
                             noExpand=True)
 
-                cmds.file(out_path,
+                cmds.file(entry_path,
                           options="v=0;",
                           type="mayaAscii",
                           force=True,
@@ -71,8 +108,8 @@ class ExtractLook(BaseExtractor):
 
         # Serialise shaders relationships
         #
-        jsname = self.extraction_fname(repr_obj("_", "json"))
-        json_path = os.path.join(dirname, jsname)
+        link_file = self.file_name("json")
+        link_path = os.path.join(package_path, link_file)
 
         self.log.info("Serialising shaders..")
 
@@ -133,14 +170,15 @@ class ExtractLook(BaseExtractor):
         }
 
         self.log.info("Extracting serialisation..")
-        with open(json_path, "w") as f:
+        with open(link_path, "w") as f:
             json.dump(relationships, f, indent=4)
 
-        # Stage
-
-        self.stage_files(representation)
+        self.add_data({
+            "link_fname": link_file,
+            "textures": self.data["look_textures"],
+        })
 
         self.log.info("Extracted {name} to {path}".format(
             name=self.data["subset"],
-            path=out_path)
+            path=package_path)
         )

@@ -1,5 +1,6 @@
 import pyblish.api
-from maya import cmds
+
+from reveries.maya.plugins import MayaSelectInvalidAction
 
 
 class ValidateMeshSingleShape(pyblish.api.InstancePlugin):
@@ -13,8 +14,15 @@ class ValidateMeshSingleShape(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder + 0.15
     hosts = ["maya"]
     label = "Mesh Single Shape"
+    actions = [
+        pyblish.api.Category("Select"),
+        MayaSelectInvalidAction,
+    ]
 
-    def process(self, instance):
+    @staticmethod
+    def get_invalid(instance):
+
+        from maya import cmds
 
         invalid = list()
 
@@ -28,19 +36,21 @@ class ValidateMeshSingleShape(pyblish.api.InstancePlugin):
 
             # Ensure the one child is a shape
             has_single_shape = len(shapes) == 1
-            self.log.debug("%s has single shape: %s" % (
-                transform, has_single_shape))
 
             # Ensure the one shape is of type "mesh"
             has_single_mesh = (
                 has_single_shape and
                 cmds.nodeType(shapes[0]) == "mesh"
             )
-            self.log.debug("%s has single mesh: %s" % (
-                transform, has_single_mesh))
 
-            if not all([has_single_shape, has_single_mesh]):
+            if not (has_single_shape and has_single_mesh):
                 invalid.append(transform)
+
+        return invalid
+
+    def process(self, instance):
+
+        invalid = self.get_invalid(instance)
 
         if invalid:
             self.log.error(

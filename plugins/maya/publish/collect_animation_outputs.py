@@ -7,7 +7,7 @@ class CollectAnimationOutputs(pyblish.api.InstancePlugin):
     """Collect out hierarchy data for instance.
     """
 
-    order = pyblish.api.CollectorOrder + 0.4
+    order = pyblish.api.CollectorOrder + 0.2
     label = "Collect Animation Outputs"
     hosts = ["maya"]
     families = ["reveries.animation"]

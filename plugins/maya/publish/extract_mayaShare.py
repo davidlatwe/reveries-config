@@ -5,10 +5,10 @@ import pyblish.api
 from maya import cmds
 from avalon import maya
 
-from reveries.plugins import repr_obj, BaseExtractor
+from reveries.plugins import PackageExtractor
 
 
-class ExtractRig(BaseExtractor):
+class ExtractRig(PackageExtractor):
     """Extract as Maya Ascii"""
 
     label = "Extract MayaShare (mayaAscii)"
@@ -17,25 +17,25 @@ class ExtractRig(BaseExtractor):
     families = ["reveries.mayaShare"]
 
     representations = [
-        repr_obj("mayaAscii", "ma")
+        "mayaAscii",
     ]
 
     def dispatch(self):
         self.extract()
 
-    def extract_mayaAscii(self, representation):
+    def extract_mayaAscii(self):
         # Define extract output file path
-        dirname = self.extraction_dir(representation)
-        filename = self.extraction_fname(representation)
+        entry_file = self.file_name("ma")
+        package_path = self.create_package(entry_file)
+        entry_path = os.path.join(package_path, entry_file)
 
-        out_path = os.path.join(dirname, filename)
         # Perform extraction
         self.log.info("Performing extraction..")
         with maya.maintained_selection():
             cmds.select(self.member)
-            cmds.file(out_path,
+            cmds.file(entry_path,
                       force=True,
-                      typ=representation,
+                      typ="mayaAscii",
                       exportSelected=True,
                       preserveReferences=True,
                       channels=True,
@@ -43,9 +43,7 @@ class ExtractRig(BaseExtractor):
                       expressions=True,
                       constructionHistory=True)
 
-        self.stage_files(representation)
-
         self.log.info("Extracted {name} to {path}".format(
             name=self.data["subset"],
-            path=out_path)
+            path=entry_path)
         )

@@ -3,8 +3,16 @@ import pyblish.api
 
 
 class CollectDelegatedInstance(pyblish.api.ContextPlugin):
+    """Collect delegated instances form Context
 
-    order = pyblish.api.CollectorOrder - 0.48
+    This plugin will set `instance.data["publish"] = False` if that instance
+    is not delegated.
+
+    This plugin should run after normal instance collector.
+
+    """
+
+    order = pyblish.api.CollectorOrder - 0.2
     label = "Delegated Instance"
 
     def process(self, context):

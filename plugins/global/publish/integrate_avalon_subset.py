@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
-    """Write to files and metadata, Resolve any dependency issies
+    """Write to files and metadata, Resolve any dependency issues
 
     This plug-in exposes your data to others by encapsulating it
     into a new version.
@@ -28,6 +28,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     label = "Integrate Subset"
     order = pyblish.api.IntegratorOrder
+
+    transfers = dict(packages=list(), auxiliaries=list())
 
     def process(self, instance):
 
@@ -67,19 +69,17 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         assert all(result["success"] for result in context.data["results"]), (
             "Atomicity not held, aborting.")
 
-        # Check files
+        # Check packages
         #
-        all_files = instance.data.get("files")
+        packages = instance.data.get("packages")
 
-        if not all_files:
+        if not packages:
             raise RuntimeError("No representation to publish.")
 
         stagingdir = instance.data.get("stagingDir")
+
         assert stagingdir, ("Incomplete instance \"%s\": "
                             "Missing reference to staging dir." % instance)
-
-        if "transfers" not in instance.data:
-            instance.data["transfers"] = list()
 
         # Assemble
         #
@@ -94,10 +94,9 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         subset = self.get_subset(instance)
 
         # get next version
-        version_data = self.create_version_data(context, instance)
-
-        locations = [api.Session["AVALON_LOCATION"]]
         next_version = instance.data["version_next"]
+        version_data = self.create_version_data(context, instance)
+        locations = [api.Session["AVALON_LOCATION"]]
         version = self.create_version(subset=subset,
                                       version_number=next_version,
                                       locations=locations,
@@ -115,37 +114,35 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         # Should not have any kind of check on files here, that should be done
         # by extractors, here only need to publish representation dirs.
 
-        for repr_ in all_files:
+        for package, repr_data in packages.items():
 
-            representation_dir = str(repr_)
-
-            template_data["representation"] = representation_dir
+            template_data["representation"] = package
             publish_path = template_publish.format(**template_data)
 
-            src = os.path.join(stagingdir, representation_dir)
+            src = os.path.join(stagingdir, package)
             dst = publish_path
 
-            instance.data["transfers"].append([src, dst])
+            self.transfers["packages"].append([src, dst])
 
             representation = {
                 "schema": "avalon-core:representation-2.0",
                 "type": "representation",
                 "parent": None,  # write this later
-                "name": representation_dir,
-                "data": {},
+                "name": package,
+                "data": repr_data,
                 "dependencies": instance.data.get("dependencies", "").split(),
             }
             representations.append(representation)
 
+        self.transfers["auxiliaries"] += instance.data["auxiliaries"]
+
         return version, representations
 
-    def integrate(self, instance):
+    def integrate(self):
         """Move the files
 
-        Through `instance.data["transfers"]`
+        Through `self.transfers`
 
-        Args:
-            instance: the instance to integrate
         """
 
         # Write to disk
@@ -159,15 +156,24 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #     \|________|
         #
 
-        transfers = instance.data["transfers"]
+        for job in self.transfers:
+            transfers = self.transfers[job]
 
-        for src, dst in transfers:
-            # normpath
-            src = os.path.abspath(os.path.normpath(src))
-            dst = os.path.abspath(os.path.normpath(dst))
+            for src, dst in transfers:
+                # normpath
+                src = os.path.abspath(os.path.normpath(src))
+                dst = os.path.abspath(os.path.normpath(dst))
 
-            self.log.info("Copying dir .. {} -> {}".format(src, dst))
-            self.copy_dir(src, dst)
+                self.log.info("Copying {0}: {1} -> {2}".format(job, src, dst))
+                if src == dst:
+                    self.log.warning("Source and destination are the same, "
+                                     "will not copy.")
+                    continue
+
+                if job == "packages":
+                    self.copy_dir(src, dst)
+                if job == "auxiliaries":
+                    self.copy_file(src, dst)
 
     def copy_dir(self, src, dst):
         """ Copy given source to destination
@@ -187,6 +193,13 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             else:
                 self.log.critical("An unexpected error occurred.")
                 raise
+
+    def copy_file(self, src, dst):
+        try:
+            shutil.copyfile(src, dst)
+        except OSError:
+            self.log.critical("An unexpected error occurred.")
+            raise
 
     def write_database(self, instance, version, representations):
         """Write version and representations to database

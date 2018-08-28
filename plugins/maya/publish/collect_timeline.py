@@ -19,7 +19,7 @@ class CollectTimeline(pyblish.api.ContextPlugin):
 
     """
 
-    order = pyblish.api.CollectorOrder - 0.249
+    order = pyblish.api.CollectorOrder - 0.4
     hosts = ['maya']
     label = "Scene Timeline"
 

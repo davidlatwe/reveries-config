@@ -8,7 +8,7 @@ from maya import cmds
 class CollectMayaInfo(pyblish.api.ContextPlugin):
     """Inject the current workspace and maya version into context"""
 
-    order = pyblish.api.CollectorOrder - 0.5
+    order = pyblish.api.CollectorOrder - 0.4
     label = "Maya Info"
     hosts = ['maya']
 

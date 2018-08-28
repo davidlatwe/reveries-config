@@ -117,7 +117,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         self.log.info("%s <Avalon UUID> Passed." % instance)
 
     @classmethod
-    def repair(cls, instance):
+    def fix(cls, instance):
         invalid = (cls.get_invalid_missing(instance) +
                    cls.get_invalid_duplicated(instance))
         for node in invalid:

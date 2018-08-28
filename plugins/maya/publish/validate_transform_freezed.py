@@ -1,3 +1,4 @@
+
 import pyblish.api
 from maya import cmds
 
@@ -17,7 +18,8 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
         "reveries.rig",
     ]
 
-    def process(self, instance):
+    @staticmethod
+    def get_invalid(instance):
 
         invalid = dict()
 
@@ -42,6 +44,11 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
             if not_freezed:
                 invalid[node] = not_freezed
 
+        return invalid
+
+    def process(self, instance):
+
+        invalid = self.get_invalid(instance)
         if invalid:
             self.log.error(
                 "{!r} has not freezed transform:".format(instance)

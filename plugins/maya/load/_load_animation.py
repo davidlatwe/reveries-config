@@ -1,5 +1,4 @@
 
-from reveries.plugins import repr_obj
 from reveries.maya.plugins import ReferenceLoader
 
 
@@ -14,7 +13,7 @@ class AnimationLoader(ReferenceLoader):
     families = ["reveries.animation"]
 
     representations = [
-        repr_obj("mayaAscii", "ma"),
+        "mayaAscii",
     ]
 
     def process_reference(self, context, name, namespace, data):

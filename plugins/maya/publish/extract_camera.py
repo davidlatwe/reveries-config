@@ -5,12 +5,12 @@ import avalon
 import reveries.utils
 
 from reveries.maya import io, lib, capsule
-from reveries.plugins import repr_obj, DelegatableExtractor
+from reveries.plugins import DelegatablePackageExtractor
 
 from maya import cmds
 
 
-class ExtractCamera(DelegatableExtractor):
+class ExtractCamera(DelegatablePackageExtractor):
     """
     TODO: publish multiple cameras
     """
@@ -23,13 +23,13 @@ class ExtractCamera(DelegatableExtractor):
     ]
 
     representations = [
-        repr_obj("mayaAscii", "ma"),
-        repr_obj("Alembic", "abc"),
-        repr_obj("FBX", "fbx"),
-        repr_obj("PNGSequence", "png"),
+        "mayaAscii",
+        "Alembic",
+        "FBX",
+        "PNGSequence",
     ]
 
-    def dispatch(self):
+    def extract(self):
         context_data = self.context.data
         self.start = context_data.get("startFrame")
         self.end = context_data.get("endFrame")
@@ -41,18 +41,18 @@ class ExtractCamera(DelegatableExtractor):
                 lib.bake_camera(camera, self.start, self.end)
                 cmds.select(camera, replace=True, noExpand=True)
 
-                self.extract()
+                super(ExtractCamera, self).extract()
 
-    def extract_mayaAscii(self, representation):
+    def extract_mayaAscii(self):
 
-        dirname = self.extraction_dir(representation)
-        filename = self.extraction_fname(representation)
+        entry_file = self.file_name("ma")
+        package_path = self.create_package(entry_file)
+        entry_path = os.path.join(package_path, entry_file)
 
-        out_path = os.path.join(dirname, filename)
         with avalon.maya.maintained_selection():
-            cmds.file(out_path,
+            cmds.file(entry_path,
                       force=True,
-                      typ=representation,
+                      typ="mayaAscii",
                       exportSelected=True,
                       preserveReferences=False,
                       constructionHistory=False,
@@ -60,47 +60,40 @@ class ExtractCamera(DelegatableExtractor):
                       constraints=False,
                       shader=False,
                       expressions=False)
-        self.stage_files(representation)
 
-    def extract_Alembic(self, representation):
+    def extract_Alembic(self):
 
-        dirname = self.extraction_dir(representation)
-        filename = self.extraction_fname(representation)
+        entry_file = self.file_name("abc")
+        package_path = self.create_package(entry_file)
+        entry_path = os.path.join(package_path, entry_file)
 
-        out_path = os.path.join(dirname, filename)
         with avalon.maya.maintained_selection():
-            io.export_alembic(out_path, self.start, self.end)
+            io.export_alembic(entry_path, self.start, self.end)
 
-        self.stage_files(representation)
+    def extract_FBX(self):
 
-    def extract_FBX(self, representation):
+        entry_file = self.file_name("fbx")
+        package_path = self.create_package(entry_file)
+        entry_path = os.path.join(package_path, entry_file)
 
-        dirname = self.extraction_dir(representation)
-        filename = self.extraction_fname(representation)
-
-        out_path = os.path.join(dirname, filename)
         with avalon.maya.maintained_selection():
             io.export_fbx_set_camera()
-            io.export_fbx(out_path)
+            io.export_fbx(entry_path)
 
-        self.stage_files(representation)
-
-    def extract_PNGSequence(self, representation):
+    def extract_PNGSequence(self):
 
         if not self.data.get("capture_png"):
             return
 
-        dirname = self.extraction_dir(representation)
-        filename = self.extraction_fname(representation)
+        entry_file = self.file_name("png")
+        package_path = self.create_package(entry_file)
+        entry_path = os.path.join(package_path, entry_file)
 
-        out_path = os.path.join(dirname, filename)
         width, height = reveries.utils.get_resolution_data()
         camera = cmds.ls(self.member, type="camera")[0]
         io.capture_seq(camera,
-                       out_path,
+                       entry_path,
                        self.start,
                        self.end,
                        width,
                        height)
-
-        self.stage_files(representation)
