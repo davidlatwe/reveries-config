@@ -30,6 +30,18 @@ CAMERA_SHAPE_KEYABLES = [
 ]
 
 
+FPS_MAP = {
+    15: "game",
+    23.976: "film",
+    24: "film",
+    29.97: "ntsc",
+    30: "ntsc",
+    48: "show",
+    50: "palf",
+    60: "ntscf",
+}
+
+
 def is_visible(node,
                displayLayer=True,
                intermediateObject=True,
@@ -144,18 +156,6 @@ def get_id(node):
         return
 
     return cmds.getAttr("{0}.{1}".format(node, AVALON_ID_ATTR_LONG))
-
-
-FPS_MAP = {
-    15: "game",
-    23.976: "film",
-    24: "film",
-    29.97: "ntsc",
-    30: "ntsc",
-    48: "show",
-    50: "palf",
-    60: "ntscf",
-}
 
 
 def set_scene_timeline():
@@ -469,3 +469,62 @@ def lsattrs(attrs):
             matches.update(full_path_names)
 
     return list(matches)
+
+
+def ls_duplicated_name(nodes, rename=False):
+    """
+    """
+
+    result = dict()
+
+    for node in nodes:
+        full_name = cmds.ls(node, long=True)[0]
+        base_name = full_name.rsplit("|")[-1]
+
+        if base_name not in result:
+            result[base_name] = list()
+
+        result[base_name].append(full_name)
+
+    for base_name in list(result.keys()):
+        if len(result[base_name]) == 1:
+            del result[base_name]
+
+    if not rename:
+        return result
+
+    for nodes in result.values():
+        for i, full_name in enumerate(nodes):
+            cmds.rename(full_name, full_name + "_" + str(i))
+
+
+def remove_mesh_parenting(transforms):
+
+    cleaned = list()
+    blacksheep = list()
+
+    for node in transforms:
+        if node in blacksheep:
+            continue
+
+        children = cmds.listRelatives(node,
+                                      children=True,
+                                      fullPath=True)
+
+        sub_transforms = cmds.ls(children, long=True, type="transform")
+
+        if cmds.ls(children, type="mesh") and sub_transforms:
+            blacksheep += sub_transforms
+
+        cleaned += cmds.ls(node, long=True)
+
+    # check again
+    cleaned_2 = list()
+
+    for node in cleaned:
+        if any(node.startswith(_) for _ in blacksheep):
+            continue
+
+        cleaned_2.append(node)
+
+    return cleaned_2

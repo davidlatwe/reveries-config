@@ -29,3 +29,30 @@ def create_vray_settings():
                       ])
     # Create DAG for VRAYSETTINGS
     cmds.shadingNode("VRaySettingsNode", asUtility=True, name="vraySettings")
+
+
+def vrmeshes_by_transforms(transforms):
+    """Return VRayMesh nodes from input transform nodes
+    """
+
+    vrmeshes = list()
+
+    for node in transforms:
+        preview = cmds.listRelatives(node,
+                                     shapes=True,
+                                     fullPath=True,
+                                     type="VRayMeshPreview")
+
+        if not preview:
+            continue
+
+        vrmesh = list(set(cmds.listConnections(preview,
+                                               source=True,
+                                               destination=False,
+                                               plugs=False,
+                                               connections=False,
+                                               type="VRayMesh")))
+
+        vrmeshes += vrmesh
+
+    return vrmeshes
