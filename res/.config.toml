@@ -1,0 +1,27 @@
+schema = "avalon-core:config-1.0"
+[[apps]]
+name = "shell"
+label = "Shell"
+
+[[apps]]
+name = "maya2016"
+label = "Autodesk Maya 2016"
+
+[[tasks]]
+name = "model"
+
+[[tasks]]
+name = "animate"
+
+[[tasks]]
+name = "rig"
+
+[[tasks]]
+name = "lookdev"
+
+[[tasks]]
+name = "layout"
+
+[template]
+work = "{root}/{project}/Maya/Avalon/{silo}/{asset}/work/{task}"
+publish = "{root}/{project}/Maya/Avalon/{silo}/{asset}/publish/{subset}/v{version:0>3}/{representation}"
