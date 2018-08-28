@@ -14,8 +14,13 @@ from . import CONTRACTOR_PATH
 
 class BaseContractor(object):
 
+    name = ""
+
     def __init__(self):
         self.log = logging.getLogger(self.name)
+
+    def fulfill(self):
+        raise NotImplementedError
 
     def assemble_environment(self, context):
         """Include critical variables with submission
@@ -116,6 +121,26 @@ def find_contractor(contractor_name=""):
     return None
 
 
+class PackageLoader(avalon.api.Loader):
+    """Load representation into host application
+
+    Arguments:
+        context (dict): avalon-core:context-x.0
+
+    """
+
+    families = list()
+    representations = list()
+
+    def __init__(self, context):
+        super(PackageLoader, self).__init__(context)
+        self.package_path = self.fname
+        self.fname = None  # Do not use
+
+    def file_path(self, file_name):
+        return os.path.join(self.package_path, file_name)
+
+
 def message_box_error(title, message):
     from avalon.vendor.Qt import QtWidgets
 
@@ -141,138 +166,64 @@ def message_box_warning(title, message, optional=False):
         return respond == QtWidgets.QMessageBox.Ok
 
 
-def repr_obj(name, ext, abs_embed=False):
-    """Generate representation object for asset I/O plugins
-
-    Arguments:
-        name (str): Representation long name, also as representation dir name
-        ext (str): The file ext of this Representation's entry file
-        abs_embed (bool): Indicate this representation require directly write
-            into final location, due to the absolute path of the representation
-            components are embedded in entry file.
+class PackageExtractor(pyblish.api.InstancePlugin):
+    """Reveries' extractor base class.
 
     """
-    attrs = dict(
-        __new__=lambda cls: str.__new__(cls, name),
-        ext=ext,
-        abs_embed=abs_embed,
-    )
-    Representation = type("Representation", (str,), attrs)
-    return Representation()
 
-
-class EntryFileLoader(avalon.api.Loader):
-
-    def __init__(self, context):
-        """Load representation into host application
-
-        Arguments:
-            context (dict): avalon-core:context-x.0
-
+    def process(self, instance):
         """
-        super(EntryFileLoader, self).__init__(context)
-        self.repr_dir = self.fname
+        """
+        self._process(instance)
+        self.extract()
 
-        repr_name = os.path.basename(self.repr_dir)
-        try:
-            index = self.representations.index(repr_name)
-            representation = self.representations[index]
-            # entry file name will be the same in every version
-            self.entry_file = "{subset}.{representation.ext}".format(
-                subset=context["subset"]["name"],
-                representation=representation
-            )
-        except ValueError:
-            if not self.representations == ["*"]:
-                raise
-            self.entry_file = ""
+    def _process(self, instance):
+        self._active_representations = list()
+        self._current_representation = None
+        self._extract_to_publish_dir = False
 
-        self.update_entry_path()
-
-    def update_entry_path(self, representation=None):
-        if representation is not None:
-            self.repr_dir = avalon.api.get_representation_path(representation)
-        self.entry_path = os.path.join(self.repr_dir, self.entry_file)
-
-    def update(self, container, representation):
-        self.update_entry_path(representation)
-
-        self.pendable_update(container, representation)
-
-
-class BaseExtractor(pyblish.api.InstancePlugin):
-    """Extractor base class.
-
-    The extractor base class implements a "staging_dir" function used to
-    generate a temporary directory for an instance to extract to.
-
-    This temporary directory is generated through `tempfile.mkdtemp()`
-
-    """
-
-    active_representations = []
-
-    extract_to_publish_dir = False
-
-    context = None
-    data = None
-    member = None
-    fname = None
-
-    def pre_process(self, instance):
         self.context = instance.context
         self.data = instance.data
         self.member = instance[:]
         self.fname = instance.data["subset"]
 
-        self.representation_check()
-
-        if "files" not in self.data:
-            self.data["files"] = list()
-
-    def process(self, instance):
-        """
-        """
-        self.pre_process(instance)
-        self.dispatch()
-
-    def representation_check(self):
         format_ = self.data.get("format")
-        representations = self.representations[:]
 
         if format_ is None:
             self.log.debug("No specific format, extract all supported type "
                            "of representations.")
+            self._active_representations = self.representations
+
+        elif format_ in self.representations:
+            self._active_representations = [format_]
+
         else:
-            try:
-                index = representations.index(format_)
-            except ValueError:
-                msg = "{!r} not supported.".format(format_)
-                raise RuntimeError(msg)
-            else:
-                representations = [representations[index]]
+            msg = "{!r} not supported. This is a bug.".format(format_)
+            raise RuntimeError(msg)
 
-        abs_embed_count = 0
-        for repr_ in representations:
-            if not(hasattr(repr_, "ext") and hasattr(repr_, "abs_embed")):
-                msg = "Require a Representation object to work."
-                raise TypeError(msg)
+        if "packages" not in self.data:
+            self.data["packages"] = dict()
 
-            if repr_.abs_embed:
-                abs_embed_count += 1
+        if "auxiliaries" not in self.data:
+            self.data["auxiliaries"] = list()
 
-        self.active_representations = representations
-        self.extract_to_publish_dir = bool(abs_embed_count)
+    def direct_publish(extractor):
+        """Decorator, indicate the extractor will directly save to publish dir
+        """
+        def _direct_publish(self, *args, **kwargs):
+            self._extract_to_publish_dir = True
+            result = extractor(self, *args, **kwargs)
+            self._extract_to_publish_dir = False
 
-    def dispatch(self):
-        """To be implemented by subclass"""
-        raise NotImplementedError("Must be implemented by subclass")
+            return result
+
+        return _direct_publish
 
     def extract(self):
         """
         """
         extract_methods = list()
-        for repr_ in self.active_representations:
+        for repr_ in self._active_representations:
             method = getattr(self, "extract_" + repr_, None)
             if method is None:
                 self.log.error("This extractor does not have the method to "
@@ -280,14 +231,19 @@ class BaseExtractor(pyblish.api.InstancePlugin):
             extract_methods.append((method, repr_))
 
         for method, repr_ in extract_methods:
-            method(repr_)
+            self._current_representation = repr_
+            method()
 
-    @property
-    def staging_dir(self):
-        """Provide a temporary directory in which to store extracted files
+    def file_name(self, extension, suffix=""):
+        return "{subset}{suffix}.{ext}".format(subset=self.fname,
+                                               suffix=suffix,
+                                               ext=extension)
 
-        Upon calling this method the staging directory is stored inside
-        the instance.data['stagingDir']
+    def create_package(self, entry_fname):
+        """Create representation dir
+
+        This should only be called in actual extraction process.
+
         """
         staging_dir = self.data.get('stagingDir', None)
 
@@ -299,65 +255,54 @@ class BaseExtractor(pyblish.api.InstancePlugin):
 
             self.data['stagingDir'] = staging_dir
 
-        return staging_dir
+        repr_dir = os.path.join(staging_dir, self._current_representation)
 
-    def extraction_dir(self, representation):
-        """Create representation dir
-
-        This should only be called in actual extraction process.
-
-        """
-        repr_dir = os.path.join(self.staging_dir, representation)
         if os.path.isdir(repr_dir):
             self.log.warning("Representation dir existed, this should not "
                              "happen. Files may overwritten.")
         else:
             os.makedirs(repr_dir)
 
+        data = {
+            "entry_fname": entry_fname,
+        }
+        self._stage_package(data)
+
         return repr_dir
 
-    def extraction_fname(self, representation):
+    def _stage_package(self, data):
+        # Stage package for integration
+        self.data["packages"][self._current_representation] = data
+
+    def add_data(self, data):
         """
         """
-        return "{subset}.{repr.ext}".format(subset=self.fname,
-                                            repr=representation)
-
-    def stage_files(self, representation):
-        """
-        """
-        self.data["files"].append(representation)
+        self.data["packages"][self._current_representation].update(data)
 
 
-class DelegatableExtractor(BaseExtractor):
-
-    delegating = False
+class DelegatablePackageExtractor(PackageExtractor):
 
     def process(self, instance):
         """
         """
-        self.pre_process(instance)
-        self.delegation_check()
+        self._process(instance)
 
-        if self.delegating:
-            self.pend()
-        else:
-            self.dispatch()
-
-    def delegation_check(self):
         use_contractor = self.data.get("use_contractor")
         accepted = self.context.data.get("contractor_accepted")
-        if use_contractor and not accepted:
-            self.delegating = True
-        else:
-            self.delegating = False
+        on_delegate = use_contractor and not accepted
 
-    def pend(self):
-        for repr_ in self.active_representations:
+        if on_delegate:
+            self.delegate()
+        else:
+            self.extract()
+
+    def delegate(self):
+        for repr_ in self._active_representations:
             self.log.info("Delegating representation {0} of {1}"
                           "".format(repr_, self.data["name"]))
 
 
-def get_errored_instances_from_context(context):
+def _get_errored_instances_from_context(context):
 
     instances = list()
     for result in context.data["results"]:
@@ -371,7 +316,7 @@ def get_errored_instances_from_context(context):
     return instances
 
 
-def get_errored_plugins_from_data(context):
+def _get_errored_plugins_from_data(context):
     """Get all failed validation plugins
 
     Args:
@@ -410,7 +355,7 @@ class RepairInstanceAction(pyblish.api.Action):
 
         # Get the errored instances
         self.log.info("Finding failed instances..")
-        errored_instances = get_errored_instances_from_context(context)
+        errored_instances = _get_errored_instances_from_context(context)
 
         # Apply pyblish.logic to get the instances for the plug-in
         instances = pyblish.api.instances_by_plugin(errored_instances, plugin)
@@ -436,7 +381,7 @@ class RepairContextAction(pyblish.api.Action):
 
         # Get the errored instances
         self.log.info("Finding failed instances..")
-        errored_plugins = get_errored_plugins_from_data(context)
+        errored_plugins = _get_errored_plugins_from_data(context)
 
         # Apply pyblish.logic to get the instances for the plug-in
         if plugin in errored_plugins:
@@ -459,7 +404,7 @@ class SelectInvalidAction(pyblish.api.Action):
 
     def process(self, context, plugin):
 
-        errored_instances = get_errored_instances_from_context(context)
+        errored_instances = _get_errored_instances_from_context(context)
 
         # Apply pyblish.logic to get the instances for the plug-in
         instances = pyblish.api.instances_by_plugin(errored_instances, plugin)

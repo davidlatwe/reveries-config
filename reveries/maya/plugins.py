@@ -1,6 +1,7 @@
 
+import avalon.api
 from ..plugins import (
-    EntryFileLoader,
+    PackageLoader,
     message_box_error,
     SelectInvalidAction,
 )
@@ -29,7 +30,7 @@ def load_plugin(representation):
         cmds.loadPlugin(plugin, quiet=True)
 
 
-class ReferenceLoader(EntryFileLoader):
+class ReferenceLoader(PackageLoader):
     """A basic ReferenceLoader for Maya
 
     This will implement the basic behavior for a loader to inherit from that
@@ -37,6 +38,17 @@ class ReferenceLoader(EntryFileLoader):
     `update` logic.
 
     """
+    hosts = ["maya"]
+
+    def __init__(self, context):
+        super(ReferenceLoader, self).__init__(context)
+
+        # This will ensure reference path resolvable when project root moves to
+        # other place.
+        self.package_path = self.package_path.replace(
+            avalon.api.registered_root(), "$AVALON_PROJECTS"
+        )
+
     def process_reference(self, context, name, namespace, data):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
@@ -76,12 +88,6 @@ class ReferenceLoader(EntryFileLoader):
         import os
         from maya import cmds
 
-        load_plugin(representation["name"])
-
-        file_type = representation["name"]
-        if file_type == "FBXCache":
-            file_type == "FBX"
-
         node = container["objectName"]
 
         # Assume asset has been referenced
@@ -96,11 +102,17 @@ class ReferenceLoader(EntryFileLoader):
             message_box_error(title, message)
             return
 
-        self.update_entry_path(representation)
+        load_plugin(representation["name"])
 
-        path = self.entry_path
-        assert os.path.exists(path), "%s does not exist." % path
-        cmds.file(path, loadReference=reference_node, type=file_type)
+        file_type = representation["name"]
+        if file_type == "FBXCache":
+            file_type = "FBX"
+
+        entry_path = self.file_path(representation["data"]["entry_fname"])
+
+        assert os.path.exists(entry_path), "%s does not exist." % entry_path
+
+        cmds.file(entry_path, loadReference=reference_node, type=file_type)
 
         # TODO: Add all new nodes in the reference to the container
         #   Currently new nodes in an updated reference are not added to the
@@ -157,7 +169,9 @@ class ReferenceLoader(EntryFileLoader):
             pass
 
 
-class ImportLoader(EntryFileLoader):
+class ImportLoader(PackageLoader):
+
+    hosts = ["maya"]
 
     def process_import(self, context, name, namespace, data):
         """To be implemented by subclass"""
