@@ -33,11 +33,15 @@ def create_vray_settings():
 
 def vrmeshes_by_transforms(transforms):
     """Return VRayMesh nodes from input transform nodes
+
+    Arguments:
+        transforms (list): A list of transforms nodes.
+
     """
 
     vrmeshes = list()
 
-    for node in transforms:
+    for node in cmds.ls(transforms, long=True, type="transform"):
         preview = cmds.listRelatives(node,
                                      shapes=True,
                                      fullPath=True,
