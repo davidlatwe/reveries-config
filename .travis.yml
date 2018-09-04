@@ -18,7 +18,7 @@ install:
   - docker run --rm --name maya
     -v $(pwd):/repo
     --workdir=/repo
-    -t mottosso/maya:${VERSION} bash
+    -d -i -t mottosso/maya:${VERSION} bash
 
   - docker exec maya bash -c "wget https://bootstrap.pypa.io/get-pip.py"
   - docker exec maya bash -c "mayapy get-pip.py"
