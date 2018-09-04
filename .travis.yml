@@ -21,12 +21,12 @@ before_install:
     -d -i -t mottosso/maya:${VERSION} bash
 
 install:
-  - docker exec maya bash -c "\
-    wget https://bootstrap.pypa.io/get-pip.py && \
-    mayapy get-pip.py && \
-    mayapy -m pip install \
-      pyblish-base \
-      pymongo \
+  - docker exec maya bash -c "
+    wget https://bootstrap.pypa.io/get-pip.py &&
+    mayapy get-pip.py &&
+    mayapy -m pip install
+      pyblish-base
+      pymongo
     "
 
 script:
