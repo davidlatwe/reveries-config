@@ -14,15 +14,20 @@ dist: trusty
 services:
   - docker
 
-install:
+before_install:
   - docker run --rm --name maya
     -v $(pwd):/repo
     --workdir=/repo
     -d -i -t mottosso/maya:${VERSION} bash
 
-  - docker exec maya bash -c "wget https://bootstrap.pypa.io/get-pip.py"
-  - docker exec maya bash -c "mayapy get-pip.py"
-  - docker exec maya bash -c "mayapy -m pip install pyblish-base"
+install:
+  - docker exec maya bash -c "\
+    wget https://bootstrap.pypa.io/get-pip.py && \
+    mayapy get-pip.py && \
+    mayapy -m pip install \
+      pyblish-base \
+      pymongo \
+    "
 
 script:
-  - docker exec maya mayapy -c "import pyblish;print('pyblish.version')"
+  - docker exec maya mayapy -c "import pymongo;print(pymongo.version)"
