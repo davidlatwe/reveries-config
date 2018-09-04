@@ -1,0 +1,31 @@
+matrix:
+  include:
+  - env:
+    - VERSION=2018
+  - env:
+    - VERSION=2017
+  - env:
+    - VERSION=2016sp1
+
+language: python
+sudo: required
+dist: trusty
+
+services:
+  - docker
+
+install:
+  - docker run --rm --name maya
+    -v $(pwd):/repo
+    --workdir=/repo
+    -it mottosso/maya:${VERSION} bash
+  - docker exec bash -c "wget https://bootstrap.pypa.io/get-pip.py"
+  - docker exec bash -c "mayapy get-pip.py"
+  - docker exec bash -c "mayapy -m pip install pyblish-base"
+
+script:
+  - docker run --rm 
+    -v $(pwd):/repo
+    --workdir=/repo
+    --entrypoint mayapy
+    mottosso/maya:${VERSION} -c "import pyblish;print('pyblish.version')"
