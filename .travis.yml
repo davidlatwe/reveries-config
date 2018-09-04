@@ -25,4 +25,4 @@ install:
   - docker exec maya bash -c "mayapy -m pip install pyblish-base"
 
 script:
-  - docker exec maya bash -c "import pyblish;print('pyblish.version')"
+  - docker exec maya mayapy -c "import pyblish;print('pyblish.version')"
