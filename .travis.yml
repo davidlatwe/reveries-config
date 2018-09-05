@@ -1,0 +1,56 @@
+matrix:
+  include:
+  - env:
+    - VERSION=2018
+  - env:
+    - VERSION=2017
+  - env:
+    - VERSION=2016sp1
+
+language: python
+sudo: required
+dist: trusty
+
+services:
+  - docker
+
+install:
+  - git clone https://github.com/getavalon/core.git
+  - git clone https://github.com/pyblish/pyblish-base.git
+  - git clone https://github.com/pyblish/pyblish-qml.git
+  - pip install
+      pytest-cov
+      pytest-env-info
+      coveralls
+      codecov
+  - docker run --name avalon-mongo -d mongo
+  - docker run --rm --name maya
+    -v $(pwd):/workspace --workdir=/workspace
+    --link avalon-mongo:mongo
+    -e AVALON_MONGO=mongodb://mongo:27017
+    -e AVALON_CONFIG=reveries
+    -e AVALON_DB=avalon
+    -e AVALON_PROJECTS=/workspace
+    -d -i -t mottosso/maya:${VERSION} /bin/bash
+
+before_script:
+  - docker exec maya bash -c "
+    wget https://bootstrap.pypa.io/get-pip.py &&
+    mayapy get-pip.py &&
+    mayapy -m pip install
+      pytest-cov
+      pytest-env-info
+      coveralls
+      codecov
+    ;"
+
+script:
+  - >
+    PYTHONPATH=$(pwd)/core:$(pwd)/pyblish-base:$(pwd)/pyblish-qml
+    pytest --cov reveries -k test_utils
+  - >
+    PYTHONPATH=$(pwd)/core:$(pwd)/pyblish-base:$(pwd)/pyblish-qml
+    docker exec maya mayapy -m pytest --cov reveries -k test_maya
+
+after_script:
+  - pkill mongod
