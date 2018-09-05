@@ -6,6 +6,7 @@ from maya import cmds
 from maya.api import OpenMaya as om
 
 from .. import utils
+from ..vendor.six import string_types
 
 
 log = logging.getLogger(__name__)
@@ -249,6 +250,42 @@ def lock_transform(node):
 
     for attr in TRANSFORM_ATTRS:
         cmds.setAttr(node + "." + attr, lock=True)
+
+
+def shaders_by_meshes(meshes):
+    """Return shadingEngine nodes from a list of mesh or facet
+    """
+
+    def ls_engine(mesh):
+        return list(set(
+            cmds.listConnections(mesh, type="shadingEngine") or []))
+
+    assigned = list()
+
+    if isinstance(meshes, string_types):
+        meshes = [meshes]
+    elif not isinstance(meshes, list):
+        raise TypeError("`meshes` should be str or list.")
+
+    mesh_faces = list()
+
+    for mesh in meshes:
+        if ".f[" not in mesh:
+            assigned += ls_engine(cmds.ls(mesh, long=True, type="mesh"))
+        else:
+            mesh_faces.append(mesh)
+
+    mesh_shpaes = list(set(cmds.ls(mesh_faces,
+                                   objectsOnly=True,
+                                   type="mesh",
+                                   )))
+
+    for engine in ls_engine(mesh_shpaes):
+        for face in cmds.ls(mesh_faces, flatten=True):
+            if cmds.sets(face, isMember=engine):
+                assigned.append(engine)
+
+    return list(set(assigned))
 
 
 def serialise_shaders(nodes):
