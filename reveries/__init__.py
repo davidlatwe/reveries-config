@@ -2,6 +2,9 @@ import os
 from pyblish import api as pyblish
 from avalon import api as avalon
 
+from .version import version, version_info, __version__
+
+
 PACKAGE_DIR = os.path.dirname(__file__)
 PLUGINS_DIR = os.path.join(os.path.dirname(PACKAGE_DIR), "plugins")
 
@@ -13,6 +16,13 @@ PYBLISH_PATH = os.path.dirname(pyblish.__file__)
 PYBLISH_DEFAULT = os.path.join(PYBLISH_PATH, "plugins")
 
 CONTRACTOR_PATH = os.path.join(PLUGINS_DIR, "global", "contractor")
+
+
+__all__ = [
+    "version",
+    "version_info",
+    "__version__",
+]
 
 
 def install():
