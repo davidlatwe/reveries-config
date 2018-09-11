@@ -46,8 +46,9 @@ def minmum_environment_setup():
                 "AVALON_SETUP"):
         os.environ[key] = _backup[key]
 
-    os.environ["PATH"] = _backup["AVALON_SETUP"]
     os.environ["PYTHONPATH"] = _backup["CONFIG_ROOT"]
+    os.environ["PATH"] = os.pathsep.join(_backup.get("DCC_DOCKERS", ""),
+                                         _backup["AVALON_SETUP"])
 
     for name in ("LOGNAME", "USER", "LNAME", "USERNAME"):
         if _backup.get(name):

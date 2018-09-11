@@ -10,7 +10,5 @@ Feature: Energizing Avalon with Reveries
         Then <DCC_App> will be startup with Reveries pipeline
 
         Examples:
-        	|   DCC_App   |  PROJECT_NAME |  SILO  | ASSET | TASK  |
-        	|  mayapy2016 | AdventureTime | assets | Dummy | model |
-        	|  mayapy2017 | AdventureTime | assets | Dummy | model |
-        	|  mayapy2018 | AdventureTime | assets | Dummy | model |
+        	|  DCC_App  |  PROJECT_NAME |  SILO  | ASSET | TASK  |
+        	|   mayapy  | AdventureTime | assets | Dummy | model |
