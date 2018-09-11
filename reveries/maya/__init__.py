@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 
 try:
@@ -12,7 +13,6 @@ import avalon.api as avalon
 from pyblish import api as pyblish
 
 from .. import PLUGINS_DIR
-from . import menu, callbacks
 from .lib import set_scene_timeline
 
 
@@ -22,8 +22,12 @@ PUBLISH_PATH = os.path.join(PLUGINS_DIR, "maya", "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "maya", "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "maya", "create")
 
+PYMEL_MOCK_FLAG = os.path.join(os.environ["MAYA_APP_DIR"], "pymel.mock")
 
-def install():
+
+def install():  # pragma: no cover
+    from . import menu, callbacks
+
     # install pipeline menu
     menu.install()
     # install pipeline plugins
@@ -49,7 +53,9 @@ def install():
     commands.reset_frame_range = set_scene_timeline
 
 
-def uninstall():
+def uninstall():  # pragma: no cover
+    from . import menu
+
     # uninstall pipeline menu
     menu.uninstall()
     # uninstall pipeline plugins

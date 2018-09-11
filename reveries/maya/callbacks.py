@@ -1,4 +1,6 @@
 
+import os
+import importlib
 from maya import cmds, OpenMaya
 from avalon import maya, api as avalon
 
@@ -7,6 +9,8 @@ from .lib import (
     set_scene_timeline,
 )
 
+from . import PYMEL_MOCK_FLAG
+
 
 def on_task_changed(_, *args):
     avalon.logger.info("Changing Task module..")
@@ -14,6 +18,10 @@ def on_task_changed(_, *args):
 
 
 def on_init(_):
+    if os.path.isfile(PYMEL_MOCK_FLAG):
+        avalon.logger.info("Mocking PyMel..")
+        importlib.import_module("reveries.maya.vendor.pymel_mock")
+
     avalon.logger.info("Running callback on init..")
     cmds.loadPlugin("AbcImport", quiet=True)
     cmds.loadPlugin("AbcExport", quiet=True)
