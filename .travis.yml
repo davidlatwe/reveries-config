@@ -10,6 +10,7 @@ services:
 env:
   global:
     - AVALON_MONGO=mongodb://localhost:27017
+    - PATHEXT=sh  # This is a workaround
   matrix:
     - MAYA_VERSION=2018
     - MAYA_VERSION=2017
