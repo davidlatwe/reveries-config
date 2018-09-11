@@ -32,6 +32,7 @@ before_install:
   - export AVALON_SETUP=$PWD/setup
   - export PYTHONPATH=$PYBLISH_BASE:$PYBLISH_QML:$AVALON_CORE:$AVALON_LAUNCHER:$AVALON_SETUP:$CONFIG_ROOT
   - cd $CONFIG_ROOT
+  - chmod +x tests/bin/mayapy.sh
 
 install:
   - pip install tox coveralls
