@@ -88,27 +88,30 @@ def hash_file(file_path):
     return hasher.hash()
 
 
-def plugins_by_range(base=1.5, extend=2, paths=None):
+def plugins_by_range(base=1.5, offset=2, paths=None):
     """Find plugins by thier order which fits in range
 
-    Default param will return order from -0.5 ~ 3.5, which is standard
-    range of Pyblish CVEI order.
+    Default param will return plugins that -0.5<=order<3.5, which is standard
+    range of Pyblish CVEI.
 
-    C = 0 +-0.5
-    V = 1 +-0.5
-    E = 2 +-0.5
-    I = 3 +-0.5
+    -.5 <= C < 0.5
+    0.5 <= V < 1.5
+    1.5 <= E < 2.5
+    2.5 <= I < 3.5
+
+    Arguments:
+        base (float): Center of range
+        offset (float, optional): Amount of offset from base
 
     """
-    order_min = base - extend
-    order_max = base + extend
+    _min = base - offset
+    _max = base + offset
 
     plugins = list()
 
     for plugin in pyblish.api.discover(paths=paths):
         if ("order" in plugin.__dict__ and
-                order_min <= plugin.order and
-                order_max >= plugin.order):
+                _min <= plugin.order < _max):
 
             plugins.append(plugin)
 
