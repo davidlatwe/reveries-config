@@ -1,0 +1,20 @@
+application_dir = "maya"
+default_dirs = [
+	"scenes",
+	"data",
+	"renderData/shaders",
+	"images"
+]
+label = "Autodesk Maya"
+schema = "avalon-core:application-1.0"
+executable = "mayapy"
+description = ""
+
+[copy]
+"{AVALON_CORE}/res/workspace.mel" = "workspace.mel"
+
+[environment]
+PYTHONPATH = [
+	"{AVALON_CORE}/setup/maya",
+	"{PYTHONPATH}"
+]
