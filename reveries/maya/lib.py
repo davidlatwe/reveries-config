@@ -480,7 +480,7 @@ def lsattrs(attrs):
     try:
         selection_list.add("*.{0}".format(first_attr),
                            searchChildNamespaces=True)
-    except RuntimeError, e:
+    except RuntimeError as e:
         if str(e).endswith("Object does not exist"):
             return []
 
