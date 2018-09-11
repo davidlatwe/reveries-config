@@ -27,6 +27,10 @@ label = "Autodesk Maya 2018"
 name = "mayapy2018"
 label = "Autodesk Maya 2018 (Standalone)"
 
+[[apps]]
+name = "mayapy"
+label = "Autodesk Maya (Standalone)"
+
 [[tasks]]
 name = "model"
 
