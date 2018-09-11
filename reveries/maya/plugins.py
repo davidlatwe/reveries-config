@@ -49,11 +49,11 @@ class ReferenceLoader(PackageLoader):
             avalon.api.registered_root(), "$AVALON_PROJECTS"
         )
 
-    def process_reference(self, context, name, namespace, data):
+    def process_reference(self, context, name, namespace, options):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
-    def load(self, context, name=None, namespace=None, data=None):
+    def load(self, context, name=None, namespace=None, options=None):
         from avalon.maya import lib
         from avalon.maya.pipeline import containerise
 
@@ -70,7 +70,7 @@ class ReferenceLoader(PackageLoader):
         self.process_reference(context=context,
                                name=name,
                                namespace=namespace,
-                               data=data)
+                               options=options)
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
@@ -173,11 +173,11 @@ class ImportLoader(PackageLoader):
 
     hosts = ["maya"]
 
-    def process_import(self, context, name, namespace, data):
+    def process_import(self, context, name, namespace, options):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
-    def load(self, context, name=None, namespace=None, data=None):
+    def load(self, context, name=None, namespace=None, options=None):
         from avalon.maya import lib
         from avalon.maya.pipeline import containerise
 
@@ -194,7 +194,7 @@ class ImportLoader(PackageLoader):
         self.process_import(context=context,
                             name=name,
                             namespace=namespace,
-                            data=data)
+                            options=options)
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
