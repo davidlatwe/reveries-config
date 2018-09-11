@@ -7,6 +7,26 @@ label = "Shell"
 name = "maya2016"
 label = "Autodesk Maya 2016"
 
+[[apps]]
+name = "mayapy2016"
+label = "Autodesk Maya 2016 (Standalone)"
+
+[[apps]]
+name = "maya2017"
+label = "Autodesk Maya 2017"
+
+[[apps]]
+name = "mayapy2017"
+label = "Autodesk Maya 2017 (Standalone)"
+
+[[apps]]
+name = "maya2018"
+label = "Autodesk Maya 2018"
+
+[[apps]]
+name = "mayapy2018"
+label = "Autodesk Maya 2018 (Standalone)"
+
 [[tasks]]
 name = "model"
 
