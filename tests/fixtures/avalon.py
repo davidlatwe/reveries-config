@@ -55,9 +55,9 @@ def minmum_environment_setup():
             os.environ[name] = _backup[name]
 
     if platform.system() == "Windows":
-        os.environ["PATHEXT"] = _backup["PATHEXT"]
         os.environ["SYSTEMDRIVE"] = _backup["SYSTEMDRIVE"]
         os.environ["SYSTEMROOT"] = _backup["SYSTEMROOT"]
+    os.environ["PATHEXT"] = _backup["PATHEXT"]  # This is a workaround
 
     # Avalon CLI environment assemble
     avalon_cli_path = os.path.join(_backup["AVALON_SETUP"], "avalon.py")
