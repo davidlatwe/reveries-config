@@ -1,1 +1,1 @@
-docker exec maya mayapy
+docker exec maya mayapy $1 $2
