@@ -3,5 +3,5 @@ Reveries - Pipeline Configuration of Avalon
 
 # Development
 ### Tests
-* Unit + Functional tests
-* Behavior tests
+* Unit tests
+* Functional tests (BDD)

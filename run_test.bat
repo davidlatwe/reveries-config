@@ -1,8 +1,8 @@
 
 rem start miniconda, activate conda evnironment "avalon"
-call condaenv activate avalon
+rem call condaenv activate avalon
 
-set AVALON_PROJECTS=\workspace
+rem set AVALON_PROJECTS=\workspace
 
 pytest --cov reveries -k test_utils -s
 

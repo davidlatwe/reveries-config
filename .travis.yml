@@ -27,10 +27,6 @@ install:
   - docker run --rm --name maya
     -v $(pwd):/workspace --workdir=/workspace
     --link avalon-mongo:mongo
-    -e AVALON_MONGO=mongodb://mongo:27017
-    -e AVALON_CONFIG=reveries
-    -e AVALON_DB=avalon
-    -e AVALON_PROJECTS=/workspace
     -d -i -t mottosso/maya:${VERSION} /bin/bash
 
 before_script:
@@ -47,7 +43,7 @@ before_script:
 script:
   - >
     PYTHONPATH=$(pwd)/core:$(pwd)/pyblish-base:$(pwd)/pyblish-qml
-    pytest --cov reveries -k test_utils
+    pytest tests/unit --cov reveries
   - >
     PYTHONPATH=$(pwd)/core:$(pwd)/pyblish-base:$(pwd)/pyblish-qml
     docker exec maya mayapy -m pytest --cov reveries -k test_maya

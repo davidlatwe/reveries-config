@@ -1,0 +1,16 @@
+[run]
+branch = True
+omit =
+	*/version.py
+	*/vendor/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    pragma: no PY${PYTEST_PYMAJVER} cover
+    raise NotImplementedError.*
+    warnings\.warn.*
+    def __repr__
+    def __str__
+    def main()
+    if __name__ == .__main__.:

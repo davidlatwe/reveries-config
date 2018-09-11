@@ -16,6 +16,9 @@ from .. import PLUGINS_DIR
 from .lib import set_scene_timeline
 
 
+self = sys.modules[__name__]
+self.installed = None
+
 log = logging.getLogger("reveries.maya")
 
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "maya", "publish")
@@ -52,6 +55,8 @@ def install():  # pragma: no cover
     # override avalon.maya menu function
     commands.reset_frame_range = set_scene_timeline
 
+    self.installed = True
+
 
 def uninstall():  # pragma: no cover
     from . import menu
@@ -62,3 +67,5 @@ def uninstall():  # pragma: no cover
     pyblish.deregister_plugin_path(PUBLISH_PATH)
     avalon.deregister_plugin_path(avalon.Loader, LOAD_PATH)
     avalon.deregister_plugin_path(avalon.Creator, CREATE_PATH)
+
+    self.installed = False
