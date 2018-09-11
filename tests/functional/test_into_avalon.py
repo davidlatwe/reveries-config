@@ -83,4 +83,4 @@ def step_impl_then():
     elif result == FAILED:
         raise AssertionError("Pipeline install failed.")
     else:
-        raise RuntimeError("Unknown error.")
+        raise RuntimeError("Unknown error. Result: {}".format(result))
