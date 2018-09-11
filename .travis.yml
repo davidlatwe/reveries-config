@@ -1,52 +1,57 @@
+
+language: python
+
+python:
+  - "2.7"
+  - "3.6"
+
 matrix:
   include:
   - env:
-    - VERSION=2018
+    - MAYA_VERSION=2018
   - env:
-    - VERSION=2017
+    - MAYA_VERSION=2017
   - env:
-    - VERSION=2016sp1
-
-language: python
-sudo: required
-dist: trusty
+    - MAYA_VERSION=2016sp1
 
 services:
   - docker
 
-install:
+before_install:
   - git clone https://github.com/getavalon/core.git
+  - git clone https://github.com/getavalon/setup.git
+  - git clone https://github.com/getavalon/launcher.git
   - git clone https://github.com/pyblish/pyblish-base.git
   - git clone https://github.com/pyblish/pyblish-qml.git
-  - pip install
-      pytest-cov
-      pytest-env-info
-      coveralls
-      codecov
+
+install:
+  - pip install tox-travis coveralls
   - docker run --name avalon-mongo -d mongo
   - docker run --rm --name maya
     -v $(pwd):/workspace --workdir=/workspace
     --link avalon-mongo:mongo
-    -d -i -t mottosso/maya:${VERSION} /bin/bash
+    -d -i -t mottosso/maya:${MAYA_VERSION} /bin/bash
 
-before_script:
-  - docker exec maya bash -c "
-    wget https://bootstrap.pypa.io/get-pip.py &&
-    mayapy get-pip.py &&
-    mayapy -m pip install
-      pytest-cov
-      pytest-env-info
-      coveralls
-      codecov
-    ;"
+env:
+  global:
+    - AVALON_MONGO=mongodb://mongo:27017
+    - PYBLISH_BASE=$(pwd)/pyblish-base
+    - PYBLISH_QML=$(pwd)/pyblish-qml
+    - AVALON_CORE=$(pwd)/core
+    - AVALON_LAUNCHER=$(pwd)/launcher
+    - AVALON_SETUP=$(pwd)/setup
+    - CONFIG_ROOT=$(pwd)
+    - PYTHONPATH=$PYBLISH_BASE:$PYBLISH_QML:$AVALON_CORE:$AVALON_LAUNCHER:$AVALON_SETUP:$CONFIG_ROOT
+    - PATH=$(pwd)/tests/bin:$PATH
 
 script:
-  - >
-    PYTHONPATH=$(pwd)/core:$(pwd)/pyblish-base:$(pwd)/pyblish-qml
-    pytest tests/unit --cov reveries
-  - >
-    PYTHONPATH=$(pwd)/core:$(pwd)/pyblish-base:$(pwd)/pyblish-qml
-    docker exec maya mayapy -m pytest --cov reveries -k test_maya
+  - tox
 
 after_script:
   - pkill mongod
+
+after_success:
+  - coveralls
+
+sudo: required
+dist: trusty
