@@ -15,7 +15,7 @@ class AvalonLockScene(pyblish.api.ContextPlugin):
     """
 
     label = "Lock Scene"
-    order = pyblish.api.IntegratorOrder + 0.5
+    order = pyblish.api.IntegratorOrder + 0.4999
 
     def process(self, context):
 

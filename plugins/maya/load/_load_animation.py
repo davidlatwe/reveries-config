@@ -16,7 +16,7 @@ class AnimationLoader(ReferenceLoader):
         "mayaAscii",
     ]
 
-    def process_reference(self, context, name, namespace, data):
+    def process_reference(self, context, name, namespace, options):
         # (TODO) load curves and other.
         pass
 

@@ -22,11 +22,13 @@ class RigLoader(ReferenceLoader):
         "mayaBinary",
     ]
 
-    def process_reference(self, context, name, namespace, data):
+    def process_reference(self, context, name, namespace, options):
 
         import maya.cmds as cmds
 
-        entry_path = self.file_path(data["entry_fname"])
+        representation = context["representation"]
+
+        entry_path = self.file_path(representation["data"]["entry_fname"])
 
         nodes = cmds.file(entry_path,
                           namespace=namespace,
@@ -37,10 +39,10 @@ class RigLoader(ReferenceLoader):
 
         # Store for post-process
         self[:] = nodes
-        if data.get("post_process", True):
-            self._post_process(name, namespace, context, data)
+        if representation["data"].get("post_process", True):
+            self._post_process(name, namespace, context, options)
 
-    def _post_process(self, name, namespace, context, data):
+    def _post_process(self, name, namespace, context, options):
 
         # TODO(marcus): We are hardcoding the name "OutSet" here.
         #   Better register this keyword, so that it can be used
@@ -70,5 +72,5 @@ class RigLoader(ReferenceLoader):
             avalon.api.create(name=namespace,
                               asset=asset,
                               family="reveries.animation",
-                              options={"useSelection": True},
+                              options=options or {"useSelection": True},
                               data={"dependencies": dependency})

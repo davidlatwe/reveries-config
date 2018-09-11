@@ -16,14 +16,16 @@ class LookLoader(ReferenceLoader):
         "mayaAscii",
     ]
 
-    def process_reference(self, context, name, namespace, data):
+    def process_reference(self, context, name, namespace, options):
         import os
         import json
 
         from maya import cmds
         from reveries.maya import lib
 
-        entry_path = self.file_path(data["entry_fname"])
+        representation = context["representation"]
+
+        entry_path = self.file_path(representation["data"]["entry_fname"])
 
         try:
             existing_reference = cmds.file(entry_path,
@@ -47,7 +49,7 @@ class LookLoader(ReferenceLoader):
 
         # Assign shaders
         #
-        relationship = self.file_path(data["link_fname"])
+        relationship = self.file_path(representation["data"]["link_fname"])
 
         # Expand $AVALON_PROJECT and friends, if used
         relationship = os.path.expandvars(relationship)

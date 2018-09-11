@@ -19,10 +19,12 @@ class CameraLoader(ReferenceLoader):
         "FBX",
     ]
 
-    def process_reference(self, context, name, namespace, data):
+    def process_reference(self, context, name, namespace, options):
         import maya.cmds as cmds
 
-        entry_path = self.file_path(data["entry_fname"])
+        representation = context["representation"]
+
+        entry_path = self.file_path(representation["data"]["entry_fname"])
 
         group_name = "{}:{}".format(namespace, name)
         nodes = cmds.file(entry_path,

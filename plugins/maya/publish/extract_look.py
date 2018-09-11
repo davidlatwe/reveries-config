@@ -5,7 +5,6 @@ import pyblish.api
 import avalon.api
 
 from reveries.plugins import PackageExtractor
-from reveries.maya import vray
 from reveries.utils import hash_file
 
 
@@ -18,7 +17,7 @@ class ExtractLook(PackageExtractor):
 
     """
 
-    label = "Look"
+    label = "Extract Look"
     order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
     families = ["reveries.look"]
@@ -149,18 +148,23 @@ class ExtractLook(PackageExtractor):
         # VRay Attributes
         vray_attrs = dict()
 
-        for node in meshes:
-            # - shape
-            values = vray.attributes_gather(node)
-            if values:
-                vray_attrs[node] = values
-
-            # - transfrom
-            parent = cmds.listRelatives(node, parent=True)
-            if parent:
-                values = vray.attributes_gather(parent[0])
+        try:
+            from reveries.maya import vray
+        except ImportError:
+            self.log.debug("Possible plugin 'vrayformaya' not installed.")
+        else:
+            for node in meshes:
+                # - shape
+                values = vray.attributes_gather(node)
                 if values:
-                    vray_attrs[parent[0]] = values
+                    vray_attrs[node] = values
+
+                # - transfrom
+                parent = cmds.listRelatives(node, parent=True)
+                if parent:
+                    values = vray.attributes_gather(parent[0])
+                    if values:
+                        vray_attrs[parent[0]] = values
 
         relationships = {
             "dag_set_members": dag_set_members,
