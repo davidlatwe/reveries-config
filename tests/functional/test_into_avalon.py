@@ -76,11 +76,12 @@ def step_impl_then():
     import reveries
 
     popen = APP_PROC["_"]
-    result = popen.communicate()[0].split()[-1]
+    stdout = popen.communicate()[0]
+    result = stdout.split()[-1]
 
     if result == SUCESS.format(version=reveries.version):
         return
     elif result == FAILED:
         raise AssertionError("Pipeline install failed.")
     else:
-        raise RuntimeError("Unknown error. Result: {}".format(result))
+        raise RuntimeError("Unknown error. Stdout: {}".format(stdout))
