@@ -171,6 +171,8 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
     """
 
+    families = []
+
     def process(self, instance):
         """
         """
@@ -248,7 +250,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         staging_dir = self.data.get('stagingDir', None)
 
         if not staging_dir:
-            if self.extract_to_publish_dir:
+            if self._extract_to_publish_dir:
                 staging_dir = self.data["publish_dir"]
             else:
                 staging_dir = temp_dir(prefix="pyblish_tmp_")
