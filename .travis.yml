@@ -43,9 +43,6 @@ install:
 script:
   - tox
 
-after_script:
-  - pkill mongod
-
 after_success:
   - coveralls
 
