@@ -1,2 +1,3 @@
 #!/bin/bash
-/usr/bin/docker exec -e PYTHONPATH=${$PYTHONPATH//$CONFIG_ROOT/$DCC_WORKDIR} maya mayapy $1 "$2"
+pythonpath=$PYTHONPATH
+/usr/bin/docker exec -e PYTHONPATH=${pythonpath//$CONFIG_ROOT/$DCC_WORKDIR} maya mayapy $1 "$2"
