@@ -29,6 +29,7 @@ before_install:
   - export AVALON_CORE=$PWD/core
   - export AVALON_LAUNCHER=$PWD/launcher
   - export AVALON_SETUP=$PWD/setup
+  - export PYTHONPATH=$PYBLISH_BASE:$PYBLISH_QML:$AVALON_CORE:$AVALON_LAUNCHER:$AVALON_SETUP:$CONFIG_ROOT
 
 install:
   - pip install tox coveralls
