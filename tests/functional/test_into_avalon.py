@@ -55,7 +55,7 @@ def step_launch_app(launcher_launchs_app, DCC_App):
         "mayapy": [
             "-c",
             ("from maya import standalone; standalone.initialize();"
-             "import reveries; import reveries.maya;"
+             "import reveries.maya;"
              "is_installed = reveries.maya.installed;" +
              reporter),
         ]
