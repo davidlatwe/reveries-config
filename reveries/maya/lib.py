@@ -6,6 +6,7 @@ from maya import cmds
 from maya.api import OpenMaya as om
 
 from .. import utils
+from ..vendor.six import string_types
 
 
 log = logging.getLogger(__name__)
@@ -251,6 +252,42 @@ def lock_transform(node):
         cmds.setAttr(node + "." + attr, lock=True)
 
 
+def shaders_by_meshes(meshes):
+    """Return shadingEngine nodes from a list of mesh or facet
+    """
+
+    def ls_engine(mesh):
+        return list(set(
+            cmds.listConnections(mesh, type="shadingEngine") or []))
+
+    assigned = list()
+
+    if isinstance(meshes, string_types):
+        meshes = [meshes]
+    elif not isinstance(meshes, list):
+        raise TypeError("`meshes` should be str or list.")
+
+    mesh_faces = list()
+
+    for mesh in meshes:
+        if ".f[" not in mesh:
+            assigned += ls_engine(cmds.ls(mesh, long=True, type="mesh"))
+        else:
+            mesh_faces.append(mesh)
+
+    mesh_shpaes = list(set(cmds.ls(mesh_faces,
+                                   objectsOnly=True,
+                                   type="mesh",
+                                   )))
+
+    for engine in ls_engine(mesh_shpaes):
+        for face in cmds.ls(mesh_faces, flatten=True):
+            if cmds.sets(face, isMember=engine):
+                assigned.append(engine)
+
+    return list(set(assigned))
+
+
 def serialise_shaders(nodes):
     """Generate a shader set dictionary
 
@@ -443,7 +480,7 @@ def lsattrs(attrs):
     try:
         selection_list.add("*.{0}".format(first_attr),
                            searchChildNamespaces=True)
-    except RuntimeError, e:
+    except RuntimeError as e:
         if str(e).endswith("Object does not exist"):
             return []
 
@@ -472,13 +509,32 @@ def lsattrs(attrs):
 
 
 def ls_duplicated_name(nodes, rename=False):
-    """
+    """Genreate a node name duplication report dict
+
+    Arguments:
+        nodes (list): A list of DAG nodes.
+        rename (bool, optional): Auto rename duplicated node if set to `True`,
+            and if set to `True`, will not return the report.
+
+    This will list out every node which share the same base name and thire
+    full DAG path, for example:
+
+    >> cmds.polyCube(n="Box")
+    >> cmds.group(n="BigBox_A")
+    >> cmds.polyCube(n="Box")
+    >> cmds.group(n="BigBox_B")
+    >> cmds.polyCube(n="Box")
+    >> ls_duplicated_name(["Box"])
+    # Result: {u'Box': [u'|Box', u'|BigBox_B|Box', u'|BigBox_A|Box']} #
+
+    If `rename` is on, it will auto append a digit suffix to the base name.
+
     """
 
     result = dict()
 
-    for node in nodes:
-        full_name = cmds.ls(node, long=True)[0]
+    for node in cmds.ls(nodes, long=True):
+        full_name = node
         base_name = full_name.rsplit("|")[-1]
 
         if base_name not in result:
@@ -486,6 +542,7 @@ def ls_duplicated_name(nodes, rename=False):
 
         result[base_name].append(full_name)
 
+    # Remove those not duplicated
     for base_name in list(result.keys()):
         if len(result[base_name]) == 1:
             del result[base_name]
@@ -493,17 +550,41 @@ def ls_duplicated_name(nodes, rename=False):
     if not rename:
         return result
 
-    for nodes in result.values():
+    # Auto rename with digit suffix
+    for base_name, nodes in result.items():
         for i, full_name in enumerate(nodes):
-            cmds.rename(full_name, full_name + "_" + str(i))
+            cmds.rename(full_name, base_name + "_" + str(i))
 
 
-def remove_mesh_parenting(transforms):
+def filter_mesh_parenting(transforms):
+    """Filter out mesh parenting nodes from list
 
-    cleaned = list()
+    Arguments:
+        transforms (list): A list of transforms nodes.
+
+    This will return a list that mesh parenting nodes are removed, possible
+    use case is to clean up the selection before Alembic export to avoid
+    mesh parenting error.
+
+    Example:
+
+    >> cmds.polyCube(n="A")
+    >> cmds.polyCube(n="B")
+    >> cmds.polyCube(n="C")
+    >> cmds.parent("C", "B")
+    >> cmds.parent("B", "A")
+    >> cmds.group("A", name="ROOT", world=True)
+    >> cmds.select("ROOT", hierarchy=True)
+    >> filter_mesh_parenting(cmds.ls(sl=True))
+    # Result: [u'|ROOT', u'|ROOT|A'] #
+
+    """
+
+    # Phase 1
+    cleaned_1 = list()
     blacksheep = list()
 
-    for node in transforms:
+    for node in cmds.ls(transforms, long=True, type="transform"):
         if node in blacksheep:
             continue
 
@@ -516,12 +597,12 @@ def remove_mesh_parenting(transforms):
         if cmds.ls(children, type="mesh") and sub_transforms:
             blacksheep += sub_transforms
 
-        cleaned += cmds.ls(node, long=True)
+        cleaned_1 += cmds.ls(node, long=True)
 
-    # check again
+    # Phase 2
     cleaned_2 = list()
 
-    for node in cleaned:
+    for node in cleaned_1:
         if any(node.startswith(_) for _ in blacksheep):
             continue
 

@@ -2,7 +2,7 @@
 import os
 import tempfile
 import hashlib
-import base64
+import codecs
 import shutil
 
 import pyblish.api
@@ -83,42 +83,141 @@ def publish_results_formatting(context):
 
 
 def hash_file(file_path):
-    hash_obj = hashlib.sha512()
-
-    chunk_size = 40960  # magic number
-
-    with open(file_path, "rb") as file:
-        for chunk in iter(lambda: file.read(chunk_size), b""):
-            hash_obj.update(chunk)
-
-    digested = hash_obj.digest()
-    hash_val = base64.urlsafe_b64encode(digested)
-
-    return hash_val[:-2]  # length is fixed, remove padding "=="
+    hasher = AssetHasher()
+    hasher.add_file(file_path)
+    return hasher.hash()
 
 
-def plugins_by_range(base=1.5, extend=2, paths=None):
+def plugins_by_range(base=1.5, offset=2, paths=None):
     """Find plugins by thier order which fits in range
 
-    Default param will return order from -0.5 ~ 3.5, which is standard
-    range of Pyblish CVEI order.
+    Default param will return plugins that -0.5<=order<3.5, which is standard
+    range of Pyblish CVEI.
 
-    C = 0 +-0.5
-    V = 1 +-0.5
-    E = 2 +-0.5
-    I = 3 +-0.5
+    -.5 <= C < 0.5
+    0.5 <= V < 1.5
+    1.5 <= E < 2.5
+    2.5 <= I < 3.5
+
+    Arguments:
+        base (float): Center of range
+        offset (float, optional): Amount of offset from base
 
     """
-    order_min = base - extend
-    order_max = base + extend
+    _min = base - offset
+    _max = base + offset
 
     plugins = list()
 
     for plugin in pyblish.api.discover(paths=paths):
         if ("order" in plugin.__dict__ and
-                order_min <= plugin.order and
-                order_max >= plugin.order):
+                _min <= plugin.order < _max):
 
             plugins.append(plugin)
 
     return plugins
+
+
+class AssetHasher(object):
+    """A data hasher for digital content creation
+
+    This is a Python implemtation of Avalanche-io C4 Asset ID.
+
+    Usage:
+        >> hasher = AssetHasher()
+        >> hasher.add_file("/path/to/file")
+        >> hasher.add_dir("/path/to/dir")
+
+        You can keep adding more assets.
+        And get the hash value by
+        >> hasher.hash()
+        'c463d2Wh5NyBMQRHyxbdBxCzZfaKXvBQaawgfgG18moxQU2jdmaSbCWL...'
+
+        You can still adding more assets at this point
+        >> hasher.add_file("/path/to/more/file")
+
+        And get the hash value of all asset added so far
+        >> hasher.hash()
+        'c43cysVyTd7kYurvAa5ooR6miJJgUZ9QnBCHZeNK3en9aQ96KHsoJyJX...'
+
+        Until you call `clear`
+        >> hasher.clear()
+
+    """
+
+    CHUNK_SIZE = 4096 * 10  # magic number
+    PREFIX = "c4"
+
+    def __init__(self):
+        self.hash_obj = None
+        self.clear()
+
+    def clear(self):
+        """Start a new hash session
+        """
+        self.hash_obj = hashlib.sha512()
+
+    def _b58encode(self, bytes):
+        """Base58 Encode bytes to string
+        """
+        b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+        b58base = 58
+
+        long_value = int(codecs.encode(bytes, "hex_codec"), 16)
+
+        result = ''
+        while long_value >= b58base:
+            div, mod = divmod(long_value, b58base)
+            result = b58chars[mod] + result
+            long_value = div
+
+        result = b58chars[long_value] + result
+
+        return result
+
+    def hash(self):
+        """Return hash value of data added so far
+        """
+        c4_id_length = 90
+        b58_hash = self._b58encode(self.hash_obj.digest())
+
+        padding = ""
+        if len(b58_hash) < (c4_id_length - 2):
+            padding = "1" * (c4_id_length - 2 - len(b58_hash))
+
+        c4id = self.PREFIX + padding + b58_hash
+        return c4id
+
+    def add_file(self, file_path):
+        """Add one file to hasher
+
+        Arguments:
+            file_path (str): File path string
+
+        """
+        chunk_size = self.CHUNK_SIZE
+
+        with open(file_path, "rb") as file:
+            for chunk in iter(lambda: file.read(chunk_size), b""):
+                self.hash_obj.update(chunk)
+
+    def add_dir(self, dir_path, recursive=True, followlinks=True):
+        """Add one directory to hasher
+
+        Arguments:
+            dir_path (str): Directory path string
+            recursive (bool, optional): Add sub-dir as well, default is True
+            followlinks (bool, optional): Add directories pointed to by
+                symlinks, default is True
+
+        """
+        for root, dirs, files in os.walk(dir_path, followlinks=followlinks):
+            for name in files:
+                self.add_file(os.path.join(root, name))
+
+            if not recursive:
+                continue
+
+            for name in dirs:
+                path = os.path.join(root, name)
+                self.add_dir(path, recursive=True, followlinks=followlinks)

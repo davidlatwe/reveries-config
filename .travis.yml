@@ -1,0 +1,54 @@
+
+language: python
+
+python:
+  - "3.6"
+
+services:
+  - docker
+
+env:
+  global:
+    - AVALON_MONGO=mongodb://localhost:27017
+    - PATHEXT=.SH  # This is a workaround
+  matrix:
+    - MAYA_VERSION=2018
+    - MAYA_VERSION=2017
+    - MAYA_VERSION=2016sp1
+
+before_install:
+  - export CONFIG_ROOT=$PWD
+  - export DCC_WORKDIR=/workspace
+  - export DCC_DOCKERS=$PWD/tests/bin
+  - git clone https://github.com/getavalon/core.git
+  - git clone https://github.com/getavalon/setup.git
+  - git clone https://github.com/getavalon/launcher.git
+  - git clone https://github.com/pyblish/pyblish-base.git
+  - git clone https://github.com/pyblish/pyblish-qml.git
+  - export PYBLISH_BASE=$PWD/pyblish-base
+  - export PYBLISH_QML=$PWD/pyblish-qml
+  - export AVALON_CORE=$PWD/core
+  - export AVALON_LAUNCHER=$PWD/launcher
+  - export AVALON_SETUP=$PWD/setup
+  - export PYTHONPATH=$PYBLISH_BASE:$PYBLISH_QML:$AVALON_CORE:$AVALON_LAUNCHER:$AVALON_SETUP:$CONFIG_ROOT
+
+install:
+  - pip install tox coveralls
+  - docker run --name avalon-mongo -p 27017:27017 -d mongo
+  - docker run --rm --name maya
+    --link avalon-mongo:mongo
+    -e AVALON_MONGO=mongodb://mongo:27017
+    -v $(pwd):$DCC_WORKDIR --workdir=$DCC_WORKDIR
+    -d -i -t mottosso/maya:${MAYA_VERSION} /bin/bash
+
+before_script:
+  - chmod +x tests/bin/mayapy.sh
+
+script:
+  - tox
+
+after_success:
+  - coveralls
+
+sudo: required
+dist: trusty

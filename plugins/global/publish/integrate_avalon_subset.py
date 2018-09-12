@@ -46,7 +46,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         # Integrate representations' files to shareable space
         self.log.info("Integrating representations to shareable space ...")
-        self.integrate(instance)
+        self.integrate()
 
         # Write version and representations to database
         self.write_database(instance, version, representations)

@@ -6,21 +6,21 @@ def create_vray_settings():
 
     # Try register vray
     try:
-        cmds.renderer('vray')
+        cmds.renderer("vray")
     except RuntimeError:
-        print "Vray already Registered"
+        print("Vray already Registered")
 
     # Collect all vray-Attributes
-    globalsTabLabels = cmds.renderer('vray', query=True, globalsTabLabels=True)
-    globalsTabCreateProcNames = cmds.renderer('vray',
+    globalsTabLabels = cmds.renderer("vray", query=True, globalsTabLabels=True)
+    globalsTabCreateProcNames = cmds.renderer("vray",
                                               query=True,
                                               globalsTabCreateProcNames=True)
-    globalsTabUpdateProcNames = cmds.renderer('vray',
+    globalsTabUpdateProcNames = cmds.renderer("vray",
                                               query=True,
                                               globalsTabUpdateProcNames=True)
     # Construct Vray-Renderer
     for tab_id in range(len(globalsTabLabels)):
-        cmds.renderer('vray',
+        cmds.renderer("vray",
                       edit=True,
                       addGlobalsTab=[
                           str(globalsTabLabels[tab_id]),
@@ -33,11 +33,15 @@ def create_vray_settings():
 
 def vrmeshes_by_transforms(transforms):
     """Return VRayMesh nodes from input transform nodes
+
+    Arguments:
+        transforms (list): A list of transforms nodes.
+
     """
 
     vrmeshes = list()
 
-    for node in transforms:
+    for node in cmds.ls(transforms, long=True, type="transform"):
         preview = cmds.listRelatives(node,
                                      shapes=True,
                                      fullPath=True,

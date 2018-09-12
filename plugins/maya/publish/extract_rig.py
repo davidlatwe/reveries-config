@@ -20,9 +20,6 @@ class ExtractRig(PackageExtractor):
         "mayaBinary",
     ]
 
-    def dispatch(self):
-        self.extract()
-
     def extract_mayaBinary(self):
         # Define extract output file path
         entry_file = self.file_name("mb")

@@ -30,7 +30,7 @@ class ValidateRigAssembly(pyblish.api.InstancePlugin):
 
         # Validate Keyables
         #
-        keyables = cmds.listAttr(root[0], keyable=True)
+        keyables = cmds.listAttr(root[0], keyable=True) or list()
 
         # Transforms and Visibility should not be keyable
         NON_KEYABLE = TRANSFORM_ATTRS + ["visibility"]

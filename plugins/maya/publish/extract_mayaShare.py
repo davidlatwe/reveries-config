@@ -8,7 +8,7 @@ from avalon import maya
 from reveries.plugins import PackageExtractor
 
 
-class ExtractRig(PackageExtractor):
+class ExtractMayaShare(PackageExtractor):
     """Extract as Maya Ascii"""
 
     label = "Extract MayaShare (mayaAscii)"
@@ -19,9 +19,6 @@ class ExtractRig(PackageExtractor):
     representations = [
         "mayaAscii",
     ]
-
-    def dispatch(self):
-        self.extract()
 
     def extract_mayaAscii(self):
         # Define extract output file path

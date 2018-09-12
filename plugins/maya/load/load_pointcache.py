@@ -23,10 +23,12 @@ class PointCacheReferenceLoader(ReferenceLoader):
         "FBXCache",
     ]
 
-    def process_reference(self, context, name, namespace, data):
+    def process_reference(self, context, name, namespace, options):
         import maya.cmds as cmds
 
-        entry_path = self.file_path(data["entry_fname"])
+        representation = context["representation"]
+
+        entry_path = self.file_path(representation["data"]["entry_fname"])
 
         group_name = "{}:{}".format(namespace, name)
         nodes = cmds.file(entry_path,
@@ -65,16 +67,17 @@ class PointCacheImportLoader(ImportLoader):
         "FBXCache",
     ]
 
-    def process_import(self, context, name, namespace, data):
+    def process_import(self, context, name, namespace, options):
         import maya.cmds as cmds
 
-        entry_path = self.file_path(data["entry_fname"])
+        representation = context["representation"]
+        representation_name = representation["name"]
+
+        entry_path = self.file_path(representation["data"]["entry_fname"])
 
         # Root group
         label = "{}:{}".format(namespace, name)
         root = cmds.group(name=label, empty=True)
-
-        representation_name = context["representation"]["name"]
 
         if representation_name == "GPUCache":
             # Create transform with shape
