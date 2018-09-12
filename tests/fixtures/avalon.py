@@ -1,9 +1,8 @@
 
-from tempfile import mkdtemp
-
 import pytest
 import os
 import sys
+import time
 import shutil
 import platform
 
@@ -27,7 +26,7 @@ def import_module(mod_name, file_path):
     return foo
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def minmum_environment_setup():
 
     _backup = os.environ.copy()
@@ -71,7 +70,16 @@ def minmum_environment_setup():
 
     # Teardown
     os.environ = _backup
-    shutil.rmtree(PROJECT_ROOT, ignore_errors=True)
+
+    endtime = time.time() + 30
+    while time.time() < endtime:
+        # PROJECT_ROOT may still being used by other process
+        # keep trying to delete it within 30 secs
+        shutil.rmtree(PROJECT_ROOT, ignore_errors=True)
+        if os.path.isdir(PROJECT_ROOT):
+            time.sleep(1)
+        else:
+            break
 
 
 @pytest.fixture
