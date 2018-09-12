@@ -19,7 +19,6 @@ env:
 before_install:
   - export CONFIG_ROOT=$PWD
   - export DCC_DOCKERS=$PWD/tests/bin
-  - cd ..
   - git clone https://github.com/getavalon/core.git
   - git clone https://github.com/getavalon/setup.git
   - git clone https://github.com/getavalon/launcher.git
@@ -40,7 +39,6 @@ install:
     -d -i -t mottosso/maya:${MAYA_VERSION} /bin/bash
 
 before_script:
-  - cd $CONFIG_ROOT
   - chmod +x tests/bin/mayapy.sh
 
 script:
