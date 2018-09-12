@@ -29,10 +29,11 @@ def import_module(mod_name, file_path):
 
 @pytest.fixture
 def minmum_environment_setup():
-    PROJECT_ROOT = os.path.join(mkdtemp(prefix="cnftest"), "projects")
 
     _backup = os.environ.copy()
     os.environ = dict()  # clean environment
+
+    PROJECT_ROOT = os.path.join(_backup["CONFIG_ROOT"], "projects")
 
     os.environ["AVALON_PROJECTS"] = PROJECT_ROOT
     os.environ["AVALON_DB"] = "avalon_test_db"
