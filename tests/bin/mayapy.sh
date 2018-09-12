@@ -1,2 +1,2 @@
 #!/bin/bash
-docker exec maya mayapy $1 $2
+/usr/bin/docker exec maya mayapy $1 $2
