@@ -43,7 +43,9 @@ def minmum_environment_setup():
                 "PYBLISH_QML",
                 "AVALON_CORE",
                 "AVALON_LAUNCHER",
-                "AVALON_SETUP"):
+                "AVALON_SETUP",
+                "CONFIG_ROOT",
+                "DCC_WORKDIR"):
         os.environ[key] = _backup[key]
 
     os.environ["PYTHONPATH"] = _backup["CONFIG_ROOT"]

@@ -18,6 +18,7 @@ env:
 
 before_install:
   - export CONFIG_ROOT=$PWD
+  - export DCC_WORKDIR=/workspace
   - export DCC_DOCKERS=$PWD/tests/bin
   - git clone https://github.com/getavalon/core.git
   - git clone https://github.com/getavalon/setup.git
@@ -35,7 +36,7 @@ install:
   - pip install tox coveralls
   - docker run --name avalon-mongo -p 27017:27017 -d mongo
   - docker run --rm --name maya
-    -v $(pwd):/workspace --workdir=/workspace
+    -v $(pwd):$DCC_WORKDIR --workdir=$DCC_WORKDIR
     -d -i -t mottosso/maya:${MAYA_VERSION} /bin/bash
 
 before_script:
