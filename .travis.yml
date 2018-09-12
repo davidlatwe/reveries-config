@@ -43,7 +43,7 @@ before_script:
   - chmod +x $CONFIG_ROOT/tests/bin/mayapy.sh
 
 script:
-  - tox
+  - tox -c $CONFIG_ROOT
 
 after_success:
   - coveralls
