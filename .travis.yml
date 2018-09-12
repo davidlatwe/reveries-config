@@ -19,6 +19,7 @@ env:
 before_install:
   - export CONFIG_ROOT=$PWD
   - export DCC_DOCKERS=$PWD/tests/bin
+  - cd ..
   - git clone https://github.com/getavalon/core.git
   - git clone https://github.com/getavalon/setup.git
   - git clone https://github.com/getavalon/launcher.git
