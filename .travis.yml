@@ -31,8 +31,6 @@ before_install:
   - export AVALON_LAUNCHER=$PWD/launcher
   - export AVALON_SETUP=$PWD/setup
   - export PYTHONPATH=$PYBLISH_BASE:$PYBLISH_QML:$AVALON_CORE:$AVALON_LAUNCHER:$AVALON_SETUP:$CONFIG_ROOT
-  - cd $CONFIG_ROOT
-  - chmod +x tests/bin/mayapy.sh
 
 install:
   - pip install tox coveralls
@@ -40,6 +38,10 @@ install:
   - docker run --rm --name maya
     -v $(pwd):/workspace --workdir=/workspace
     -d -i -t mottosso/maya:${MAYA_VERSION} /bin/bash
+
+before_script:
+  - cd $CONFIG_ROOT
+  - chmod +x tests/bin/mayapy.sh
 
 script:
   - tox
