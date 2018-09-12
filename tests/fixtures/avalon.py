@@ -45,10 +45,10 @@ def minmum_environment_setup():
                 "AVALON_CORE",
                 "AVALON_LAUNCHER",
                 "AVALON_SETUP",
-                "CONFIG_ROOT",
-                "DCC_WORKDIR"):
+                "CONFIG_ROOT"):
         os.environ[key] = _backup[key]
 
+    os.environ["DCC_WORKDIR"] = _backup.get("DCC_WORKDIR", "")
     os.environ["PYTHONPATH"] = _backup["CONFIG_ROOT"]
     os.environ["PATH"] = os.pathsep.join((_backup.get("DCC_DOCKERS", ""),
                                           _backup["AVALON_SETUP"]))
