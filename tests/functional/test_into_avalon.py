@@ -82,6 +82,7 @@ def step_impl_then():
     if result == SUCESS.format(version=reveries.version):
         return
     elif result == FAILED:
-        raise AssertionError("Pipeline install failed.")
+        raise AssertionError("Pipeline install failed. "
+                             "Stdout: {}".format(stdout))
     else:
         raise RuntimeError("Unknown error. Stdout: {}".format(stdout))
