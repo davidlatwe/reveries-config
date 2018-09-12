@@ -36,6 +36,8 @@ install:
   - pip install tox coveralls
   - docker run --name avalon-mongo -p 27017:27017 -d mongo
   - docker run --rm --name maya
+    --link avalon-mongo:mongo
+    -e AVALON_MONGO=mongodb://mongo:27017
     -v $(pwd):$DCC_WORKDIR --workdir=$DCC_WORKDIR
     -d -i -t mottosso/maya:${MAYA_VERSION} /bin/bash
 
