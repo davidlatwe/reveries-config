@@ -12,19 +12,19 @@ env:
     - AVALON_MONGO=mongodb://localhost:27017
     - PATHEXT=.SH  # This is a workaround
     - CONFIG_ROOT=$PWD
-    - DCC_WORKDIR=/workspace
-    - DCC_DOCKERS=$PWD/tests/bin
+    - DOCKER_WORKDIR=/workspace
+    - DOCKER_APPEXEC=$PWD/tests/bin
     - PYBLISH_BASE=$PWD/pyblish-base
     - PYBLISH_QML=$PWD/pyblish-qml
     - AVALON_CORE=$PWD/core
     - AVALON_LAUNCHER=$PWD/launcher
     - AVALON_SETUP=$PWD/setup
-    - PYTHONPATH="$PYBLISH_BASE:\
-                  $PYBLISH_QML:\
-                  $AVALON_CORE:\
-                  $AVALON_LAUNCHER:\
-                  $AVALON_SETUP:\
-                  $CONFIG_ROOT"
+    - PYTHONPATH=$PYBLISH_BASE:
+                $PYBLISH_QML:
+                $AVALON_CORE:
+                $AVALON_LAUNCHER:
+                $AVALON_SETUP:
+                $CONFIG_ROOT
   matrix:
     - MAYA_VERSION=2018
     - MAYA_VERSION=2017
@@ -43,7 +43,7 @@ install:
   - docker run --rm --name maya
     --link avalon-mongo:mongo
     -e AVALON_MONGO=mongodb://mongo:27017
-    -v $(pwd):$DCC_WORKDIR --workdir=$DCC_WORKDIR
+    -v $(pwd):$DOCKER_WORKDIR --workdir=$DOCKER_WORKDIR
     -d -i -t mottosso/maya:${MAYA_VERSION} /bin/bash
 
 before_script:

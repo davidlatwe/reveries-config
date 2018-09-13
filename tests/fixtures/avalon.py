@@ -47,9 +47,9 @@ def minmum_environment_setup():
                 "CONFIG_ROOT"):
         os.environ[key] = _backup[key]
 
-    os.environ["DCC_WORKDIR"] = _backup.get("DCC_WORKDIR", "")
+    os.environ["DOCKER_WORKDIR"] = _backup.get("DOCKER_WORKDIR", "")
     os.environ["PYTHONPATH"] = _backup["CONFIG_ROOT"]
-    os.environ["PATH"] = os.pathsep.join((_backup.get("DCC_DOCKERS", ""),
+    os.environ["PATH"] = os.pathsep.join((_backup.get("DOCKER_APPEXEC", ""),
                                           _backup["AVALON_SETUP"]))
 
     for name in ("LOGNAME", "USER", "LNAME", "USERNAME"):
