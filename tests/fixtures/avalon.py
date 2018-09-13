@@ -32,25 +32,33 @@ def minmum_environment_setup():
     _backup = os.environ.copy()
     os.environ = dict()  # clean environment
 
-    PROJECT_ROOT = os.path.join(_backup["CONFIG_ROOT"], "projects")
+    PROJECT_ROOT = os.path.join(os.getcwd(), "projects")
+    HOST_WORKDIR = _backup.get("HOST_WORKDIR", os.getcwd())
+    HOST_APPEXEC = _backup.get("HOST_APPEXEC",
+                               os.path.join(HOST_WORKDIR, "tests", "bin"))
 
     os.environ["AVALON_PROJECTS"] = PROJECT_ROOT
-    os.environ["AVALON_DB"] = "avalon_test_db"
-    os.environ["AVALON_CONFIG"] = "reveries"
+    os.environ["HOST_WORKDIR"] = HOST_WORKDIR
+    os.environ["DOCKER_WORKDIR"] = _backup.get("DOCKER_WORKDIR", "")
 
     for key in ("AVALON_MONGO",
+                "AVALON_DB",
                 "PYBLISH_BASE",
                 "PYBLISH_QML",
                 "AVALON_CORE",
                 "AVALON_LAUNCHER",
                 "AVALON_SETUP",
-                "CONFIG_ROOT"):
+                "AVALON_CONFIG"):
         os.environ[key] = _backup[key]
 
-    os.environ["DCC_WORKDIR"] = _backup.get("DCC_WORKDIR", "")
-    os.environ["PYTHONPATH"] = _backup["CONFIG_ROOT"]
-    os.environ["PATH"] = os.pathsep.join((_backup.get("DCC_DOCKERS", ""),
-                                          _backup["AVALON_SETUP"]))
+    os.environ["PYTHONPATH"] = os.pathsep.join([
+        os.environ["HOST_WORKDIR"],  # config dir
+    ])
+
+    os.environ["PATH"] = os.pathsep.join([
+        HOST_APPEXEC,
+        _backup["AVALON_SETUP"],
+    ])
 
     for name in ("LOGNAME", "USER", "LNAME", "USERNAME"):
         if _backup.get(name):
