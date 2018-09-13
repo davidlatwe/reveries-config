@@ -9,22 +9,24 @@ services:
 
 env:
   global:
-    - AVALON_MONGO=mongodb://localhost:27017
     - PATHEXT=.SH  # This is a workaround
-    - CONFIG_ROOT=$PWD
+    - HOST_APPEXEC=$PWD/tests/bin
+    - HOST_WORKDIR=$PWD
     - DOCKER_WORKDIR=/workspace
-    - DOCKER_APPEXEC=$PWD/tests/bin
     - PYBLISH_BASE=$PWD/pyblish-base
     - PYBLISH_QML=$PWD/pyblish-qml
     - AVALON_CORE=$PWD/core
     - AVALON_LAUNCHER=$PWD/launcher
     - AVALON_SETUP=$PWD/setup
-    - PYTHONPATH=$PYBLISH_BASE:
-                $PYBLISH_QML:
-                $AVALON_CORE:
-                $AVALON_LAUNCHER:
-                $AVALON_SETUP:
-                $CONFIG_ROOT
+    - PYTHONPATH=$PYTHONPATH:$PYBLISH_BASE
+    - PYTHONPATH=$PYTHONPATH:$PYBLISH_QML
+    - PYTHONPATH=$PYTHONPATH:$AVALON_CORE
+    - PYTHONPATH=$PYTHONPATH:$AVALON_LAUNCHER
+    - PYTHONPATH=$PYTHONPATH:$AVALON_SETUP
+    - PYTHONPATH=$PYTHONPATH:$PWD
+    - AVALON_MONGO=mongodb://localhost:27017
+    - AVALON_DB=avalon:test
+    - AVALON_CONFIG=reveries
   matrix:
     - MAYA_VERSION=2018
     - MAYA_VERSION=2017

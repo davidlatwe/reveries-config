@@ -24,4 +24,5 @@ __all__ = [
 collect_ignore = []
 
 if not os.environ.get("REVERIES_IN_HOUSE_TEST"):
-    collect_ignore.append("pkg/module_py2.py")
+    # collect_ignore.append("pkg/module_py2.py")
+    pass
