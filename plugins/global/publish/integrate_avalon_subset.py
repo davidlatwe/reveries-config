@@ -161,8 +161,16 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
             for src, dst in transfers:
                 # normpath
-                src = os.path.abspath(os.path.normpath(src))
-                dst = os.path.abspath(os.path.normpath(dst))
+                self.log.debug("Src. Before: {!r}".format(src))
+                self.log.debug("Dst. Before: {!r}".format(dst))
+
+                src = os.path.abspath(
+                    os.path.normpath(os.path.expandvars(src)))
+                dst = os.path.abspath(
+                    os.path.normpath(os.path.expandvars(dst)))
+
+                self.log.debug("Src. After: {!r}".format(src))
+                self.log.debug("Dst. After: {!r}".format(dst))
 
                 self.log.info("Copying {0}: {1} -> {2}".format(job, src, dst))
                 if src == dst:
@@ -195,6 +203,10 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 raise
 
     def copy_file(self, src, dst):
+        file_dir = os.path.dirname(dst)
+        if not os.path.isdir(file_dir):
+            os.makedirs(file_dir)
+
         try:
             shutil.copyfile(src, dst)
         except OSError:

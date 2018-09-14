@@ -23,8 +23,8 @@ class CollectLook(pyblish.api.InstancePlugin):
         shaders = cmds.listConnections(meshes, type="shadingEngine")
         upstream_nodes = cmds.listHistory(shaders, pruneDagObjects=True)
 
-        instance.data["look_members"] = upstream_nodes
-        instance[:] += upstream_nodes
+        instance.data["dag_members"] = instance[:]
+        instance[:] = upstream_nodes
 
         # Collect previous texture file hash.
         # dict {hash: "/file/path"}

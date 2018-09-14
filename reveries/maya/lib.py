@@ -322,14 +322,13 @@ def serialise_shaders(nodes):
         nodes,
         long=True,
         recursive=True,
-        showType=True,
         objectsOnly=True,
         type="transform"
     )
 
     meshes_by_id = {}
-    for mesh in valid_nodes:
-        shapes = cmds.listRelatives(valid_nodes[0],
+    for transform in valid_nodes:
+        shapes = cmds.listRelatives(transform,
                                     shapes=True,
                                     fullPath=True) or list()
 
@@ -339,12 +338,12 @@ def serialise_shaders(nodes):
                 continue
 
             try:
-                id_ = cmds.getAttr(mesh + "." + AVALON_ID_ATTR_SHORT)
+                id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_SHORT)
 
                 if id_ not in meshes_by_id:
                     meshes_by_id[id_] = list()
 
-                meshes_by_id[id_].append(mesh)
+                meshes_by_id[id_].append(transform)
 
             except ValueError:
                 continue

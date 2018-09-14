@@ -13,7 +13,7 @@ class LookLoader(ReferenceLoader):
     families = ["reveries.look"]
 
     representations = [
-        "mayaAscii",
+        "LookDev",
     ]
 
     def process_reference(self, context, name, namespace, options):
@@ -63,6 +63,6 @@ class LookLoader(ReferenceLoader):
         with open(relationship) as f:
             relationships = json.load(f)
 
-        lib.apply_shaders(relationships, namespace)
+        lib.apply_shaders(relationships["shader_by_id"], namespace)
 
         self[:] = nodes

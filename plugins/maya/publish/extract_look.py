@@ -38,6 +38,7 @@ class ExtractLook(PackageExtractor):
         publish_dir = self.data["publish_dir"].replace(
             avalon.api.registered_root(), "$AVALON_PROJECTS"
         )
+        self.log.debug("Publish Dir: {!r}".format(publish_dir))
 
         # Extract shaders
         #
@@ -50,7 +51,7 @@ class ExtractLook(PackageExtractor):
 
                 # Extract Textures
                 #
-                file_nodes = cmds.ls(self.data["look_members"], type="file")
+                file_nodes = cmds.ls(self.member, type="file")
                 file_hashes = self.data["look_textures"]
 
                 # hash file to check which to copy and which to remain old link
@@ -87,13 +88,14 @@ class ExtractLook(PackageExtractor):
 
                     # Set texture file path to publish location
                     cmds.setAttr(attr_name, final_path, type="string")
+                    self.log.debug("Texture Path: {!r}".format(final_path))
 
                 # Select full shading network
                 # If only select shadingGroups, and if there are any node
                 # connected to Dag node (i.e. drivenKey), then the command
                 # will not only export selected shadingGroups' shading network,
                 # but also export other related DAG nodes (i.e. full hierarchy)
-                cmds.select(self.data["look_members"],
+                cmds.select(self.member,
                             replace=True,
                             noExpand=True)
 
@@ -112,20 +114,20 @@ class ExtractLook(PackageExtractor):
 
         self.log.info("Serialising shaders..")
 
-        dag_set_members = lib.serialise_shaders(self.member)
+        shader_by_id = lib.serialise_shaders(self.data["dag_members"])
 
         # Animatable attrs
         # Custom attributes in assembly node which require to be animated.
         self.log.info("Serialising animatable attributes..")
         animatable = dict()
-        root = cmds.ls(self.member, assemblies=True)[0]
-        for attr in cmds.listAttr(root, userDefined=True):
+        root = cmds.ls(self.data["dag_members"], assemblies=True)[0]
+        for attr in cmds.listAttr(root, userDefined=True) or list():
             animatable[attr] = cmds.listConnections(root + "." + attr,
                                                     destination=True,
                                                     source=False,
                                                     plugs=True)
 
-        meshes = cmds.ls(self.member,
+        meshes = cmds.ls(self.data["dag_members"],
                          visible=True,
                          noIntermediate=True,
                          type="mesh")
@@ -150,8 +152,8 @@ class ExtractLook(PackageExtractor):
 
         try:
             from reveries.maya import vray
-        except ImportError:
-            self.log.debug("Possible plugin 'vrayformaya' not installed.")
+        except RuntimeError as e:
+            self.log.debug(e)
         else:
             for node in meshes:
                 # - shape
@@ -167,7 +169,7 @@ class ExtractLook(PackageExtractor):
                         vray_attrs[parent[0]] = values
 
         relationships = {
-            "dag_set_members": dag_set_members,
+            "shader_by_id": shader_by_id,
             "animatable": animatable,
             "crease_sets": crease_sets,
             "vray_attrs": vray_attrs,
