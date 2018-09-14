@@ -22,6 +22,8 @@ PYBLISH_DEFAULT = os.path.join(PYBLISH_PATH, "plugins")
 
 CONTRACTOR_PATH = os.path.join(PLUGINS_DIR, "global", "contractor")
 
+os.environ["PYBLISH_QML_FOSTER"] = "true"
+
 
 __all__ = [
     "version",
