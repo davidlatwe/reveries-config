@@ -4,6 +4,7 @@ import importlib
 from maya import cmds, OpenMaya
 from avalon import maya, api as avalon
 
+from .. import utils
 from .lib import (
     set_avalon_uuid,
     set_scene_timeline,
@@ -14,6 +15,10 @@ from . import PYMEL_MOCK_FLAG
 
 def on_task_changed(_, *args):
     avalon.logger.info("Changing Task module..")
+
+    utils.init_app_workdir()
+    maya.pipeline._on_task_changed()
+
     set_scene_timeline()
 
 
