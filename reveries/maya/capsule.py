@@ -2,28 +2,18 @@ import contextlib
 import maya.cmds as cmds
 
 
-def _safe_undo():
-    """Undo without RuntimeError: no command to undo
-    """
-    try:
-        cmds.undo()
-    except RuntimeError as e:
-        cmds.warning(str(e))
-
-
 @contextlib.contextmanager
-def no_display_layers(node_list):
+def no_display_layers(nodes):
     """
     remove DAG nodes connection with displayLayer
     """
-    cmds.undoInfo(ock=True)
-
     # remove `displayLayerManager` type node
-    invalid = set(cmds.ls(node_list, type="displayLayerManager"))
-    node_list = [x for x in node_list if x not in invalid]
+    invalid = set(cmds.ls(nodes, type="displayLayerManager"))
+    nodes = [x for x in nodes if x not in invalid]
+
     # get connections with `displayLayer` type node
     conn_pair = cmds.listConnections(
-        node_list,
+        nodes,
         connections=True,
         plugs=True,
         type="displayLayer"
@@ -36,12 +26,15 @@ def no_display_layers(node_list):
         # remove connection
         for i in range(0, len(conn_pair), 2):
             cmds.disconnectAttr(conn_pair[i + 1], conn_pair[i])
+
         yield
+
     except AssertionError:
         cmds.warning("This is a bug. The connection list is not pairable.")
+
     finally:
-        cmds.undoInfo(cck=True)
-        _safe_undo()
+        for i in range(0, len(conn_pair), 2):
+            cmds.connectAttr(conn_pair[i + 1], conn_pair[i])
 
 
 @contextlib.contextmanager
@@ -49,31 +42,46 @@ def no_smooth_preview():
     """
     disable mesh smooth preview
     """
-    cmds.undoInfo(ock=True)
-
+    smoothed = list()
     try:
         smooth_mesh = cmds.ls("*.displaySmoothMesh", recursive=True)
         for attr in set(smooth_mesh):
-            cmds.setAttr(attr, False)
+            if cmds.getAttr(attr):
+                smoothed.append(attr)
+                cmds.setAttr(attr, False)
         yield
+
     finally:
-        cmds.undoInfo(cck=True)
-        _safe_undo()
+        for attr in smoothed:
+            cmds.setAttr(attr, True)
 
 
 @contextlib.contextmanager
-def assign_shader(node_list, shadingEngine):
+def assign_shader(meshes, shadingEngine):
     """
     assign model to shading group
     """
-    cmds.undoInfo(ock=True)
+    meshes_by_shader = dict()
+
+    for mesh in meshes:
+        for shader in cmds.listConnections(mesh,
+                                           type="shadingEngine",
+                                           source=False,
+                                           destination=True) or list():
+            if shader not in meshes_by_shader:
+                meshes_by_shader[shader] = []
+
+            shaded = cmds.sets(shader, query=True) or []
+            meshes_by_shader[shader] += shaded
 
     try:
-        cmds.sets(node_list, edit=True, forceElement=shadingEngine)
+        cmds.sets(meshes, edit=True, forceElement=shadingEngine)
+
         yield
+
     finally:
-        cmds.undoInfo(cck=True)
-        _safe_undo()
+        for shader, shaded in meshes_by_shader.items():
+            cmds.sets(shaded, forceElement=shader)
 
 
 @contextlib.contextmanager
@@ -112,32 +120,52 @@ def evaluation(mode="off"):
 
 
 @contextlib.contextmanager
-def no_refresh(with_undo=False):
+def no_refresh():
     """Pause viewport
     """
-    if with_undo:
-        cmds.undoInfo(ock=True)
-
     try:
         cmds.refresh(suspend=True)
         yield
     finally:
-        if with_undo:
-            cmds.undoInfo(cck=True)
-            _safe_undo()
         cmds.refresh(suspend=False)
 
 
 @contextlib.contextmanager
-def undo():
-    """Pause viewport
+def no_undo(flush=False):
+    """Disable the undo queue during the context
+
+    Arguments:
+        flush (bool): When True the undo queue will be emptied when returning
+            from the context losing all undo history. Defaults to False.
+
+    """
+    original = cmds.undoInfo(query=True, state=True)
+    keyword = "state" if flush else "stateWithoutFlush"
+
+    try:
+        cmds.undoInfo(**{keyword: False})
+        yield
+    finally:
+        cmds.undoInfo(**{keyword: original})
+
+
+@contextlib.contextmanager
+def undo_chunk():
+    """Open undo chunk and undo when exit
+
+    Use with caution !
+
     """
     cmds.undoInfo(ock=True)
     try:
         yield
     finally:
         cmds.undoInfo(cck=True)
-        _safe_undo()
+
+        try:  # Undo without RuntimeError: no command to undo
+            cmds.undo()
+        except RuntimeError as e:
+            cmds.warning(str(e))
 
 
 @contextlib.contextmanager
@@ -160,6 +188,30 @@ def solo_renderable(solo_cam):
         # Revert to original state
         for cam, state in states.items():
             cmds.setAttr(cam + ".rnd", state)
+
+
+@contextlib.contextmanager
+def namespaced(namespace, new=True):
+    """Work inside namespace during context
+
+    Args:
+        new (bool): When enabled this will rename the namespace to a unique
+            namespace if the input namespace already exists.
+
+    Yields:
+        str: The namespace that is used during the context
+
+    """
+    original = cmds.namespaceInfo(currentNamespace=True)
+    if new:
+        namespace = avalon.maya.lib.unique_namespace(namespace)
+        cmds.namespace(add=namespace)
+
+    try:
+        cmds.namespace(set=namespace)
+        yield namespace
+    finally:
+        cmds.namespace(set=original)
 
 
 @contextlib.contextmanager

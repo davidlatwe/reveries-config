@@ -1,5 +1,7 @@
 
 import os
+import contextlib
+
 import pyblish.api
 import avalon
 import reveries.utils
@@ -35,13 +37,16 @@ class ExtractCamera(DelegatablePackageExtractor):
         self.end = context_data.get("endFrame")
         camera = cmds.ls(self.member, type="camera")[0]
 
-        with capsule.no_refresh(with_undo=True):
-            with capsule.evaluation("off"):
-                # bake to worldspace
-                lib.bake_camera(camera, self.start, self.end)
-                cmds.select(camera, replace=True, noExpand=True)
+        with contextlib.nested(
+            capsule.no_undo(),
+            capsule.no_refresh(),
+            capsule.evaluation("off"),
+        ):
+            # bake to worldspace
+            lib.bake_camera(camera, self.start, self.end)
+            cmds.select(camera, replace=True, noExpand=True)
 
-                super(ExtractCamera, self).extract()
+            super(ExtractCamera, self).extract()
 
     def extract_mayaAscii(self):
 

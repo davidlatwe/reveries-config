@@ -1,5 +1,7 @@
 
 import os
+import contextlib
+
 import pyblish.api
 
 from reveries.maya import io, lib, capsule
@@ -39,8 +41,10 @@ class ExtractPointCache(DelegatablePackageExtractor):
             self.start_frame = context_data.get("startFrame")
             self.end_frame = context_data.get("endFrame")
 
-        with capsule.no_refresh(with_undo=True):
-            with capsule.evaluation("off"):
+        with contextlib.nested(
+            capsule.no_refresh(),
+            capsule.evaluation("off"),
+        ):
                 out_geo = self.data.get("out_animation", self.member)
                 cmds.select(out_geo, replace=True, noExpand=True)
 

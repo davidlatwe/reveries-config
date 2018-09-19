@@ -1,6 +1,8 @@
 
 import os
 import json
+import contextlib
+
 import pyblish.api
 import avalon.api
 
@@ -46,66 +48,67 @@ class ExtractLook(PackageExtractor):
 
         self.log.info("Extracting shaders..")
 
-        with maya.maintained_selection():
-            with capsule.no_refresh(with_undo=True):
+        with contextlib.nested(
+            maya.maintained_selection(),
+            capsule.no_refresh(),
+        ):
+            # Extract Textures
+            #
+            file_nodes = cmds.ls(self.member, type="file")
+            file_hashes = self.data["look_textures"]
 
-                # Extract Textures
-                #
-                file_nodes = cmds.ls(self.member, type="file")
-                file_hashes = self.data["look_textures"]
+            # hash file to check which to copy and which to remain old link
+            for node in file_nodes:
+                attr_name = node + ".fileTextureName"
 
-                # hash file to check which to copy and which to remain old link
-                for node in file_nodes:
-                    attr_name = node + ".fileTextureName"
+                img_path = cmds.getAttr(attr_name,
+                                        expandEnvironmentVariables=True)
 
-                    img_path = cmds.getAttr(attr_name,
-                                            expandEnvironmentVariables=True)
+                hash_value = hash_file(img_path)
+                try:
+                    final_path = file_hashes[hash_value]
+                except KeyError:
+                    paths = [
+                        publish_dir,
+                        "textures",
+                    ]
+                    paths += node.split(":")  # Namespace as fsys hierarchy
+                    paths.append(os.path.basename(img_path))  # image name
+                    #
+                    # Include node name as part of the path should prevent
+                    # file name collision which may introduce by two or
+                    # more file nodes sourcing from different directory
+                    # with same file name but different file content.
+                    #
+                    # For example:
+                    #   File_A.fileTextureName = "asset/a/texture.png"
+                    #   File_B.fileTextureName = "asset/b/texture.png"
+                    #
+                    final_path = os.path.join(*paths)
 
-                    hash_value = hash_file(img_path)
-                    try:
-                        final_path = file_hashes[hash_value]
-                    except KeyError:
-                        paths = [
-                            publish_dir,
-                            "textures",
-                        ]
-                        paths += node.split(":")  # Namespace as fsys hierarchy
-                        paths.append(os.path.basename(img_path))  # image name
-                        #
-                        # Include node name as part of the path should prevent
-                        # file name collision which may introduce by two or
-                        # more file nodes sourcing from different directory
-                        # with same file name but different file content.
-                        #
-                        # For example:
-                        #   File_A.fileTextureName = "asset/a/texture.png"
-                        #   File_B.fileTextureName = "asset/b/texture.png"
-                        #
-                        final_path = os.path.join(*paths)
+                    file_hashes[hash_value] = final_path
+                    self.data["auxiliaries"].append((img_path, final_path))
 
-                        file_hashes[hash_value] = final_path
-                        self.data["auxiliaries"].append((img_path, final_path))
+                # Set texture file path to publish location
+                cmds.setAttr(attr_name, final_path, type="string")
+                self.log.debug("Texture Path: {!r}".format(final_path))
 
-                    # Set texture file path to publish location
-                    cmds.setAttr(attr_name, final_path, type="string")
-                    self.log.debug("Texture Path: {!r}".format(final_path))
+            # Select full shading network
+            # If only select shadingGroups, and if there are any node
+            # connected to Dag node (i.e. drivenKey), then the command
+            # will not only export selected shadingGroups' shading network,
+            # but also export other related DAG nodes (i.e. full hierarchy)
+            cmds.select(self.member,
+                        replace=True,
+                        noExpand=True)
 
-                # Select full shading network
-                # If only select shadingGroups, and if there are any node
-                # connected to Dag node (i.e. drivenKey), then the command
-                # will not only export selected shadingGroups' shading network,
-                # but also export other related DAG nodes (i.e. full hierarchy)
-                cmds.select(self.member,
-                            replace=True,
-                            noExpand=True)
-
-                cmds.file(entry_path,
-                          options="v=0;",
-                          type="mayaAscii",
-                          force=True,
-                          exportSelected=True,
-                          preserveReferences=False,
-                          constructionHistory=False)
+            cmds.file(entry_path,
+                      options="v=0;",
+                      type="mayaAscii",
+                      force=True,
+                      exportSelected=True,
+                      preserveReferences=False,
+                      constructionHistory=False)
 
         # Serialise shaders relationships
         #
