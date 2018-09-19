@@ -19,6 +19,9 @@ class AvalonLockScene(pyblish.api.ContextPlugin):
 
     def process(self, context):
 
+        assert any(inst.data.get("publish", True) for inst in context), (
+            "No instance been published, aborting.")
+
         assert all(result["success"] for result in context.data["results"]), (
             "Integration failed, aborting.")
 
