@@ -57,7 +57,7 @@ class LookLoader(ReferenceLoader):
         if not os.path.isfile(relationship):
             self.log.warning("Look development asset "
                              "has no relationship data.\n"
-                             "%s was not found" % self.fname)
+                             "{!r} was not found".format(relationship))
             return nodes
 
         with open(relationship) as f:
