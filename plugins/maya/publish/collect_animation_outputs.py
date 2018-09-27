@@ -26,3 +26,7 @@ class CollectAnimationOutputs(pyblish.api.InstancePlugin):
 
         # Store data in the instance for the validator
         instance.data["out_animation"] = members
+
+        if len(members) == 0:
+            self.log.warning(
+                "{!r} has no output geomotry.".format(instance.name))
