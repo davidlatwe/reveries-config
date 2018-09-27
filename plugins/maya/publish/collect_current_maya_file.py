@@ -10,9 +10,9 @@ class CollectMayaCurrentFile(pyblish.api.ContextPlugin):
 
     order = pyblish.api.CollectorOrder - 0.4
     label = "Maya Current File"
-    hosts = ['maya']
+    hosts = ["maya"]
 
     def process(self, context):
         """Inject the current working file"""
         current_file = cmds.file(query=True, sceneName=True)
-        context.data['currentFile'] = os.path.normpath(current_file)
+        context.data["currentMaking"] = os.path.normpath(current_file)
