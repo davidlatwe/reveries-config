@@ -2,7 +2,7 @@
 import avalon.maya
 
 
-class CreateMayaShare(avalon.maya.Creator):
+class MayaShareCreator(avalon.maya.Creator):
     """Share work as MayaAscii file"""
 
     name = "MayaShareDefault"

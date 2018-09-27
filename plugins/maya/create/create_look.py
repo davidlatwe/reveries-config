@@ -2,7 +2,7 @@
 import avalon.maya
 
 
-class CreateLook(avalon.maya.Creator):
+class LookCreator(avalon.maya.Creator):
     """Shader connections defining shape look"""
 
     name = "look"
