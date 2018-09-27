@@ -356,6 +356,26 @@ def export_gpu(out_path, startFrame, endFrame):
                   )
 
 
+def wrap_gpu(wrapper_path, gpu_path, node_name):
+    """
+    """
+    MayaAscii_template = """//Maya ASCII scene
+requires maya "2016";
+requires -nodeType "gpuCache" "gpuCache" "1.0";
+createNode transform -n "{nodeName}";
+createNode gpuCache -n "{nodeName}Shape" -p "{nodeName}";
+    setAttr -k off ".v";
+    setAttr ".covm[0]"  0 1 1;
+    setAttr ".cdvm[0]"  0 1 1;
+    setAttr ".cfn" -type "string" "{filePath}";
+    setAttr ".cmp" -type "string" "|";
+"""
+
+    with open(wrapper_path, "w") as maya_file:
+        maya_file.write(MayaAscii_template.format(nodeName=node_name,
+                                                  filePath=gpu_path))
+
+
 def capture_seq(camera,
                 filename,
                 start_frame,
