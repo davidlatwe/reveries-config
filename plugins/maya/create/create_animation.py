@@ -22,7 +22,7 @@ class AnimationCreator(avalon.maya.Creator):
         self.data["format"] = cache_mode
 
         self.data["publish_contractor"] = self.contractor
-        self.data["use_contractor"] = True
+        self.data["use_contractor"] = False
 
         instance = super(AnimationCreator, self).process()
         cmds.setAttr(instance + ".format", lock=True)
