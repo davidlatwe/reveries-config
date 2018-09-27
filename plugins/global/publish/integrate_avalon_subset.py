@@ -29,9 +29,10 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     label = "Integrate Subset"
     order = pyblish.api.IntegratorOrder
 
-    transfers = dict(packages=list(), auxiliaries=list())
-
     def process(self, instance):
+
+        self.transfers = dict(packages=list(),
+                              auxiliaries=list())
 
         # Check Delegation
         #
@@ -108,8 +109,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         representations = []
 
         # `template` extracted from `ExtractPublishDir` plugin
-        template_data = instance.data["template"][0]
-        template_publish = instance.data["template"][1]
+        template_data = instance.data["publish_dir_elem"][0]
+        template_publish = instance.data["publish_dir_elem"][1]
 
         # Should not have any kind of check on files here, that should be done
         # by extractors, here only need to publish representation dirs.
@@ -196,11 +197,13 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             shutil.copytree(src, dst)
         except OSError as e:
             if e.errno == errno.EEXIST:
-                self.log.warning("Representation dir existed, this should not "
-                                 "happen. Copy skipped.")
+                msg = ("Representation dir existed, this should "
+                       "not happen. Copy aborted.")
             else:
-                self.log.critical("An unexpected error occurred.")
-                raise
+                msg = "An unexpected error occurred."
+
+            self.log.critical(msg)
+            raise OSError(msg)
 
     def copy_file(self, src, dst):
         file_dir = os.path.dirname(dst)
@@ -210,8 +213,9 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         try:
             shutil.copyfile(src, dst)
         except OSError:
-            self.log.critical("An unexpected error occurred.")
-            raise
+            msg = "An unexpected error occurred."
+            self.log.critical(msg)
+            raise OSError(msg)
 
     def write_database(self, instance, version, representations):
         """Write version and representations to database
@@ -237,7 +241,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     def get_subset(self, instance):
 
-        asset_id = instance.data["asset_id"]
+        asset_id = instance.data["asset_doc"]["_id"]
 
         subset = io.find_one({"type": "subset",
                               "parent": asset_id,
@@ -301,14 +305,16 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         families += current_families
 
         # create relative source path for DB
-        relative_path = os.path.relpath(context.data["currentFile"],
+        relative_path = os.path.relpath(context.data["currentMaking"],
                                         api.registered_root())
         source = os.path.join("{root}", relative_path).replace("\\", "/")
+        hash_val = context.data["sourceFingerprint"]["currentHash"]
 
         version_data = {"families": families,
                         "time": context.data["time"],
                         "author": context.data["user"],
                         "source": source,
+                        "hash": hash_val,
                         "comment": context.data.get("comment")}
 
         # Include optional data if present in

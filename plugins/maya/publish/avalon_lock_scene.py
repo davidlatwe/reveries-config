@@ -5,7 +5,7 @@ from avalon import maya
 
 
 class AvalonLockScene(pyblish.api.ContextPlugin):
-    """Prevent accidental overwrite of original scene once published
+    """Forbid any work file modification once entering extraction
 
     A node is placed within the scene called "lock" where the name of
     the file as it exists currently is imprinted. If an attempt is made
@@ -15,7 +15,7 @@ class AvalonLockScene(pyblish.api.ContextPlugin):
     """
 
     label = "Lock Scene"
-    order = pyblish.api.IntegratorOrder + 0.4999
+    order = pyblish.api.ExtractorOrder - 0.499
 
     def process(self, context):
 

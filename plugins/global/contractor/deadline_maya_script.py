@@ -24,7 +24,7 @@ class ContractorDeadlineMayaScript(BaseContractor):
         AVALON_DEADLINE = avalon.api.Session["AVALON_DEADLINE"]
 
         workspace = context.data["workspaceDir"]
-        fpath = context.data["currentFile"]
+        fpath = context.data["currentMaking"]
         fname = os.path.basename(fpath)
         name, ext = os.path.splitext(fname)
         comment = context.data.get("comment", "")

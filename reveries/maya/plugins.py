@@ -1,5 +1,8 @@
 
+import os
+
 import avalon.api
+
 from ..plugins import (
     PackageLoader,
     message_box_error,
@@ -49,6 +52,17 @@ class ReferenceLoader(PackageLoader):
             avalon.api.registered_root(), "$AVALON_PROJECTS"
         )
 
+    def file_path(self, file_name):
+        entry_path = os.path.join(self.package_path, file_name)
+
+        if not os.path.exists(os.path.expandvars(entry_path)):
+            message = "%s does not exist." % entry_path
+            self.log.error(message)
+            message_box_error("File Missing", message)
+            return None
+
+        return entry_path
+
     def process_reference(self, context, name, namespace, options):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
@@ -85,7 +99,6 @@ class ReferenceLoader(PackageLoader):
             loader=self.__class__.__name__)
 
     def update(self, container, representation):
-        import os
         from maya import cmds
 
         node = container["objectName"]
@@ -95,6 +108,9 @@ class ReferenceLoader(PackageLoader):
                                if cmds.nodeType(node) == "reference"), None)
 
         if not reference_node:
+            # TODO (davidlatwe): Possible make it forward to
+            #   a corresponding importLoader ?
+
             title = "Update Abort"
             message = ("Imported container not supported; container must be "
                        "referenced.")
@@ -109,8 +125,6 @@ class ReferenceLoader(PackageLoader):
             file_type = "FBX"
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
-
-        assert os.path.exists(entry_path), "%s does not exist." % entry_path
 
         cmds.file(entry_path, loadReference=reference_node, type=file_type)
 
@@ -172,6 +186,15 @@ class ReferenceLoader(PackageLoader):
 class ImportLoader(PackageLoader):
 
     hosts = ["maya"]
+
+    def __init__(self, context):
+        super(ImportLoader, self).__init__(context)
+
+        # This will ensure reference path resolvable when project root moves to
+        # other place.
+        self.package_path = self.package_path.replace(
+            avalon.api.registered_root(), "$AVALON_PROJECTS"
+        )
 
     def process_import(self, context, name, namespace, options):
         """To be implemented by subclass"""
