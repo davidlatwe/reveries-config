@@ -44,7 +44,7 @@ class ExtractModel(PackageExtractor):
             super(ExtractModel, self).extract()
 
     def extract_mayaBinary(self):
-        entry_file = self.file_name("ma")
+        entry_file = self.file_name("mb")
         package_path = self.create_package(entry_file)
         entry_path = os.path.join(package_path, entry_file)
 
@@ -73,8 +73,12 @@ class ExtractModel(PackageExtractor):
         )
 
     def extract_GPUCache(self):
-        entry_file = self.file_name("abc")
+        entry_file = self.file_name("ma")
+        cache_file = self.file_name("abc")
         package_path = self.create_package(entry_file)
         entry_path = os.path.join(package_path, entry_file)
+        cache_path = os.path.join(package_path, cache_file)
+
         frame = cmds.currentTime(query=True)
-        io.export_gpu(entry_path, frame, frame)
+        io.export_gpu(cache_path, frame, frame)
+        io.wrap_gpu(entry_path, cache_file, self.data["subset"])
