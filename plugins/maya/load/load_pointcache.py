@@ -1,5 +1,6 @@
 
 import os
+
 import reveries.maya.lib
 from reveries.plugins import message_box_warning
 from reveries.maya.plugins import ReferenceLoader, ImportLoader
@@ -9,11 +10,10 @@ class PointCacheReferenceLoader(ReferenceLoader):
 
     label = "Reference PointCache"
     order = -10
-    icon = "code-fork"
+    icon = "flash"
     color = "orange"
 
     families = [
-        "reveries.model",
         "reveries.animation",
         "reveries.pointcache",
     ]
@@ -21,6 +21,7 @@ class PointCacheReferenceLoader(ReferenceLoader):
     representations = [
         "Alembic",
         "FBXCache",
+        "GPUCache",
     ]
 
     def process_reference(self, context, name, namespace, options):
@@ -53,11 +54,10 @@ class PointCacheImportLoader(ImportLoader):
 
     label = "Import PointCache"
     order = -10
-    icon = "code-fork"
+    icon = "flash"
     color = "orange"
 
     families = [
-        "reveries.model",
         "reveries.animation",
         "reveries.pointcache",
     ]
@@ -71,45 +71,18 @@ class PointCacheImportLoader(ImportLoader):
         import maya.cmds as cmds
 
         representation = context["representation"]
-        representation_name = representation["name"]
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        # Root group
-        label = "{}:{}".format(namespace, name)
-        root = cmds.group(name=label, empty=True)
+        group_name = "{}:{}".format(namespace, name)
+        nodes = cmds.file(entry_path,
+                          i=True,
+                          namespace=namespace,
+                          returnNewNodes=True,
+                          groupReference=True,
+                          groupName=group_name)
 
-        if representation_name == "GPUCache":
-            # Create transform with shape
-            transform_name = label + "_GPU"
-            transform = cmds.createNode("transform", name=transform_name,
-                                        parent=root)
-            cache = cmds.createNode("gpuCache",
-                                    parent=transform,
-                                    name="{0}Shape".format(transform_name))
-
-            # Set the cache filepath
-            cmds.setAttr(cache + '.cacheFileName',
-                         entry_path,
-                         type="string")
-            cmds.setAttr(cache + '.cacheGeomPath', "|", type="string")  # root
-
-            # Lock parenting of the transform and cache
-            cmds.lockNode([transform, cache], lock=True)
-
-            nodes = [root, transform, cache]
-
-        elif representation_name == "FBXCache":
-            nodes = cmds.file(entry_path,
-                              i=True,
-                              namespace=namespace,
-                              returnNewNodes=True,
-                              groupReference=True,
-                              groupName="{}:{}".format(namespace, name))
-        else:
-            raise RuntimeError("Unsupported format: {}\nThis is a bug."
-                               "".format(representation_name))
-
+        reveries.maya.lib.lock_transform(group_name)
         self[:] = nodes
 
     def update(self, container, representation):
@@ -129,7 +102,7 @@ class PointCacheImportLoader(ImportLoader):
 
             for cache in caches:
                 cmds.setAttr(cache + ".cacheFileName",
-                             self.entry_file,
+                             entry_path,
                              type="string")
 
         elif representation_name == "FBXCache":
