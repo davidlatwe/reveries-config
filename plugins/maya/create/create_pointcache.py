@@ -23,7 +23,7 @@ class PointCacheCreator(avalon.maya.Creator):
         self.data["static_cache"] = False
 
         self.data["publish_contractor"] = self.contractor
-        self.data["use_contractor"] = True
+        self.data["use_contractor"] = False
 
         instance = super(PointCacheCreator, self).process()
         cmds.setAttr(instance + ".publish_contractor", lock=True)
