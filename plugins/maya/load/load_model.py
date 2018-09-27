@@ -14,6 +14,7 @@ class ModelLoader(ReferenceLoader):
 
     representations = [
         "mayaBinary",
+        "GPUCache",
     ]
 
     def process_reference(self, context, name, namespace, options):
@@ -33,3 +34,6 @@ class ModelLoader(ReferenceLoader):
                               groupReference=True,
                               groupName="{}:{}".format(namespace, name))
         self[:] = nodes
+
+    def switch(self, container, representation):
+        self.update(container, representation)
