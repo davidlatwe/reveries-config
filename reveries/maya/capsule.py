@@ -1,5 +1,6 @@
 import contextlib
 import maya.cmds as cmds
+import avalon.maya
 
 
 @contextlib.contextmanager
