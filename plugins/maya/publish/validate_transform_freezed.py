@@ -51,13 +51,13 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
         invalid = self.get_invalid(instance)
         if invalid:
             self.log.error(
-                "{!r} has not freezed transform:".format(instance)
+                "{!r} has not freezed transform:".format(instance.name)
             )
             for node, not_freezed in invalid.items():
                 print(node)
                 for attr, values in not_freezed.items():
                     print("{0}: {1}".format(attr, values))
 
-            raise ValueError("%s <Transform Freezed> Failed." % instance)
+            raise ValueError("%s <Transform Freezed> Failed." % instance.name)
 
-        self.log.info("%s <Transform Freezed> Passed." % instance)
+        self.log.info("%s <Transform Freezed> Passed." % instance.name)
