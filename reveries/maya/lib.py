@@ -5,7 +5,7 @@ import uuid
 from maya import cmds
 from maya.api import OpenMaya as om
 
-from .. import utils
+from .. import utils, lib
 from ..vendor.six import string_types
 
 
@@ -613,3 +613,30 @@ def filter_mesh_parenting(transforms):
         cleaned_2.append(node)
 
     return cleaned_2
+
+
+def get_highest_in_hierarchy(nodes):
+    """Return highest nodes in the hierarchy that are in the `nodes` list.
+
+    The "highest in hierarchy" are the nodes closest to world: top-most level.
+
+    Args:
+        nodes (list): The nodes in which find the highest in hierarchies.
+
+    Returns:
+        list: The highest nodes from the input nodes.
+
+    """
+
+    # Ensure we use long names
+    nodes = cmds.ls(nodes, long=True)
+    lookup = set(nodes)
+
+    highest = []
+    for node in nodes:
+        # If no parents are within the nodes input list
+        # then this is a highest node
+        if not any(n in lookup for n in lib.iter_uri(node, "|")):
+            highest.append(node)
+
+    return highest
