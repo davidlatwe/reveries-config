@@ -2,6 +2,9 @@
 import pyblish.api
 from maya import cmds
 
+from reveries import math
+from reveries.maya.plugins import MayaSelectInvalidAction
+
 
 class ValidateTranformFreezed(pyblish.api.InstancePlugin):
     """ All transform must be freezed
@@ -18,31 +21,55 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
         "reveries.rig",
     ]
 
+    actions = [
+        pyblish.api.Category("Select"),
+        MayaSelectInvalidAction,
+    ]
+
     @staticmethod
     def get_invalid(instance):
+        """Returns the invalid transforms in the instance.
 
-        invalid = dict()
+        This is the same as checking:
+        - translate == [0, 0, 0] and rotate == [0, 0, 0] and
+          scale == [1, 1, 1] and shear == [0, 0, 0]
 
-        transform_attrs = {
-            ".translate": [(0.0, 0.0, 0.0)],
-            ".rotate": [(0.0, 0.0, 0.0)],
-            ".scale": [(1.0, 1.0, 1.0)],
-            ".shear": [(0.0, 0.0, 0.0)]
-        }
+        .. note::
+            This will also catch camera transforms if those
+            are in the instances.
 
-        for node in instance:
-            if not cmds.nodeType(node) == "transform":
-                continue
+        Returns:
+            list: Transforms that are not identity matrix
 
-            not_freezed = dict()
+        """
 
-            for attr, values in transform_attrs.items():
-                node_values = cmds.getAttr(node + attr)
-                if not node_values == values:
-                    not_freezed[attr] = node_values
+        invalid = list()
 
-            if not_freezed:
-                invalid[node] = not_freezed
+        _identity = [1.0, 0.0, 0.0, 0.0,
+                     0.0, 1.0, 0.0, 0.0,
+                     0.0, 0.0, 1.0, 0.0,
+                     0.0, 0.0, 0.0, 1.0]
+        _tolerance = 1e-30
+
+        _ignoring = ("clusterHandle",)
+
+        for transform in cmds.ls(instance, type="transform"):
+
+            matrix = cmds.xform(transform,
+                                query=True,
+                                matrix=True,
+                                objectSpace=True)
+
+            if not math.matrix_equals(_identity, matrix, _tolerance):
+                ignore = False
+
+                for shape in cmds.listRelatives(transform, shapes=True) or []:
+                    if cmds.nodeType(shape) in _ignoring:
+                        ignore = True
+                        break
+
+                if not ignore:
+                    invalid.append(transform)
 
         return invalid
 
@@ -53,10 +80,8 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
             self.log.error(
                 "{!r} has not freezed transform:".format(instance.name)
             )
-            for node, not_freezed in invalid.items():
-                print(node)
-                for attr, values in not_freezed.items():
-                    print("{0}: {1}".format(attr, values))
+            for node in invalid:
+                self.log.error(node)
 
             raise ValueError("%s <Transform Freezed> Failed." % instance.name)
 
