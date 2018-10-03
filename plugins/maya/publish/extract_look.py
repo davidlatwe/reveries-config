@@ -1,6 +1,8 @@
 
 import os
 import json
+import contextlib
+
 import pyblish.api
 import avalon.api
 
@@ -35,9 +37,10 @@ class ExtractLook(PackageExtractor):
         entry_file = self.file_name("ma")
         package_path = self.create_package(entry_file)
 
-        publish_dir = self.data["publish_dir"].replace(
+        version_dir = self.data["version_dir"].replace(
             avalon.api.registered_root(), "$AVALON_PROJECTS"
         )
+        self.log.debug("Version Dir: {!r}".format(version_dir))
 
         # Extract shaders
         #
@@ -45,65 +48,68 @@ class ExtractLook(PackageExtractor):
 
         self.log.info("Extracting shaders..")
 
-        with maya.maintained_selection():
-            with capsule.no_refresh(with_undo=True):
+        with contextlib.nested(
+            capsule.no_undo(),
+            maya.maintained_selection(),
+            capsule.no_refresh(),
+        ):
+            # Extract Textures
+            #
+            file_nodes = cmds.ls(self.member, type="file")
+            file_hashes = self.data["look_textures"]
 
-                # Extract Textures
-                #
-                file_nodes = cmds.ls(self.data["look_members"], type="file")
-                file_hashes = self.data["look_textures"]
+            # hash file to check which to copy and which to remain old link
+            for node in file_nodes:
+                attr_name = node + ".fileTextureName"
 
-                # hash file to check which to copy and which to remain old link
-                for node in file_nodes:
-                    attr_name = node + ".fileTextureName"
+                img_path = cmds.getAttr(attr_name,
+                                        expandEnvironmentVariables=True)
 
-                    img_path = cmds.getAttr(attr_name,
-                                            expandEnvironmentVariables=True)
+                hash_value = hash_file(img_path)
+                try:
+                    final_path = file_hashes[hash_value]
+                except KeyError:
+                    paths = [
+                        version_dir,
+                        "textures",
+                    ]
+                    paths += node.split(":")  # Namespace as fsys hierarchy
+                    paths.append(os.path.basename(img_path))  # image name
+                    #
+                    # Include node name as part of the path should prevent
+                    # file name collision which may introduce by two or
+                    # more file nodes sourcing from different directory
+                    # with same file name but different file content.
+                    #
+                    # For example:
+                    #   File_A.fileTextureName = "asset/a/texture.png"
+                    #   File_B.fileTextureName = "asset/b/texture.png"
+                    #
+                    final_path = os.path.join(*paths)
 
-                    hash_value = hash_file(img_path)
-                    try:
-                        final_path = file_hashes[hash_value]
-                    except KeyError:
-                        paths = [
-                            publish_dir,
-                            "textures",
-                        ]
-                        paths += node.split(":")  # Namespace as fsys hierarchy
-                        paths.append(os.path.basename(img_path))  # image name
-                        #
-                        # Include node name as part of the path should prevent
-                        # file name collision which may introduce by two or
-                        # more file nodes sourcing from different directory
-                        # with same file name but different file content.
-                        #
-                        # For example:
-                        #   File_A.fileTextureName = "asset/a/texture.png"
-                        #   File_B.fileTextureName = "asset/b/texture.png"
-                        #
-                        final_path = os.path.join(*paths)
+                    file_hashes[hash_value] = final_path
+                    self.data["auxiliaries"].append((img_path, final_path))
 
-                        file_hashes[hash_value] = final_path
-                        self.data["auxiliaries"].append((img_path, final_path))
+                # Set texture file path to publish location
+                cmds.setAttr(attr_name, final_path, type="string")
+                self.log.debug("Texture Path: {!r}".format(final_path))
 
-                    # Set texture file path to publish location
-                    cmds.setAttr(attr_name, final_path, type="string")
+            # Select full shading network
+            # If only select shadingGroups, and if there are any node
+            # connected to Dag node (i.e. drivenKey), then the command
+            # will not only export selected shadingGroups' shading network,
+            # but also export other related DAG nodes (i.e. full hierarchy)
+            cmds.select(self.member,
+                        replace=True,
+                        noExpand=True)
 
-                # Select full shading network
-                # If only select shadingGroups, and if there are any node
-                # connected to Dag node (i.e. drivenKey), then the command
-                # will not only export selected shadingGroups' shading network,
-                # but also export other related DAG nodes (i.e. full hierarchy)
-                cmds.select(self.data["look_members"],
-                            replace=True,
-                            noExpand=True)
-
-                cmds.file(entry_path,
-                          options="v=0;",
-                          type="mayaAscii",
-                          force=True,
-                          exportSelected=True,
-                          preserveReferences=False,
-                          constructionHistory=False)
+            cmds.file(entry_path,
+                      options="v=0;",
+                      type="mayaAscii",
+                      force=True,
+                      exportSelected=True,
+                      preserveReferences=False,
+                      constructionHistory=False)
 
         # Serialise shaders relationships
         #
@@ -112,20 +118,20 @@ class ExtractLook(PackageExtractor):
 
         self.log.info("Serialising shaders..")
 
-        dag_set_members = lib.serialise_shaders(self.member)
+        shader_by_id = lib.serialise_shaders(self.data["dag_members"])
 
         # Animatable attrs
         # Custom attributes in assembly node which require to be animated.
         self.log.info("Serialising animatable attributes..")
         animatable = dict()
-        root = cmds.ls(self.member, assemblies=True)[0]
-        for attr in cmds.listAttr(root, userDefined=True):
+        root = cmds.ls(self.data["dag_members"], assemblies=True)[0]
+        for attr in cmds.listAttr(root, userDefined=True) or list():
             animatable[attr] = cmds.listConnections(root + "." + attr,
                                                     destination=True,
                                                     source=False,
                                                     plugs=True)
 
-        meshes = cmds.ls(self.member,
+        meshes = cmds.ls(self.data["dag_members"],
                          visible=True,
                          noIntermediate=True,
                          type="mesh")
@@ -150,8 +156,8 @@ class ExtractLook(PackageExtractor):
 
         try:
             from reveries.maya import vray
-        except ImportError:
-            self.log.debug("Possible plugin 'vrayformaya' not installed.")
+        except RuntimeError as e:
+            self.log.debug(e)
         else:
             for node in meshes:
                 # - shape
@@ -167,7 +173,7 @@ class ExtractLook(PackageExtractor):
                         vray_attrs[parent[0]] = values
 
         relationships = {
-            "dag_set_members": dag_set_members,
+            "shader_by_id": shader_by_id,
             "animatable": animatable,
             "crease_sets": crease_sets,
             "vray_attrs": vray_attrs,

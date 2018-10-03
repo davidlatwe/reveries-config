@@ -1,8 +1,9 @@
 
+import avalon.api
 from reveries.maya.plugins import ReferenceLoader
 
 
-class LookLoader(ReferenceLoader):
+class LookLoader(ReferenceLoader, avalon.api.Loader):
     """Specific loader for lookdev"""
 
     label = "Reference look"
@@ -10,10 +11,12 @@ class LookLoader(ReferenceLoader):
     icon = "code-fork"
     color = "orange"
 
+    hosts = ["maya"]
+
     families = ["reveries.look"]
 
     representations = [
-        "mayaAscii",
+        "LookDev",
     ]
 
     def process_reference(self, context, name, namespace, options):
@@ -57,12 +60,14 @@ class LookLoader(ReferenceLoader):
         if not os.path.isfile(relationship):
             self.log.warning("Look development asset "
                              "has no relationship data.\n"
-                             "%s was not found" % self.fname)
+                             "{!r} was not found".format(relationship))
             return nodes
 
         with open(relationship) as f:
             relationships = json.load(f)
 
-        lib.apply_shaders(relationships, namespace)
+        lib.apply_shaders(relationships["shader_by_id"], namespace)
 
         self[:] = nodes
+
+        self.interface = cmds.ls(nodes, type="shadingEngine")

@@ -2,7 +2,7 @@ import pyblish.api
 import avalon
 
 
-class CollectMayaInstances(pyblish.api.ContextPlugin):
+class CollectAvalonInstances(pyblish.api.ContextPlugin):
     """Gather instances by objectSet and pre-defined attribute
 
     This collector takes into account assets that are associated with

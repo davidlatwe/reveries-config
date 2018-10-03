@@ -5,7 +5,7 @@ import uuid
 from maya import cmds
 from maya.api import OpenMaya as om
 
-from .. import utils
+from .. import utils, lib
 from ..vendor.six import string_types
 
 
@@ -245,11 +245,14 @@ def bake_camera(camera, startFrame, endFrame):
 
 
 def lock_transform(node):
-    if not cmds.objectType(node) == "transform":
-        raise TypeError("{} is not a transform node.".format(node))
-
     for attr in TRANSFORM_ATTRS:
-        cmds.setAttr(node + "." + attr, lock=True)
+        try:
+            cmds.setAttr(node + "." + attr, lock=True)
+        except RuntimeError as e:
+            if not cmds.objectType(node) == "transform":
+                raise TypeError("{} is not a transform node.".format(node))
+            else:
+                raise e
 
 
 def shaders_by_meshes(meshes):
@@ -322,14 +325,13 @@ def serialise_shaders(nodes):
         nodes,
         long=True,
         recursive=True,
-        showType=True,
         objectsOnly=True,
         type="transform"
     )
 
     meshes_by_id = {}
-    for mesh in valid_nodes:
-        shapes = cmds.listRelatives(valid_nodes[0],
+    for transform in valid_nodes:
+        shapes = cmds.listRelatives(transform,
                                     shapes=True,
                                     fullPath=True) or list()
 
@@ -339,24 +341,26 @@ def serialise_shaders(nodes):
                 continue
 
             try:
-                id_ = cmds.getAttr(mesh + "." + AVALON_ID_ATTR_SHORT)
+                id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_SHORT)
 
                 if id_ not in meshes_by_id:
                     meshes_by_id[id_] = list()
 
-                meshes_by_id[id_].append(mesh)
+                meshes_by_id[id_].append(transform)
 
             except ValueError:
                 continue
 
     meshes_by_shader = dict()
-    for id_, mesh in meshes_by_id.items():
-        shape = cmds.listRelatives(mesh,
+    for id_, meshes in meshes_by_id.items():
+        shape = cmds.listRelatives(meshes,
                                    shapes=True,
                                    fullPath=True) or list()
 
         for shader in cmds.listConnections(shape,
-                                           type="shadingEngine") or list():
+                                           type="shadingEngine",
+                                           source=False,
+                                           destination=True) or list():
 
             # Objects in this group are those that haven't got
             # any shaders. These are expected to be managed
@@ -609,3 +613,30 @@ def filter_mesh_parenting(transforms):
         cleaned_2.append(node)
 
     return cleaned_2
+
+
+def get_highest_in_hierarchy(nodes):
+    """Return highest nodes in the hierarchy that are in the `nodes` list.
+
+    The "highest in hierarchy" are the nodes closest to world: top-most level.
+
+    Args:
+        nodes (list): The nodes in which find the highest in hierarchies.
+
+    Returns:
+        list: The highest nodes from the input nodes.
+
+    """
+
+    # Ensure we use long names
+    nodes = cmds.ls(nodes, long=True)
+    lookup = set(nodes)
+
+    highest = []
+    for node in nodes:
+        # If no parents are within the nodes input list
+        # then this is a highest node
+        if not any(n in lookup for n in lib.iter_uri(node, "|")):
+            highest.append(node)
+
+    return highest

@@ -6,7 +6,7 @@ import pyblish.api
 import maya.cmds as cmds
 import avalon.maya as maya
 
-from reveries.maya import capsule
+from reveries.maya import capsule, io
 from reveries.plugins import PackageExtractor
 
 
@@ -26,6 +26,7 @@ class ExtractModel(PackageExtractor):
 
     representations = [
         "mayaBinary",
+        "GPUCache",
     ]
 
     def extract(self):
@@ -33,6 +34,7 @@ class ExtractModel(PackageExtractor):
         clay_shader = "initialShadingGroup"
 
         with contextlib.nested(
+            capsule.no_undo(),
             capsule.no_display_layers(self.member),
             capsule.no_smooth_preview(),
             capsule.assign_shader(mesh_nodes, shadingEngine=clay_shader),
@@ -42,7 +44,7 @@ class ExtractModel(PackageExtractor):
             super(ExtractModel, self).extract()
 
     def extract_mayaBinary(self):
-        entry_file = self.file_name("ma")
+        entry_file = self.file_name("mb")
         package_path = self.create_package(entry_file)
         entry_path = os.path.join(package_path, entry_file)
 
@@ -69,3 +71,14 @@ class ExtractModel(PackageExtractor):
             name=self.data["subset"],
             path=entry_path)
         )
+
+    def extract_GPUCache(self):
+        entry_file = self.file_name("ma")
+        cache_file = self.file_name("abc")
+        package_path = self.create_package(entry_file)
+        entry_path = os.path.join(package_path, entry_file)
+        cache_path = os.path.join(package_path, cache_file)
+
+        frame = cmds.currentTime(query=True)
+        io.export_gpu(cache_path, frame, frame)
+        io.wrap_gpu(entry_path, cache_file, self.data["subset"])

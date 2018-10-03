@@ -127,7 +127,7 @@ _alembic_options = {
 def export_alembic(file,
                    startFrame=None,
                    endFrame=None,
-                   selected=True,
+                   selection=True,
                    uvWrite=True,
                    eulerFilter=True,
                    writeVisibility=True,
@@ -183,6 +183,65 @@ def export_alembic(file,
             be stored in the Alembic file.
             Otherwise everything written out is treated as visible.
 
+        wholeFrameGeo (bool): When on, geometry data at whole frames is sampled
+            and written to the file. When off (default), geometry data is
+            sampled at sub-frames and written to the file.
+
+    Examples: (Copied from MEL cmd `AbcExport -help`)
+
+        AbcExport -j
+        "-root |group|foo -root |test|path|bar -file /tmp/test.abc"
+
+            Writes out everything at foo and below and bar and below to
+            `/tmp/test.abc`.
+            foo and bar are siblings parented to the root of the Alembic scene.
+
+        AbcExport -j
+        "-frameRange 1 5 -step 0.5 -root |group|foo -file /tmp/test.abc"
+
+            Writes out everything at foo and below to `/tmp/test.abc` sampling
+            at frames: 1 1.5 2 2.5 3 3.5 4 4.5 5
+
+        AbcExport -j
+        "-fr 0 10 -frs -0.1 -frs 0.2 -step 5 -file /tmp/test.abc"
+
+        Writes out everything in the scene to `/tmp/test.abc` sampling at
+        frames: -0.1 0.2 4.9 5.2 9.9 10.2
+
+        Note: The difference between your highest and lowest
+        frameRelativeSample can not be greater than your step size.
+
+        AbcExport -j
+        "-step 0.25 -frs 0.3 -frs 0.60 -fr 1 5 -root foo -file test.abc"
+
+        Is illegal because the highest and lowest frameRelativeSamples are 0.3
+        frames apart.
+
+        AbcExport -j
+        "-sl -root |group|foo -file /tmp/test.abc"
+
+        Writes out all selected nodes and it's ancestor nodes including up to
+        foo.
+        foo will be parented to the root of the Alembic scene.
+
+    (NOTE) About alembic selection export
+
+    Say we have a hierarchy `A > B > C > D > E`, A is root and E is leaf.
+
+    when the export cmd is "-sl -root |A|B|C" and we select D, then we will
+    get `C > D` exported.
+
+    when the export cmd is "-sl" and we select D, then we will get
+    `A > B > C > D` exported.
+
+    when the export cmd is "-root |A|B|C", then we will get `C > D > E`
+    exported.
+
+    As you can see, flag `-sl` and `-root` are kind of end point and start
+    point of the DAG chain.
+    If there are multiple `-root`, and `-sl` has given, each root node must
+    have it's descendant node been selected, or the root will not be exported.
+
     """
 
     # Ensure alembic exporter is loaded
@@ -214,7 +273,7 @@ def export_alembic(file,
 
     # Assemble options
     options = {
-        "selection": selected,
+        "selection": selection,
         "uvWrite": uvWrite,
         "eulerFilter": eulerFilter,
         "writeVisibility": writeVisibility,
@@ -295,6 +354,26 @@ def export_gpu(out_path, startFrame, endFrame):
                   directory=os.path.dirname(out_path),
                   fileName=os.path.splitext(os.path.basename(out_path))[0]
                   )
+
+
+def wrap_gpu(wrapper_path, gpu_path, node_name):
+    """
+    """
+    MayaAscii_template = """//Maya ASCII scene
+requires maya "2016";
+requires -nodeType "gpuCache" "gpuCache" "1.0";
+createNode transform -n "{nodeName}";
+createNode gpuCache -n "{nodeName}Shape" -p "{nodeName}";
+    setAttr -k off ".v";
+    setAttr ".covm[0]"  0 1 1;
+    setAttr ".cdvm[0]"  0 1 1;
+    setAttr ".cfn" -type "string" "{filePath}";
+    setAttr ".cmp" -type "string" "|";
+"""
+
+    with open(wrapper_path, "w") as maya_file:
+        maya_file.write(MayaAscii_template.format(nodeName=node_name,
+                                                  filePath=gpu_path))
 
 
 def capture_seq(camera,

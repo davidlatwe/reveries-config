@@ -27,17 +27,27 @@ maya_render_priority = 60
 # asset settings
 
 [[assets]]
-label = "Dummy"
-name = "Dummy"
+label = "characters"
+name = "characters"
+tasks = [ "lookdev", "model", "rig",]
+
+[[assets]]
+label = "props"
+name = "props"
+tasks = [ "lookdev", "model", "rig",]
+
+[[assets]]
+label = "sets"
+name = "sets"
 tasks = [ "lookdev", "model", "rig",]
 
 
-# shot settings
+# film settings
 
-[[shots]]
-label = "Example"
-tasks = [ "animate", "layout",]
-name = "Example"
+[[films]]
+label = "Shots"
+tasks = [ "animate", "layout", "setdress"]
+name = "Shots"
 edit_in = 101
 edit_out = 200
 

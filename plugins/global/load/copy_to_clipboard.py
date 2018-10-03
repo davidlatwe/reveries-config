@@ -1,8 +1,9 @@
 
+import avalon.api
 from reveries.plugins import PackageLoader
 
 
-class CopyToClipboardLoader(PackageLoader):
+class CopyToClipboardLoader(PackageLoader, avalon.api.Loader):
     """Copy published file to clipboard to allow to paste the content"""
     representations = ["*"]
     families = ["*"]

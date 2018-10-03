@@ -3,7 +3,7 @@ import avalon.maya
 from maya import cmds
 
 
-class CreateCamera(avalon.maya.Creator):
+class CameraCreator(avalon.maya.Creator):
     """Single baked camera"""
 
     name = "cameraDefault"
@@ -19,5 +19,7 @@ class CreateCamera(avalon.maya.Creator):
         self.data["publish_contractor"] = self.contractor
         self.data["use_contractor"] = True
 
-        container = super(CreateCamera, self).process()
-        cmds.setAttr(container + ".publish_contractor", lock=True)
+        instance = super(CameraCreator, self).process()
+        cmds.setAttr(instance + ".publish_contractor", lock=True)
+
+        return instance

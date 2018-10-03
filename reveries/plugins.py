@@ -4,8 +4,12 @@ import sys
 import inspect
 import types
 import logging
+import json
+import shutil
+
 import pyblish.api
 import avalon.api
+import avalon.io
 
 from .vendor import six
 from .utils import temp_dir
@@ -38,7 +42,7 @@ class BaseContractor(object):
             "PYTHONPATH": os.getenv("PYTHONPATH", ""),
         }, **avalon.api.Session)
 
-        # Save Context data
+        # Save Context data from source
         #
         context_data_entry = ["comment", "user"]
         for entry in context_data_entry:
@@ -48,10 +52,13 @@ class BaseContractor(object):
         # Save Instances' name and version
         #
         for ind, instance in enumerate(context):
-            if not instance.data.get("publish_contractor") == self.name:
+            if instance.data.get("publish") is False:
                 continue
 
-            if instance.data.get("publish") is False:
+            if instance.data.get("use_contractor") is False:
+                continue
+
+            if not instance.data.get("publish_contractor") == self.name:
                 continue
 
             # instance subset name
@@ -121,16 +128,13 @@ def find_contractor(contractor_name=""):
     return None
 
 
-class PackageLoader(avalon.api.Loader):
+class PackageLoader(object):
     """Load representation into host application
 
     Arguments:
         context (dict): avalon-core:context-x.0
 
     """
-
-    families = list()
-    representations = list()
 
     def __init__(self, context):
         super(PackageLoader, self).__init__(context)
@@ -142,6 +146,7 @@ class PackageLoader(avalon.api.Loader):
 
 
 def message_box_error(title, message):
+    """Prompt error message window"""
     from avalon.vendor.Qt import QtWidgets
 
     QtWidgets.QMessageBox.critical(None,
@@ -151,6 +156,7 @@ def message_box_error(title, message):
 
 
 def message_box_warning(title, message, optional=False):
+    """Prompt warning dialog with option"""
     from avalon.vendor.Qt import QtWidgets
 
     opt_btn = QtWidgets.QMessageBox.NoButton
@@ -166,6 +172,20 @@ def message_box_warning(title, message, optional=False):
         return respond == QtWidgets.QMessageBox.Ok
 
 
+def skip_stage(extractor):
+    """Decorator, indicate the extractor will directly save to publish dir
+    """
+
+    def _skip_stage(self, *args, **kwargs):
+        self._extract_to_publish_dir = True
+        result = extractor(self, *args, **kwargs)
+        self._extract_to_publish_dir = False
+
+        return result
+
+    return _skip_stage
+
+
 class PackageExtractor(pyblish.api.InstancePlugin):
     """Reveries' extractor base class.
 
@@ -173,21 +193,42 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
     families = []
 
+    metadata = ".fingerprint.json"
+
     def process(self, instance):
         """
         """
         self._process(instance)
+        self._get_version_dir()
         self.extract()
 
     def _process(self, instance):
         self._active_representations = list()
         self._current_representation = None
         self._extract_to_publish_dir = False
+        self._version_locked = False
 
         self.context = instance.context
         self.data = instance.data
         self.member = instance[:]
-        self.fname = instance.data["subset"]
+        self.subset_doc = avalon.io.find_one({
+            "type": "subset",
+            "parent": self.data["asset_doc"]["_id"],
+            "name": self.data["subset"],
+        })
+
+        project = avalon.io.find_one(
+            {"type": "project"},
+            projection={"config.template.publish": True})
+
+        self._publish_path = project["config"]["template"]["publish"]
+
+        self._publish_key = {"root": avalon.api.registered_root(),
+                             "project": avalon.api.Session["AVALON_PROJECT"],
+                             "silo": avalon.api.Session["AVALON_SILO"],
+                             "asset": avalon.api.Session["AVALON_ASSET"],
+                             "subset": self.data["subset"],
+                             "version": None}
 
         format_ = self.data.get("format")
 
@@ -209,17 +250,108 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         if "auxiliaries" not in self.data:
             self.data["auxiliaries"] = list()
 
-    def direct_publish(extractor):
-        """Decorator, indicate the extractor will directly save to publish dir
+    def _get_version(self):
+        version = None
+        version_number = 1  # assume there is no version yet, we start at `1`
+        if self.subset_doc is not None:
+            version = avalon.io.find_one({"type": "version",
+                                          "parent": self.subset_doc["_id"]},
+                                         {"name": True},
+                                         sort=[("name", -1)])
+
+        # if there is a subset there ought to be version
+        if version is not None:
+            version_number += version["name"]
+
+        return version_number
+
+    def _get_version_dir(self):
         """
-        def _direct_publish(self, *args, **kwargs):
-            self._extract_to_publish_dir = True
-            result = extractor(self, *args, **kwargs)
-            self._extract_to_publish_dir = False
+        """
 
-            return result
+        # Lacking the representation, extract version dir instead
+        version_dir_template = os.path.dirname(self._publish_path)
 
-        return _direct_publish
+        def format_version_dir(version_number):
+            self._publish_key["version"] = version_number
+            version_dir = version_dir_template.format(**self._publish_key)
+            # Clean the path
+            version_dir = os.path.abspath(os.path.normpath(version_dir))
+
+            return version_dir
+
+        # Check
+        max_retry_time = 3
+        retry_time = 0
+        version = self._get_version()
+
+        while True:
+            if retry_time > max_retry_time:
+                msg = "Critical Error: Version Dir retry times exceeded."
+                self.log.critical(msg)
+                raise Exception(msg)
+
+            elif retry_time:
+                self.log.debug("Retry Time: {}".format(retry_time))
+
+            version_number = version + retry_time
+            self.log.debug("Trying Version: {}".format(version_number))
+
+            version_dir = format_version_dir(version_number)
+            self.log.debug("Version Dir: {}".format(version_dir))
+
+            if os.path.isdir(version_dir):
+                if self._verify_version_dir(version_dir):
+                    self.log.debug("Cleaning version dir.")
+                    self._clean_version_dir(version_dir)
+                    break
+
+                elif self._version_locked:
+                    msg = ("Critical Error: Version locked but version dir is "
+                           "not available ('sourceFingerprint' not match), "
+                           "this is a bug.")
+                    self.log.critical(msg)
+                    raise Exception(msg)
+
+            else:
+                self.log.debug("Booking version dir.")
+                self._book_version_dir(version_dir)
+                break
+
+            retry_time += 1
+
+        self.data["publish_dir_elem"] = (self._publish_key, self._publish_path)
+        self.data["version_next"] = version_number
+        self.data["version_dir"] = version_dir
+
+        self.log.debug("Next version: {}".format(version_number))
+        self.log.debug("Version dir: {}".format(version_dir))
+
+        return version_dir
+
+    def _verify_version_dir(self, version_dir):
+        metadata_path = os.path.join(version_dir, self.metadata)
+        with open(metadata_path, "r") as fp:
+            metadata = json.load(fp)
+
+        return metadata == self.context.data["sourceFingerprint"]
+
+    def _book_version_dir(self, version_dir):
+        os.makedirs(version_dir)
+        metadata_path = os.path.join(version_dir, self.metadata)
+        with open(metadata_path, "w") as fp:
+            json.dump(self.context.data["sourceFingerprint"], fp, indent=4)
+
+    def _clean_version_dir(self, version_dir):
+        dir_content = os.listdir(version_dir)
+        dir_content.remove(self.metadata)
+
+        for item in dir_content:
+            item_path = os.path.join(version_dir, item)
+            if os.path.isdir(item_path):
+                shutil.rmtree(item_path)
+            elif os.path.isfile(item_path):
+                os.remove(item_path)
 
     def extract(self):
         """
@@ -228,8 +360,11 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         for repr_ in self._active_representations:
             method = getattr(self, "extract_" + repr_, None)
             if method is None:
-                self.log.error("This extractor does not have the method to "
-                               "extract {!r}".format(repr_))
+                msg = ("This extractor does not have the method to "
+                       "extract {!r}".format(repr_))
+                self.log.error(msg)
+                raise AttributeError(msg)
+
             extract_methods.append((method, repr_))
 
         for method, repr_ in extract_methods:
@@ -237,7 +372,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             method()
 
     def file_name(self, extension, suffix=""):
-        return "{subset}{suffix}.{ext}".format(subset=self.fname,
+        return "{subset}{suffix}.{ext}".format(subset=self.data["subset"],
                                                suffix=suffix,
                                                ext=extension)
 
@@ -247,15 +382,15 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         This should only be called in actual extraction process.
 
         """
-        staging_dir = self.data.get('stagingDir', None)
+        staging_dir = self.data.get("stagingDir", None)
 
         if not staging_dir:
             if self._extract_to_publish_dir:
-                staging_dir = self.data["publish_dir"]
+                staging_dir = self.data["version_dir"]
             else:
                 staging_dir = temp_dir(prefix="pyblish_tmp_")
 
-            self.data['stagingDir'] = staging_dir
+            self.data["stagingDir"] = staging_dir
 
         repr_dir = os.path.join(staging_dir, self._current_representation)
 
@@ -265,16 +400,13 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         else:
             os.makedirs(repr_dir)
 
-        data = {
+        repr_data = {
             "entry_fname": entry_fname,
         }
-        self._stage_package(data)
+        # Stage package for integration
+        self.data["packages"][self._current_representation] = repr_data
 
         return repr_dir
-
-    def _stage_package(self, data):
-        # Stage package for integration
-        self.data["packages"][self._current_representation] = data
 
     def add_data(self, data):
         """
@@ -294,17 +426,30 @@ class DelegatablePackageExtractor(PackageExtractor):
         on_delegate = use_contractor and not accepted
 
         if on_delegate:
-            self.delegate()
+            self._get_version_dir()
+            self._delegate()
         else:
+            if accepted:
+                self._version_locked = True
+                self.log.debug("Version Locked.")
+            self._get_version_dir()
             self.extract()
 
-    def delegate(self):
+    def _get_version(self):
+        # get version
+        if self.context.data.get("contractor_accepted"):
+            # version lock if publish process has been delegated.
+            return self.data["version_next"]
+        else:
+            return super(DelegatablePackageExtractor, self)._get_version()
+
+    def _delegate(self):
         for repr_ in self._active_representations:
             self.log.info("Delegating representation {0} of {1}"
                           "".format(repr_, self.data["name"]))
 
 
-def _get_errored_instances_from_context(context):
+def _get_errored_instances_from_context(context, include_warning=False):
 
     instances = list()
     for result in context.data["results"]:
@@ -314,6 +459,12 @@ def _get_errored_instances_from_context(context):
 
         if result["error"]:
             instances.append(result["instance"])
+
+        if include_warning:
+            for record in result["records"]:
+                if record.levelname == "WARNING":
+                    instances.append(result["instance"])
+                    break
 
     return instances
 
@@ -406,7 +557,8 @@ class SelectInvalidAction(pyblish.api.Action):
 
     def process(self, context, plugin):
 
-        errored_instances = _get_errored_instances_from_context(context)
+        errored_instances = _get_errored_instances_from_context(
+            context, include_warning=True)
 
         # Apply pyblish.logic to get the instances for the plug-in
         instances = pyblish.api.instances_by_plugin(errored_instances, plugin)

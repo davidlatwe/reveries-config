@@ -10,6 +10,19 @@ def pytestbdd_feature_base_dir():
     return os.path.join(os.getcwd(), "features")
 
 
+"""Background"""
+
+given("an environment that meets the Avalon's demand",
+      fixture="minmum_environment_setup")
+
+
+given("I initiate Avalon",
+      fixture="init_avalon")
+
+
+"""Scenarios"""
+
+
 @scenario("maya_publish.feature",
           "model mesh is triangulate")
 def test_app_startup():

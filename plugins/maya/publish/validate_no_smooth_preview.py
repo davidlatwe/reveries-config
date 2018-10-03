@@ -1,13 +1,15 @@
 
 import pyblish.api
 
+from maya import cmds
+
 from reveries.maya.plugins import MayaSelectInvalidAction
 
 
 class SelectInvalid(MayaSelectInvalidAction):
 
+    on = "processed"
     label = "Select Smooth Preview"
-    symptom = "missing"
 
 
 class ValidateNoSmoothPreview(pyblish.api.InstancePlugin):
@@ -24,8 +26,6 @@ class ValidateNoSmoothPreview(pyblish.api.InstancePlugin):
 
     @staticmethod
     def get_invalid(instance):
-
-        from maya import cmds
 
         invalid = list()
 

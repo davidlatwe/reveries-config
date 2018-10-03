@@ -3,7 +3,7 @@ import avalon.maya
 from maya import cmds
 
 
-class CreatePointCache(avalon.maya.Creator):
+class PointCacheCreator(avalon.maya.Creator):
     """Any cacheable object"""
 
     name = "PointCacheDefault"
@@ -23,7 +23,9 @@ class CreatePointCache(avalon.maya.Creator):
         self.data["static_cache"] = False
 
         self.data["publish_contractor"] = self.contractor
-        self.data["use_contractor"] = True
+        self.data["use_contractor"] = False
 
-        container = super(CreatePointCache, self).process()
-        cmds.setAttr(container + ".publish_contractor", lock=True)
+        instance = super(PointCacheCreator, self).process()
+        cmds.setAttr(instance + ".publish_contractor", lock=True)
+
+        return instance

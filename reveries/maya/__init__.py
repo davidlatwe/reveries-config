@@ -13,6 +13,7 @@ import avalon.api as avalon
 from pyblish import api as pyblish
 
 from .. import PLUGINS_DIR
+from ..utils import override_event
 from .lib import set_scene_timeline
 
 
@@ -40,11 +41,13 @@ def install():  # pragma: no cover
 
     # install callbacks
     log.info("Installing callbacks ... ")
-    avalon.on("taskChanged", callbacks.on_task_changed)
     avalon.on("init", callbacks.on_init)
     avalon.on("new", callbacks.on_new)
     avalon.on("save", callbacks.on_save)
     avalon.before("save", callbacks.before_save)
+
+    log.info("Overriding existing event 'taskChanged'")
+    override_event("taskChanged", callbacks.on_task_changed)
 
     # Temporarily workaround
     # script node: uiConfigurationScriptNode

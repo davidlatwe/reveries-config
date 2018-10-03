@@ -4,6 +4,7 @@ import tempfile
 import hashlib
 import codecs
 import shutil
+import weakref
 
 import pyblish.api
 import avalon
@@ -73,6 +74,56 @@ def get_resolution_data():
     resolution_width = project["data"].get("resolution_width", 1920)
     resolution_height = project["data"].get("resolution_height", 1080)
     return resolution_width, resolution_height
+
+
+def init_app_workdir(*args):
+    """Wrapped function of app initialize
+
+    Copied from Colorbleed config, modified.
+    Useful when changing task context, e.g. on_task_changed
+
+    """
+
+    # Inputs (from the switched session and running app)
+    session = avalon.Session.copy()
+    app_name = os.environ["AVALON_APP_NAME"]
+
+    # Find the application definition
+    app_definition = avalon.lib.get_application(app_name)
+
+    App = type(
+        "app_%s" % app_name,
+        (avalon.api.Application,),
+        {
+            "name": app_name,
+            "config": app_definition.copy()
+        }
+    )
+
+    # Initialize within the new session's environment
+    app = App()
+    env = app.environ(session)
+    app.initialize(env)
+
+
+def override_event(event, callback):
+    """Override existing event callback
+
+    Copied from Colorbleed config.
+
+    Args:
+        event (str): name of the event
+        callback (function): callback to be triggered
+
+    Returns:
+        None
+
+    """
+
+    ref = weakref.WeakSet()
+    ref.add(callback)
+
+    avalon.pipeline._registered_event_handlers[event] = ref
 
 
 def publish_results_formatting(context):

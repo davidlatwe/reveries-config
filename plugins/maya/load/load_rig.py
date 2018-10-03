@@ -5,7 +5,7 @@ import avalon.maya
 from reveries.maya.plugins import ReferenceLoader
 
 
-class RigLoader(ReferenceLoader):
+class RigLoader(ReferenceLoader, avalon.api.Loader):
     """Specific loader for rigs
 
     This automatically creates an instance for animators upon load.
@@ -16,6 +16,8 @@ class RigLoader(ReferenceLoader):
     icon = "code-fork"
     color = "orange"
 
+    hosts = ["maya"]
+
     families = ["reveries.rig"]
 
     representations = [
@@ -25,6 +27,7 @@ class RigLoader(ReferenceLoader):
     def process_reference(self, context, name, namespace, options):
 
         import maya.cmds as cmds
+        from reveries.maya.lib import get_highest_in_hierarchy
 
         representation = context["representation"]
 
@@ -37,40 +40,12 @@ class RigLoader(ReferenceLoader):
                           groupReference=True,
                           groupName="{}:{}".format(namespace, name))
 
-        # Store for post-process
         self[:] = nodes
-        if representation["data"].get("post_process", True):
-            self._post_process(name, namespace, context, options)
 
-    def _post_process(self, name, namespace, context, options):
+        transforms = cmds.ls(nodes, type="transform", long=True)
+        root = get_highest_in_hierarchy(transforms)
+        sets = cmds.ls(nodes, type="objectSet")
+        self.interface = root + sets
 
-        # TODO(marcus): We are hardcoding the name "OutSet" here.
-        #   Better register this keyword, so that it can be used
-        #   elsewhere, such as in the Integrator plug-in,
-        #   without duplication.
-
-        import maya.cmds as cmds
-
-        output = next((node for node in self if
-                       node.endswith("OutSet")), None)
-        controls = next((node for node in self if
-                         node.endswith("ControlSet")), None)
-
-        assert output, "No OutSet in rig, this is a bug."
-        assert controls, "No ControlSet in rig, this is a bug."
-
-        # Find the roots amongst the loaded nodes
-        roots = cmds.ls(self[:], assemblies=True, long=True)
-        assert roots, "No root nodes in rig, this is a bug."
-
-        asset = avalon.api.Session["AVALON_ASSET"]
-        dependency = str(context["representation"]["_id"])
-
-        # Create the animation instance
-        with avalon.maya.maintained_selection():
-            cmds.select([output, controls] + roots, noExpand=True)
-            avalon.api.create(name=namespace,
-                              asset=asset,
-                              family="reveries.animation",
-                              options=options or {"useSelection": True},
-                              data={"dependencies": dependency})
+    def switch(self, container, representation):
+        self.update(container, representation)

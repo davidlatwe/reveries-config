@@ -19,7 +19,7 @@ class ValidateFileTextures(pyblish.api.InstancePlugin):
     @staticmethod
     def get_invalid(instance):
 
-        file_nodes = cmds.ls(instance.data["look_members"], type="file")
+        file_nodes = cmds.ls(instance, type="file")
 
         if not file_nodes:
             return

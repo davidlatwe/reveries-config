@@ -4,7 +4,7 @@ import avalon.maya
 import avalon.io
 
 
-class CreateAnimation(avalon.maya.Creator):
+class AnimationCreator(avalon.maya.Creator):
     """Any character or prop animation"""
 
     name = "animationDefault"
@@ -22,8 +22,10 @@ class CreateAnimation(avalon.maya.Creator):
         self.data["format"] = cache_mode
 
         self.data["publish_contractor"] = self.contractor
-        self.data["use_contractor"] = True
+        self.data["use_contractor"] = False
 
-        container = super(CreateAnimation, self).process()
-        cmds.setAttr(container + ".format", lock=True)
-        cmds.setAttr(container + ".publish_contractor", lock=True)
+        instance = super(AnimationCreator, self).process()
+        cmds.setAttr(instance + ".format", lock=True)
+        cmds.setAttr(instance + ".publish_contractor", lock=True)
+
+        return instance

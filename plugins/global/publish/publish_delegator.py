@@ -10,7 +10,7 @@ class PublishDelegator(pyblish.api.ContextPlugin):
     """
 
     label = "Publish Delegator"
-    order = pyblish.api.IntegratorOrder + 0.499
+    order = pyblish.api.IntegratorOrder + 0.49
 
     active_contractors = dict()
 
@@ -25,6 +25,9 @@ class PublishDelegator(pyblish.api.ContextPlugin):
 
         for instance in context:
             if instance.data.get("publish") is False:
+                continue
+
+            if instance.data.get("use_contractor") is False:
                 continue
 
             contractor_name = instance.data.get("publish_contractor")

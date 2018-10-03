@@ -1,10 +1,18 @@
 
+import os
+from collections import OrderedDict
+
 import avalon.api
+import avalon.maya.lib
+
 from ..plugins import (
     PackageLoader,
     message_box_error,
     SelectInvalidAction,
 )
+
+
+AVALON_PORTS = ":AVALON_PORTS"
 
 
 REPRS_PLUGIN_MAPPING = {
@@ -30,6 +38,46 @@ def load_plugin(representation):
         cmds.loadPlugin(plugin, quiet=True)
 
 
+def container_interfacing(name, namespace, nodes, context, suffix="PORT"):
+    """Expose crucial `nodes` as an interface of a subset container
+
+    Interfacing enables a faster way to access nodes of loaded subsets from
+    outliner.
+
+    Arguments:
+        name (str): Name of resulting assembly
+        namespace (str): Namespace under which to host interface
+        nodes (list): Long names of nodes for interfacing
+        context (dict): Asset information
+        suffix (str, optional): Suffix of interface, defaults to `_PORT`.
+
+    Returns:
+        interface (str): Name of interface assembly
+
+    """
+    from maya import cmds
+
+    interface = cmds.sets(nodes, name="%s_%s_%s" % (namespace, name, suffix))
+
+    data = OrderedDict()
+    data["id"] = "pyblish.avalon.interface"
+    data["name"] = name
+    data["namespace"] = namespace
+    data["representation"] = context["representation"]["_id"]
+
+    avalon.maya.lib.imprint(interface, data)
+
+    main_interface = cmds.ls(AVALON_PORTS, type="objectSet")
+    if not main_interface:
+        main_interface = cmds.sets(empty=True, name=AVALON_PORTS)
+    else:
+        main_interface = main_interface[0]
+
+    cmds.sets(interface, addElement=main_interface)
+
+    return interface
+
+
 class ReferenceLoader(PackageLoader):
     """A basic ReferenceLoader for Maya
 
@@ -38,16 +86,19 @@ class ReferenceLoader(PackageLoader):
     `update` logic.
 
     """
-    hosts = ["maya"]
 
-    def __init__(self, context):
-        super(ReferenceLoader, self).__init__(context)
+    interface = []
+
+    def file_path(self, file_name):
+        entry_path = os.path.join(self.package_path, file_name)
 
         # This will ensure reference path resolvable when project root moves to
         # other place.
-        self.package_path = self.package_path.replace(
+        entry_path = entry_path.replace(
             avalon.api.registered_root(), "$AVALON_PROJECTS"
         )
+
+        return entry_path
 
     def process_reference(self, context, name, namespace, options):
         """To be implemented by subclass"""
@@ -59,7 +110,7 @@ class ReferenceLoader(PackageLoader):
 
         load_plugin(context["representation"]["name"])
 
-        asset = context['asset']
+        asset = context["asset"]
 
         namespace = namespace or lib.unique_namespace(
             asset["name"] + "_",
@@ -77,6 +128,8 @@ class ReferenceLoader(PackageLoader):
         if not nodes:
             return
 
+        container_interfacing(name, namespace, self.interface, context)
+
         return containerise(
             name=name,
             namespace=namespace,
@@ -85,7 +138,6 @@ class ReferenceLoader(PackageLoader):
             loader=self.__class__.__name__)
 
     def update(self, container, representation):
-        import os
         from maya import cmds
 
         node = container["objectName"]
@@ -107,10 +159,12 @@ class ReferenceLoader(PackageLoader):
         file_type = representation["name"]
         if file_type == "FBXCache":
             file_type = "FBX"
+        elif file_type == "GPUCache":
+            file_type = "MayaAscii"
+
+        self.package_path = avalon.api.get_representation_path(representation)
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
-
-        assert os.path.exists(entry_path), "%s does not exist." % entry_path
 
         cmds.file(entry_path, loadReference=reference_node, type=file_type)
 
@@ -171,7 +225,16 @@ class ReferenceLoader(PackageLoader):
 
 class ImportLoader(PackageLoader):
 
-    hosts = ["maya"]
+    interface = []
+
+    def __init__(self, context):
+        super(ImportLoader, self).__init__(context)
+
+        # This will ensure reference path resolvable when project root moves to
+        # other place.
+        self.package_path = self.package_path.replace(
+            avalon.api.registered_root(), "$AVALON_PROJECTS"
+        )
 
     def process_import(self, context, name, namespace, options):
         """To be implemented by subclass"""
@@ -200,6 +263,8 @@ class ImportLoader(PackageLoader):
         nodes = self[:]
         if not nodes:
             return
+
+        container_interfacing(name, namespace, self.interface, context)
 
         return containerise(
             name=name,

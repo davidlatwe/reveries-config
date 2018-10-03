@@ -18,7 +18,7 @@ class ValidateLookAssembly(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        root = cmds.ls(instance, assemblies=True)
+        root = cmds.ls(instance.data["dag_members"], assemblies=True)
 
         if not len(root) == 1:
             self.log.error(

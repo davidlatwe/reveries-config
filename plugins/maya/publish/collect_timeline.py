@@ -5,22 +5,11 @@ import pyblish.api
 
 
 class CollectTimeline(pyblish.api.ContextPlugin):
-    """Inject the current working scene status into context
-
-    ```
-    context.data {
-            currentFile:  current working file
-            workspaceDir: current working dir
-            linearUnits:  maya linear units
-            angularUnits: maya angular units
-            fps:          maya frame pre second
-    }
-    ```
-
+    """Collect Maya timeline info: start, end frame and fps
     """
 
     order = pyblish.api.CollectorOrder - 0.4
-    hosts = ['maya']
+    hosts = ["maya"]
     label = "Scene Timeline"
 
     def process(self, context):

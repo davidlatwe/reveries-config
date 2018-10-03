@@ -1,8 +1,9 @@
 
+import avalon.api
 from reveries.maya.plugins import ReferenceLoader
 
 
-class ModelLoader(ReferenceLoader):
+class ModelLoader(ReferenceLoader, avalon.api.Loader):
     """Load the model"""
 
     label = "Reference Model"
@@ -10,16 +11,20 @@ class ModelLoader(ReferenceLoader):
     icon = "code-fork"
     color = "orange"
 
+    hosts = ["maya"]
+
     families = ["reveries.model"]
 
     representations = [
         "mayaBinary",
+        "GPUCache",
     ]
 
     def process_reference(self, context, name, namespace, options):
 
         import maya.cmds as cmds
         from avalon import maya
+        from reveries.maya.lib import get_highest_in_hierarchy
 
         representation = context["representation"]
 
@@ -33,3 +38,9 @@ class ModelLoader(ReferenceLoader):
                               groupReference=True,
                               groupName="{}:{}".format(namespace, name))
         self[:] = nodes
+
+        transforms = cmds.ls(nodes, type="transform", long=True)
+        self.interface = get_highest_in_hierarchy(transforms)
+
+    def switch(self, container, representation):
+        self.update(container, representation)

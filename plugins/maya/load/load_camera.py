@@ -1,15 +1,18 @@
 
+import avalon.api
 import reveries.maya.lib
 from reveries.maya.plugins import ReferenceLoader
 
 
-class CameraLoader(ReferenceLoader):
+class CameraLoader(ReferenceLoader, avalon.api.Loader):
     """Specific loader for the reveries.camera family"""
 
     label = "Reference camera"
     order = -10
     icon = "code-fork"
     color = "orange"
+
+    hosts = ["maya"]
 
     families = ["reveries.camera"]
 
@@ -38,6 +41,9 @@ class CameraLoader(ReferenceLoader):
 
         reveries.maya.lib.lock_transform(group_name)
         self[:] = nodes
+
+        self.interface = cmds.listRelatives(cmds.ls(nodes, type="camera"),
+                                            parent=True)
 
     def switch(self, container, representation):
         self.update(container, representation)
