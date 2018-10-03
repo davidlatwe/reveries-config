@@ -18,6 +18,14 @@ class RigCreator(avalon.maya.Creator):
         "rigCloth",
     ]
 
+    def build_base(self):
+        if cmds.objExists("|RIG"):
+            return
+
+        make_empty = not ((self.options or {}).get("useSelection") and
+                          bool(cmds.ls(sl=True)))
+        cmds.group(name="RIG", empty=make_empty, world=True)
+
     def process(self):
         subset_name = self.data["subset"]
 
@@ -26,17 +34,14 @@ class RigCreator(avalon.maya.Creator):
             err_msg = "Invalid subset name: {}".format(subset_name)
             raise RuntimeError(err_msg)
 
-        if not cmds.objExists("|RIG"):
-            make_empty = not ((self.options or {}).get("useSelection") and
-                              bool(cmds.ls(sl=True)))
-            cmds.group(name="RIG", empty=make_empty, world=True)
+        self.build_base()
+
+        instance = super(RigCreator, self).process()
+        self.log.info("Creating Rig instance set up ...")
 
         for attr in TRANSFORM_ATTRS:
             cmds.setAttr("|RIG." + attr, keyable=False)
         cmds.setAttr("|RIG.visibility", keyable=False)
-
-        instance = super(RigCreator, self).process()
-        self.log.info("Creating Rig instance set up ...")
 
         sub_object_sets = ["OutSet", "ControlSet"]
 

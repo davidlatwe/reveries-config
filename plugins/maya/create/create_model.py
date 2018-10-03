@@ -11,10 +11,16 @@ class ModelCreator(avalon.maya.Creator):
     family = "reveries.model"
     icon = "cubes"
 
+    def build_base(self):
+        if cmds.objExists("|MODEL"):
+            return
+
+        make_empty = not ((self.options or {}).get("useSelection") and
+                          bool(cmds.ls(sl=True)))
+        cmds.group(name="MODEL", empty=make_empty, world=True)
+
     def process(self):
-        if not cmds.objExists("|MODEL"):
-            make_empty = not ((self.options or {}).get("useSelection") and
-                              bool(cmds.ls(sl=True)))
-            cmds.group(name="MODEL", empty=make_empty, world=True)
+
+        self.build_base()
 
         return super(ModelCreator, self).process()
