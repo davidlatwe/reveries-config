@@ -66,7 +66,6 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     families = [
         "reveries.model",
-        "reveries.look",
     ]
 
     @staticmethod
@@ -94,27 +93,30 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
         uuids_dict = get_avalon_uuid(instance)
 
+        is_invalid = False
+
         invalid = self.get_invalid_missing(instance, uuids_dict)
         if invalid:
+            is_invalid = True
             self.log.error(
                 "'%s' Missing ID attribute on:\n%s" % (
                     instance,
                     ",\n".join(
                         "'" + member + "'" for member in invalid))
             )
-            raise Exception("%s <Avalon UUID> Failed." % instance)
 
         invalid = self.get_invalid_duplicated(instance, uuids_dict)
         if invalid:
+            is_invalid = True
             self.log.error(
                 "'%s' Duplicated IDs on:\n%s" % (
                     instance,
                     ",\n".join(
                         "'" + member + "'" for member in invalid))
             )
-            raise Exception("%s <Avalon UUID> Failed." % instance)
 
-        self.log.info("%s <Avalon UUID> Passed." % instance)
+        if is_invalid:
+            raise Exception("%s <Avalon UUID> Failed." % instance)
 
     @classmethod
     def fix(cls, instance):
