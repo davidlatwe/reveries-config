@@ -128,16 +128,13 @@ def find_contractor(contractor_name=""):
     return None
 
 
-class PackageLoader(avalon.api.Loader):
+class PackageLoader(object):
     """Load representation into host application
 
     Arguments:
         context (dict): avalon-core:context-x.0
 
     """
-
-    families = list()
-    representations = list()
 
     def __init__(self, context):
         super(PackageLoader, self).__init__(context)
@@ -149,6 +146,7 @@ class PackageLoader(avalon.api.Loader):
 
 
 def message_box_error(title, message):
+    """Prompt error message window"""
     from avalon.vendor.Qt import QtWidgets
 
     QtWidgets.QMessageBox.critical(None,
@@ -158,6 +156,7 @@ def message_box_error(title, message):
 
 
 def message_box_warning(title, message, optional=False):
+    """Prompt warning dialog with option"""
     from avalon.vendor.Qt import QtWidgets
 
     opt_btn = QtWidgets.QMessageBox.NoButton

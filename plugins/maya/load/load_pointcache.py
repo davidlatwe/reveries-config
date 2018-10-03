@@ -1,17 +1,21 @@
 
 import os
 
+import avalon.api
+
 import reveries.maya.lib
 from reveries.plugins import message_box_warning
 from reveries.maya.plugins import ReferenceLoader, ImportLoader
 
 
-class PointCacheReferenceLoader(ReferenceLoader):
+class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
 
     label = "Reference PointCache"
     order = -10
     icon = "flash"
     color = "orange"
+
+    hosts = ["maya"]
 
     families = [
         "reveries.animation",
@@ -26,6 +30,7 @@ class PointCacheReferenceLoader(ReferenceLoader):
 
     def process_reference(self, context, name, namespace, options):
         import maya.cmds as cmds
+        from reveries.maya.lib import get_highest_in_hierarchy
 
         representation = context["representation"]
 
@@ -44,18 +49,21 @@ class PointCacheReferenceLoader(ReferenceLoader):
         reveries.maya.lib.lock_transform(group_name)
         self[:] = nodes
 
-        return nodes
+        transforms = cmds.ls(nodes, type="transform", long=True)
+        self.interface = get_highest_in_hierarchy(transforms)
 
     def switch(self, container, representation):
         self.update(container, representation)
 
 
-class PointCacheImportLoader(ImportLoader):
+class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
 
     label = "Import PointCache"
     order = -10
     icon = "flash"
     color = "orange"
+
+    hosts = ["maya"]
 
     families = [
         "reveries.animation",
@@ -87,8 +95,11 @@ class PointCacheImportLoader(ImportLoader):
 
     def update(self, container, representation):
         import maya.cmds as cmds
+        import avalon.api
 
         representation_name = representation["name"]
+
+        self.package_path = avalon.api.get_representation_path(representation)
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 

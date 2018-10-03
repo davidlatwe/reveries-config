@@ -2,6 +2,8 @@ import sys
 import os
 import subprocess
 
+import avalon.api
+
 from reveries.plugins import PackageLoader
 
 
@@ -15,7 +17,7 @@ def open(filepath):
         subprocess.call(('xdg-open', filepath))
 
 
-class PlayImageSequence(PackageLoader):
+class PlayImageSequence(PackageLoader, avalon.api.Loader):
     """Open Image Sequence with system default"""
 
     label = "Play sequence"

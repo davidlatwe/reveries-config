@@ -1,14 +1,17 @@
 
+import avalon.api
 from reveries.maya.plugins import ReferenceLoader
 
 
-class AnimationLoader(ReferenceLoader):
+class AnimationLoader(ReferenceLoader, avalon.api.Loader):
     """Specific loader of Alembic for the reveries.animation family"""
 
     label = "Reference Animation Edit"
     order = -10
     icon = "code-fork"
     color = "orange"
+
+    hosts = ["maya"]
 
     families = ["reveries.animation"]
 

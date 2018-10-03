@@ -1,14 +1,17 @@
 
+import avalon.api
 from reveries.maya.plugins import ReferenceLoader
 
 
-class LookLoader(ReferenceLoader):
+class LookLoader(ReferenceLoader, avalon.api.Loader):
     """Specific loader for lookdev"""
 
     label = "Reference look"
     order = -10
     icon = "code-fork"
     color = "orange"
+
+    hosts = ["maya"]
 
     families = ["reveries.look"]
 
@@ -66,3 +69,5 @@ class LookLoader(ReferenceLoader):
         lib.apply_shaders(relationships["shader_by_id"], namespace)
 
         self[:] = nodes
+
+        self.interface = cmds.ls(nodes, type="shadingEngine")

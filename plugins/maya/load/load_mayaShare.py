@@ -1,14 +1,17 @@
 
+import avalon.api
 from reveries.maya.plugins import ReferenceLoader
 
 
-class MayaShareLoader(ReferenceLoader):
+class MayaShareLoader(ReferenceLoader, avalon.api.Loader):
     """Specific loader for the reveries.mayaShare family"""
 
     label = "Reference MayaShare"
     order = -10
     icon = "code-fork"
     color = "orange"
+
+    hosts = ["maya"]
 
     families = ["reveries.mayaShare"]
 
