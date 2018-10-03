@@ -21,13 +21,17 @@ class ValidateSubsetUnique(pyblish.api.ContextPlugin):
     @staticmethod
     def get_invalid(context):
         invalid = list()
-        subsets = list()
+        subsets = dict()
 
         for instance in context:
+            asset = instance.data["asset"]
             subset = instance.data["subset"]
-            if subset in subsets:
-                invalid.append(instance.data["name"])
-
-            subsets.append(subset)
+            if asset in subsets:
+                if subset in subsets[asset]:
+                    invalid.append(instance.data["name"])
+                else:
+                    subsets[asset].append(subset)
+            else:
+                subsets[asset] = [subset]
 
         return invalid
