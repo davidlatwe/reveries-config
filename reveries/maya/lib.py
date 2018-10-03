@@ -352,13 +352,15 @@ def serialise_shaders(nodes):
                 continue
 
     meshes_by_shader = dict()
-    for id_, mesh in meshes_by_id.items():
-        shape = cmds.listRelatives(mesh,
+    for id_, meshes in meshes_by_id.items():
+        shape = cmds.listRelatives(meshes,
                                    shapes=True,
                                    fullPath=True) or list()
 
         for shader in cmds.listConnections(shape,
-                                           type="shadingEngine") or list():
+                                           type="shadingEngine",
+                                           source=False,
+                                           destination=True) or list():
 
             # Objects in this group are those that haven't got
             # any shaders. These are expected to be managed
