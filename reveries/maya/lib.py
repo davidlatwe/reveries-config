@@ -245,11 +245,14 @@ def bake_camera(camera, startFrame, endFrame):
 
 
 def lock_transform(node):
-    if not cmds.objectType(node) == "transform":
-        raise TypeError("{} is not a transform node.".format(node))
-
     for attr in TRANSFORM_ATTRS:
-        cmds.setAttr(node + "." + attr, lock=True)
+        try:
+            cmds.setAttr(node + "." + attr, lock=True)
+        except RuntimeError as e:
+            if not cmds.objectType(node) == "transform":
+                raise TypeError("{} is not a transform node.".format(node))
+            else:
+                raise e
 
 
 def shaders_by_meshes(meshes):
