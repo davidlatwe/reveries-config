@@ -93,6 +93,27 @@ def container_interfacing(name,
     return interface
 
 
+def read_interface_data(interface):
+    """Read data from interface node's custom attributes
+
+    Arguments:
+        interface (str): Name of interface node
+
+    Returns:
+        _id (str): representation id
+        data (dict): {name: str, namespace: str, loader: str}
+
+    """
+    import maya.cmds as cmds
+
+    _id = cmds.getAttr(interface + ".representation_id")
+    name = cmds.getAttr(interface + ".name")
+    namespace = cmds.getAttr(interface + ".namespace")
+    loader = cmds.getAttr(interface + ".loader")
+
+    return _id, dict(name=name, namespace=namespace, loader=loader)
+
+
 def parse_interface_from_container(container):
     """Return interface node of container
 
