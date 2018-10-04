@@ -438,6 +438,25 @@ def apply_shaders(relationships, namespace=None):
             cmds.sets(meshes, forceElement=shader)
 
 
+def hasAttr(node, attr):
+    """Convenience function for determining if an object has an attribute
+
+    This function is simply using `cmds.objExists`, it's about 4 times faster
+    then `cmds.attributeQuery(attr, node=node, exists=True)`, and about 9 times
+    faster then pymel's `PyNode(node).hasAttr(attr)`.
+
+    Arguments:
+        node (str): Name of Maya node
+        attr (str): Name of Maya attribute
+
+    Example:
+        >> hasAttr("pCube1", "translateX")
+        True
+
+    """
+    return cmds.objExists(node + "." + attr)
+
+
 def lsattr(attr, value=None):
     """Return nodes matching `key` and `value`
 
