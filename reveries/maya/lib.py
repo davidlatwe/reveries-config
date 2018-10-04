@@ -7,6 +7,7 @@ from maya.api import OpenMaya as om
 
 from .. import utils, lib
 from ..vendor.six import string_types
+from .vendor import capture
 
 
 log = logging.getLogger(__name__)
@@ -659,3 +660,19 @@ def get_highest_in_hierarchy(nodes):
             highest.append(node)
 
     return highest
+
+
+def parse_active_camera():
+    """Parse the active camera
+
+    Raises
+        RuntimeError: When no active modelPanel an error is raised.
+
+    Returns:
+        str: Name of camera
+
+    """
+    panel = capture.parse_active_panel()
+    camera = cmds.modelPanel(panel, query=True, camera=True)
+
+    return camera
