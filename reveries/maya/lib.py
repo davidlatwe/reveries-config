@@ -429,7 +429,7 @@ def apply_shaders(relationships, namespace=None):
             # Find all meshes matching this particular ID
             # Convert IDs to mesh + id, e.g. "nameOfNode.f[1:100]"
             meshes = list(".".join([mesh, faces])
-                          for mesh in lsattr(AVALON_ID_ATTR_SHORT, value=mesh))
+                          for mesh in lsAttr(AVALON_ID_ATTR_SHORT, value=mesh))
 
             if not meshes:
                 continue
@@ -457,7 +457,7 @@ def hasAttr(node, attr):
     return cmds.objExists(node + "." + attr)
 
 
-def lsattr(attr, value=None):
+def lsAttr(attr, value=None):
     """Return nodes matching `key` and `value`
 
     Arguments:
@@ -466,29 +466,29 @@ def lsattr(attr, value=None):
             is provided, return all nodes with this attribute.
 
     Example:
-        >> lsattr("id", "myId")
+        >> lsAttr("id", "myId")
         ["myNode"]
-        >> lsattr("id")
+        >> lsAttr("id")
         ["myNode", "myOtherNode"]
 
     """
 
     if value is None:
         return cmds.ls("*.%s" % attr)
-    return lsattrs({attr: value})
+    return lsAttrs({attr: value})
 
 
-def lsattrs(attrs):
+def lsAttrs(attrs):
     """Return nodes with the given attribute(s).
 
     Arguments:
         attrs (dict): Name and value pairs of expected matches
 
     Example:
-        >> lsattr("age")  # Return nodes with attribute `age`
-        >> lsattr({"age": 5})  # Return nodes with an `age` of 5
+        >> lsAttr("age")  # Return nodes with attribute `age`
+        >> lsAttr({"age": 5})  # Return nodes with an `age` of 5
         >> # Return nodes with both `age` and `color` of 5 and blue
-        >> lsattr({"age": 5, "color": "blue"})
+        >> lsAttr({"age": 5, "color": "blue"})
 
     Returns a list.
 
