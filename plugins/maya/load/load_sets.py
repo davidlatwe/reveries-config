@@ -19,7 +19,6 @@ class SetsLoader(avalon.api.Loader):
 
     representations = [
         "mayaBinary",
-        "GPUCache",
         "Alembic",
         "SetDress",
     ]
