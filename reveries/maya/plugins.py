@@ -16,6 +16,7 @@ from ..plugins import (
 
 AVALON_PORTS = ":AVALON_PORTS"
 
+AVALON_CONTAINER_INTERFACE_ID = "pyblish.avalon.interface"
 AVALON_VESSEL_ATTR = "vessel"
 AVALON_CONTAINER_ATTR = "container"
 
@@ -65,7 +66,7 @@ def container_interfacing(name, namespace, nodes, context, suffix="PORT"):
     interface = cmds.sets(nodes, name="%s_%s_%s" % (namespace, name, suffix))
 
     data = OrderedDict()
-    data["id"] = "pyblish.avalon.interface"
+    data["id"] = AVALON_CONTAINER_INTERFACE_ID
     data["name"] = name
     data["namespace"] = namespace
     data["representation"] = str(context["representation"]["_id"])
@@ -98,7 +99,7 @@ def parse_interface_from_container(container):
     namespace = cmds.getAttr(container + ".namespace")
 
     nodes = lib.lsAttrs({
-        "id": "pyblish.avalon.interface",
+        "id": AVALON_CONTAINER_INTERFACE_ID,
         "representation": representation,
         "namespace": namespace})
 
