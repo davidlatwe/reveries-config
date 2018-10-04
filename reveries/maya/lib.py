@@ -676,3 +676,24 @@ def parse_active_camera():
     camera = cmds.modelPanel(panel, query=True, camera=True)
 
     return camera
+
+
+def connect_message(source, target, attrname, lock=True):
+    """Connect nodes with message channel
+
+    This will build a convenience custom connection between two nodes:
+
+        source.message -> target.attrname
+
+    Args:
+        source (str): Message output node
+        target (str): Message input node
+        attrname (str): Name of input attribute of target node
+        lock (bool, optional): Lock attribute if set to True (default True)
+
+    """
+    cmds.addAttr(target, longName=attrname, attributeType="message")
+
+    target_attr = target + "." + attrname
+    cmds.connectAttr(source + ".message", target_attr)
+    cmds.setAttr(target_attr, lock=lock)
