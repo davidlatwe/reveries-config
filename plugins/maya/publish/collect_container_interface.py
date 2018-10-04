@@ -2,6 +2,8 @@
 import pyblish.api
 from maya import cmds
 
+from reveries.maya.plugins import AVALON_CONTAINER_INTERFACE_ID
+
 
 class CollectContainerInterface(pyblish.api.InstancePlugin):
     """Collect container interfaces from instance
@@ -16,8 +18,6 @@ class CollectContainerInterface(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Container Interface"
 
-    CONTAINER_INTERFACE_ID = "pyblish.avalon.interface"
-
     def process(self, instance):
         instance.data["interfaces"] = list()
 
@@ -27,5 +27,5 @@ class CollectContainerInterface(pyblish.api.InstancePlugin):
             except ValueError:
                 pass
             else:
-                if _id == self.CONTAINER_INTERFACE_ID:
+                if _id == AVALON_CONTAINER_INTERFACE_ID:
                     instance.data["interfaces"].append(node)
