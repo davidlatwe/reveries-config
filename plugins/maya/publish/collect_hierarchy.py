@@ -13,14 +13,8 @@ class CollectHierarchy(pyblish.api.InstancePlugin):
     def process(self, instance):
 
         # Collect set members from container interface
-        for node in instance:
-            try:
-                _id = cmds.getAttr(node + ".id")
-            except ValueError:
-                pass
-            else:
-                if _id == "pyblish.avalon.interface":
-                    instance += cmds.ls(cmds.sets(node, query=True), long=True)
+        for node in instance.data["interfaces"]:
+            instance += cmds.ls(cmds.sets(node, query=True), long=True)
 
         # Collect all descendents
         instance += cmds.listRelatives(instance,
