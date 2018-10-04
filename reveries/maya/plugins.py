@@ -44,7 +44,12 @@ def load_plugin(representation):
         cmds.loadPlugin(plugin, quiet=True)
 
 
-def container_interfacing(name, namespace, nodes, context, suffix="PORT"):
+def container_interfacing(name,
+                          namespace,
+                          nodes,
+                          context,
+                          loader,
+                          suffix="PORT"):
     """Expose crucial `nodes` as an interface of a subset container
 
     Interfacing enables a faster way to access nodes of loaded subsets from
@@ -67,9 +72,13 @@ def container_interfacing(name, namespace, nodes, context, suffix="PORT"):
 
     data = OrderedDict()
     data["id"] = AVALON_CONTAINER_INTERFACE_ID
+    data["asset"] = context["asset"]["name"]
     data["name"] = name
     data["namespace"] = namespace
-    data["representation"] = str(context["representation"]["_id"])
+    data["version"] = context["version"]["name"]
+    data["representation"] = context["representation"]["name"]
+    data["representation_id"] = str(context["representation"]["_id"])
+    data["loader"] = loader
 
     avalon.maya.lib.imprint(interface, data)
 
@@ -100,7 +109,7 @@ def parse_interface_from_container(container):
 
     nodes = lib.lsAttrs({
         "id": AVALON_CONTAINER_INTERFACE_ID,
-        "representation": representation,
+        "representation_id": representation,
         "namespace": namespace})
 
     if not len(nodes) == 1:
@@ -195,10 +204,11 @@ class ReferenceLoader(PackageLoader):
         if not nodes:
             return
 
-        interface = container_interfacing(name,
-                                          namespace,
-                                          self.interface,
-                                          context)
+        interface = container_interfacing(name=name,
+                                          namespace=namespace,
+                                          nodes=self.interface,
+                                          context=context,
+                                          loader=self.__class__.__name__)
 
         container = containerise(name=name,
                                  namespace=namespace,
@@ -339,10 +349,11 @@ class ImportLoader(PackageLoader):
         if not nodes:
             return
 
-        interface = container_interfacing(name,
-                                          namespace,
-                                          self.interface,
-                                          context)
+        interface = container_interfacing(name=name,
+                                          namespace=namespace,
+                                          nodes=self.interface,
+                                          context=context,
+                                          loader=self.__class__.__name__)
 
         container = containerise(name=name,
                                  namespace=namespace,
