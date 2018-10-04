@@ -63,7 +63,7 @@ def container_interfacing(name, namespace, nodes, context, suffix="PORT"):
     data["id"] = "pyblish.avalon.interface"
     data["name"] = name
     data["namespace"] = namespace
-    data["representation"] = context["representation"]["_id"]
+    data["representation"] = str(context["representation"]["_id"])
 
     avalon.maya.lib.imprint(interface, data)
 
