@@ -16,11 +16,6 @@ log = logging.getLogger(__name__)
 AVALON_ID_ATTR_LONG = "AvalonID"
 AVALON_ID_ATTR_SHORT = "avid"
 
-DEFAULT_MATRIX = [1.0, 0.0, 0.0, 0.0,
-                  0.0, 1.0, 0.0, 0.0,
-                  0.0, 0.0, 1.0, 0.0,
-                  0.0, 0.0, 0.0, 1.0]
-
 TRANSFORM_ATTRS = [
     "translateX", "translateY", "translateZ",
     "rotateX", "rotateY", "rotateZ",
