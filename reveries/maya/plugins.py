@@ -109,6 +109,29 @@ def parse_interface_from_container(container):
     return nodes[0]
 
 
+def parse_group_from_container(container):
+    """Return group node of container
+
+    Arguments:
+        container (str): Name of container node
+
+    Returns a str
+
+    """
+    import maya.cmds as cmds
+
+    interface = parse_interface_from_container(container)
+
+    group = cmds.listConnections(interface + "." + AVALON_VESSEL_ATTR,
+                                 source=True,
+                                 destination=False,
+                                 type="transform") or []
+    if not group:
+        raise RuntimeError("Can not get group node, this is a bug.")
+
+    return group[0]
+
+
 class ReferenceLoader(PackageLoader):
     """A basic ReferenceLoader for Maya
 
