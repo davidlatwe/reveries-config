@@ -15,6 +15,7 @@ from ..plugins import (
 AVALON_PORTS = ":AVALON_PORTS"
 
 AVALON_VESSEL_ATTR = "vessel"
+AVALON_CONTAINER_ATTR = "container"
 
 
 REPRS_PLUGIN_MAPPING = {
@@ -143,7 +144,7 @@ class ReferenceLoader(PackageLoader):
                                  loader=self.__class__.__name__)
 
         connect_message(group_name, interface, AVALON_VESSEL_ATTR)
-        connect_message(interface, container, AVALON_VESSEL_ATTR)
+        connect_message(container, interface, AVALON_CONTAINER_ATTR)
 
         return container
 
@@ -287,7 +288,7 @@ class ImportLoader(PackageLoader):
                                  loader=self.__class__.__name__)
 
         connect_message(group_name, interface, AVALON_VESSEL_ATTR)
-        connect_message(interface, container, AVALON_VESSEL_ATTR)
+        connect_message(container, interface, AVALON_CONTAINER_ATTR)
 
         return container
 
