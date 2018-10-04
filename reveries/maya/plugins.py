@@ -110,18 +110,16 @@ def parse_interface_from_container(container):
     return nodes[0]
 
 
-def parse_group_from_container(container):
-    """Return group node of container
+def parse_group_from_interface(interface):
+    """Return group node of interface
 
     Arguments:
-        container (str): Name of container node
+        interface (str): Name of interface node
 
     Returns a str
 
     """
     import maya.cmds as cmds
-
-    interface = parse_interface_from_container(container)
 
     group = cmds.listConnections(interface + "." + AVALON_VESSEL_ATTR,
                                  source=True,
@@ -131,6 +129,19 @@ def parse_group_from_container(container):
         raise RuntimeError("Can not get group node, this is a bug.")
 
     return group[0]
+
+
+def parse_group_from_container(container):
+    """Return group node of container
+
+    Arguments:
+        container (str): Name of container node
+
+    Returns a str
+
+    """
+    interface = parse_interface_from_container(container)
+    return parse_group_from_interface(interface)
 
 
 class ReferenceLoader(PackageLoader):
