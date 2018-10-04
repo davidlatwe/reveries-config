@@ -5,6 +5,8 @@ from collections import OrderedDict
 import avalon.api
 import avalon.maya.lib
 
+from . import lib
+
 from ..plugins import (
     PackageLoader,
     message_box_error,
@@ -79,6 +81,32 @@ def container_interfacing(name, namespace, nodes, context, suffix="PORT"):
     cmds.sets(interface, addElement=main_interface)
 
     return interface
+
+
+def parse_interface_from_container(container):
+    """Return interface node of container
+
+    Arguments:
+        container (str): Name of container node
+
+    Returns a str
+
+    """
+    import maya.cmds as cmds
+
+    representation = cmds.getAttr(container + ".representation")
+    namespace = cmds.getAttr(container + ".namespace")
+
+    nodes = lib.lsAttrs({
+        "id": "pyblish.avalon.interface",
+        "representation": representation,
+        "namespace": namespace})
+
+    if not len(nodes) == 1:
+        raise RuntimeError("Container has none or more then one interface, "
+                           "this is a bug.")
+
+    return nodes[0]
 
 
 class ReferenceLoader(PackageLoader):
