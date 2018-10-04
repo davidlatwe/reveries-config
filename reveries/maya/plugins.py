@@ -14,6 +14,8 @@ from ..plugins import (
 
 AVALON_PORTS = ":AVALON_PORTS"
 
+AVALON_VESSEL_ATTR = "vessel"
+
 
 REPRS_PLUGIN_MAPPING = {
     "Alembic": "AbcImport.mll",
@@ -107,6 +109,7 @@ class ReferenceLoader(PackageLoader):
     def load(self, context, name=None, namespace=None, options=None):
         from avalon.maya import lib
         from avalon.maya.pipeline import containerise
+        from reveries.maya.lib import connect_message
 
         load_plugin(context["representation"]["name"])
 
@@ -118,24 +121,31 @@ class ReferenceLoader(PackageLoader):
             suffix="_",
         )
 
-        self.process_reference(context=context,
-                               name=name,
-                               namespace=namespace,
-                               options=options)
+        group_name = self.process_reference(context=context,
+                                            name=name,
+                                            namespace=namespace,
+                                            options=options)
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
         if not nodes:
             return
 
-        container_interfacing(name, namespace, self.interface, context)
+        interface = container_interfacing(name,
+                                          namespace,
+                                          self.interface,
+                                          context)
 
-        return containerise(
-            name=name,
-            namespace=namespace,
-            nodes=nodes,
-            context=context,
-            loader=self.__class__.__name__)
+        container = containerise(name=name,
+                                 namespace=namespace,
+                                 nodes=nodes,
+                                 context=context,
+                                 loader=self.__class__.__name__)
+
+        connect_message(group_name, interface, AVALON_VESSEL_ATTR)
+        connect_message(interface, container, AVALON_VESSEL_ATTR)
+
+        return container
 
     def update(self, container, representation):
         from maya import cmds
@@ -243,6 +253,7 @@ class ImportLoader(PackageLoader):
     def load(self, context, name=None, namespace=None, options=None):
         from avalon.maya import lib
         from avalon.maya.pipeline import containerise
+        from reveries.maya.lib import connect_message
 
         load_plugin(context["representation"]["name"])
 
@@ -254,24 +265,31 @@ class ImportLoader(PackageLoader):
             suffix="_",
         )
 
-        self.process_import(context=context,
-                            name=name,
-                            namespace=namespace,
-                            options=options)
+        group_name = self.process_import(context=context,
+                                         name=name,
+                                         namespace=namespace,
+                                         options=options)
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
         if not nodes:
             return
 
-        container_interfacing(name, namespace, self.interface, context)
+        interface = container_interfacing(name,
+                                          namespace,
+                                          self.interface,
+                                          context)
 
-        return containerise(
-            name=name,
-            namespace=namespace,
-            nodes=nodes,
-            context=context,
-            loader=self.__class__.__name__)
+        container = containerise(name=name,
+                                 namespace=namespace,
+                                 nodes=nodes,
+                                 context=context,
+                                 loader=self.__class__.__name__)
+
+        connect_message(group_name, interface, AVALON_VESSEL_ATTR)
+        connect_message(interface, container, AVALON_VESSEL_ATTR)
+
+        return container
 
     def update(self, container, representation):
 

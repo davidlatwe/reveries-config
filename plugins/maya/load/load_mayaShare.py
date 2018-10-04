@@ -38,5 +38,7 @@ class MayaShareLoader(ReferenceLoader, avalon.api.Loader):
 
         self[:] = nodes
 
+        return group_name
+
     def switch(self, container, representation):
         self.update(container, representation)
