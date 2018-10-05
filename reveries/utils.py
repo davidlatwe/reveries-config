@@ -169,32 +169,7 @@ def plugins_by_range(base=1.5, offset=2, paths=None):
     return plugins
 
 
-class AssetHasher(object):
-    """A data hasher for digital content creation
-
-    This is a Python implemtation of Avalanche-io C4 Asset ID.
-
-    Usage:
-        >> hasher = AssetHasher()
-        >> hasher.add_file("/path/to/file")
-        >> hasher.add_dir("/path/to/dir")
-
-        You can keep adding more assets.
-        And get the hash value by
-        >> hasher.hash()
-        'c463d2Wh5NyBMQRHyxbdBxCzZfaKXvBQaawgfgG18moxQU2jdmaSbCWL...'
-
-        You can still adding more assets at this point
-        >> hasher.add_file("/path/to/more/file")
-
-        And get the hash value of all asset added so far
-        >> hasher.hash()
-        'c43cysVyTd7kYurvAa5ooR6miJJgUZ9QnBCHZeNK3en9aQ96KHsoJyJX...'
-
-        Until you call `clear`
-        >> hasher.clear()
-
-    """
+class _C4Hasher(object):
 
     CHUNK_SIZE = 4096 * 10  # magic number
     PREFIX = "c4"
@@ -238,6 +213,34 @@ class AssetHasher(object):
 
         c4id = self.PREFIX + padding + b58_hash
         return c4id
+
+
+class AssetHasher(_C4Hasher):
+    """A data hasher for digital content creation
+
+    This is a Python implemtation of Avalanche-io C4 Asset ID.
+
+    Usage:
+        >> hasher = AssetHasher()
+        >> hasher.add_file("/path/to/file")
+        >> hasher.add_dir("/path/to/dir")
+
+        You can keep adding more assets.
+        And get the hash value by
+        >> hasher.hash()
+        'c463d2Wh5NyBMQRHyxbdBxCzZfaKXvBQaawgfgG18moxQU2jdmaSbCWL...'
+
+        You can still adding more assets at this point
+        >> hasher.add_file("/path/to/more/file")
+
+        And get the hash value of all asset added so far
+        >> hasher.hash()
+        'c43cysVyTd7kYurvAa5ooR6miJJgUZ9QnBCHZeNK3en9aQ96KHsoJyJX...'
+
+        Until you call `clear`
+        >> hasher.clear()
+
+    """
 
     def add_file(self, file_path):
         """Add one file to hasher
