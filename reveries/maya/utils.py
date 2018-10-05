@@ -9,6 +9,8 @@ class MeshHasher(_C4Hasher):
     Based on Avalanche-io C4 Asset ID, hashing mesh geometry by ipnuting all
     vertices' position.
 
+    Vertex and mesh input order matters, transform does not.
+
     Usage:
         >> hasher = MeshHasher()
         >> hasher.add_mesh("path|to|mesh")
@@ -31,7 +33,7 @@ class MeshHasher(_C4Hasher):
     """
 
     def add_mesh(self, dag_path):
-        """Add one file to hasher
+        """Add one mesh geometry to hasher
 
         Arguments:
             dag_path (str): Mesh node's DAG path
