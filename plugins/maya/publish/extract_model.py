@@ -51,10 +51,12 @@ class ExtractModel(PackageExtractor):
         # Hash model
         hasher = utils.MeshHasher()
         for mesh in mesh_nodes:
-            hasher.add_mesh(mesh)
-        hash_val = hasher.hash()
+            hasher.set_mesh(mesh)
+            hasher.update_points()
+            hasher.update_normals()
+            hasher.update_uvmap()
 
-        self.add_data({"meshHash": hash_val})
+        self.add_data({"meshHash": hasher.hash()})
 
         # Perform extraction
         self.log.info("Extracting %s" % str(self.member))
