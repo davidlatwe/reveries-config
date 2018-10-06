@@ -186,12 +186,12 @@ class _C4Hasher(object):
     def _b58encode(self, bytes):
         """Base58 Encode bytes to string
         """
-        b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+        b58chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
         b58base = 58
 
         long_value = int(codecs.encode(bytes, "hex_codec"), 16)
 
-        result = ''
+        result = ""
         while long_value >= b58base:
             div, mod = divmod(long_value, b58base)
             result = b58chars[mod] + result
