@@ -5,6 +5,8 @@ from collections import OrderedDict
 import avalon.api
 import avalon.maya.lib
 
+from . import lib
+
 from ..plugins import (
     PackageLoader,
     message_box_error,
@@ -13,6 +15,10 @@ from ..plugins import (
 
 
 AVALON_PORTS = ":AVALON_PORTS"
+
+AVALON_CONTAINER_INTERFACE_ID = "pyblish.avalon.interface"
+AVALON_VESSEL_ATTR = "vessel"
+AVALON_CONTAINER_ATTR = "container"
 
 
 REPRS_PLUGIN_MAPPING = {
@@ -38,7 +44,12 @@ def load_plugin(representation):
         cmds.loadPlugin(plugin, quiet=True)
 
 
-def container_interfacing(name, namespace, nodes, context, suffix="PORT"):
+def container_interfacing(name,
+                          namespace,
+                          nodes,
+                          context,
+                          loader,
+                          suffix="PORT"):
     """Expose crucial `nodes` as an interface of a subset container
 
     Interfacing enables a faster way to access nodes of loaded subsets from
@@ -60,10 +71,14 @@ def container_interfacing(name, namespace, nodes, context, suffix="PORT"):
     interface = cmds.sets(nodes, name="%s_%s_%s" % (namespace, name, suffix))
 
     data = OrderedDict()
-    data["id"] = "pyblish.avalon.interface"
+    data["id"] = AVALON_CONTAINER_INTERFACE_ID
+    data["asset"] = context["asset"]["name"]
     data["name"] = name
     data["namespace"] = namespace
-    data["representation"] = context["representation"]["_id"]
+    data["version"] = context["version"]["name"]
+    data["representation"] = context["representation"]["name"]
+    data["representation_id"] = str(context["representation"]["_id"])
+    data["loader"] = loader
 
     avalon.maya.lib.imprint(interface, data)
 
@@ -76,6 +91,86 @@ def container_interfacing(name, namespace, nodes, context, suffix="PORT"):
     cmds.sets(interface, addElement=main_interface)
 
     return interface
+
+
+def read_interface_to_package(interface):
+    """Read attributes from interface node for package dumping
+
+    Arguments:
+        interface (str): Name of interface node
+
+    Returns:
+        _id (str): representation id
+        data (dict): {name: str, loader: str}
+
+    """
+    import maya.cmds as cmds
+
+    _id = cmds.getAttr(interface + ".representation_id")
+    name = cmds.getAttr(interface + ".name")
+    loader = cmds.getAttr(interface + ".loader")
+
+    return _id, dict(name=name, loader=loader)
+
+
+def parse_interface_from_container(container):
+    """Return interface node of container
+
+    Arguments:
+        container (str): Name of container node
+
+    Returns a str
+
+    """
+    import maya.cmds as cmds
+
+    representation = cmds.getAttr(container + ".representation")
+    namespace = cmds.getAttr(container + ".namespace")
+
+    nodes = lib.lsAttrs({
+        "id": AVALON_CONTAINER_INTERFACE_ID,
+        "representation_id": representation,
+        "namespace": namespace})
+
+    if not len(nodes) == 1:
+        raise RuntimeError("Container has none or more then one interface, "
+                           "this is a bug.")
+
+    return nodes[0]
+
+
+def parse_group_from_interface(interface):
+    """Return group node of interface
+
+    Arguments:
+        interface (str): Name of interface node
+
+    Returns a str
+
+    """
+    import maya.cmds as cmds
+
+    group = cmds.listConnections(interface + "." + AVALON_VESSEL_ATTR,
+                                 source=True,
+                                 destination=False,
+                                 type="transform") or []
+    if not group:
+        raise RuntimeError("Can not get group node, this is a bug.")
+
+    return group[0]
+
+
+def parse_group_from_container(container):
+    """Return group node of container
+
+    Arguments:
+        container (str): Name of container node
+
+    Returns a str
+
+    """
+    interface = parse_interface_from_container(container)
+    return parse_group_from_interface(interface)
 
 
 class ReferenceLoader(PackageLoader):
@@ -107,6 +202,7 @@ class ReferenceLoader(PackageLoader):
     def load(self, context, name=None, namespace=None, options=None):
         from avalon.maya import lib
         from avalon.maya.pipeline import containerise
+        from reveries.maya.lib import connect_message
 
         load_plugin(context["representation"]["name"])
 
@@ -118,24 +214,32 @@ class ReferenceLoader(PackageLoader):
             suffix="_",
         )
 
-        self.process_reference(context=context,
-                               name=name,
-                               namespace=namespace,
-                               options=options)
+        group_name = self.process_reference(context=context,
+                                            name=name,
+                                            namespace=namespace,
+                                            options=options)
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
         if not nodes:
             return
 
-        container_interfacing(name, namespace, self.interface, context)
+        interface = container_interfacing(name=name,
+                                          namespace=namespace,
+                                          nodes=self.interface,
+                                          context=context,
+                                          loader=self.__class__.__name__)
 
-        return containerise(
-            name=name,
-            namespace=namespace,
-            nodes=nodes,
-            context=context,
-            loader=self.__class__.__name__)
+        container = containerise(name=name,
+                                 namespace=namespace,
+                                 nodes=nodes,
+                                 context=context,
+                                 loader=self.__class__.__name__)
+
+        connect_message(group_name, interface, AVALON_VESSEL_ATTR)
+        connect_message(container, interface, AVALON_CONTAINER_ATTR)
+
+        return container
 
     def update(self, container, representation):
         from maya import cmds
@@ -243,6 +347,7 @@ class ImportLoader(PackageLoader):
     def load(self, context, name=None, namespace=None, options=None):
         from avalon.maya import lib
         from avalon.maya.pipeline import containerise
+        from reveries.maya.lib import connect_message
 
         load_plugin(context["representation"]["name"])
 
@@ -254,24 +359,32 @@ class ImportLoader(PackageLoader):
             suffix="_",
         )
 
-        self.process_import(context=context,
-                            name=name,
-                            namespace=namespace,
-                            options=options)
+        group_name = self.process_import(context=context,
+                                         name=name,
+                                         namespace=namespace,
+                                         options=options)
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
         if not nodes:
             return
 
-        container_interfacing(name, namespace, self.interface, context)
+        interface = container_interfacing(name=name,
+                                          namespace=namespace,
+                                          nodes=self.interface,
+                                          context=context,
+                                          loader=self.__class__.__name__)
 
-        return containerise(
-            name=name,
-            namespace=namespace,
-            nodes=nodes,
-            context=context,
-            loader=self.__class__.__name__)
+        container = containerise(name=name,
+                                 namespace=namespace,
+                                 nodes=nodes,
+                                 context=context,
+                                 loader=self.__class__.__name__)
+
+        connect_message(group_name, interface, AVALON_VESSEL_ATTR)
+        connect_message(container, interface, AVALON_CONTAINER_ATTR)
+
+        return container
 
     def update(self, container, representation):
 

@@ -1,4 +1,11 @@
 
+
+DEFAULT_MATRIX = [1.0, 0.0, 0.0, 0.0,
+                  0.0, 1.0, 0.0, 0.0,
+                  0.0, 0.0, 1.0, 0.0,
+                  0.0, 0.0, 0.0, 1.0]
+
+
 def matrix_equals(a, b, tolerance=1e-10):
     """
     Compares two matrices with an imperfection tolerance

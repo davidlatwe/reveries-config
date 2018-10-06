@@ -2,7 +2,7 @@
 import pyblish.api
 from maya import cmds
 
-from reveries import math
+from reveries import lib
 from reveries.maya.plugins import MayaSelectInvalidAction
 
 
@@ -60,7 +60,7 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
                                 matrix=True,
                                 objectSpace=True)
 
-            if not math.matrix_equals(_identity, matrix, _tolerance):
+            if not lib.matrix_equals(_identity, matrix, _tolerance):
                 ignore = False
 
                 for shape in cmds.listRelatives(transform, shapes=True) or []:

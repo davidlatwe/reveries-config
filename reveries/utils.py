@@ -136,7 +136,7 @@ def publish_results_formatting(context):
 def hash_file(file_path):
     hasher = AssetHasher()
     hasher.add_file(file_path)
-    return hasher.hash()
+    return hasher.digest()
 
 
 def plugins_by_range(base=1.5, offset=2, paths=None):
@@ -169,32 +169,7 @@ def plugins_by_range(base=1.5, offset=2, paths=None):
     return plugins
 
 
-class AssetHasher(object):
-    """A data hasher for digital content creation
-
-    This is a Python implemtation of Avalanche-io C4 Asset ID.
-
-    Usage:
-        >> hasher = AssetHasher()
-        >> hasher.add_file("/path/to/file")
-        >> hasher.add_dir("/path/to/dir")
-
-        You can keep adding more assets.
-        And get the hash value by
-        >> hasher.hash()
-        'c463d2Wh5NyBMQRHyxbdBxCzZfaKXvBQaawgfgG18moxQU2jdmaSbCWL...'
-
-        You can still adding more assets at this point
-        >> hasher.add_file("/path/to/more/file")
-
-        And get the hash value of all asset added so far
-        >> hasher.hash()
-        'c43cysVyTd7kYurvAa5ooR6miJJgUZ9QnBCHZeNK3en9aQ96KHsoJyJX...'
-
-        Until you call `clear`
-        >> hasher.clear()
-
-    """
+class _C4Hasher(object):
 
     CHUNK_SIZE = 4096 * 10  # magic number
     PREFIX = "c4"
@@ -211,12 +186,12 @@ class AssetHasher(object):
     def _b58encode(self, bytes):
         """Base58 Encode bytes to string
         """
-        b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+        b58chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
         b58base = 58
 
         long_value = int(codecs.encode(bytes, "hex_codec"), 16)
 
-        result = ''
+        result = ""
         while long_value >= b58base:
             div, mod = divmod(long_value, b58base)
             result = b58chars[mod] + result
@@ -226,7 +201,7 @@ class AssetHasher(object):
 
         return result
 
-    def hash(self):
+    def digest(self):
         """Return hash value of data added so far
         """
         c4_id_length = 90
@@ -238,6 +213,34 @@ class AssetHasher(object):
 
         c4id = self.PREFIX + padding + b58_hash
         return c4id
+
+
+class AssetHasher(_C4Hasher):
+    """A data hasher for digital content creation
+
+    This is a Python implemtation of Avalanche-io C4 Asset ID.
+
+    Usage:
+        >> hasher = AssetHasher()
+        >> hasher.add_file("/path/to/file")
+        >> hasher.add_dir("/path/to/dir")
+
+        You can keep adding more assets.
+        And get the hash value by
+        >> hasher.digest()
+        'c463d2Wh5NyBMQRHyxbdBxCzZfaKXvBQaawgfgG18moxQU2jdmaSbCWL...'
+
+        You can still adding more assets at this point
+        >> hasher.add_file("/path/to/more/file")
+
+        And get the hash value of all asset added so far
+        >> hasher.digest()
+        'c43cysVyTd7kYurvAa5ooR6miJJgUZ9QnBCHZeNK3en9aQ96KHsoJyJX...'
+
+        Until you call `clear`
+        >> hasher.clear()
+
+    """
 
     def add_file(self, file_path):
         """Add one file to hasher

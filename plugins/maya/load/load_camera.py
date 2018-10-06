@@ -45,5 +45,7 @@ class CameraLoader(ReferenceLoader, avalon.api.Loader):
         self.interface = cmds.listRelatives(cmds.ls(nodes, type="camera"),
                                             parent=True)
 
+        return group_name
+
     def switch(self, container, representation):
         self.update(container, representation)

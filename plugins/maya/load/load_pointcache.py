@@ -52,6 +52,8 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
         transforms = cmds.ls(nodes, type="transform", long=True)
         self.interface = get_highest_in_hierarchy(transforms)
 
+        return group_name
+
     def switch(self, container, representation):
         self.update(container, representation)
 
@@ -92,6 +94,8 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
 
         reveries.maya.lib.lock_transform(group_name)
         self[:] = nodes
+
+        return group_name
 
     def update(self, container, representation):
         import maya.cmds as cmds

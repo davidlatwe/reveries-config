@@ -158,7 +158,7 @@ def test_asset_hasher():
     file_path = os.path.join(wdir, "foo.bar")
 
     # This data happens to be able to cover the if-statement inside
-    # `AssetHasher.hash()`:
+    # `AssetHasher.digest()`:
     # ```
     # if len(b58_hash) < (c4_id_length - 2):
     #     padding = "1" * (c4_id_length - 2 - len(b58_hash))
@@ -171,7 +171,7 @@ def test_asset_hasher():
     hasher = reveries.utils.AssetHasher()
     hasher.add_file(file_path)
 
-    hash_val = hasher.hash()
+    hash_val = hasher.digest()
     assert hash_val.startswith("c4")
 
     hasher.clear()
@@ -181,7 +181,7 @@ def test_asset_hasher():
     dir_path = os.path.dirname(reveries.__file__)
     hasher.add_dir(dir_path)
 
-    hash_val = hasher.hash()
+    hash_val = hasher.digest()
     assert hash_val.startswith("c4")
 
     hasher.clear()
@@ -190,7 +190,7 @@ def test_asset_hasher():
     #
     hasher.add_dir(dir_path, recursive=False)
 
-    hash_val = hasher.hash()
+    hash_val = hasher.digest()
     assert hash_val.startswith("c4")
 
     hasher.clear()

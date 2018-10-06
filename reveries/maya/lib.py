@@ -7,6 +7,7 @@ from maya.api import OpenMaya as om
 
 from .. import utils, lib
 from ..vendor.six import string_types
+from .vendor import capture
 
 
 log = logging.getLogger(__name__)
@@ -14,11 +15,6 @@ log = logging.getLogger(__name__)
 
 AVALON_ID_ATTR_LONG = "AvalonID"
 AVALON_ID_ATTR_SHORT = "avid"
-
-DEFAULT_MATRIX = [1.0, 0.0, 0.0, 0.0,
-                  0.0, 1.0, 0.0, 0.0,
-                  0.0, 0.0, 1.0, 0.0,
-                  0.0, 0.0, 0.0, 1.0]
 
 TRANSFORM_ATTRS = [
     "translateX", "translateY", "translateZ",
@@ -429,7 +425,7 @@ def apply_shaders(relationships, namespace=None):
             # Find all meshes matching this particular ID
             # Convert IDs to mesh + id, e.g. "nameOfNode.f[1:100]"
             meshes = list(".".join([mesh, faces])
-                          for mesh in lsattr(AVALON_ID_ATTR_SHORT, value=mesh))
+                          for mesh in lsAttr(AVALON_ID_ATTR_SHORT, value=mesh))
 
             if not meshes:
                 continue
@@ -438,7 +434,26 @@ def apply_shaders(relationships, namespace=None):
             cmds.sets(meshes, forceElement=shader)
 
 
-def lsattr(attr, value=None):
+def hasAttr(node, attr):
+    """Convenience function for determining if an object has an attribute
+
+    This function is simply using `cmds.objExists`, it's about 4 times faster
+    then `cmds.attributeQuery(attr, node=node, exists=True)`, and about 9 times
+    faster then pymel's `PyNode(node).hasAttr(attr)`.
+
+    Arguments:
+        node (str): Name of Maya node
+        attr (str): Name of Maya attribute
+
+    Example:
+        >> hasAttr("pCube1", "translateX")
+        True
+
+    """
+    return cmds.objExists(node + "." + attr)
+
+
+def lsAttr(attr, value=None):
     """Return nodes matching `key` and `value`
 
     Arguments:
@@ -447,29 +462,29 @@ def lsattr(attr, value=None):
             is provided, return all nodes with this attribute.
 
     Example:
-        >> lsattr("id", "myId")
+        >> lsAttr("id", "myId")
         ["myNode"]
-        >> lsattr("id")
+        >> lsAttr("id")
         ["myNode", "myOtherNode"]
 
     """
 
     if value is None:
         return cmds.ls("*.%s" % attr)
-    return lsattrs({attr: value})
+    return lsAttrs({attr: value})
 
 
-def lsattrs(attrs):
+def lsAttrs(attrs):
     """Return nodes with the given attribute(s).
 
     Arguments:
         attrs (dict): Name and value pairs of expected matches
 
     Example:
-        >> lsattr("age")  # Return nodes with attribute `age`
-        >> lsattr({"age": 5})  # Return nodes with an `age` of 5
+        >> lsAttr("age")  # Return nodes with attribute `age`
+        >> lsAttr({"age": 5})  # Return nodes with an `age` of 5
         >> # Return nodes with both `age` and `color` of 5 and blue
-        >> lsattr({"age": 5, "color": "blue"})
+        >> lsAttr({"age": 5, "color": "blue"})
 
     Returns a list.
 
@@ -640,3 +655,40 @@ def get_highest_in_hierarchy(nodes):
             highest.append(node)
 
     return highest
+
+
+def parse_active_camera():
+    """Parse the active camera
+
+    Raises
+        RuntimeError: When no active modelPanel an error is raised.
+
+    Returns:
+        str: Name of camera
+
+    """
+    panel = capture.parse_active_panel()
+    camera = cmds.modelPanel(panel, query=True, camera=True)
+
+    return camera
+
+
+def connect_message(source, target, attrname, lock=True):
+    """Connect nodes with message channel
+
+    This will build a convenience custom connection between two nodes:
+
+        source.message -> target.attrname
+
+    Args:
+        source (str): Message output node
+        target (str): Message input node
+        attrname (str): Name of input attribute of target node
+        lock (bool, optional): Lock attribute if set to True (default True)
+
+    """
+    cmds.addAttr(target, longName=attrname, attributeType="message")
+
+    target_attr = target + "." + attrname
+    cmds.connectAttr(source + ".message", target_attr)
+    cmds.setAttr(target_attr, lock=lock)

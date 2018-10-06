@@ -28,7 +28,6 @@ class SetsLoader(avalon.api.Loader):
         import avalon.api
         import avalon.maya
         from reveries.maya.plugins import ReferenceLoader
-        from maya import cmds
 
         representation = context["representation"]
 
@@ -39,55 +38,38 @@ class SetsLoader(avalon.api.Loader):
         Loader = next(L for L in Loaders if issubclass(L, ReferenceLoader))
         loader = Loader(context)
 
-        asset = context['asset']
-        namespace = namespace or avalon.maya.lib.unique_namespace(
-            asset["name"] + "_",
-            prefix="_" if asset["name"][0].isdigit() else "",
-            suffix="_",
-        )
-
-        options.update({"post_process": False, "useSelection": True})
         container = loader.load(context, name, namespace, options)
 
-        cmds.addAttr(container, longName="sourceLoader", dataType="string")
-
-        cmds.setAttr(container + ".sourceLoader",
-                     cmds.getAttr(container + ".loader"),
-                     type="string")
-        cmds.setAttr(container + ".loader",
-                     self.__class__.__name__,
-                     type="string")
+        self._place_set(container)
 
         return container
 
-    def _get_source_loader(self, container):
+    def _place_set(self, container):
+        from maya import cmds
+        from reveries.maya.plugins import parse_group_from_container
 
-        import avalon.api
+        group = parse_group_from_container(container)
+        location = self._camera_coi()
 
-        for Loader in avalon.api.discover(avalon.api.Loader):
-            if Loader.__name__ == container["sourceLoader"]:
-                return Loader
+        if location is not None:
+            for attr, value in zip((".tx", ".ty", ".tz"), location):
+                cmds.setAttr(group + attr, value)
 
-    def update(self, container, representation):
+        cmds.select(group)
 
-        import avalon.pipeline
+    def _camera_coi(self):
+        import math
+        from maya import cmds
+        from reveries.maya.lib import parse_active_camera
 
-        Loader = self._get_source_loader(container)
-        context = avalon.pipeline.get_representation_context(representation)
-        loader = Loader(context)
+        try:
+            camera = parse_active_camera()
+        except RuntimeError:
+            return None
 
-        return loader.update(container, representation)
+        COI = cmds.camera(camera, query=True, worldCenterOfInterest=True)
 
-    def switch(self, container, representation):
-        self.update(container, representation)
+        if any(math.isnan(val) for val in COI):
+            return None
 
-    def remove(self, container):
-
-        import avalon.pipeline
-
-        Loader = self._get_source_loader(container)
-        representation = container["representation"]
-        context = avalon.pipeline.get_representation_context(representation)
-        loader = Loader(context)
-
-        return loader.remove(container)
+        return COI
