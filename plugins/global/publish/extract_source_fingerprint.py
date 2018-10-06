@@ -23,5 +23,5 @@ class ExtractSourceFingerprint(pyblish.api.ContextPlugin):
 
         context.data["sourceFingerprint"] = {
             "currentMaking": current_making,
-            "currentHash": hasher.hash(),
+            "currentHash": hasher.digest(),
         }

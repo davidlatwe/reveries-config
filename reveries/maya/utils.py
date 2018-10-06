@@ -37,7 +37,7 @@ class MeshHasher(object):
         >> hasher.update_points()
         >> hasher.update_normals()
         >> hasher.update_uvmap()
-        >> hasher.hash()
+        >> hasher.digest()
         {'normals': 'c41MSCnAGqWS9dBDDpydbpcMwzzFkGH66jNpuTqctfY...',
          'points': 'c44fV5wa6bNiekUadZ4HsRPDL2HZ11RFKcXhf3pntsUJ...',
          'uvmap': 'c45JRQTPxgMNYfcijAbm31vkJRt6CUUSn7ew2X1Mnyjwi...'}
@@ -48,7 +48,7 @@ class MeshHasher(object):
         ...    hasher.update_points()
         ...    hasher.update_normals()
         ...
-        >> hasher.hash()
+        >> hasher.digest()
         {'normals': 'c456rBNH5pzobqjHzFnHApanrTdJo64r2R8o4GJxqU9G...',
          'points': 'c449wXhjNSSKfnUjPp2ub3fd1DeNowW2x5gBJDYrSvxrT...'}
 
@@ -90,23 +90,23 @@ class MeshHasher(object):
         for i, uv in enumerate(zip(*self._mesh.getUVs(uv_set))):
             self._uvmap += _hash_UV(*uv) + i
 
-    def hash(self):
+    def digest(self):
         result = dict()
         hasher = _C4Hasher()
 
         if self._points:
             hasher.hash_obj.update(str(self._points))
-            result["points"] = hasher.hash()
+            result["points"] = hasher.digest()
             hasher.clear()
 
         if self._normals:
             hasher.hash_obj.update(str(self._normals))
-            result["normals"] = hasher.hash()
+            result["normals"] = hasher.digest()
             hasher.clear()
 
         if self._uvmap:
             hasher.hash_obj.update(str(self._uvmap))
-            result["uvmap"] = hasher.hash()
+            result["uvmap"] = hasher.digest()
             hasher.clear()
 
         return result

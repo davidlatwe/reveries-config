@@ -136,7 +136,7 @@ def publish_results_formatting(context):
 def hash_file(file_path):
     hasher = AssetHasher()
     hasher.add_file(file_path)
-    return hasher.hash()
+    return hasher.digest()
 
 
 def plugins_by_range(base=1.5, offset=2, paths=None):
@@ -201,7 +201,7 @@ class _C4Hasher(object):
 
         return result
 
-    def hash(self):
+    def digest(self):
         """Return hash value of data added so far
         """
         c4_id_length = 90
@@ -227,14 +227,14 @@ class AssetHasher(_C4Hasher):
 
         You can keep adding more assets.
         And get the hash value by
-        >> hasher.hash()
+        >> hasher.digest()
         'c463d2Wh5NyBMQRHyxbdBxCzZfaKXvBQaawgfgG18moxQU2jdmaSbCWL...'
 
         You can still adding more assets at this point
         >> hasher.add_file("/path/to/more/file")
 
         And get the hash value of all asset added so far
-        >> hasher.hash()
+        >> hasher.digest()
         'c43cysVyTd7kYurvAa5ooR6miJJgUZ9QnBCHZeNK3en9aQ96KHsoJyJX...'
 
         Until you call `clear`

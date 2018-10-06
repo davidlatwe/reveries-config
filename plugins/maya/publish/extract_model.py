@@ -56,7 +56,7 @@ class ExtractModel(PackageExtractor):
             hasher.update_normals()
             hasher.update_uvmap()
 
-        self.add_data({"meshHash": hasher.hash()})
+        self.add_data({"meshHash": hasher.digest()})
 
         # Perform extraction
         self.log.info("Extracting %s" % str(self.member))
