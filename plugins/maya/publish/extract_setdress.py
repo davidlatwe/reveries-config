@@ -30,8 +30,8 @@ class ExtractSetDress(PackageExtractor):
         hierarchy_file = self.file_name("abc")
 
         self.log.info("Dumping package data ..")
-        with open(entry_file, "w") as filepath:
-            json.dump(self.data["packageData"], filepath, ensure_ascii=False)
+        with open(entry_file, "w") as fp:
+            json.dump(self.data["packageData"], fp, ensure_ascii=False)
 
         self.log.info("Extracting hierarchy ..")
         cmds.select(self.data["setdressRoots"])
