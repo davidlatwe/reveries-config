@@ -107,10 +107,11 @@ def read_interface_to_package(interface):
     import maya.cmds as cmds
 
     _id = cmds.getAttr(interface + ".representation_id")
+    asset = cmds.getAttr(interface + ".asset")
     name = cmds.getAttr(interface + ".name")
     loader = cmds.getAttr(interface + ".loader")
 
-    return _id, dict(name=name, loader=loader)
+    return _id, dict(name=name, asset=asset, loader=loader)
 
 
 def parse_interface_from_container(container):
