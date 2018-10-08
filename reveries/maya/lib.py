@@ -240,8 +240,10 @@ def bake_camera(camera, startFrame, endFrame):
     bake_to_worldspace(transform, startFrame, endFrame)
 
 
-def lock_transform(node):
-    for attr in TRANSFORM_ATTRS:
+def lock_transform(node, additional=None):
+    attr_to_lock = TRANSFORM_ATTRS + (additional or [])
+
+    for attr in attr_to_lock:
         try:
             cmds.setAttr(node + "." + attr, lock=True)
         except RuntimeError as e:
