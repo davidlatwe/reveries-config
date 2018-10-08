@@ -4,6 +4,7 @@ from maya import cmds
 
 from reveries.plugins import RepairInstanceAction
 from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.lib import lock_transform, TRANSFORM_ATTRS
 
 
 class SelectInvalid(MayaSelectInvalidAction):
@@ -42,13 +43,18 @@ class ValidateTranformLocked(pyblish.api.InstancePlugin):
 
         invalid = list()
 
-        transforms = cmds.ls(instance, type="transform")
+        goemetries = cmds.ls(instance, type=("mesh", "nurbsCurve"))
+        transforms = cmds.listRelatives(goemetries,
+                                        parent=True,
+                                        type="transform")
 
         exposed = cmds.sets("ControlSet", query=True) or []
         unexposed = set(transforms).difference(exposed)
 
+        attrs_to_lock = TRANSFORM_ATTRS + ["visibility"]
+
         for node in unexposed:
-            for attr in cmds.listAttr(node, keyable=True) or []:
+            for attr in attrs_to_lock:
                 if not cmds.getAttr(node + "." + attr, lock=True):
                     invalid.append(node)
                     break
@@ -72,5 +78,4 @@ class ValidateTranformLocked(pyblish.api.InstancePlugin):
         invalid = cls.get_invalid(instance)
 
         for node in invalid:
-            for attr in cmds.listAttr(node, keyable=True):
-                cmds.setAttr(node + "." + attr, lock=True)
+            lock_transform(node, additional=["visibility"])
