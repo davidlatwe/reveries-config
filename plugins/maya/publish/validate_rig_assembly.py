@@ -32,12 +32,10 @@ class ValidateRigAssembly(pyblish.api.InstancePlugin):
         #
         keyables = cmds.listAttr(root[0], keyable=True) or list()
 
-        # Transforms and Visibility should not be keyable
-        NON_KEYABLE = TRANSFORM_ATTRS + ["visibility"]
-
-        if any(attr in keyables for attr in NON_KEYABLE):
+        # Transforms should not be keyable
+        if any(attr in keyables for attr in TRANSFORM_ATTRS):
             self.log.error("Rig's assembly node 'RIG' should not have these "
-                           "attributes keyable: {}".format(NON_KEYABLE))
+                           "attributes keyable: {}".format(TRANSFORM_ATTRS))
             raise RuntimeError
 
         # FacialConrtols
