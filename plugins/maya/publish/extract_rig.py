@@ -1,11 +1,13 @@
 
 import os
+import contextlib
 import pyblish.api
 
 from maya import cmds
 from avalon import maya
 
 from reveries.plugins import PackageExtractor
+from reveries.maya import capsule
 
 
 class ExtractRig(PackageExtractor):
@@ -28,7 +30,11 @@ class ExtractRig(PackageExtractor):
 
         # Perform extraction
         self.log.info("Performing extraction..")
-        with maya.maintained_selection():
+        with contextlib.nested(
+            capsule.no_undo(),
+            capsule.no_display_layers(self.member),
+            maya.maintained_selection(),
+        ):
             cmds.select(self.member, noExpand=True)
             cmds.file(entry_path,
                       force=True,
