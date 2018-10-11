@@ -46,9 +46,13 @@ class SetsLoader(avalon.api.Loader):
 
     def _place_set(self, container):
         from maya import cmds
-        from reveries.maya.plugins import parse_group_from_container
+        from reveries.maya.plugins import (
+            parse_interface_from_container,
+            parse_group_from_interface,
+        )
 
-        group = parse_group_from_container(container)
+        interface = parse_interface_from_container(container)
+        group = parse_group_from_interface(interface)
         location = self._camera_coi()
 
         if location is not None:
