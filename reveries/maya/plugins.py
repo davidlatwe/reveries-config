@@ -281,7 +281,10 @@ class ReferenceLoader(PackageLoader):
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        cmds.file(entry_path, loadReference=reference_node, type=file_type)
+        cmds.file(entry_path,
+                  loadReference=reference_node,
+                  type=file_type,
+                  defaultExtensions=False)
 
         # TODO: Add all new nodes in the reference to the container
         #   Currently new nodes in an updated reference are not added to the
