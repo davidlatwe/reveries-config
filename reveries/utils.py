@@ -5,6 +5,7 @@ import hashlib
 import codecs
 import shutil
 import weakref
+import getpass
 
 import pyblish.api
 import avalon
@@ -275,3 +276,32 @@ class AssetHasher(_C4Hasher):
             for name in dirs:
                 path = os.path.join(root, name)
                 self.add_dir(path, recursive=True, followlinks=followlinks)
+
+
+def get_representation_path_(representation, parents):
+    """Get filename from representation document
+
+    Decoupled from `avalon.pipeline.get_representation_path`
+
+    Args:
+        representation (dict): representation document from the database
+        parents (list): Documents returned from `io.parenthood`
+
+    Returns:
+        str: fullpath of the representation
+
+    """
+    version, subset, asset, project = parents
+    template_publish = project["config"]["template"]["publish"]
+    return template_publish.format(**{
+        "root": avalon.api.registered_root(),
+        "project": project["name"],
+        "asset": asset["name"],
+        "silo": asset["silo"],
+        "subset": subset["name"],
+        "version": version["name"],
+        "representation": representation["name"],
+        "user": avalon.api.Session.get("AVALON_USER", getpass.getuser()),
+        "app": avalon.api.Session.get("AVALON_APP", ""),
+        "task": avalon.api.Session.get("AVALON_TASK", "")
+    })
