@@ -165,19 +165,6 @@ def parse_group_from_interface(interface):
     return group[0]
 
 
-def parse_group_from_container(container):
-    """Return group node of container
-
-    Arguments:
-        container (str): Name of container node
-
-    Returns a str
-
-    """
-    interface = parse_interface_from_container(container)
-    return parse_group_from_interface(interface)
-
-
 def _env_embedded_path(file_path):
     """Embed environment var `$AVALON_PROJECTS` into file path
 
