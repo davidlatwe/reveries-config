@@ -194,3 +194,26 @@ def test_asset_hasher():
     assert hash_val.startswith("c4")
 
     hasher.clear()
+
+
+@mock.patch.dict('avalon.Session', {"AVALON_APP": "Maya"})
+@mock.patch('avalon.api.registered_root')
+def test_get_representation_path_(registered_root):
+    registered_root.return_value = "ROOT"
+
+    template_publish = ("{root}/{project}/{app}/{silo}/{asset}/publish/"
+                        "{subset}/v{version:0>3}/{representation}")
+
+    representation = {"type": "representation", "name": "MayaBinary"}
+    parents = [
+        {"type": "version", "name": 5},
+        {"type": "subset", "name": "modelDefault"},
+        {"type": "asset", "name": "Hero", "silo": "Asset"},
+        {"type": "project", "name": "Blockbuster",
+         "config": {"template": {"publish": template_publish}}},
+    ]
+
+    path = reveries.utils.get_representation_path_(representation, parents)
+
+    assert path == ("ROOT/Blockbuster/Maya/Asset/Hero/publish/"
+                    "modelDefault/v005/MayaBinary")
