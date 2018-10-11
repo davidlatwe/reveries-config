@@ -93,6 +93,10 @@ def container_interfacing(name,
     return interface
 
 
+def update_interface(ndoe):
+    pass
+
+
 def read_interface_to_package(interface):
     """Read attributes from interface node for package dumping
 
@@ -191,6 +195,31 @@ def _env_embedded_path(file_path):
     return file_path
 
 
+def _subset_containerising(name, namespace, nodes, ports, context,
+                           cls_name, group_name):
+    """Containerise loaded subset and build interface
+    """
+    from avalon.maya.pipeline import containerise
+    from reveries.maya.lib import connect_message
+
+    interface = container_interfacing(name=name,
+                                      namespace=namespace,
+                                      nodes=ports,
+                                      context=context,
+                                      loader=cls_name)
+    container = containerise(name=name,
+                             namespace=namespace,
+                             nodes=nodes,
+                             context=context,
+                             loader=cls_name)
+    # interface -> top_group.message
+    #           -> container.message
+    connect_message(group_name, interface, AVALON_VESSEL_ATTR)
+    connect_message(container, interface, AVALON_CONTAINER_ATTR)
+
+    return container
+
+
 class ReferenceLoader(PackageLoader):
     """A basic ReferenceLoader for Maya
 
@@ -212,8 +241,6 @@ class ReferenceLoader(PackageLoader):
 
     def load(self, context, name=None, namespace=None, options=None):
         from avalon.maya import lib
-        from avalon.maya.pipeline import containerise
-        from reveries.maya.lib import connect_message
 
         load_plugin(context["representation"]["name"])
 
@@ -235,20 +262,13 @@ class ReferenceLoader(PackageLoader):
         if not nodes:
             return
 
-        interface = container_interfacing(name=name,
-                                          namespace=namespace,
-                                          nodes=self.interface,
-                                          context=context,
-                                          loader=self.__class__.__name__)
-
-        container = containerise(name=name,
-                                 namespace=namespace,
-                                 nodes=nodes,
-                                 context=context,
-                                 loader=self.__class__.__name__)
-
-        connect_message(group_name, interface, AVALON_VESSEL_ATTR)
-        connect_message(container, interface, AVALON_CONTAINER_ATTR)
+        container = _subset_containerising(name=name,
+                                           namespace=namespace,
+                                           nodes=nodes,
+                                           ports=self.interface,
+                                           context=context,
+                                           cls_name=self.__class__.__name__,
+                                           group_name=group_name)
 
         return container
 
@@ -296,6 +316,9 @@ class ReferenceLoader(PackageLoader):
         cmds.setAttr(node + ".representation",
                      str(representation["_id"]),
                      type="string")
+
+        # Update interface
+        update_interface()
 
     def remove(self, container):
         """Remove an existing `container` from Maya scene
@@ -355,8 +378,6 @@ class ImportLoader(PackageLoader):
 
     def load(self, context, name=None, namespace=None, options=None):
         from avalon.maya import lib
-        from avalon.maya.pipeline import containerise
-        from reveries.maya.lib import connect_message
 
         load_plugin(context["representation"]["name"])
 
@@ -378,20 +399,13 @@ class ImportLoader(PackageLoader):
         if not nodes:
             return
 
-        interface = container_interfacing(name=name,
-                                          namespace=namespace,
-                                          nodes=self.interface,
-                                          context=context,
-                                          loader=self.__class__.__name__)
-
-        container = containerise(name=name,
-                                 namespace=namespace,
-                                 nodes=nodes,
-                                 context=context,
-                                 loader=self.__class__.__name__)
-
-        connect_message(group_name, interface, AVALON_VESSEL_ATTR)
-        connect_message(container, interface, AVALON_CONTAINER_ATTR)
+        container = _subset_containerising(name=name,
+                                           namespace=namespace,
+                                           nodes=nodes,
+                                           ports=self.interface,
+                                           context=context,
+                                           cls_name=self.__class__.__name__,
+                                           group_name=group_name)
 
         return container
 
