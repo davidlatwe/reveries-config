@@ -3,10 +3,12 @@ import os
 from collections import OrderedDict
 
 import avalon.api
+import avalon.io
 import avalon.maya.lib
 
 from . import lib
 
+from ..utils import get_representation_path_
 from ..plugins import (
     PackageLoader,
     message_box_error,
@@ -27,6 +29,14 @@ REPRS_PLUGIN_MAPPING = {
     "FBX": "fbxmaya.mll",
     "GPUCache": "gpuCache.mll",
 }
+
+
+def _subset_group_name(namespace, name):
+    return "{}:{}".format(namespace, name)
+
+
+def _container_naming(namespace, name, suffix):
+    return "%s_%s_%s" % (namespace, name, suffix)
 
 
 def load_plugin(representation):
@@ -68,7 +78,8 @@ def container_interfacing(name,
     """
     from maya import cmds
 
-    interface = cmds.sets(nodes, name="%s_%s_%s" % (namespace, name, suffix))
+    interface = cmds.sets(nodes,
+                          name=_container_naming(namespace, name, suffix))
 
     data = OrderedDict()
     data["id"] = AVALON_CONTAINER_INTERFACE_ID
@@ -91,10 +102,6 @@ def container_interfacing(name,
     cmds.sets(interface, addElement=main_interface)
 
     return interface
-
-
-def update_interface(ndoe):
-    pass
 
 
 def read_interface_to_package(interface):
@@ -165,6 +172,69 @@ def parse_group_from_interface(interface):
     return group[0]
 
 
+def update_container(container, asset, subset, version, representation):
+    """
+    """
+    import maya.cmds as cmds
+
+    asset_changed = False
+    subset_changed = False
+
+    interface = parse_interface_from_container(container)
+
+    # Update representation id
+    cmds.setAttr(container + ".representation",
+                 str(representation["_id"]),
+                 type="string")
+    cmds.setAttr(interface + ".representation_id",
+                 str(representation["_id"]),
+                 type="string")
+
+    origin_asset = cmds.getAttr(interface + ".asset")
+    update_asset = asset["name"]
+
+    namespace = cmds.getAttr(interface + ".namespace")
+    if not origin_asset == update_asset:
+        asset_changed = True
+        # Update namespace
+        new_namespace = _unique_root_namespace(update_asset)
+        cmds.namespace(parent=":", rename=(namespace, new_namespace[1:]))
+        namespace = new_namespace
+        # Update data
+        cmds.setAttr(container + ".namespace", namespace, type="string")
+        cmds.setAttr(interface + ".namespace", namespace, type="string")
+        cmds.setAttr(interface + ".asset", update_asset, type="string")
+
+    origin_subset = cmds.getAttr(interface + ".name")
+    update_subset = subset["name"]
+
+    name = origin_subset
+    if not origin_subset == update_subset:
+        subset_changed = True
+        name = subset["name"]
+        # Rename group node
+        group = parse_group_from_interface(interface)
+        group = cmds.rename(
+            group, _subset_group_name(namespace, name))
+        # Update data
+        cmds.setAttr(container + ".name", name, type="string")
+        cmds.setAttr(interface + ".name", name, type="string")
+
+    if any((asset_changed, subset_changed)):
+        # Rename container
+        container = cmds.rename(
+            container, _container_naming(namespace, name, "CON"))
+        # Rename interface
+        interface = cmds.rename(
+            interface, _container_naming(namespace, name, "PORT"))
+
+    # Update interface data: version, representation name
+    cmds.setAttr(interface + ".version", version["name"])
+    cmds.setAttr(interface + ".representation",
+                 representation["name"],
+                 type="string")
+
+
 def _env_embedded_path(file_path):
     """Embed environment var `$AVALON_PROJECTS` into file path
 
@@ -207,6 +277,15 @@ def _subset_containerising(name, namespace, nodes, ports, context,
     return container
 
 
+def _unique_root_namespace(asset_name):
+    from avalon.maya import lib
+    return lib.unique_namespace(
+        asset_name + "_",
+        prefix=":_" if asset_name[0].isdigit() else ":",  # Ensure in root
+        suffix="_",
+    )
+
+
 class ReferenceLoader(PackageLoader):
     """A basic ReferenceLoader for Maya
 
@@ -222,27 +301,28 @@ class ReferenceLoader(PackageLoader):
         entry_path = os.path.join(self.package_path, file_name)
         return _env_embedded_path(entry_path)
 
+    def group_name(self, namespace, name):
+        return _subset_group_name(namespace, name)
+
     def process_reference(self, context, name, namespace, options):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
     def load(self, context, name=None, namespace=None, options=None):
-        from avalon.maya import lib
 
         load_plugin(context["representation"]["name"])
 
         asset = context["asset"]
 
-        namespace = namespace or lib.unique_namespace(
-            asset["name"] + "_",
-            prefix="_" if asset["name"][0].isdigit() else "",
-            suffix="_",
-        )
+        namespace = namespace or _unique_root_namespace(asset["name"])
 
-        group_name = self.process_reference(context=context,
-                                            name=name,
-                                            namespace=namespace,
-                                            options=options)
+        group_name = self.group_name(namespace, name)
+
+        self.process_reference(context=context,
+                               name=name,
+                               namespace=namespace,
+                               group=group_name,
+                               options=options)
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
@@ -284,7 +364,8 @@ class ReferenceLoader(PackageLoader):
         elif file_type == "GPUCache":
             file_type = "MayaAscii"
 
-        self.package_path = avalon.api.get_representation_path(representation)
+        parents = avalon.io.parenthood(representation)
+        self.package_path = get_representation_path_(representation, parents)
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
@@ -299,13 +380,9 @@ class ReferenceLoader(PackageLoader):
         nodes = cmds.referenceQuery(reference_node, nodes=True, dagPath=True)
         cmds.sets(nodes, forceElement=node)
 
-        # Update metadata
-        cmds.setAttr(node + ".representation",
-                     str(representation["_id"]),
-                     type="string")
-
-        # Update interface
-        update_interface()
+        # Update container
+        version, subset, asset, _ = parents
+        update_container(node, asset, subset, version, representation)
 
     def remove(self, container):
         """Remove an existing `container` from Maya scene
@@ -359,27 +436,28 @@ class ImportLoader(PackageLoader):
         entry_path = os.path.join(self.package_path, file_name)
         return _env_embedded_path(entry_path)
 
+    def group_name(self, namespace, name):
+        return _subset_group_name(namespace, name)
+
     def process_import(self, context, name, namespace, options):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
     def load(self, context, name=None, namespace=None, options=None):
-        from avalon.maya import lib
 
         load_plugin(context["representation"]["name"])
 
         asset = context['asset']
 
-        namespace = namespace or lib.unique_namespace(
-            asset["name"] + "_",
-            prefix="_" if asset["name"][0].isdigit() else "",
-            suffix="_",
-        )
+        namespace = namespace or _unique_root_namespace(asset["name"])
 
-        group_name = self.process_import(context=context,
-                                         name=name,
-                                         namespace=namespace,
-                                         options=options)
+        group_name = self.group_name(namespace, name)
+
+        self.process_import(context=context,
+                            name=name,
+                            namespace=namespace,
+                            group=group_name,
+                            options=options)
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
