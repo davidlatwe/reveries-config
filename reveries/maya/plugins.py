@@ -174,6 +174,23 @@ def parse_group_from_container(container):
     return parse_group_from_interface(interface)
 
 
+def _env_embedded_path(file_path):
+    """Embed environment var `$AVALON_PROJECTS` into file path
+
+    This will ensure reference or cache path resolvable when project root
+    moves to other place.
+
+    """
+    if not os.path.isfile(file_path):
+        raise IOError("File Not Found: {!r}".format(file_path))
+
+    file_path = file_path.replace(
+        avalon.api.registered_root(), "$AVALON_PROJECTS"
+    )
+
+    return file_path
+
+
 class ReferenceLoader(PackageLoader):
     """A basic ReferenceLoader for Maya
 
@@ -187,14 +204,7 @@ class ReferenceLoader(PackageLoader):
 
     def file_path(self, file_name):
         entry_path = os.path.join(self.package_path, file_name)
-
-        # This will ensure reference path resolvable when project root moves to
-        # other place.
-        entry_path = entry_path.replace(
-            avalon.api.registered_root(), "$AVALON_PROJECTS"
-        )
-
-        return entry_path
+        return _env_embedded_path(entry_path)
 
     def process_reference(self, context, name, namespace, options):
         """To be implemented by subclass"""
@@ -332,14 +342,9 @@ class ImportLoader(PackageLoader):
 
     interface = []
 
-    def __init__(self, context):
-        super(ImportLoader, self).__init__(context)
-
-        # This will ensure reference path resolvable when project root moves to
-        # other place.
-        self.package_path = self.package_path.replace(
-            avalon.api.registered_root(), "$AVALON_PROJECTS"
-        )
+    def file_path(self, file_name):
+        entry_path = os.path.join(self.package_path, file_name)
+        return _env_embedded_path(entry_path)
 
     def process_import(self, context, name, namespace, options):
         """To be implemented by subclass"""
