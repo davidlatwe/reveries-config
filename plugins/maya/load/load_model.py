@@ -20,7 +20,7 @@ class ModelLoader(ReferenceLoader, avalon.api.Loader):
         "GPUCache",
     ]
 
-    def process_reference(self, context, name, namespace, options):
+    def process_reference(self, context, name, namespace, group, options):
 
         import maya.cmds as cmds
         from avalon import maya
@@ -30,21 +30,17 @@ class ModelLoader(ReferenceLoader, avalon.api.Loader):
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        group_name = "{}:{}".format(namespace, name)
-
         with maya.maintained_selection():
             nodes = cmds.file(entry_path,
                               namespace=namespace,
                               reference=True,
                               returnNewNodes=True,
                               groupReference=True,
-                              groupName=group_name)
+                              groupName=group)
         self[:] = nodes
 
         transforms = cmds.ls(nodes, type="transform", long=True)
         self.interface = get_highest_in_hierarchy(transforms)
-
-        return group_name
 
     def switch(self, container, representation):
         self.update(container, representation)
