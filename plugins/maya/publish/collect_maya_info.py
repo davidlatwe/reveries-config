@@ -10,7 +10,7 @@ class CollectMayaInfo(pyblish.api.ContextPlugin):
 
     order = pyblish.api.CollectorOrder - 0.4
     label = "Maya Info"
-    hosts = ['maya']
+    hosts = ["maya"]
 
     def process(self, context):
         workspace = cmds.workspace(rootDirectory=True, query=True)
