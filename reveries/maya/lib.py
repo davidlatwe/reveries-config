@@ -384,6 +384,10 @@ def serialise_shaders(nodes):
                                                parent=True,
                                                fullPath=True)[0]
 
+            if transform not in valid_nodes:
+                # ignore nodes which were not in the query list
+                continue
+
             try:
                 id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_SHORT)
             except ValueError:
