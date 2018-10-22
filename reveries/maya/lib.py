@@ -385,7 +385,7 @@ def serialise_shaders(nodes):
                                                fullPath=True)[0]
 
             if transform not in valid_nodes:
-                # ignore nodes which were not in the query list
+                # Ignore nodes which were not in the query list
                 continue
 
             try:
