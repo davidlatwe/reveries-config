@@ -331,31 +331,29 @@ def serialise_shaders(nodes):
     for transform in valid_nodes:
         shapes = cmds.listRelatives(transform,
                                     shapes=True,
-                                    fullPath=True) or list()
+                                    fullPath=True,
+                                    type="mesh") or list()
+        shapes = cmds.ls(shapes, noIntermediate=True)
 
-        if shapes:
-            shape = shapes[0]
-            if not cmds.nodeType(shape):
-                continue
+        try:
+            mesh = shapes[0]
+        except IndexError:
+            continue
 
-            try:
-                id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_SHORT)
+        try:
+            id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_SHORT)
+        except ValueError:
+            continue
+        else:
+            if id_ not in meshes_by_id:
+                meshes_by_id[id_] = list()
 
-                if id_ not in meshes_by_id:
-                    meshes_by_id[id_] = list()
+            meshes_by_id[id_].append(mesh)
 
-                meshes_by_id[id_].append(transform)
-
-            except ValueError:
-                continue
-
-    meshes_by_shader = dict()
+    meshes_by_shader = {}
     for id_, meshes in meshes_by_id.items():
-        shape = cmds.listRelatives(meshes,
-                                   shapes=True,
-                                   fullPath=True) or list()
 
-        for shader in cmds.listConnections(shape,
+        for shader in cmds.listConnections(meshes,
                                            type="shadingEngine",
                                            source=False,
                                            destination=True) or list():
@@ -369,14 +367,11 @@ def serialise_shaders(nodes):
             if shader not in meshes_by_shader:
                 meshes_by_shader[shader] = list()
 
-            shaded = cmds.sets(shader, query=True) or list()
+            shaded = cmds.ls(cmds.sets(shader, query=True), long=True)
             meshes_by_shader[shader].extend(shaded)
 
     shader_by_id = {}
     for shader, shaded in meshes_by_shader.items():
-
-        if shader not in shader_by_id:
-            shader_by_id[shader] = list()
 
         for mesh in shaded:
 
@@ -385,13 +380,19 @@ def serialise_shaders(nodes):
 
             transform = name
             if cmds.objectType(transform) == "mesh":
-                transform = cmds.listRelatives(name, parent=True)[0]
+                transform = cmds.listRelatives(name,
+                                               parent=True,
+                                               fullPath=True)[0]
 
             try:
                 id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_SHORT)
-                shader_by_id[shader].append(mesh.replace(name, id_))
-            except KeyError:
+            except ValueError:
                 continue
+            else:
+                if shader not in shader_by_id:
+                    shader_by_id[shader] = list()
+
+                shader_by_id[shader].append(mesh.replace(name, id_))
 
         # Remove duplicates
         shader_by_id[shader] = list(set(shader_by_id[shader]))
