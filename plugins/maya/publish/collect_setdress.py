@@ -20,6 +20,7 @@ class CollectSetDress(pyblish.api.InstancePlugin):
             try:
                 root = parse_group_from_interface(interface)
             except RuntimeError:
+                # No group found
                 root = None
 
             all_roots[str(interface)] = root
