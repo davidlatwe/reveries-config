@@ -128,6 +128,8 @@ def read_interface_to_package(interface):
 def parse_interface_from_container(container):
     """Return interface node of container
 
+    Raise `RuntimeError` if getting none or more then one interface.
+
     Arguments:
         container (str): Name of container node
 
@@ -153,6 +155,8 @@ def parse_interface_from_container(container):
 
 def parse_group_from_interface(interface):
     """Return group node of interface
+
+    Raise `RuntimeError` if no group found.
 
     Arguments:
         interface (str): Name of interface node
