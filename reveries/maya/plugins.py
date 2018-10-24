@@ -54,12 +54,12 @@ def load_plugin(representation):
         cmds.loadPlugin(plugin, quiet=True)
 
 
-def container_interfacing(name,
-                          namespace,
-                          nodes,
-                          context,
-                          loader,
-                          suffix="PORT"):
+def subset_interfacing(name,
+                       namespace,
+                       nodes,
+                       context,
+                       loader,
+                       suffix="PORT"):
     """Expose crucial `nodes` as an interface of a subset container
 
     Interfacing enables a faster way to access nodes of loaded subsets from
@@ -263,11 +263,11 @@ def _subset_containerising(name, namespace, nodes, ports, context,
     from avalon.maya.pipeline import containerise
     from reveries.maya.lib import connect_message
 
-    interface = container_interfacing(name=name,
-                                      namespace=namespace,
-                                      nodes=ports,
-                                      context=context,
-                                      loader=cls_name)
+    interface = subset_interfacing(name=name,
+                                   namespace=namespace,
+                                   nodes=ports,
+                                   context=context,
+                                   loader=cls_name)
     container = containerise(name=name,
                              namespace=namespace,
                              nodes=nodes,
