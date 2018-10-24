@@ -49,7 +49,9 @@ def on_save(_):
              set(cmds.ls(long=True, readOnly=True)) -
              set(cmds.ls(long=True, lockedNodes=True)))
 
-    transforms = cmds.listRelatives(list(nodes), parent=True) or list()
+    transforms = cmds.listRelatives(list(nodes),
+                                    parent=True,
+                                    fullPath=True) or list()
 
     # Add unique identifiers
     for node in transforms:
