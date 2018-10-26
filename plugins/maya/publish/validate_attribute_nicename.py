@@ -34,6 +34,8 @@ class ValidateAttributeNiceName(pyblish.api.InstancePlugin):
         and numeric characters then interpolated with whitespaces, therefore,
         super-long-nice-name created.
 
+    (NOTE) This has been fixed in Maya 2018 update 3
+
     """
 
     order = pyblish.api.ValidatorOrder
@@ -54,6 +56,9 @@ class ValidateAttributeNiceName(pyblish.api.InstancePlugin):
     @staticmethod
     def get_invalid(instance):
         from maya import cmds
+
+        if instance.context.data["mayaVersion"] >= 20180300:
+            return None
 
         invalid = dict()
 
