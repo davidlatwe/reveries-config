@@ -173,7 +173,7 @@ def parse_group_from_interface(interface):
     if not group:
         raise RuntimeError("Can not get group node, this is a bug.")
 
-    return group[0]
+    return cmds.ls(group, long=True)[0]
 
 
 def update_container(container, asset, subset, version, representation):
