@@ -24,4 +24,4 @@ class CollectMayaInfo(pyblish.api.ContextPlugin):
 
         context.data["workspaceDir"] = normalised
 
-        context.data["mayaVersion"] = cmds.about(version=True)
+        context.data["mayaVersion"] = cmds.about(apiVersion=True)
