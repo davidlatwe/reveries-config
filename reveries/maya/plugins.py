@@ -174,7 +174,7 @@ def get_group_from_interface(interface):
     group = cmds.listConnections(interface + "." + AVALON_VESSEL_ATTR,
                                  source=True,
                                  destination=False,
-                                 type="transform") or []
+                                 type="transform")
     if not group:
         raise RuntimeError("Can not get group node, this is a bug.")
 
