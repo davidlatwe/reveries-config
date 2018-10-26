@@ -4,7 +4,7 @@ from collections import OrderedDict
 
 import avalon.api
 import avalon.io
-import avalon.maya.lib
+import avalon.maya
 
 from . import lib
 
@@ -52,6 +52,16 @@ def load_plugin(representation):
         pass
     else:
         cmds.loadPlugin(plugin, quiet=True)
+
+
+def ls_interfaces():
+    """List interfaces from active Maya scene"""
+
+    interfaces = lib.lsAttr("id", AVALON_CONTAINER_INTERFACE_ID)
+    for interface in sorted(interfaces):
+        data = parse_interface(interface)
+
+        yield data
 
 
 def subset_interfacing(name,
@@ -111,18 +121,13 @@ def parse_interface(interface):
         interface (str): Name of interface node
 
     Returns:
-        _id (str): representation id
-        data (dict): {name: str, loader: str}
+        dict: The interface data for this interface node.
 
     """
-    import maya.cmds as cmds
+    data = avalon.maya.read(interface)
+    data["objectName"] = interface
 
-    _id = cmds.getAttr(interface + ".representation_id")
-    asset = cmds.getAttr(interface + ".asset")
-    name = cmds.getAttr(interface + ".name")
-    loader = cmds.getAttr(interface + ".loader")
-
-    return _id, dict(name=name, asset=asset, loader=loader)
+    return data
 
 
 def get_interface_from_container(container):
