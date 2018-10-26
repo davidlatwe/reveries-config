@@ -18,3 +18,20 @@ def active_view_snapshot(*args):
                 "backgroundBottom", query=True),
         }
     )
+
+
+def wipe_all_namespaces():
+    all_NS = cmds.namespaceInfo(":",
+                                listOnlyNamespaces=True,
+                                recurse=True,
+                                absoluteName=True)
+    for NS in reversed(all_NS):
+        if NS in (":UI", ":shared"):
+            continue
+
+        try:
+            cmds.namespace(removeNamespace=NS,
+                           force=True,
+                           mergeNamespaceWithRoot=True)
+        except RuntimeError:
+            pass
