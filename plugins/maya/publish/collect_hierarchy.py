@@ -11,11 +11,6 @@ class CollectHierarchy(pyblish.api.InstancePlugin):
     label = "Collect Hierarchy"
 
     def process(self, instance):
-
-        # Collect set members from container interface
-        for node in instance.data["interfaces"]:
-            instance += cmds.ls(cmds.sets(node, query=True), long=True)
-
         # Collect all descendents
         instance += cmds.listRelatives(instance,
                                        allDescendents=True,
