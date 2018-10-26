@@ -104,7 +104,7 @@ def subset_interfacing(name,
     return interface
 
 
-def read_interface_to_package(interface):
+def parse_interface(interface):
     """Read attributes from interface node for package dumping
 
     Arguments:
@@ -125,7 +125,7 @@ def read_interface_to_package(interface):
     return _id, dict(name=name, asset=asset, loader=loader)
 
 
-def parse_interface_from_container(container):
+def get_interface_from_container(container):
     """Return interface node of container
 
     Raise `RuntimeError` if getting none or more then one interface.
@@ -153,7 +153,7 @@ def parse_interface_from_container(container):
     return nodes[0]
 
 
-def parse_group_from_interface(interface):
+def get_group_from_interface(interface):
     """Return group node of interface
 
     Raise `RuntimeError` if no group found.
@@ -184,7 +184,7 @@ def update_container(container, asset, subset, version, representation):
     asset_changed = False
     subset_changed = False
 
-    interface = parse_interface_from_container(container)
+    interface = get_interface_from_container(container)
 
     # Update representation id
     cmds.setAttr(container + ".representation",
@@ -217,7 +217,7 @@ def update_container(container, asset, subset, version, representation):
         subset_changed = True
         name = subset["name"]
         # Rename group node
-        group = parse_group_from_interface(interface)
+        group = get_group_from_interface(interface)
         group = cmds.rename(
             group, _subset_group_name(namespace, name))
         # Update data
