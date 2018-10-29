@@ -240,3 +240,44 @@ def maintained_selection():
                         noExpand=True)
         else:
             cmds.select(clear=True)
+
+
+@contextlib.contextmanager
+def nodes_publishing(nodes):
+    """Publish nodes with integrity lock and restore lock state on exit
+
+    This will lock nodes' all attributes and names, but not locking nodes
+    entirely, so still able to add custom attributes and nodes will remain
+    deletable.
+
+    """
+    nodes = cmds.ls(nodes, objectsOnly=True, long=True)
+    is_lock = cmds.lockNode(nodes, query=True, lock=True)
+    is_lockName = cmds.lockNode(nodes, query=True, lockName=True)
+    is_lockUnpub = cmds.lockNode(nodes, query=True, lockUnpublished=True)
+
+    try:
+        # (NOTE) `lockNode` command flags:
+        #    lock: If flag not supplied, default `True`
+        #    lockName: If flag not supplied, default `False`
+        #    lockUnpublished: No default, change nothing if not supplied
+        #    ignoreComponents: If components presence in the input list,
+        #                      will raise RuntimeError and nothing will
+        #                      be locked. But if this flag supplied, it
+        #                      will silently ignore components.
+
+        cmds.lockNode(nodes,
+                      lock=False,
+                      lockName=True,
+                      lockUnpublished=True,
+                      ignoreComponents=True)
+        yield
+
+    finally:
+        # Restore lock states
+        for _ in range(len(nodes)):
+            cmds.lockNode(nodes.pop(0),
+                          lock=is_lock.pop(0),
+                          lockName=is_lockName.pop(0),
+                          lockUnpublished=is_lockUnpub.pop(0),
+                          ignoreComponents=True)
