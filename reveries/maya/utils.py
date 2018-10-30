@@ -1,4 +1,5 @@
 
+import maya.cmds as cmds
 from maya.api import OpenMaya as om
 from ..utils import _C4Hasher
 
@@ -110,3 +111,50 @@ class MeshHasher(object):
             hasher.clear()
 
         return result
+
+
+def remove_unused_plugins():
+    """Remove unused plugin from scene
+
+    This will prevent Maya from saving redundant requires into scene file.
+
+    (Copied from Maya support page)
+    Maya is not cleaning up requires statements for unused plugins:
+
+    Issue:
+        When a plugin is used in Maya 2016, it puts a 'requires' statement
+        into the header of the Maya File, akin to: requires "XZY" "1.30"
+        When the plugin is subsequently deleted out of the Maya file and
+        the Maya file is saved, the requires statement is left in the file.
+
+    Causes:
+        It creates extra lines of garbage code which makes the file larger
+        and more clutter when files are being diagnosed
+
+    Solution:
+        Autodesk introduced one new command unknownPlugin which could be used
+        to remove the "requires" line from the file if the plug-in is unknown
+        to Maya 2016.
+
+    """
+    for plugin in cmds.unknownPlugin(query=True, list=True):
+        cmds.unknownPlugin(plugin, remove=True)
+
+
+def kill_turtle():
+    """Ensure the Turtle plugin is not loaded"""
+
+    turtle_nodes = (
+        "TurtleDefaultBakeLayer",
+        "TurtleBakeLayerManager",
+        "TurtleUIOptions",
+        "TurtleRenderOptions",
+    )
+
+    for node in turtle_nodes:
+        if not cmds.objExists(node):
+            continue
+        cmds.lockNode(node, lock=False)
+        cmds.delete(node)
+
+    cmds.unloadPlugin("Turtle", force=True)
