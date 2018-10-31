@@ -59,9 +59,7 @@ def ls_interfaces():
 
     interfaces = lib.lsAttr("id", AVALON_CONTAINER_INTERFACE_ID)
     for interface in sorted(interfaces):
-        data = parse_interface(interface)
-
-        yield data
+        yield parse_interface(interface)
 
 
 def ls_vessels():
