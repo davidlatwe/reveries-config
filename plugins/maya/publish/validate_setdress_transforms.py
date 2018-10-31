@@ -55,7 +55,7 @@ class ValidateSetDressModelTransforms(pyblish.api.InstancePlugin):
     @staticmethod
     def get_invalid(instance):
 
-        container_roots = list(instance.data["setdressRoots"].values())
+        container_roots = instance.data["setdressRoots"]
 
         transforms_in_container = cmds.listRelatives(container_roots,
                                                      allDescendents=True,
