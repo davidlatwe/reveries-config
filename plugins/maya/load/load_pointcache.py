@@ -20,6 +20,7 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
     families = [
         "reveries.animation",
         "reveries.pointcache",
+        "reveries.setdress",
     ]
 
     representations = [
