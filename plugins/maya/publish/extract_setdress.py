@@ -28,14 +28,18 @@ class ExtractSetDress(PackageExtractor):
     def extract_setPackage(self):
         entry_file = self.file_name("json")
         hierarchy_file = self.file_name("abc")
+        package_path = self.create_package(entry_file)
+        entry_path = os.path.join(package_path, entry_file)
+        hierarchy_path = os.path.join(package_path, hierarchy_file)
 
         self.log.info("Dumping package data ..")
-        with open(entry_file, "w") as fp:
+        with open(entry_path, "w") as fp:
             json.dump(self.data["packageData"], fp, ensure_ascii=False)
+        self.log.debug("Dumped: {}".format(entry_path))
 
         self.log.info("Extracting hierarchy ..")
         cmds.select(self.data["setdressRoots"])
-        io.export_alembic(file=hierarchy_file,
+        io.export_alembic(file=hierarchy_path,
                           startFrame=1.0,
                           endFrame=1.0,
                           selection=True,
@@ -43,9 +47,7 @@ class ExtractSetDress(PackageExtractor):
                           writeVisibility=True,
                           writeCreases=True,
                           attr=[lib.AVALON_ID_ATTR_LONG])
-
-        # Remove data
-        self.data.pop("packageData", None)
+        self.log.debug("Exported: {}".format(hierarchy_path))
 
         cmds.select(clear=True)
 
@@ -58,6 +60,10 @@ class ExtractSetDress(PackageExtractor):
 
         cmds.select(self.data["setdressRoots"])
 
+        self.log.info("Extracting setDress GPUCache ..")
+
         frame = cmds.currentTime(query=True)
         io.export_gpu(cache_path, frame, frame)
         io.wrap_gpu(entry_path, cache_file, self.data["subset"])
+
+        self.log.debug("Exported: {}".format(entry_path))
