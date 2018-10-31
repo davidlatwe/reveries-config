@@ -288,11 +288,12 @@ def _subset_containerising(name, namespace, nodes, ports, context,
 
 def _unique_root_namespace(asset_name):
     from avalon.maya import lib
-    return lib.unique_namespace(
+    unique = lib.unique_namespace(
         asset_name + "_",
-        prefix=":_" if asset_name[0].isdigit() else ":",  # Ensure in root
+        prefix="_" if asset_name[0].isdigit() else "",
         suffix="_",
     )
+    return ":" + unique  # Ensure in root
 
 
 class ReferenceLoader(PackageLoader):
