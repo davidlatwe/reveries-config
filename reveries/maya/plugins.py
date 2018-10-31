@@ -64,6 +64,14 @@ def ls_interfaces():
         yield data
 
 
+def ls_vessels():
+    """List vessels from active Maya scene"""
+
+    interfaces = lib.lsAttr("id", AVALON_CONTAINER_INTERFACE_ID)
+    for interface in sorted(interfaces):
+        yield get_group_from_interface(interface)
+
+
 def subset_interfacing(name,
                        namespace,
                        nodes,
