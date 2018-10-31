@@ -1,6 +1,6 @@
 
 import pyblish.api
-from reveries.maya.plugins import parse_group_from_interface
+from reveries.maya.plugins import ls_vessels
 
 
 class CollectSetDress(pyblish.api.InstancePlugin):
@@ -14,19 +14,11 @@ class CollectSetDress(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        all_roots = dict()
+        set_roots = list()
 
-        for interface in instance.data["interfaces"]:
-            try:
-                root = parse_group_from_interface(interface)
-            except RuntimeError:
-                # No group found
-                root = None
+        for vessel in ls_vessels():
+            if vessel in instance:
+                self.log.info("Collecting {!r} ..".format(vessel))
+                set_roots.append(vessel)
 
-            all_roots[str(interface)] = root
-
-        for intf, root in all_roots.items():
-            self.log.debug(intf)
-            self.log.debug(">>  " + root)
-
-        instance.data["setdressRoots"] = all_roots
+        instance.data["setdressRoots"] = set_roots
