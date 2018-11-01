@@ -699,3 +699,19 @@ def connect_message(source, target, attrname, lock=True):
     target_attr = target + "." + attrname
     cmds.connectAttr(source + ".message", target_attr)
     cmds.setAttr(target_attr, lock=lock)
+
+
+def to_namespace(node, namespace):
+    """Return node name as if it's inside the namespace.
+
+    Args:
+        node (str): Node name
+        namespace (str): Namespace
+
+    Returns:
+        str: The node in the namespace.
+
+    """
+    namespace_prefix = "|{}:".format(namespace)
+    node = namespace_prefix.join(node.split("|"))
+    return node

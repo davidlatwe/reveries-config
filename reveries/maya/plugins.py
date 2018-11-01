@@ -1,5 +1,6 @@
 
 import os
+import json
 from collections import OrderedDict
 
 import avalon.api
@@ -8,6 +9,7 @@ import avalon.maya
 
 from . import lib
 
+from .capsule import namespaced
 from ..utils import get_representation_path_
 from ..plugins import (
     PackageLoader,
@@ -21,6 +23,9 @@ AVALON_PORTS = ":AVALON_PORTS"
 AVALON_CONTAINER_INTERFACE_ID = "pyblish.avalon.interface"
 AVALON_VESSEL_ATTR = "vessel"
 AVALON_CONTAINER_ATTR = "container"
+
+AVALON_SUBCONTAINER_ID = "pyblish.avalon.sub-container"
+AVALON_SUBCONTAINER_INTERFACE_ID = "pyblish.avalon.sub-interface"
 
 
 REPRS_PLUGIN_MAPPING = {
@@ -523,6 +528,128 @@ class ImportLoader(PackageLoader):
             pass
 
         cmds.namespace(removeNamespace=namespace, deleteNamespaceContent=True)
+
+
+class NestedLoader(PackageLoader):
+    """Hierarchical referencing loader
+    """
+
+    interface = []
+
+    def file_path(self, file_name):
+        entry_path = os.path.join(self.package_path, file_name)
+        return _env_embedded_path(entry_path)
+
+    def group_name(self, namespace, name):
+        return _subset_group_name(namespace, name)
+
+    def process_subset(self, instance, vessel, namespace, group, options):
+        """To be implemented by subclass"""
+        raise NotImplementedError("Must be implemented by subclass")
+
+    def load(self, context, name=None, namespace=None, options=None):
+
+        import maya.cmds as cmds
+        from avalon.maya.pipeline import AVALON_CONTAINERS
+
+        load_plugin("Alembic")
+
+        asset = context["asset"]
+
+        representation = context["representation"]
+        entry_path = self.file_path(representation["data"]["entry_fname"])
+
+        # Load instances data
+        instances_path = entry_path.replace(".abc", ".json")
+        with open(os.path.expandvars(instances_path), "r") as fp:
+            instances = json.load(fp)
+
+        # Get all loaders
+        all_loaders = avalon.api.discover(avalon.api.Loader)
+        for representation_id, data in instances.items():
+            # Find the compatible loaders
+            loaders = avalon.api.loaders_from_representation(
+                all_loaders, representation_id)
+            # Get the used loader
+            loader_name = data["loader"]
+            Loader = next((x for x in loaders if
+                           x.__name__ == loader_name),
+                          None)
+
+            if Loader is None:
+                self.log.error("Loader is missing.")
+                raise RuntimeError("Loader is missing: %s", loader_name)
+
+            data["loader_cls"] = Loader
+
+        namespace = namespace or _unique_root_namespace(asset["name"])
+        group_name = self.group_name(namespace, name)
+
+        # Load the setdress alembic hierarchy
+        hierarchy = cmds.file(entry_path,
+                              reference=True,
+                              namespace=namespace,
+                              returnNewNodes=True,
+                              groupReference=True,
+                              groupName=group_name,
+                              typ="Alembic")
+
+        # Load sub-subsets
+        sub_containers = []
+        sub_interfaces = []
+        for representation_id, data in instances.items():
+            for instance in data["instances"]:
+
+                sub_namespace = namespace + ":" + instance["namespace"]
+                sub_container = avalon.api.load(data["loader_cls"],
+                                                representation_id,
+                                                namespace=sub_namespace)
+
+                sub_interface = get_interface_from_container(sub_container)
+                vessel = get_group_from_interface(sub_interface)
+
+                with namespaced(namespace, new=False) as namespace:
+                    self.process_subset(instance=instance,
+                                        vessel=vessel,
+                                        namespace=namespace,
+                                        group=group_name,
+                                        options=options)
+
+                sub_containers.append(sub_container)
+                sub_interfaces.append(sub_interface)
+
+                cmds.sets(sub_container, remove=AVALON_CONTAINERS)
+                cmds.setAttr(sub_container + ".id",
+                             AVALON_SUBCONTAINER_ID,
+                             type="string")
+                cmds.sets(sub_interface, remove=AVALON_PORTS)
+                cmds.setAttr(sub_interface + ".id",
+                             AVALON_SUBCONTAINER_INTERFACE_ID,
+                             type="string")
+
+        self[:] = hierarchy + sub_containers
+        self.interface = [group_name] + sub_interfaces
+
+        # Only containerize if any nodes were loaded by the Loader
+        nodes = self[:]
+        if not nodes:
+            return
+
+        container = _subset_containerising(name=name,
+                                           namespace=namespace,
+                                           nodes=nodes,
+                                           ports=self.interface,
+                                           context=context,
+                                           cls_name=self.__class__.__name__,
+                                           group_name=group_name)
+
+        return container
+
+    def update(self, container, representation):
+        pass
+
+    def remove(self, container):
+        pass
 
 
 class MayaSelectInvalidAction(SelectInvalidAction):
