@@ -26,20 +26,20 @@ class ExtractSetDress(PackageExtractor):
     ]
 
     def extract_setPackage(self):
-        entry_file = self.file_name("json")
-        hierarchy_file = self.file_name("abc")
+        entry_file = self.file_name("abc")
+        instances_file = self.file_name("json")
         package_path = self.create_package(entry_file)
         entry_path = os.path.join(package_path, entry_file)
-        hierarchy_path = os.path.join(package_path, hierarchy_file)
+        instances_path = os.path.join(package_path, instances_file)
 
-        self.log.info("Dumping package data ..")
-        with open(entry_path, "w") as fp:
-            json.dump(self.data["packageData"], fp, ensure_ascii=False)
-        self.log.debug("Dumped: {}".format(entry_path))
+        self.log.info("Dumping instnaces data ..")
+        with open(instances_path, "w") as fp:
+            json.dump(self.data["instancesData"], fp, ensure_ascii=False)
+            self.log.debug("Dumped: {}".format(instances_path))
 
         self.log.info("Extracting hierarchy ..")
         cmds.select(self.data["setdressRoots"])
-        io.export_alembic(file=hierarchy_path,
+        io.export_alembic(file=entry_path,
                           startFrame=1.0,
                           endFrame=1.0,
                           selection=True,
@@ -47,7 +47,7 @@ class ExtractSetDress(PackageExtractor):
                           writeVisibility=True,
                           writeCreases=True,
                           attr=[lib.AVALON_ID_ATTR_LONG])
-        self.log.debug("Exported: {}".format(hierarchy_path))
+        self.log.debug("Exported: {}".format(entry_path))
 
         cmds.select(clear=True)
 
