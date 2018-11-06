@@ -567,6 +567,18 @@ def _parse_instance_data(entry_path):
     return instances
 
 
+def parse_container_instances(container):
+    current_repr = avalon.io.find_one({
+        "_id": avalon.io.ObjectId(container["representation"]),
+        "type": "representation"
+    })
+    package_path = avalon.api.get_representation_path(current_repr)
+    entry_file = current_repr["data"]["entry_fname"]
+    entry_path = os.path.join(package_path, entry_file)
+
+    return _parse_instance_data(entry_path)
+
+
 class NestedLoader(PackageLoader):
     """Hierarchical referencing loader
     """
