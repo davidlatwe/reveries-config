@@ -24,9 +24,6 @@ AVALON_CONTAINER_INTERFACE_ID = "pyblish.avalon.interface"
 AVALON_VESSEL_ATTR = "vessel"
 AVALON_CONTAINER_ATTR = "container"
 
-AVALON_SUBCONTAINER_ID = "pyblish.avalon.sub-container"
-AVALON_SUBCONTAINER_INTERFACE_ID = "pyblish.avalon.sub-interface"
-
 
 REPRS_PLUGIN_MAPPING = {
     "Alembic": "AbcImport.mll",
@@ -619,13 +616,7 @@ class NestedLoader(PackageLoader):
                 sub_interfaces.append(sub_interface)
 
                 cmds.sets(sub_container, remove=AVALON_CONTAINERS)
-                cmds.setAttr(sub_container + ".id",
-                             AVALON_SUBCONTAINER_ID,
-                             type="string")
                 cmds.sets(sub_interface, remove=AVALON_PORTS)
-                cmds.setAttr(sub_interface + ".id",
-                             AVALON_SUBCONTAINER_INTERFACE_ID,
-                             type="string")
 
         self[:] = hierarchy + sub_containers
         self.interface = [group_name] + sub_interfaces
