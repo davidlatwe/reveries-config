@@ -139,6 +139,33 @@ def parse_interface(interface):
     return data
 
 
+def parse_sub_containers(container):
+    """Get the Avalon containers in this container
+
+    Args:
+        container (dict): The container dict.
+
+    Returns:
+        list: A list of member container dictionaries.
+
+    """
+    import maya.cmds as cmds
+    import avalon.schema
+    from avalon.maya.pipeline import parse_container
+
+    # Get avalon containers in this package setdress container
+    containers = []
+    members = cmds.sets(container["objectName"], query=True)
+    for node in cmds.ls(members, type="objectSet"):
+        try:
+            member_container = parse_container(node)
+            containers.append(member_container)
+        except avalon.schema.ValidationError:
+            pass
+
+    return containers
+
+
 def get_interface_from_container(container):
     """Return interface node of container
 
