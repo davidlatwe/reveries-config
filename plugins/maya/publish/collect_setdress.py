@@ -27,10 +27,12 @@ class CollectSetDress(pyblish.api.InstancePlugin):
 
                 set_groups.append(vessel)
 
-                repr_id = interface["representation_id"]
-                if repr_id not in inst_data:
-                    inst_data[repr_id] = {
+                vers_id = interface["versionId"]
+                if vers_id not in inst_data:
+                    inst_data[vers_id] = {
                         "loader": interface["loader"],
+                        "representation": interface["representation"],
+                        "representationId": interface["representationId"],
                         "instances": list(),
                     }
 
@@ -54,7 +56,7 @@ class CollectSetDress(pyblish.api.InstancePlugin):
 
                 if root not in set_roots:
                     set_roots.append(root)
-                inst_data[repr_id]["instances"].append(data)
+                inst_data[vers_id]["instances"].append(data)
 
         instance.data["setdressRoots"] = set_roots
         instance.data["setdressGroups"] = set_groups

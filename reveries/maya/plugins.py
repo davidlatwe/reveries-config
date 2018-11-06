@@ -105,8 +105,9 @@ def subset_interfacing(name,
     data["name"] = name
     data["namespace"] = namespace
     data["version"] = context["version"]["name"]
+    data["versionId"] = str(context["version"]["_id"])
     data["representation"] = context["representation"]["name"]
-    data["representation_id"] = str(context["representation"]["_id"])
+    data["representationId"] = str(context["representation"]["_id"])
     data["loader"] = loader
 
     avalon.maya.lib.imprint(interface, data)
@@ -156,7 +157,7 @@ def get_interface_from_container(container):
 
     nodes = lib.lsAttrs({
         "id": AVALON_CONTAINER_INTERFACE_ID,
-        "representation_id": representation,
+        "representationId": representation,
         "namespace": namespace})
 
     if not len(nodes) == 1:
@@ -203,7 +204,7 @@ def update_container(container, asset, subset, version, representation):
     cmds.setAttr(container + ".representation",
                  str(representation["_id"]),
                  type="string")
-    cmds.setAttr(interface + ".representation_id",
+    cmds.setAttr(interface + ".representationId",
                  str(representation["_id"]),
                  type="string")
 
@@ -245,8 +246,11 @@ def update_container(container, asset, subset, version, representation):
         interface = cmds.rename(
             interface, _container_naming(namespace, name, "PORT"))
 
-    # Update interface data: version, representation name
+    # Update interface data: version, version id, representation name
     cmds.setAttr(interface + ".version", version["name"])
+    cmds.setAttr(interface + ".versionId",
+                 version["_id"],
+                 type="string")
     cmds.setAttr(interface + ".representation",
                  representation["name"],
                  type="string")
@@ -527,11 +531,21 @@ class ImportLoader(PackageLoader):
         cmds.namespace(removeNamespace=namespace, deleteNamespaceContent=True)
 
 
+def _parse_instance_data(entry_path):
+    # Load instances data
+    instances_path = entry_path.replace(".abc", ".json")
+    with open(os.path.expandvars(instances_path), "r") as fp:
+        instances = json.load(fp)
+
+    return instances
+
+
 class NestedLoader(PackageLoader):
     """Hierarchical referencing loader
     """
 
     interface = []
+    sub_representations = []
 
     def file_path(self, file_name):
         entry_path = os.path.join(self.package_path, file_name)
@@ -540,30 +554,33 @@ class NestedLoader(PackageLoader):
     def group_name(self, namespace, name):
         return _subset_group_name(namespace, name)
 
-    def process_subset(self, instance, vessel, namespace, group, options):
+    def process_subset(self, instance, assembly):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
-    def load(self, context, name=None, namespace=None, options=None):
-
-        import maya.cmds as cmds
-        from avalon.maya.pipeline import AVALON_CONTAINERS
-
-        load_plugin("Alembic")
-
-        asset = context["asset"]
-
-        representation = context["representation"]
-        entry_path = self.file_path(representation["data"]["entry_fname"])
-
-        # Load instances data
-        instances_path = entry_path.replace(".abc", ".json")
-        with open(os.path.expandvars(instances_path), "r") as fp:
-            instances = json.load(fp)
-
+    def _select_representations(self, instances):
         # Get all loaders
         all_loaders = avalon.api.discover(avalon.api.Loader)
-        for representation_id, data in instances.items():
+        for version_id, data in instances.items():
+
+            # Select representation
+            repr_name = data["representation"]
+            representation_id = None
+            if repr_name not in self.sub_representations:
+                for name in self.sub_representations:
+                    _filter = {"type": "representation",
+                               "name": name,
+                               "parent": version_id}
+                    project = {"_id": True}
+                    representation = avalon.io.find_one(_filter, project)
+                    if representation is not None:
+                        representation_id = representation["_id"]
+                        data["representationId"] = representation_id
+                        break
+
+            if representation_id is None:
+                raise RuntimeError("Representation not found.")
+
             # Find the compatible loaders
             loaders = avalon.api.loaders_from_representation(
                 all_loaders, representation_id)
@@ -578,6 +595,25 @@ class NestedLoader(PackageLoader):
                 raise RuntimeError("Loader is missing: %s", loader_name)
 
             data["loader_cls"] = Loader
+
+        return instances
+
+    def load(self, context, name=None, namespace=None, options=None):
+
+        import maya.cmds as cmds
+        from avalon.maya.pipeline import AVALON_CONTAINERS
+        from reveries.maya.lib import to_namespace
+
+        load_plugin("Alembic")
+
+        asset = context["asset"]
+
+        representation = context["representation"]
+        entry_path = self.file_path(representation["data"]["entry_fname"])
+
+        # Load instances data
+        instances = _parse_instance_data(entry_path)
+        instances = self._select_representations(instances)
 
         namespace = namespace or _unique_root_namespace(asset["name"])
         group_name = self.group_name(namespace, name)
@@ -594,9 +630,10 @@ class NestedLoader(PackageLoader):
         # Load sub-subsets
         sub_containers = []
         sub_interfaces = []
-        for representation_id, data in instances.items():
+        for version_id, data in instances.items():
             for instance in data["instances"]:
 
+                representation_id = data["representationId"]
                 sub_namespace = namespace + ":" + instance["namespace"]
                 sub_container = avalon.api.load(data["loader_cls"],
                                                 representation_id,
@@ -606,11 +643,16 @@ class NestedLoader(PackageLoader):
                 vessel = get_group_from_interface(sub_interface)
 
                 with namespaced(namespace, new=False) as namespace:
+
+                    # Parent into the setdress hierarchy
+                    # Namespace is missing from root node(s), add namespace
+                    # manually
+                    root = to_namespace(instance["root"], namespace)
+                    root = group_name + root
+                    cmds.parent(vessel, root, relative=True)
+
                     self.process_subset(instance=instance,
-                                        vessel=vessel,
-                                        namespace=namespace,
-                                        group=group_name,
-                                        options=options)
+                                        assembly=vessel)
 
                 sub_containers.append(sub_container)
                 sub_interfaces.append(sub_interface)
