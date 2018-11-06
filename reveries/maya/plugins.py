@@ -559,9 +559,19 @@ class NestedLoader(PackageLoader):
         raise NotImplementedError("Must be implemented by subclass")
 
     def _select_representations(self, instances):
+        """
+        """
+        collected_loader = dict()
+
         # Get all loaders
         all_loaders = avalon.api.discover(avalon.api.Loader)
-        for version_id, data in instances.items():
+        for data in instances:
+
+            version_id = data["versionId"]
+
+            if version_id in collected_loader:
+                data["loader_cls"] = collected_loader[version_id]
+                continue
 
             # Select representation
             repr_name = data["representation"]
@@ -595,6 +605,7 @@ class NestedLoader(PackageLoader):
                 raise RuntimeError("Loader is missing: %s", loader_name)
 
             data["loader_cls"] = Loader
+            collected_loader[version_id] = Loader
 
         return instances
 
@@ -630,35 +641,34 @@ class NestedLoader(PackageLoader):
         # Load sub-subsets
         sub_containers = []
         sub_interfaces = []
-        for version_id, data in instances.items():
-            for instance in data["instances"]:
+        for data in instances:
 
-                representation_id = data["representationId"]
-                sub_namespace = namespace + ":" + instance["namespace"]
-                sub_container = avalon.api.load(data["loader_cls"],
-                                                representation_id,
-                                                namespace=sub_namespace)
+            representation_id = data["representationId"]
+            sub_namespace = namespace + ":" + data["namespace"]
+            sub_container = avalon.api.load(data["loader_cls"],
+                                            representation_id,
+                                            namespace=sub_namespace)
 
-                sub_interface = get_interface_from_container(sub_container)
-                vessel = get_group_from_interface(sub_interface)
+            sub_interface = get_interface_from_container(sub_container)
+            vessel = get_group_from_interface(sub_interface)
 
-                with namespaced(namespace, new=False) as namespace:
+            with namespaced(namespace, new=False) as namespace:
 
-                    # Parent into the setdress hierarchy
-                    # Namespace is missing from root node(s), add namespace
-                    # manually
-                    root = to_namespace(instance["root"], namespace)
-                    root = group_name + root
-                    cmds.parent(vessel, root, relative=True)
+                # Parent into the setdress hierarchy
+                # Namespace is missing from root node(s), add namespace
+                # manually
+                root = to_namespace(data["root"], namespace)
+                root = group_name + root
+                cmds.parent(vessel, root, relative=True)
 
-                    self.process_subset(instance=instance,
-                                        assembly=vessel)
+                self.process_subset(instance=data,
+                                    assembly=vessel)
 
-                sub_containers.append(sub_container)
-                sub_interfaces.append(sub_interface)
+            sub_containers.append(sub_container)
+            sub_interfaces.append(sub_interface)
 
-                cmds.sets(sub_container, remove=AVALON_CONTAINERS)
-                cmds.sets(sub_interface, remove=AVALON_PORTS)
+            cmds.sets(sub_container, remove=AVALON_CONTAINERS)
+            cmds.sets(sub_interface, remove=AVALON_PORTS)
 
         self[:] = hierarchy + sub_containers
         self.interface = [group_name] + sub_interfaces

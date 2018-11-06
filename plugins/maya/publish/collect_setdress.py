@@ -17,7 +17,7 @@ class CollectSetDress(pyblish.api.InstancePlugin):
 
         set_roots = list()   # subsets' reference group node's parent node
         set_groups = list()  # subsets' reference group node
-        inst_data = dict()
+        inst_data = list()
 
         for interface in ls_interfaces():
             vessel = get_group_from_interface(interface["objectName"])
@@ -27,14 +27,10 @@ class CollectSetDress(pyblish.api.InstancePlugin):
 
                 set_groups.append(vessel)
 
-                vers_id = interface["versionId"]
-                if vers_id not in inst_data:
-                    inst_data[vers_id] = {
-                        "loader": interface["loader"],
-                        "representation": interface["representation"],
-                        "representationId": interface["representationId"],
-                        "instances": list(),
-                    }
+                # The namespace stored in interface was absolute name,
+                # need to save as relative name.
+                # e.g. ":awesome" -> "awesome"
+                namespace = interface["namespace"][1:]
 
                 root = cmds.listRelatives(vessel, parent=True, fullPath=True)
                 root = (root or [None])[0]
@@ -43,20 +39,20 @@ class CollectSetDress(pyblish.api.InstancePlugin):
                                     matrix=True,
                                     objectSpace=True)
 
-                # The namespace stored in interface was absolute name,
-                # need to save as relative name.
-                # e.g. ":awesome" -> "awesome"
-                namespace = interface["namespace"][1:]
-
                 data = {
                     "namespace": namespace,
                     "root": root,
                     "matrix": matrix,
+                    "loader": interface["loader"],
+                    "versionId": interface["versionId"],
+                    "representation": interface["representation"],
+                    "representationId": interface["representationId"],
                 }
+
+                inst_data.append(data)
 
                 if root not in set_roots:
                     set_roots.append(root)
-                inst_data[vers_id]["instances"].append(data)
 
         instance.data["setdressRoots"] = set_roots
         instance.data["setdressGroups"] = set_groups
