@@ -606,26 +606,26 @@ class NestedLoader(PackageLoader):
         all_loaders = avalon.api.discover(avalon.api.Loader)
         for data in instances:
 
-            version_id = data["versionId"]
-
-            if version_id in collected_loader:
-                data["loader_cls"] = collected_loader[version_id]
+            if data["representationId"] in collected_loader:
+                data["loader_cls"] = collected_loader[data["representationId"]]
                 continue
 
-            # Select representation
-            repr_name = data["representation"]
+            sub_representations = self.sub_representations[:]
             representation_id = None
-            if repr_name not in self.sub_representations:
-                for name in self.sub_representations:
-                    _filter = {"type": "representation",
-                               "name": name,
-                               "parent": version_id}
-                    project = {"_id": True}
-                    representation = avalon.io.find_one(_filter, project)
-                    if representation is not None:
-                        representation_id = representation["_id"]
-                        data["representationId"] = representation_id
-                        break
+
+            # Select representation
+            for name in sub_representations:
+                _filter = {"type": "representation",
+                           "name": name,
+                           "parent": avalon.io.ObjectId(data["versionId"])}
+                project = {"_id": True, "name": True}
+                representation = avalon.io.find_one(_filter, project)
+
+                if representation is not None:
+                    representation_id = representation["_id"]
+                    data["representation"] = representation["name"]
+                    data["representationId"] = representation_id
+                    break
 
             if representation_id is None:
                 raise RuntimeError("Representation not found.")
@@ -634,25 +634,68 @@ class NestedLoader(PackageLoader):
             loaders = avalon.api.loaders_from_representation(
                 all_loaders, representation_id)
             # Get the used loader
-            loader_name = data["loader"]
             Loader = next((x for x in loaders if
-                           x.__name__ == loader_name),
+                           x.__name__ == data["loader"]),
                           None)
 
             if Loader is None:
                 self.log.error("Loader is missing.")
-                raise RuntimeError("Loader is missing: %s", loader_name)
+                raise RuntimeError("Loader is missing: %s", data["loader"])
 
             data["loader_cls"] = Loader
-            collected_loader[version_id] = Loader
+            collected_loader[str(representation_id)] = Loader
 
         return instances
+
+    def _process(self, data, namespace, group_name, vessel):
+        """
+        """
+        import maya.cmds as cmds
+        from reveries.maya.lib import to_namespace
+
+        with namespaced(namespace, new=False) as namespace:
+
+            # Parent into the setdress hierarchy
+            # Namespace is missing from root node(s), add namespace
+            # manually
+            root = to_namespace(data["root"], namespace)
+            root = group_name + root
+            try:
+                vessel = cmds.parent(vessel, root, relative=True)[0]
+            except RuntimeError:
+                # Possible already a child of the parent
+                pass
+
+            self.process_subset(instance=data,
+                                assembly=vessel)
+
+    def _add(self, data, namespace, group_name):
+        """
+        """
+        import maya.cmds as cmds
+        from avalon.maya.pipeline import AVALON_CONTAINERS
+
+        representation_id = data["representationId"]
+        sub_namespace = namespace + ":" + data["namespace"]
+        sub_container = avalon.api.load(data["loader_cls"],
+                                        representation_id,
+                                        namespace=sub_namespace)
+
+        sub_interface = get_interface_from_container(sub_container)
+        vessel = get_group_from_interface(sub_interface)
+
+        self._process(data, namespace, group_name, vessel)
+
+        cmds.sets(sub_container, remove=AVALON_CONTAINERS)
+        cmds.sets(sub_interface, remove=AVALON_PORTS)
+
+        return sub_container, sub_interface
 
     def load(self, context, name=None, namespace=None, options=None):
 
         import maya.cmds as cmds
-        from avalon.maya.pipeline import AVALON_CONTAINERS
-        from reveries.maya.lib import to_namespace
+
+        print("HAHAHAHAHAHA")
 
         load_plugin("Alembic")
 
@@ -682,32 +725,12 @@ class NestedLoader(PackageLoader):
         sub_interfaces = []
         for data in instances:
 
-            representation_id = data["representationId"]
-            sub_namespace = namespace + ":" + data["namespace"]
-            sub_container = avalon.api.load(data["loader_cls"],
-                                            representation_id,
-                                            namespace=sub_namespace)
-
-            sub_interface = get_interface_from_container(sub_container)
-            vessel = get_group_from_interface(sub_interface)
-
-            with namespaced(namespace, new=False) as namespace:
-
-                # Parent into the setdress hierarchy
-                # Namespace is missing from root node(s), add namespace
-                # manually
-                root = to_namespace(data["root"], namespace)
-                root = group_name + root
-                cmds.parent(vessel, root, relative=True)
-
-                self.process_subset(instance=data,
-                                    assembly=vessel)
+            sub_container, sub_interface = self._add(data,
+                                                     namespace,
+                                                     group_name)
 
             sub_containers.append(sub_container)
             sub_interfaces.append(sub_interface)
-
-            cmds.sets(sub_container, remove=AVALON_CONTAINERS)
-            cmds.sets(sub_interface, remove=AVALON_PORTS)
 
         self[:] = hierarchy + sub_containers
         self.interface = [group_name] + sub_interfaces
@@ -728,10 +751,137 @@ class NestedLoader(PackageLoader):
         return container
 
     def update(self, container, representation):
-        pass
+
+        import maya.cmds as cmds
+
+        def get_ref_node(ndoe):
+            return next((ndoe for ndoe in cmds.sets(ndoe, query=True)
+                         if cmds.nodeType(ndoe) == "reference"), None)
+
+        def abort_alert():
+            title = "Update Abort"
+            message = ("Imported container not supported; container must be "
+                       "referenced.")
+            self.log.error(message)
+            message_box_error(title, message)
+
+        node = container["objectName"]
+
+        # Assume asset has been referenced
+        reference_node = get_ref_node(node)
+        if not reference_node:
+            abort_alert()
+            return
+
+        parents = avalon.io.parenthood(representation)
+        self.package_path = get_representation_path_(representation, parents)
+        entry_path = self.file_path(representation["data"]["entry_fname"])
+
+        # Get current sub-containers
+        current_subcons = dict()
+
+        for sub_con in parse_sub_containers(container):
+            # Assume all sub-asset has been referenced
+            if not get_ref_node(sub_con["objectName"]):
+                abort_alert()
+                return
+
+            sub_ns = sub_con["namespace"].rsplit(":", 1)[-1]
+            current_subcons[sub_ns] = sub_con
+
+        #
+        # Start updating
+
+        # Load instances data
+        instances = _parse_instance_data(entry_path)
+        instances = self._select_representations(instances)
+
+        # Get current instances data and..
+        # Remove instance
+        # To prevent `fosterParent` stepping in, remove obsolete instance
+        # before updating hierarchy.
+        current_instances = dict()
+
+        new_namespaces = [data["namespace"] for data in instances]
+        for data in parse_container_instances(container):
+            if data["namespace"] not in new_namespaces:
+                # Remove
+                avalon.api.remove(sub_con)
+            else:
+                namespace = data.pop("namespace")
+                current_instances[namespace] = data
+
+        # Ensure loaded
+        load_plugin("Alembic")
+
+        # Update setdress alembic hierarchy
+        cmds.file(entry_path,
+                  loadReference=reference_node,
+                  type="Alembic")
+
+        # Update sub-subsets
+        namespace = container["namespace"]
+        group_name = self.group_name(namespace, container["name"])
+
+        sub_containers = []
+        sub_interfaces = []
+        for data in instances:
+
+            sub_ns = data["namespace"]
+            if sub_ns in current_instances:
+                # Update
+                avalon.api.update(current_subcons[sub_ns], data["version"])
+
+                # Update parenting and matrix
+                subcon = current_subcons[sub_ns]
+                subcon_name = subcon["objectName"]
+                sub_interface = get_interface_from_container(subcon_name)
+                vessel = get_group_from_interface(sub_interface)
+                self._process(data, namespace, group_name, vessel)
+
+            else:
+                # Add
+                sub_container, sub_interface = self._add(data,
+                                                         namespace,
+                                                         group_name)
+
+                sub_containers.append(sub_container)
+                sub_interfaces.append(sub_interface)
+
+        # TODO: Add all new nodes in the reference to the container
+        #   Currently new nodes in an updated reference are not added to the
+        #   container whereas actually they should be!
+        nodes = cmds.referenceQuery(reference_node, nodes=True, dagPath=True)
+        cmds.sets(nodes, forceElement=node)
+
+        # Update container
+        version, subset, asset, _ = parents
+        update_container(node, asset, subset, version, representation)
 
     def remove(self, container):
-        pass
+        """
+        """
+        import maya.cmds as cmds
+
+        # Remove all members
+        sub_containers = parse_sub_containers(container)
+        for sub_con in sub_containers:
+            self.log.info("Removing container %s", sub_con["objectName"])
+            avalon.api.remove(sub_con)
+
+        # Remove alembic hierarchy reference
+        # TODO: Check whether removing all contained references is safe enough
+        members = cmds.sets(container["objectName"], query=True) or []
+        references = cmds.ls(members, type="reference")
+        for reference in references:
+            self.log.info("Removing %s", reference)
+            fname = cmds.referenceQuery(reference, filename=True)
+            cmds.file(fname, removeReference=True)
+
+        # Delete container and its contents
+        if cmds.objExists(container["objectName"]):
+            members = cmds.sets(container["objectName"], query=True) or []
+            cmds.delete([container["objectName"]] + members)
 
 
 class MayaSelectInvalidAction(SelectInvalidAction):
