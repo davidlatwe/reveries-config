@@ -593,7 +593,7 @@ class HierarchicalLoader(PackageLoader):
     def group_name(self, namespace, name):
         return _subset_group_name(namespace, name)
 
-    def process_subset(self, instance, assembly):
+    def apply_variation(self, instance, assembly):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
@@ -666,8 +666,8 @@ class HierarchicalLoader(PackageLoader):
                 # Possible already a child of the parent
                 pass
 
-            self.process_subset(instance=data,
-                                assembly=vessel)
+            self.apply_variation(instance=data,
+                                 assembly=vessel)
 
     def _add(self, data, namespace, group_name):
         """

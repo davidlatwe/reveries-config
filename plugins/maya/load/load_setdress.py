@@ -23,7 +23,7 @@ class SetDressLoader(plugins.HierarchicalLoader, avalon.api.Loader):
         "mayaBinary",
     ]
 
-    def process_subset(self, instance, assembly):
+    def apply_variation(self, instance, assembly):
 
         import maya.cmds as cmds
 
