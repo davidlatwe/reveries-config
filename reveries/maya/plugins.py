@@ -580,7 +580,7 @@ def parse_container_instances(container):
 
 
 class HierarchicalLoader(PackageLoader):
-    """Hierarchical referencing loader
+    """Hierarchical referencing based asset loader
     """
 
     interface = []
