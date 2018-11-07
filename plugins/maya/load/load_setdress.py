@@ -1,9 +1,9 @@
 
 import avalon.api
-from reveries.maya.plugins import NestedLoader
+import reveries.maya.plugins as plugins
 
 
-class SetDressLoader(NestedLoader, avalon.api.Loader):
+class SetDressLoader(plugins.HierarchicalLoader, avalon.api.Loader):
 
     label = "Load Set Dress"
     order = -9

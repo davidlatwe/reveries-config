@@ -579,7 +579,7 @@ def parse_container_instances(container):
     return _parse_instance_data(entry_path)
 
 
-class NestedLoader(PackageLoader):
+class HierarchicalLoader(PackageLoader):
     """Hierarchical referencing loader
     """
 
