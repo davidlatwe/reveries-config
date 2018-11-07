@@ -44,6 +44,7 @@ class CollectSetDress(pyblish.api.InstancePlugin):
                     "root": root,
                     "matrix": matrix,
                     "loader": interface["loader"],
+                    "version": interface["version"],
                     "versionId": interface["versionId"],
                     "representation": interface["representation"],
                     "representationId": interface["representationId"],
