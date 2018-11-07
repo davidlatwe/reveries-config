@@ -787,27 +787,26 @@ class HierarchicalLoader(PackageLoader):
             sub_ns = sub_con["namespace"].rsplit(":", 1)[-1]
             current_subcons[sub_ns] = sub_con
 
-        #
-        # Start updating
-
         # Load instances data
         instances = _parse_instance_data(entry_path)
         instances = self._select_representations(instances)
 
-        # Get current instances data and..
-        # Remove instance
-        # To prevent `fosterParent` stepping in, remove obsolete instance
-        # before updating hierarchy.
+        # Get current instances data
         current_instances = dict()
 
         new_namespaces = [data["namespace"] for data in instances]
         for data in parse_container_instances(container):
             if data["namespace"] not in new_namespaces:
                 # Remove
+                # To prevent `fosterParent` stepping in,
+                # remove obsolete instance before updating hierarchy.
                 avalon.api.remove(sub_con)
             else:
                 namespace = data.pop("namespace")
                 current_instances[namespace] = data
+
+        #
+        # Start updating
 
         # Ensure loaded
         load_plugin("Alembic")
