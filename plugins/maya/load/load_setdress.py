@@ -30,3 +30,6 @@ class SetDressLoader(plugins.HierarchicalLoader, avalon.api.Loader):
         # Apply matrix to root node (if any matrix edits)
         matrix = instance["matrix"]
         cmds.xform(assembly, objectSpace=True, matrix=matrix)
+
+    def update_variation(self):
+        pass

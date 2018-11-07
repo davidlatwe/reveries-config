@@ -597,6 +597,10 @@ class HierarchicalLoader(PackageLoader):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
+    def update_variation(self, instance, assembly):
+        """To be implemented by subclass"""
+        raise NotImplementedError("Must be implemented by subclass")
+
     def _select_representations(self, instances):
         """
         """
