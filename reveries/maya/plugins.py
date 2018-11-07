@@ -695,8 +695,6 @@ class NestedLoader(PackageLoader):
 
         import maya.cmds as cmds
 
-        print("HAHAHAHAHAHA")
-
         load_plugin("Alembic")
 
         asset = context["asset"]
