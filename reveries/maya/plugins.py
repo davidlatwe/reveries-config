@@ -558,16 +558,16 @@ class ImportLoader(PackageLoader):
         cmds.namespace(removeNamespace=namespace, deleteNamespaceContent=True)
 
 
-def _parse_instance_data(entry_path):
-    # Load instances data
-    instances_path = entry_path.replace(".abc", ".json")
-    with open(os.path.expandvars(instances_path), "r") as fp:
-        instances = json.load(fp)
+def _parse_members_data(entry_path):
+    # Load members data
+    members_path = entry_path.replace(".abc", ".json")
+    with open(os.path.expandvars(members_path), "r") as fp:
+        members = json.load(fp)
 
-    return instances
+    return members
 
 
-def parse_container_instances(container):
+def parse_container_members(container):
     current_repr = avalon.io.find_one({
         "_id": avalon.io.ObjectId(container["representation"]),
         "type": "representation"
@@ -576,7 +576,7 @@ def parse_container_instances(container):
     entry_file = current_repr["data"]["entry_fname"]
     entry_path = os.path.join(package_path, entry_file)
 
-    return _parse_instance_data(entry_path)
+    return _parse_members_data(entry_path)
 
 
 class HierarchicalLoader(PackageLoader):
@@ -584,7 +584,6 @@ class HierarchicalLoader(PackageLoader):
     """
 
     interface = []
-    sub_representations = []
 
     def file_path(self, file_name):
         entry_path = os.path.join(self.package_path, file_name)
@@ -593,50 +592,43 @@ class HierarchicalLoader(PackageLoader):
     def group_name(self, namespace, name):
         return _subset_group_name(namespace, name)
 
-    def apply_variation(self, instance, assembly):
+    def apply_variation(self, data, assembly):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
-    def update_variation(self, instance, assembly):
+    def update_variation(self, data_new, data_old, assembly):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
-    def _select_representations(self, instances):
+    def _get_loaders(self, members):
         """
         """
+        def get_representation(representation_id):
+            representation = avalon.io.find_one(
+                {"_id": avalon.io.ObjectId(representation_id)})
+
+            if representation is None:
+                raise RuntimeError("Representation not found, this is a bug.")
+
+            return representation
+
         collected_loader = dict()
 
         # Get all loaders
         all_loaders = avalon.api.discover(avalon.api.Loader)
-        for data in instances:
+        for data in members:
 
-            if data["representationId"] in collected_loader:
-                data["loader_cls"] = collected_loader[data["representationId"]]
+            representation_id = data["representationId"]
+
+            data["representationDoc"] = get_representation(representation_id)
+
+            if representation_id in collected_loader:
+                data["loaderCls"] = collected_loader[representation_id]
                 continue
-
-            sub_representations = self.sub_representations[:]
-            representation_id = None
-
-            # Select representation
-            for name in sub_representations:
-                _filter = {"type": "representation",
-                           "name": name,
-                           "parent": avalon.io.ObjectId(data["versionId"])}
-                project = {"_id": True, "name": True}
-                representation = avalon.io.find_one(_filter, project)
-
-                if representation is not None:
-                    representation_id = representation["_id"]
-                    data["representation"] = representation["name"]
-                    data["representationId"] = representation_id
-                    break
-
-            if representation_id is None:
-                raise RuntimeError("Representation not found.")
 
             # Find the compatible loaders
             loaders = avalon.api.loaders_from_representation(
-                all_loaders, representation_id)
+                all_loaders, data["representationDoc"])
             # Get the used loader
             Loader = next((x for x in loaders if
                            x.__name__ == data["loader"]),
@@ -646,32 +638,34 @@ class HierarchicalLoader(PackageLoader):
                 self.log.error("Loader is missing.")
                 raise RuntimeError("Loader is missing: %s", data["loader"])
 
-            data["loader_cls"] = Loader
-            collected_loader[str(representation_id)] = Loader
+            data["loaderCls"] = Loader
+            collected_loader[representation_id] = Loader
 
-        return instances
+        return members
 
-    def _process(self, data, namespace, group_name, vessel):
+    def _parent(self, data, namespace, group_name, vessel):
         """
         """
         import maya.cmds as cmds
         from reveries.maya.lib import to_namespace
 
-        with namespaced(namespace, new=False) as namespace:
+        # Parent into the setdress hierarchy
+        # Namespace is missing from root node(s), add namespace
+        # manually
+        root = to_namespace(data["root"], namespace)
+        root = cmds.ls(group_name + root, long=True)
 
-            # Parent into the setdress hierarchy
-            # Namespace is missing from root node(s), add namespace
-            # manually
-            root = to_namespace(data["root"], namespace)
-            root = group_name + root
-            try:
-                vessel = cmds.parent(vessel, root, relative=True)[0]
-            except RuntimeError:
-                # Possible already a child of the parent
-                pass
+        if not len(root) == 1:
+            raise RuntimeError("Too many or no parent, this is a bug.")
 
-            self.apply_variation(instance=data,
-                                 assembly=vessel)
+        root = root[0]
+        current_parent = cmds.listRelatives(vessel,
+                                            parent=True,
+                                            fullPath=True) or []
+        if root not in current_parent:
+            vessel = cmds.parent(vessel, root, relative=True)[0]
+
+        return vessel
 
     def _add(self, data, namespace, group_name):
         """
@@ -679,16 +673,19 @@ class HierarchicalLoader(PackageLoader):
         import maya.cmds as cmds
         from avalon.maya.pipeline import AVALON_CONTAINERS
 
-        representation_id = data["representationId"]
+        representation_doc = data["representationDoc"]
         sub_namespace = namespace + ":" + data["namespace"]
-        sub_container = avalon.api.load(data["loader_cls"],
-                                        representation_id,
+        sub_container = avalon.api.load(data["loaderCls"],
+                                        representation_doc,
                                         namespace=sub_namespace)
 
         sub_interface = get_interface_from_container(sub_container)
         vessel = get_group_from_interface(sub_interface)
 
-        self._process(data, namespace, group_name, vessel)
+        with namespaced(namespace, new=False) as namespace:
+            vessel = self._parent(data, namespace, group_name, vessel)
+            self.apply_variation(data=data,
+                                 assembly=vessel)
 
         cmds.sets(sub_container, remove=AVALON_CONTAINERS)
         cmds.sets(sub_interface, remove=AVALON_PORTS)
@@ -706,9 +703,9 @@ class HierarchicalLoader(PackageLoader):
         representation = context["representation"]
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        # Load instances data
-        instances = _parse_instance_data(entry_path)
-        instances = self._select_representations(instances)
+        # Load members data
+        members = _parse_members_data(entry_path)
+        members = self._get_loaders(members)
 
         namespace = namespace or _unique_root_namespace(asset["name"])
         group_name = self.group_name(namespace, name)
@@ -725,7 +722,7 @@ class HierarchicalLoader(PackageLoader):
         # Load sub-subsets
         sub_containers = []
         sub_interfaces = []
-        for data in instances:
+        for data in members:
 
             sub_container, sub_interface = self._add(data,
                                                      namespace,
@@ -752,25 +749,71 @@ class HierarchicalLoader(PackageLoader):
 
         return container
 
+    def _change(self, container, data_new, data_old, namespace, group_name):
+        """
+        """
+        from avalon.pipeline import get_representation_context
+
+        add_list = []
+
+        is_repr_diff = (
+            container["representation"] != data_new["representationId"])
+
+        has_override = (
+            data_old["representationId"] != data_new["representationId"])
+
+        if container["loader"] == data_new["loader"]:
+            if is_repr_diff and has_override:
+                self.log.warning("Your scene had local representation "
+                                 "overrides within the set. New "
+                                 "representations not loaded for %s.",
+                                 container["namespace"])
+            else:
+                current_repr_id = container["representation"]
+                current_repr = get_representation_context(current_repr_id)
+                loader = data_new["loaderCls"](current_repr)
+                loader.update(container, data_new["representationDoc"])
+        else:
+            avalon.api.remove(container)
+            add_list.append(data_new)
+
+        # Update parenting and matrix
+        subcon_name = container["objectName"]
+        sub_interface = get_interface_from_container(subcon_name)
+        vessel = get_group_from_interface(sub_interface)
+
+        with namespaced(namespace, new=False) as namespace:
+            vessel = self._parent(data_new, namespace, group_name, vessel)
+            self.update_variation(data_new=data_new,
+                                  data_old=data_old,
+                                  assembly=vessel)
+
+        return add_list
+
     def update(self, container, representation):
+        """
+        """
 
         import maya.cmds as cmds
 
         def get_ref_node(ndoe):
+            """Find one reference node in the members of objectSet"""
             return next((ndoe for ndoe in cmds.sets(ndoe, query=True)
                          if cmds.nodeType(ndoe) == "reference"), None)
 
         def abort_alert():
+            """Error message box"""
             title = "Update Abort"
             message = ("Imported container not supported; container must be "
                        "referenced.")
             self.log.error(message)
             message_box_error(title, message)
 
-        node = container["objectName"]
+        container_node = container["objectName"]
+        interface_node = get_interface_from_container(container_node)
 
         # Assume asset has been referenced
-        reference_node = get_ref_node(node)
+        reference_node = get_ref_node(container_node)
         if not reference_node:
             abort_alert()
             return
@@ -791,23 +834,9 @@ class HierarchicalLoader(PackageLoader):
             sub_ns = sub_con["namespace"].rsplit(":", 1)[-1]
             current_subcons[sub_ns] = sub_con
 
-        # Load instances data
-        instances = _parse_instance_data(entry_path)
-        instances = self._select_representations(instances)
-
-        # Get current instances data
-        current_instances = dict()
-
-        new_namespaces = [data["namespace"] for data in instances]
-        for data in parse_container_instances(container):
-            if data["namespace"] not in new_namespaces:
-                # Remove
-                # To prevent `fosterParent` stepping in,
-                # remove obsolete instance before updating hierarchy.
-                avalon.api.remove(sub_con)
-            else:
-                namespace = data.pop("namespace")
-                current_instances[namespace] = data
+        # Load members data
+        members = _parse_members_data(entry_path)
+        members = self._get_loaders(members)
 
         #
         # Start updating
@@ -820,44 +849,60 @@ class HierarchicalLoader(PackageLoader):
                   loadReference=reference_node,
                   type="Alembic")
 
+        # Get current members data
+        current_members = dict()
+
+        new_namespaces = [data["namespace"] for data in members]
+        for data in parse_container_members(container):
+            if data["namespace"] not in new_namespaces:
+                # Remove
+                sub_con = current_subcons[data["namespace"]]
+                avalon.api.remove(sub_con)
+            else:
+                namespace = data.pop("namespace")
+                current_members[namespace] = data
+
         # Update sub-subsets
         namespace = container["namespace"]
         group_name = self.group_name(namespace, container["name"])
 
-        sub_containers = []
-        sub_interfaces = []
-        for data in instances:
-
+        add_list = []
+        for data in members:
             sub_ns = data["namespace"]
-            if sub_ns in current_instances:
+            if sub_ns in current_members:
                 # Update
-                avalon.api.update(current_subcons[sub_ns], data["version"])
-
-                # Update parenting and matrix
                 subcon = current_subcons[sub_ns]
-                subcon_name = subcon["objectName"]
-                sub_interface = get_interface_from_container(subcon_name)
-                vessel = get_group_from_interface(sub_interface)
-                self._process(data, namespace, group_name, vessel)
+                data_old = current_members[sub_ns]
+                add_list += self._change(subcon,
+                                         data,
+                                         data_old,
+                                         namespace,
+                                         group_name)
 
             else:
-                # Add
-                sub_container, sub_interface = self._add(data,
-                                                         namespace,
-                                                         group_name)
+                add_list.append(data)
 
-                sub_containers.append(sub_container)
-                sub_interfaces.append(sub_interface)
+        for data in add_list:
+            # Add
+            sub_container, sub_interface = self._add(data,
+                                                     namespace,
+                                                     group_name)
+            cmds.sets(sub_container, forceElement=container_node)
+            cmds.sets(sub_interface, forceElement=interface_node)
 
         # TODO: Add all new nodes in the reference to the container
         #   Currently new nodes in an updated reference are not added to the
         #   container whereas actually they should be!
         nodes = cmds.referenceQuery(reference_node, nodes=True, dagPath=True)
-        cmds.sets(nodes, forceElement=node)
+        cmds.sets(nodes, forceElement=container_node)
 
         # Update container
         version, subset, asset, _ = parents
-        update_container(node, asset, subset, version, representation)
+        update_container(container_node,
+                         asset,
+                         subset,
+                         version,
+                         representation)
 
     def remove(self, container):
         """

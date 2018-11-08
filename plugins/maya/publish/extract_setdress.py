@@ -32,9 +32,9 @@ class ExtractSetDress(PackageExtractor):
         entry_path = os.path.join(package_path, entry_file)
         instances_path = os.path.join(package_path, instances_file)
 
-        self.log.info("Dumping instnaces data ..")
+        self.log.info("Dumping setdress members data ..")
         with open(instances_path, "w") as fp:
-            json.dump(self.data["instancesData"], fp, ensure_ascii=False)
+            json.dump(self.data["setMembersData"], fp, ensure_ascii=False)
             self.log.debug("Dumped: {}".format(instances_path))
 
         self.log.info("Extracting hierarchy ..")

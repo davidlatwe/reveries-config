@@ -57,4 +57,4 @@ class CollectSetDress(pyblish.api.InstancePlugin):
 
         instance.data["setdressRoots"] = set_roots
         instance.data["setdressGroups"] = set_groups
-        instance.data["instancesData"] = inst_data
+        instance.data["setMembersData"] = inst_data
