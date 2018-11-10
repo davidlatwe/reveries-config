@@ -1,13 +1,11 @@
 
 import avalon.api
-import reveries.maya.plugins as plugins
-
-reload(plugins)
+from reveries.maya.plugins import HierarchicalLoader
 
 
-class SetDressLoader(plugins.HierarchicalLoader, avalon.api.Loader):
+class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
 
-    label = "Load Set Dress"
+    label = "Load SetDress"
     order = -9
     icon = "tree"
     color = "green"
