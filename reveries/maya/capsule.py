@@ -216,6 +216,32 @@ def namespaced(namespace, new=True):
 
 
 @contextlib.contextmanager
+def root_namespaced():
+    """Back to root namespace during context
+    """
+    original = cmds.namespaceInfo(currentNamespace=True)
+
+    try:
+        cmds.namespace(set=":")
+        yield
+    finally:
+        cmds.namespace(set=original)
+
+
+@contextlib.contextmanager
+def relative_namespaced():
+    """Entering relative namespace mode
+    """
+    relative = cmds.namespace(query=True, relativeNames=True)
+
+    try:
+        cmds.namespace(relativeNames=True)
+        yield
+    finally:
+        cmds.namespace(relativeNames=relative)
+
+
+@contextlib.contextmanager
 def maintained_selection():
     """Maintain selection during context
 
