@@ -72,3 +72,14 @@ def uninstall():  # pragma: no cover
     avalon.deregister_plugin_path(avalon.Creator, CREATE_PATH)
 
     self.installed = False
+
+
+def collect_container_metadata(container):
+    """Collect container additional data
+
+    This will be called by `host.ls()`, which will parse container data and
+    the data collected from this method.
+
+    """
+    # TODO: Collect interface data
+    return container
