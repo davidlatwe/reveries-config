@@ -80,6 +80,12 @@ def collect_container_metadata(container):
     This will be called by `host.ls()`, which will parse container data and
     the data collected from this method.
 
+    Args:
+        container (str): container node name
+
+    Returns:
+        dict: Additional key-value dataset
+
     """
     # TODO: Collect interface data
-    return container
+    return {}
