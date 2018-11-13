@@ -1,7 +1,11 @@
 
 import pyblish.api
 import maya.cmds as cmds
-from reveries.maya.plugins import ls_interfaces, get_group_from_interface
+from reveries.maya.plugins import (
+    get_interface_from_container,
+    get_group_from_interface,
+    parse_interface,
+)
 
 
 class CollectSetDress(pyblish.api.InstancePlugin):
@@ -19,7 +23,12 @@ class CollectSetDress(pyblish.api.InstancePlugin):
         set_groups = list()  # subsets' reference group node
         inst_data = list()
 
-        for interface in ls_interfaces():
+        root_containers = instance.context.data["RootContainers"].values()
+
+        for container in root_containers:
+
+            interface = get_interface_from_container(container["objectName"])
+            interface = parse_interface(interface)
             vessel = get_group_from_interface(interface["objectName"])
 
             if vessel in instance:
