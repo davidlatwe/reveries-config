@@ -656,6 +656,13 @@ def connect_message(source, target, attrname, lock=True):
         lock (bool, optional): Lock attribute if set to True (default True)
 
     """
+    if not cmds.objExists(source):
+        cmds.warning("Source node {!r} not exists.".format(source))
+        return
+    if not cmds.objExists(target):
+        cmds.warning("Target node {!r} not exists.".format(target))
+        return
+
     cmds.addAttr(target, longName=attrname, attributeType="message")
 
     target_attr = target + "." + attrname
