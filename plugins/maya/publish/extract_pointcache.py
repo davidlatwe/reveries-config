@@ -68,7 +68,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
                           writeCreases=True,
                           worldSpace=True,
                           root=root,
-                          attr=[lib.AVALON_ID_ATTR_SHORT])
+                          attr=[lib.AVALON_ID_ATTR_LONG])
 
     def extract_FBXCache(self):
         entry_file = self.file_name("fbx")
