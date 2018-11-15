@@ -273,9 +273,9 @@ class Identifier(object):
         """Report `node` current state
 
         Return node state flag (int), in range 0 - 3:
-            0 == api.Clean
-            1 == api.Duplicated
-            2 == api.Untracked
+            0 == Identifier.Clean
+            1 == Identifier.Duplicated
+            2 == Identifier.Untracked
 
         Arguments:
             node (str): Maya node name
