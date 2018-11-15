@@ -4,7 +4,9 @@ import json
 import pyblish.api
 from maya import cmds
 from reveries.plugins import PackageExtractor
-from reveries.maya import io, lib
+from reveries.maya import io, lib, utils
+from reveries.maya.plugins import walk_containers
+from reveries.lib import DEFAULT_MATRIX, matrix_equals
 
 
 class ExtractSetDress(PackageExtractor):
@@ -25,12 +27,45 @@ class ExtractSetDress(PackageExtractor):
         "GPUCache",
     ]
 
+    def _collect_components_matrix(self, data, container):
+        namespace = container["namespace"][1:]
+        data["subMatrix"][namespace] = dict()
+
+        members = cmds.sets(container["objectName"], query=True)
+        transforms = cmds.ls(members,
+                             type="transform",
+                             referencedNodes=True)
+
+        for transform in transforms:
+            matrix = cmds.xform(transform,
+                                query=True,
+                                matrix=True,
+                                objectSpace=True)
+
+            if matrix_equals(matrix, DEFAULT_MATRIX):
+                continue
+
+            address = utils.get_id(transform)
+            data["subMatrix"][namespace][address] = matrix
+
+    def _parse_sub_matrix(self):
+        for data in self.data["setMembersData"]:
+            data["subMatrix"] = dict()
+            container = data.pop("container")
+
+            self._collect_components_matrix(data, container)
+
+            for sub_container in walk_containers(container):
+                self._collect_components_matrix(data, sub_container)
+
     def extract_setPackage(self):
         entry_file = self.file_name("abc")
         instances_file = self.file_name("json")
         package_path = self.create_package(entry_file)
         entry_path = os.path.join(package_path, entry_file)
         instances_path = os.path.join(package_path, instances_file)
+
+        self._parse_sub_matrix()
 
         self.log.info("Dumping setdress members data ..")
         with open(instances_path, "w") as fp:

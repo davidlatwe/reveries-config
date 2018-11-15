@@ -57,6 +57,9 @@ class CollectSetDress(pyblish.api.InstancePlugin):
                     "versionId": interface["versionId"],
                     "representation": interface["representation"],
                     "representationId": interface["representationId"],
+
+                    # For extraction use, will be removed
+                    "container": container,
                 }
 
                 inst_data.append(data)
