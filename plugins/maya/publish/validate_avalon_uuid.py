@@ -3,7 +3,7 @@ from collections import defaultdict
 from maya import cmds
 import pyblish.api
 
-from reveries.maya.lib import AVALON_ID_ATTR_SHORT, set_avalon_uuid
+from reveries.maya.utils import get_id, set_avalon_uuid
 from reveries.plugins import RepairInstanceAction
 from reveries.maya.plugins import MayaSelectInvalidAction
 
@@ -32,25 +32,17 @@ def get_avalon_uuid(instance):
     uuids = defaultdict(list)
 
     for node in instance:
-        # Only check transforms with shapes that are meshes
         if not cmds.nodeType(node) == "transform":
             continue
-        shapes = cmds.listRelatives(node, shapes=True, type="mesh") or []
-        meshes = cmds.ls(shapes, type="mesh", ni=True)
-        if not meshes:
-            continue
+
         # get uuid
-        try:
-            uuid = cmds.getAttr(node + "." + AVALON_ID_ATTR_SHORT)
-        except ValueError:
-            uuid = None
-        uuids[uuid].append(node)
+        uuids[get_id(node)].append(node)
 
     return uuids
 
 
 class ValidateAvalonUUID(pyblish.api.InstancePlugin):
-    """All models ( mesh node's transfrom ) must have an UUID
+    """All transfrom must have an UUID
     """
 
     order = pyblish.api.ValidatorOrder
@@ -62,10 +54,6 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         SelectDuplicated,
         pyblish.api.Category("Fix It"),
         RepairInvalid,
-    ]
-
-    families = [
-        "reveries.model",
     ]
 
     @staticmethod
@@ -123,4 +111,4 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         invalid = (cls.get_invalid_missing(instance) +
                    cls.get_invalid_duplicated(instance))
         for node in invalid:
-            set_avalon_uuid(node, renew=True)
+            set_avalon_uuid(node)

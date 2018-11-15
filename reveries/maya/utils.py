@@ -1,7 +1,18 @@
 
+import uuid
+import hashlib
+
+try:
+    import bson
+except ImportError:
+    pass
+
+from datetime import datetime
+
 import maya.cmds as cmds
 from maya.api import OpenMaya as om
 from ..utils import _C4Hasher
+from .lib import AVALON_ID_ATTR_LONG
 
 
 def _hash_MPoint(x, y, z, w):
@@ -158,3 +169,251 @@ def kill_turtle():
         cmds.delete(node)
 
     cmds.unloadPlugin("Turtle", force=True)
+
+
+def _get_attr(node, attr):
+    """Internal function for attribute getting
+    """
+    try:
+        return cmds.getAttr(node + "." + attr)
+    except ValueError:
+        return None
+
+
+def _add_attr(node, attr):
+    """Internal function for attribute adding
+    """
+    try:
+        cmds.addAttr(node, longName=attr, dataType="string")
+    except RuntimeError:
+        # Attribute existed
+        pass
+
+
+def _set_attr(node, attr, value):
+    """Internal function for attribute setting
+    """
+    try:
+        cmds.setAttr(node + "." + attr, value, type="string")
+    except RuntimeError:
+        # Attribute not existed
+        pass
+
+
+class Identifier(object):
+
+    Clean = 0
+    Duplicated = 1
+    Untracked = 2
+
+    ATTR_ADDRESS = AVALON_ID_ATTR_LONG
+    ATTR_VERIFIER = "verifier"
+
+    def read_address(self, node):
+        """Read address value from node
+
+        Arguments:
+            node (str): Maya node name
+
+        """
+        return _get_attr(node, self.ATTR_ADDRESS)
+
+    def read_verifier(self, node):
+        """Read verifier value from node
+
+        Arguments:
+            node (str): Maya node name
+
+        """
+        return _get_attr(node, self.ATTR_VERIFIER)
+
+    def read_uuid(self, node):
+        """Read uuid value from node
+
+        Arguments:
+            node (str): Maya node name
+
+        """
+        muuid = cmds.ls(node, uuid=True)
+        if not len(muuid):
+            raise RuntimeError("Node not found.")
+        elif len(muuid) > 1:
+            raise RuntimeError("Found more then one node, use long name.")
+
+        return muuid[0]
+
+    def _generate_address(self):
+        """Internal function for generating time-embedded ID address
+
+        Note:
+            `bson.ObjectId` is about 1 time faster then `uuid.uuid1`.
+
+        """
+        try:
+            return str(bson.ObjectId())  # bson is faster
+        except NameError:
+            return str(uuid.uuid1())[:-18]  # remove mac-addr
+
+    def _generate_verifier(self, muuid, address):
+        """Internal function for generating hash value from Maya UUID and address
+
+        Arguments:
+            muuid (str): Maya UUID string
+            address (str): Previous generated address id from node
+
+        Note:
+            Faster then uuid5.
+
+        """
+        hasher = hashlib.sha1()
+        hasher.update(muuid + ":" + address)
+        return hasher.hexdigest()
+
+    def status(self, node):
+        """Report `node` current state
+
+        Return node state flag (int), in range 0 - 3:
+            0 == api.Clean
+            1 == api.Duplicated
+            2 == api.Untracked
+
+        Arguments:
+            node (str): Maya node name
+
+        Returns:
+            (int): Node state flag
+
+        """
+        address = self.read_address(node)
+        verifier = self.read_verifier(node)
+
+        if not all((address, verifier)):
+            # Node did not have the attributes for verification,
+            # this is new node.
+            return self.Untracked
+        else:
+            if verifier == self._generate_verifier(self.read_uuid(node),
+                                                   address):
+                return self.Clean
+            else:
+                return self.Duplicated
+
+    def on_track(self, node):
+        """Update node's address
+
+        MUST do this if `status` return flag `api.Untracked`.
+
+        Arguments:
+            node (str): Maya node name
+
+        """
+        address = self._generate_address()
+        _add_attr(node, self.ATTR_ADDRESS)
+        _set_attr(node, self.ATTR_ADDRESS, address)
+        self.on_duplicate(node)
+
+    def on_duplicate(self, node):
+        """Update node's verifier
+
+        MUST do this if `status` return flag `api.Duplicated`.
+
+        Arguments:
+            node (str): Maya node name
+            fingerprint (str): Maya node's hash value
+
+        """
+        address = self.read_address(node)
+        if address is None:
+            return
+
+        verifier = self._generate_verifier(self.read_uuid(node), address)
+        _add_attr(node, self.ATTR_VERIFIER)
+        _set_attr(node, self.ATTR_VERIFIER, verifier)
+
+    __action_map = {
+        Clean: (lambda n: None),
+        Duplicated: on_duplicate,
+        Untracked: on_track,
+    }
+
+    def manage(self, node, state):
+        """Auto update node's identity attributes by input state
+
+        Arguments:
+            node (str): Maya node name
+            state (int): State flag returned from `status`
+
+        """
+        action = self.__action_map[state]
+        action(node)
+
+    def update_verifiers(self, nodes):
+        """Update input nodes' verifier
+
+        MUST do this on file-import.
+
+        Arguments:
+            nodes (list): A list of Maya node name
+
+        """
+        for node in nodes:
+            self.on_duplicate(node)
+
+    def get_time(self, node):
+        """Retrive datetime object from Maya node
+
+        A little bonus gained from datetime embedded id.
+
+        Arguments:
+            node (str): Maya node name
+
+        """
+        address = self.read_address(node)
+        if address is None:
+            return None
+
+        if "-" in address:
+            _ut = uuid.UUID(address + "-0000-000000000000").time
+            stm = (_ut - 0x01b21dd213814000) * 100 / 1e9
+            time = datetime.fromtimestamp(stm)
+        else:
+            time = bson.ObjectId(address).generation_time
+
+        return time
+
+
+_identifier = Identifier()
+
+
+def set_avalon_uuid(node):
+    """Add or renew avID ( Avalon ID ) to `node`
+    """
+    status = _identifier.status(node)
+    _identifier.manage(node, status)
+
+
+def get_id(node):
+    """
+    Get the `AvalonID` attribute of the given node
+    Args:
+        node (str): the name of the node to retrieve the attribute from
+
+    Returns:
+        str
+
+    """
+    return _identifier.read_address(node)
+
+
+def set_transform_id():
+    nodes = (set(cmds.ls(type="transform", long=True)) -
+             set(cmds.ls(long=True, readOnly=True)) -
+             set(cmds.ls(long=True, lockedNodes=True)))
+
+    for node in nodes:
+        status = _identifier.status(node)
+        _identifier.manage(node, status)
+
+
+def update_id_on_import(nodes):
+    _identifier.update_verifiers(nodes)

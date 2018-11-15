@@ -10,6 +10,7 @@ import avalon.maya
 from . import lib
 
 from .capsule import namespaced
+from .utils import update_id_on_import
 from ..utils import get_representation_path_
 from ..plugins import (
     PackageLoader,
@@ -512,6 +513,8 @@ class ImportLoader(PackageLoader):
         nodes = self[:]
         if not nodes:
             return
+
+        update_id_on_import(nodes)
 
         container = _subset_containerising(name=name,
                                            namespace=namespace,

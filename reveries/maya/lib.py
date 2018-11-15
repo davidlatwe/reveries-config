@@ -1,6 +1,5 @@
 
 import logging
-import uuid
 
 from maya import cmds
 from maya.api import OpenMaya as om
@@ -14,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 AVALON_ID_ATTR_LONG = "AvalonID"
-AVALON_ID_ATTR_SHORT = "avid"
 
 TRANSFORM_ATTRS = [
     "translateX", "translateY", "translateZ",
@@ -117,42 +115,6 @@ def bake_hierarchy_visibility(nodes, start_frame, end_frame, step=1):
     # Connect baked result curve
     for node, curve in curve_map.items():
         cmds.connectAttr(curve + ".output", node + ".visibility", force=True)
-
-
-def set_avalon_uuid(node, renew=False):
-    """Add or renew avID ( Avalon ID ) to `node`
-    """
-    write = False
-    attr = "{0}.{1}".format(node, AVALON_ID_ATTR_SHORT)
-
-    if not cmds.objExists(attr):
-        write = True
-        cmds.addAttr(node, shortName=AVALON_ID_ATTR_SHORT,
-                     longName=AVALON_ID_ATTR_LONG, dataType="string")
-
-    if write or renew:
-        _, uid = str(uuid.uuid4()).rsplit("-", 1)
-        cmds.setAttr(attr, uid, type="string")
-
-
-def get_id(node):
-    """
-    Get the `AvalonID` attribute of the given node
-    Args:
-        node (str): the name of the node to retrieve the attribute from
-
-    Returns:
-        str
-
-    """
-
-    if node is None:
-        return
-
-    if not cmds.attributeQuery(AVALON_ID_ATTR_LONG, node=node, exists=True):
-        return
-
-    return cmds.getAttr("{0}.{1}".format(node, AVALON_ID_ATTR_LONG))
 
 
 def set_scene_timeline():
@@ -341,7 +303,7 @@ def serialise_shaders(nodes):
             continue
 
         try:
-            id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_SHORT)
+            id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_LONG)
         except ValueError:
             continue
         else:
@@ -389,7 +351,7 @@ def serialise_shaders(nodes):
                 continue
 
             try:
-                id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_SHORT)
+                id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_LONG)
             except ValueError:
                 continue
             else:
@@ -432,7 +394,7 @@ def apply_shaders(relationships, namespace=None):
             # Find all meshes matching this particular ID
             # Convert IDs to mesh + id, e.g. "nameOfNode.f[1:100]"
             meshes = list(".".join([mesh, faces])
-                          for mesh in lsAttr(AVALON_ID_ATTR_SHORT, value=mesh))
+                          for mesh in lsAttr(AVALON_ID_ATTR_LONG, value=mesh))
 
             if not meshes:
                 continue
