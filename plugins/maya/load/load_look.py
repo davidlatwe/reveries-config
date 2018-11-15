@@ -19,7 +19,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         "LookDev",
     ]
 
-    def process_reference(self, context, name, namespace, options):
+    def process_reference(self, context, name, namespace, group, options):
         import os
         import json
 

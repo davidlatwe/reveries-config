@@ -353,7 +353,7 @@ class ReferenceLoader(PackageLoader):
     def group_name(self, namespace, name):
         return _subset_group_name(namespace, name)
 
-    def process_reference(self, context, name, namespace, options):
+    def process_reference(self, context, name, namespace, group, options):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
