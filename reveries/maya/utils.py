@@ -405,6 +405,10 @@ def get_id(node):
     return _identifier.read_address(node)
 
 
+def get_id_status(node):
+    return _identifier.status(node)
+
+
 def set_transform_id():
     nodes = (set(cmds.ls(type="transform", long=True)) -
              set(cmds.ls(long=True, readOnly=True)) -
