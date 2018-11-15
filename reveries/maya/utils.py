@@ -332,7 +332,7 @@ class Identifier(object):
 
     __action_map = {
         Clean: (lambda n: None),
-        Duplicated: on_duplicate,
+        Duplicated: on_track,
         Untracked: on_track,
     }
 
