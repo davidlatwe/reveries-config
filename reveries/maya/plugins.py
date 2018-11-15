@@ -167,6 +167,16 @@ def parse_sub_containers(container):
     return containers
 
 
+def walk_containers(container):
+    """Recursively yield sub-containers
+    """
+    for con in parse_sub_containers(container):
+        yield con
+
+        for sub_con in walk_containers(con):
+            yield sub_con
+
+
 def get_interface_from_container(container):
     """Return interface node of container
 
