@@ -577,7 +577,7 @@ class SelectInvalidAction(pyblish.api.Action):
         self.log.info("Finding invalid nodes..")
         invalid = list()
         for instance in instances:
-            invalid_nodes = invalid_getter(plugin, instance)
+            invalid_nodes = invalid_getter(instance)
             if invalid_nodes:
                 if isinstance(invalid_nodes, (list, tuple)):
                     invalid.extend(invalid_nodes)
