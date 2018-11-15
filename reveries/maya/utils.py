@@ -345,7 +345,7 @@ class Identifier(object):
 
         """
         action = self.__action_map[state]
-        action(node)
+        action(self, node)
 
     def update_verifiers(self, nodes):
         """Update input nodes' verifier
