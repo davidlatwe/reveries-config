@@ -649,6 +649,8 @@ def connect_message(source, target, attrname, lock=True):
 
         source.message -> target.attrname
 
+    Pop warning if source or target node does not exists.
+
     Args:
         source (str): Message output node
         target (str): Message input node
