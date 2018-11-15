@@ -5,10 +5,7 @@ from maya import cmds, OpenMaya
 from avalon import maya, api as avalon
 
 from .. import utils
-from .lib import (
-    set_avalon_uuid,
-    set_scene_timeline,
-)
+from .lib import set_scene_timeline
 
 from . import PYMEL_MOCK_FLAG
 
@@ -38,24 +35,7 @@ def on_new(_):
 
 
 def on_save(_):
-    """Automatically add IDs to new nodes
-    Any transform of a mesh, without an exising ID,
-    is given one automatically on file save.
-    """
-
     avalon.logger.info("Running callback on save..")
-
-    nodes = (set(cmds.ls(type="mesh", long=True)) -
-             set(cmds.ls(long=True, readOnly=True)) -
-             set(cmds.ls(long=True, lockedNodes=True)))
-
-    transforms = cmds.listRelatives(list(nodes),
-                                    parent=True,
-                                    fullPath=True) or list()
-
-    # Add unique identifiers
-    for node in transforms:
-        set_avalon_uuid(node)
 
 
 def before_save(return_code, _):
