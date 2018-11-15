@@ -53,8 +53,8 @@ class ValidateAttributeNiceName(pyblish.api.InstancePlugin):
         RepairInvalid,
     ]
 
-    @staticmethod
-    def get_invalid(instance):
+    @classmethod
+    def get_invalid(cls, instance):
         from maya import cmds
 
         if instance.context.data["mayaVersion"] >= 20180300:

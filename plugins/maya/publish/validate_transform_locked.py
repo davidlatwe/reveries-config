@@ -38,8 +38,8 @@ class ValidateTranformLocked(pyblish.api.InstancePlugin):
         RepairInvalid,
     ]
 
-    @staticmethod
-    def get_invalid(instance):
+    @classmethod
+    def get_invalid(cls, instance):
 
         invalid = list()
 

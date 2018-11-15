@@ -54,8 +54,8 @@ class ValidateNoNullTransforms(pyblish.api.InstancePlugin):
         RepairInvalid,
     ]
 
-    @staticmethod
-    def get_invalid(instance):
+    @classmethod
+    def get_invalid(cls, instance):
         """Return invalid transforms in instance"""
 
         transforms = cmds.ls(instance, type='transform', long=True)

@@ -28,8 +28,8 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
         MayaSelectInvalidAction,
     ]
 
-    @staticmethod
-    def get_invalid(instance):
+    @classmethod
+    def get_invalid(cls, instance):
         """Returns the invalid transforms in the instance.
 
         This is the same as checking:

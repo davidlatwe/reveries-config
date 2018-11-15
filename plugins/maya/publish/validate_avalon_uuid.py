@@ -56,8 +56,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         RepairInvalid,
     ]
 
-    @staticmethod
-    def get_invalid_missing(instance, uuids=None):
+    @classmethod
+    def get_invalid_missing(cls, instance, uuids=None):
 
         if uuids is None:
             uuids = get_avalon_uuid(instance)
@@ -66,8 +66,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
         return invalid
 
-    @staticmethod
-    def get_invalid_duplicated(instance, uuids=None):
+    @classmethod
+    def get_invalid_duplicated(cls, instance, uuids=None):
 
         if uuids is None:
             uuids = get_avalon_uuid(instance)

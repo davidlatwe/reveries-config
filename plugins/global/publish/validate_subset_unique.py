@@ -18,8 +18,8 @@ class ValidateSubsetUnique(pyblish.api.ContextPlugin):
             self.log.error(msg)
             raise AssertionError(msg)
 
-    @staticmethod
-    def get_invalid(context):
+    @classmethod
+    def get_invalid(cls, context):
         invalid = list()
         subsets = dict()
 

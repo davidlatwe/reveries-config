@@ -24,8 +24,8 @@ class ValidateNoSmoothPreview(pyblish.api.InstancePlugin):
         SelectInvalid,
     ]
 
-    @staticmethod
-    def get_invalid(instance):
+    @classmethod
+    def get_invalid(cls, instance):
 
         invalid = list()
 
