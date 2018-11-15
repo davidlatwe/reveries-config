@@ -3,7 +3,7 @@ from collections import defaultdict
 from maya import cmds
 import pyblish.api
 
-from reveries.maya.utils import get_id, set_avalon_uuid
+from reveries.maya.utils import Identifier, get_id_status, set_avalon_uuid
 from reveries.plugins import RepairInstanceAction
 from reveries.maya.plugins import MayaSelectInvalidAction
 
@@ -36,7 +36,7 @@ def get_avalon_uuid(instance):
             continue
 
         # get uuid
-        uuids[get_id(node)].append(node)
+        uuids[get_id_status(node)].append(node)
 
     return uuids
 
@@ -62,7 +62,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         if uuids is None:
             uuids = get_avalon_uuid(instance)
 
-        invalid = uuids[None]
+        invalid = uuids.get(Identifier.Untracked, [])
 
         return invalid
 
@@ -72,8 +72,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         if uuids is None:
             uuids = get_avalon_uuid(instance)
 
-        invalid = [n for _id, nds in uuids.items()
-                   if len(nds) > 1 for n in nds]
+        invalid = [node for node in uuids.get(Identifier.Duplicated, [])
+                   if ":" not in node]
 
         return invalid
 
