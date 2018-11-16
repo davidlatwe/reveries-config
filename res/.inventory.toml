@@ -22,32 +22,3 @@ maya_cache_priority = 95
 maya_render_pool = "1---less_than_15minutes"
 maya_render_group = "maya2017vray36"
 maya_render_priority = 60
-
-
-# asset settings
-
-[[assets]]
-label = "characters"
-name = "characters"
-tasks = [ "lookdev", "model", "rig",]
-
-[[assets]]
-label = "props"
-name = "props"
-tasks = [ "lookdev", "model", "rig",]
-
-[[assets]]
-label = "sets"
-name = "sets"
-tasks = [ "lookdev", "model", "rig",]
-
-
-# film settings
-
-[[films]]
-label = "Shots"
-tasks = [ "animate", "layout", "setdress"]
-name = "Shots"
-edit_in = 101
-edit_out = 200
-
