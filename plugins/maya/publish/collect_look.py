@@ -23,6 +23,11 @@ class CollectLook(pyblish.api.InstancePlugin):
         shaders = cmds.listConnections(meshes, type="shadingEngine")
         upstream_nodes = cmds.listHistory(shaders, pruneDagObjects=True)
 
+        # Remove unwanted types
+        unwanted_types = ("groupId", "groupParts")
+        unwanted = set(cmds.ls(upstream_nodes, type=unwanted_types))
+        upstream_nodes = list(set(upstream_nodes) - unwanted)
+
         instance.data["dag_members"] = instance[:]
         instance[:] = upstream_nodes
 
