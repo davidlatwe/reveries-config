@@ -71,3 +71,20 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         self[:] = nodes
 
         self.interface = cmds.ls(nodes, type="shadingEngine")
+
+    def remove(self, container):
+        from maya import cmds
+
+        # Query assigned object
+        nodes = cmds.sets(container["objectName"], query=True)
+        shaders = cmds.ls(nodes, type="shadingEngine")
+        shaded = cmds.ls(cmds.sets(shaders, query=True), long=True)
+
+        # Remove
+        if not super(LookLoader, self).remove(container):
+            return
+
+        # Assign to lambert1
+        cmds.sets(shaded, forceElement="initialShadingGroup")
+
+        return True
