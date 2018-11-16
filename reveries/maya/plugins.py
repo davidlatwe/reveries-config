@@ -487,6 +487,8 @@ class ReferenceLoader(PackageLoader):
         except RuntimeError:
             pass
 
+        return True
+
 
 class ImportLoader(PackageLoader):
 
@@ -569,6 +571,8 @@ class ImportLoader(PackageLoader):
             pass
 
         cmds.namespace(removeNamespace=namespace, deleteNamespaceContent=True)
+
+        return True
 
 
 def _parse_members_data(entry_path):
@@ -941,6 +945,8 @@ class HierarchicalLoader(PackageLoader):
         if cmds.objExists(container["objectName"]):
             members = cmds.sets(container["objectName"], query=True) or []
             cmds.delete([container["objectName"]] + members)
+
+        return True
 
 
 class MayaSelectInvalidAction(SelectInvalidAction):
