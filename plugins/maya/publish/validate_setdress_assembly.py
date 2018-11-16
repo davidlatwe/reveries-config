@@ -3,7 +3,7 @@ import pyblish.api
 from maya import cmds
 
 
-class ValidateModelAssembly(pyblish.api.InstancePlugin):
+class ValidateSetdressAssembly(pyblish.api.InstancePlugin):
     """Ensure the content of the instance is grouped in a single hierarchy
 
     The instance must have a single root node containing all the content.
@@ -11,10 +11,10 @@ class ValidateModelAssembly(pyblish.api.InstancePlugin):
 
     """
 
-    label = "Model Assembly"
+    label = "Setdress Assembly"
     order = pyblish.api.ValidatorOrder + 0
     hosts = ["maya"]
-    families = ["reveries.model"]
+    families = ["reveries.setdress"]
 
     def process(self, instance):
 
@@ -24,4 +24,4 @@ class ValidateModelAssembly(pyblish.api.InstancePlugin):
             self.log.error(
                 "'%s' Must have a single root called 'ROOT'." % (instance)
             )
-            raise Exception("%s <Model Assembly> Failed." % instance)
+            raise Exception("%s <Setdress Assembly> Failed." % instance)

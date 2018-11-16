@@ -22,9 +22,9 @@ class ValidateRigAssembly(pyblish.api.InstancePlugin):
 
         root = cmds.ls(instance, assemblies=True)
 
-        if not (len(root) == 1 and root[0] == "RIG"):
+        if not (len(root) == 1 and root[0] == "ROOT"):
             self.log.error(
-                "'%s' Must have a single root called 'RIG'." % (instance)
+                "'%s' Must have a single root called 'ROOT'." % (instance)
             )
             raise Exception("%s <Rig Assembly> Failed." % instance)
 
@@ -34,7 +34,7 @@ class ValidateRigAssembly(pyblish.api.InstancePlugin):
 
         # Transforms should not be keyable
         if any(attr in keyables for attr in TRANSFORM_ATTRS):
-            self.log.error("Rig's assembly node 'RIG' should not have these "
+            self.log.error("Rig's assembly node 'ROOT' should not have these "
                            "attributes keyable: {}".format(TRANSFORM_ATTRS))
             raise RuntimeError
 
