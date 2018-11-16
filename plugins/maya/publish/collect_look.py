@@ -21,10 +21,12 @@ class CollectLook(pyblish.api.InstancePlugin):
 
         # Collect shading networks
         shaders = cmds.listConnections(meshes, type="shadingEngine")
-        upstream_nodes = cmds.listHistory(shaders, pruneDagObjects=True)
+        upstream_nodes = cmds.listHistory(shaders)
+        # (NOTE): The flag `pruneDagObjects` will also filter out
+        # `place3dTexture` type node.
 
         # Remove unwanted types
-        unwanted_types = ("groupId", "groupParts")
+        unwanted_types = ("groupId", "groupParts", "mesh")
         unwanted = set(cmds.ls(upstream_nodes, type=unwanted_types))
         upstream_nodes = list(set(upstream_nodes) - unwanted)
 
