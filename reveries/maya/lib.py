@@ -443,6 +443,14 @@ def lsAttr(attr, value=None):
     return lsAttrs({attr: value})
 
 
+_MPlug_type_map = {
+    float: "asDouble",
+    int: "asInt",
+    bool: "asBool",
+    str: "asString",
+}
+
+
 def lsAttrs(attrs):
     """Return nodes with the given attribute(s).
 
@@ -457,7 +465,22 @@ def lsAttrs(attrs):
 
     Returns a list.
 
+    Raise `TypeError` if value type not supported.
+    Currently supported value types are:
+        * `float`
+        * `int`
+        * `bool`
+        * `str`
+
     """
+
+    # Type check
+    for attr, value in attrs.items():
+        try:
+            _MPlug_type_map[type(value)]
+        except KeyError:
+            raise TypeError("Unsupported value type {0!r} on attribute {1!r}"
+                            "".format(type(value), attr))
 
     dep_fn = om.MFnDependencyNode()
     dag_fn = om.MFnDagNode()
@@ -483,13 +506,15 @@ def lsAttrs(attrs):
             fn_node = dep_fn.setObject(node)
             full_path_names = [fn_node.name()]
 
-        for attr in attrs:
+        for attr, value in attrs.items():
             try:
                 plug = fn_node.findPlug(attr, True)
-                if plug.asString() != attrs[attr]:
-                    break
             except RuntimeError:
                 break
+            else:
+                value_getter = getattr(plug, _MPlug_type_map[type(value)])
+                if value_getter() != value:
+                    break
         else:
             matches.update(full_path_names)
 
