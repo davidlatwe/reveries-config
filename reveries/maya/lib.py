@@ -366,7 +366,7 @@ def serialise_shaders(nodes):
     return shader_by_id
 
 
-def apply_shaders(relationships, namespace=None):
+def apply_shaders(relationships, namespace=None, target_namespace=None):
     """Given a dictionary of `relationships`, apply shaders to meshes
 
     Arguments:
@@ -394,7 +394,9 @@ def apply_shaders(relationships, namespace=None):
             # Find all meshes matching this particular ID
             # Convert IDs to mesh + id, e.g. "nameOfNode.f[1:100]"
             meshes = list(".".join([mesh, faces])
-                          for mesh in lsAttr(AVALON_ID_ATTR_LONG, value=mesh))
+                          for mesh in lsAttr(AVALON_ID_ATTR_LONG,
+                                             value=mesh,
+                                             namespace=target_namespace))
 
             if not meshes:
                 continue
@@ -422,13 +424,14 @@ def hasAttr(node, attr):
     return cmds.objExists(node + "." + attr)
 
 
-def lsAttr(attr, value=None):
+def lsAttr(attr, value=None, namespace=None):
     """Return nodes matching `key` and `value`
 
     Arguments:
         attr (str): Name of Maya attribute
         value (object, optional): Value of attribute. If none
             is provided, return all nodes with this attribute.
+        namespace (str): Search under this namespace, default all.
 
     Example:
         >> lsAttr("id", "myId")
@@ -437,10 +440,13 @@ def lsAttr(attr, value=None):
         ["myNode", "myOtherNode"]
 
     """
+    namespace = namespace or ""
 
     if value is None:
-        return cmds.ls("*.%s" % attr)
-    return lsAttrs({attr: value})
+        return cmds.ls("{0}*.{1}".format(namespace, attr),
+                       long=True,
+                       recursive=True)
+    return lsAttrs({attr: value}, namespace=namespace)
 
 
 _MPlug_type_map = {
@@ -451,7 +457,7 @@ _MPlug_type_map = {
 }
 
 
-def lsAttrs(attrs):
+def lsAttrs(attrs, namespace=None):
     """Return nodes with the given attribute(s).
 
     Arguments:
@@ -473,6 +479,7 @@ def lsAttrs(attrs):
         * `str`
 
     """
+    namespace = namespace or ""
 
     # Type check
     for attr, value in attrs.items():
@@ -489,7 +496,7 @@ def lsAttrs(attrs):
     first_attr = attrs.iterkeys().next()
 
     try:
-        selection_list.add("*.{0}".format(first_attr),
+        selection_list.add("{0}*.{1}".format(namespace, first_attr),
                            searchChildNamespaces=True)
     except RuntimeError as e:
         if str(e).endswith("Object does not exist"):
