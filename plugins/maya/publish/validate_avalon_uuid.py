@@ -5,7 +5,7 @@ import pyblish.api
 
 from reveries.maya.utils import Identifier, get_id_status, set_avalon_uuid
 from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidAction, ls_vessels
 
 
 class SelectMissing(MayaSelectInvalidAction):
@@ -31,8 +31,15 @@ def get_avalon_uuid(instance):
     """
     uuids = defaultdict(list)
 
+    group_nodes = list(ls_vessels())
+
     for node in instance:
         if not cmds.nodeType(node) == "transform":
+            continue
+
+        if node in group_nodes:
+            # Subset groups are auto generated on reference, meaningless
+            # to have id.
             continue
 
         # get uuid
