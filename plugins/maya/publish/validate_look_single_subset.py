@@ -1,8 +1,5 @@
 
 import pyblish.api
-from avalon.pipeline import AVALON_CONTAINER_ID
-from maya import cmds
-from reveries.maya import lib
 
 
 class ValidateLookSingleSubset(pyblish.api.InstancePlugin):
@@ -19,18 +16,7 @@ class ValidateLookSingleSubset(pyblish.api.InstancePlugin):
     families = ["reveries.look"]
 
     def process(self, instance):
-        paired = list()
-        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
-
-        meshes = cmds.ls(instance.data["dag_members"],
-                         visible=True,
-                         noIntermediate=True,
-                         type="mesh")
-
-        for mesh in meshes:
-            for set_ in cmds.listSets(object=mesh):
-                if set_ in containers and set_ not in paired:
-                    paired.append(set_)
+        paired = instance.data["paired_container"]
 
         if not len(paired):
             raise Exception("No model subset found.")

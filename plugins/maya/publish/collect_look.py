@@ -1,7 +1,9 @@
 
 import pyblish.api
 import avalon.io
+from avalon.pipeline import AVALON_CONTAINER_ID
 from maya import cmds
+from reveries.maya import lib
 
 
 class CollectLook(pyblish.api.InstancePlugin):
@@ -18,6 +20,15 @@ class CollectLook(pyblish.api.InstancePlugin):
                          visible=True,
                          noIntermediate=True,
                          type="mesh")
+
+        # Collect paired model container
+        paired = list()
+        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
+        for mesh in meshes:
+            for set_ in cmds.listSets(object=mesh):
+                if set_ in containers and set_ not in paired:
+                    paired.append(set_)
+        instance.data["paired_container"] = paired
 
         # Collect shading networks
         shaders = cmds.listConnections(meshes, type="shadingEngine")
