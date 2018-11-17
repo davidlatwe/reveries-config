@@ -99,6 +99,11 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             transform_id_map = self.transform_by_id(nodes)
 
             for address in sub_matrix:
-                transform = transform_id_map.get(address)
+                if address == "GROUP":
+                    name, matrix = sub_matrix[address].popitem()
+                    transform = full_NS + ":" + name
+                else:
+                    transform = transform_id_map.get(address)
+                    matrix = sub_matrix[address]
 
-                yield transform, sub_matrix[address]
+                yield transform, matrix

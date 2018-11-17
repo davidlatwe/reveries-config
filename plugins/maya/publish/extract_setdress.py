@@ -5,7 +5,11 @@ import pyblish.api
 from maya import cmds
 from reveries.plugins import PackageExtractor
 from reveries.maya import io, lib, utils
-from reveries.maya.plugins import walk_containers
+from reveries.maya.plugins import (
+    walk_containers,
+    get_interface_from_container,
+    get_group_from_interface,
+)
 from reveries.lib import DEFAULT_MATRIX, matrix_equals
 
 
@@ -47,6 +51,21 @@ class ExtractSetDress(PackageExtractor):
 
             address = utils.get_id(transform)
             data["subMatrix"][namespace][address] = matrix
+
+        # Collect subseet group node's matrix
+        interface = get_interface_from_container(container["objectName"])
+        group = get_group_from_interface(interface)
+
+        matrix = cmds.xform(group,
+                            query=True,
+                            matrix=True,
+                            objectSpace=True)
+
+        if matrix_equals(matrix, DEFAULT_MATRIX):
+            return
+
+        name = group.rsplit(":", 1)[-1]
+        data["subMatrix"][namespace]["GROUP"] = {name: matrix}
 
     def _parse_sub_matrix(self):
         for data in self.data["setMembersData"]:
