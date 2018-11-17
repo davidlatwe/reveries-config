@@ -1,27 +1,40 @@
 
 import pyblish.api
+from avalon.pipeline import AVALON_CONTAINER_ID
 from maya import cmds
+from reveries.maya import lib
 
 
-class ValidateLookAssembly(pyblish.api.InstancePlugin):
-    """Ensure the content of the instance is grouped in a single hierarchy
+class ValidateLookSingleSubset(pyblish.api.InstancePlugin):
+    """Ensure one and only one model subset in look instance
 
-    The instance must have a single root node containing all the content.
-    This root node *must* be a top group in the outliner.
+    One look subset must pair to one and only one model subset, can not
+    publish look on multiple subsets.
 
     """
 
-    label = "Look Assembly"
+    label = "Look On Single Subset"
     order = pyblish.api.ValidatorOrder + 0
     hosts = ["maya"]
     families = ["reveries.look"]
 
     def process(self, instance):
+        paired = list()
+        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
 
-        root = cmds.ls(instance.data["dag_members"], assemblies=True)
+        meshes = cmds.ls(instance.data["dag_members"],
+                         visible=True,
+                         noIntermediate=True,
+                         type="mesh")
 
-        if not len(root) == 1:
-            self.log.error(
-                "'%s' Must have a single root." % (instance)
-            )
-            raise Exception("%s <Look Assembly> Failed." % instance)
+        for mesh in meshes:
+            for set_ in cmds.listSets(object=mesh):
+                if set_ in containers and set_ not in paired:
+                    paired.append(set_)
+
+        if not len(paired):
+            raise Exception("No model subset found.")
+
+        if len(paired) > 1:
+            raise Exception("One look instance can only pair to "
+                            "one model subset.")
