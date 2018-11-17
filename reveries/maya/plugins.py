@@ -736,6 +736,8 @@ class HierarchicalLoader(PackageLoader):
                               groupName=group_name,
                               typ="Alembic")
 
+        update_id_on_import(hierarchy)
+
         # Load sub-subsets
         sub_containers = []
         sub_interfaces = []
@@ -862,9 +864,12 @@ class HierarchicalLoader(PackageLoader):
         load_plugin("Alembic")
 
         # Update setdress alembic hierarchy
-        cmds.file(entry_path,
-                  loadReference=reference_node,
-                  type="Alembic")
+        hierarchy = cmds.file(entry_path,
+                              loadReference=reference_node,
+                              returnNewNodes=True,
+                              type="Alembic")
+
+        update_id_on_import(hierarchy)
 
         # Get current members data
         current_members = dict()
