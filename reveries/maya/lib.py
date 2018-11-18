@@ -449,12 +449,18 @@ def lsAttr(attr, value=None, namespace=None):
     return lsAttrs({attr: value}, namespace=namespace)
 
 
-_MPlug_type_map = {
-    float: "asDouble",
-    int: "asInt",
-    bool: "asBool",
-    str: "asString",
-}
+def _mplug_type_map(value):
+    _map = {
+        float: "asDouble",
+        int: "asInt",
+        bool: "asBool",
+    }
+    try:
+        return _map[type(value)]
+    except KeyError:
+        if isinstance(value, string_types):
+            return "asString"
+        return None
 
 
 def lsAttrs(attrs, namespace=None):
@@ -483,9 +489,7 @@ def lsAttrs(attrs, namespace=None):
 
     # Type check
     for attr, value in attrs.items():
-        try:
-            _MPlug_type_map[type(value)]
-        except KeyError:
+        if _mplug_type_map(value) is None:
             raise TypeError("Unsupported value type {0!r} on attribute {1!r}"
                             "".format(type(value), attr))
 
@@ -519,7 +523,7 @@ def lsAttrs(attrs, namespace=None):
             except RuntimeError:
                 break
             else:
-                value_getter = getattr(plug, _MPlug_type_map[type(value)])
+                value_getter = getattr(plug, _mplug_type_map(value))
                 if value_getter() != value:
                     break
         else:
