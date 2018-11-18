@@ -25,7 +25,8 @@ class CollectLook(pyblish.api.InstancePlugin):
         paired = list()
         containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
         for mesh in meshes:
-            for set_ in cmds.listSets(object=mesh):
+            transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
+            for set_ in cmds.listSets(object=transform):
                 if set_ in containers and set_ not in paired:
                     paired.append(set_)
         instance.data["paired_container"] = paired
