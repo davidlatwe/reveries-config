@@ -366,12 +366,14 @@ def serialise_shaders(nodes):
     return shader_by_id
 
 
-def apply_shaders(relationships, namespace=None, target_namespace=None):
+def apply_shaders(relationships, namespace=None, target_namespaces=None):
     """Given a dictionary of `relationships`, apply shaders to meshes
 
     Arguments:
         relationships (avalon-core:shaders-1.0): A dictionary of
             shaders and how they relate to meshes.
+        namespace (str, optional): namespace that need to apply to shaders
+        target_namespaces (list, optional): model namespaces
 
     """
 
@@ -383,6 +385,8 @@ def apply_shaders(relationships, namespace=None, target_namespace=None):
             for shader in relationships
         }
 
+    target_namespaces = target_namespaces or [None]
+
     for shader, ids in relationships.items():
         print("Looking for '%s'.." % shader)
         shader = next(iter(cmds.ls(shader)), None)
@@ -391,18 +395,19 @@ def apply_shaders(relationships, namespace=None, target_namespace=None):
         for id_ in ids:
             mesh, faces = (id_.rsplit(".", 1) + [""])[:2]
 
-            # Find all meshes matching this particular ID
-            # Convert IDs to mesh + id, e.g. "nameOfNode.f[1:100]"
-            meshes = list(".".join([mesh, faces])
-                          for mesh in lsAttr(AVALON_ID_ATTR_LONG,
-                                             value=mesh,
-                                             namespace=target_namespace))
+            for target_namespace in target_namespaces:
+                # Find all meshes matching this particular ID
+                # Convert IDs to mesh + id, e.g. "nameOfNode.f[1:100]"
+                meshes = list(".".join([mesh, faces])
+                              for mesh in lsAttr(AVALON_ID_ATTR_LONG,
+                                                 value=mesh,
+                                                 namespace=target_namespace))
 
-            if not meshes:
-                continue
+                if not meshes:
+                    continue
 
-            print("Assigning '%s' to '%s'" % (shader, ", ".join(meshes)))
-            cmds.sets(meshes, forceElement=shader)
+                print("Assigning '%s' to '%s'" % (shader, ", ".join(meshes)))
+                cmds.sets(meshes, forceElement=shader)
 
 
 def hasAttr(node, attr):

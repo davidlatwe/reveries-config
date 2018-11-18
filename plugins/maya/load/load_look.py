@@ -20,11 +20,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
     ]
 
     def process_reference(self, context, name, namespace, group, options):
-        import os
-        import json
-
         from maya import cmds
-        from reveries.maya import lib
 
         representation = context["representation"]
 
@@ -51,26 +47,27 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
             namespace = nodes[0].split(":", 1)[0]
 
         # Assign shaders
-        #
-        relationship = self.file_path(representation["data"]["link_fname"])
-
-        # Expand $AVALON_PROJECT and friends, if used
-        relationship = os.path.expandvars(relationship)
-
-        if not os.path.isfile(relationship):
-            self.log.warning("Look development asset "
-                             "has no relationship data.\n"
-                             "{!r} was not found".format(relationship))
-            return nodes
-
-        with open(relationship) as f:
-            relationships = json.load(f)
-
-        lib.apply_shaders(relationships["shader_by_id"], namespace)
+        self._assign_shaders(representation, namespace)
 
         self[:] = nodes
 
         self.interface = cmds.ls(nodes, type="shadingEngine")
+
+    def update(self, container, representation):
+        from maya import cmds
+
+        # Assign to lambert1
+        nodes = cmds.sets(container["objectName"], query=True)
+        shaders = cmds.ls(nodes, type="shadingEngine")
+        shaded = cmds.ls(cmds.sets(shaders, query=True), long=True)
+        cmds.sets(shaded, forceElement="initialShadingGroup")
+
+        # Update
+        super(LookLoader, self).update(container, representation)
+
+        # Reassign shaders
+        namespace = container["namespace"][1:]
+        self._assign_shaders(representation, namespace)
 
     def remove(self, container):
         from maya import cmds
@@ -88,3 +85,38 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         cmds.sets(shaded, forceElement="initialShadingGroup")
 
         return True
+
+    def _assign_shaders(self, representation, namespace):
+        import os
+        import json
+        from reveries.maya import lib, plugins
+
+        relationship = self.file_path(representation["data"]["link_fname"])
+        # Expand $AVALON_PROJECT and friends, if used
+        relationship = os.path.expandvars(relationship)
+
+        if not os.path.isfile(relationship):
+            self.log.warning("Look development asset "
+                             "has no relationship data.\n"
+                             "{!r} was not found".format(relationship))
+            return
+
+        # Load map
+        with open(relationship) as f:
+            relationships = json.load(f)
+
+        # Apply shader to target subset by namespace
+        target_namespaces = list()
+        target_subset = representation["data"]["target_subset"]
+
+        interfaces = lib.lsAttrs({
+            "id": plugins.AVALON_CONTAINER_INTERFACE_ID,
+            "subsetId": target_subset})
+        for interface in interfaces:
+            target_namespaces.append(
+                plugins.parse_interface(interface)["namespace"] + ":"
+            )
+
+        lib.apply_shaders(relationships["shader_by_id"],
+                          namespace,
+                          target_namespaces)
