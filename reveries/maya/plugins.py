@@ -426,7 +426,7 @@ class ReferenceLoader(PackageLoader):
         file_type = representation["name"]
         if file_type == "FBXCache":
             file_type = "FBX"
-        elif file_type == "GPUCache":
+        elif file_type in ("GPUCache", "LookDev"):
             file_type = "MayaAscii"
 
         parents = avalon.io.parenthood(representation)
