@@ -1,7 +1,6 @@
 
 import os
 import json
-from collections import OrderedDict
 
 import avalon.api
 import avalon.io
@@ -95,6 +94,7 @@ def subset_interfacing(name,
         interface (str): Name of interface assembly
 
     """
+    from collections import OrderedDict
     from maya import cmds
 
     interface = cmds.sets(nodes,
