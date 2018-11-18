@@ -103,8 +103,9 @@ def subset_interfacing(name,
     data = OrderedDict()
     data["id"] = AVALON_CONTAINER_INTERFACE_ID
     data["asset"] = context["asset"]["name"]
-    data["name"] = name
+    data["name"] = name  # subset name
     data["namespace"] = namespace
+    data["subsetId"] = str(context["subset"]["_id"])
     data["version"] = context["version"]["name"]
     data["versionId"] = str(context["version"]["_id"])
     data["representation"] = context["representation"]["name"]
@@ -284,7 +285,11 @@ def update_container(container, asset, subset, version, representation):
         interface = cmds.rename(
             interface, _container_naming(namespace, name, "PORT"))
 
-    # Update interface data: version, version id, representation name
+    # Update interface data:
+    #   subset id,
+    #   version, version id,
+    #   representation name
+    cmds.setAttr(interface + ".subsetId", subset["_id"], type="string")
     cmds.setAttr(interface + ".version", version["name"])
     cmds.setAttr(interface + ".versionId",
                  version["_id"],
