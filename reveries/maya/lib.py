@@ -520,12 +520,11 @@ def lsAttrs(attrs, namespace=None):
         for attr, value in attrs.items():
             try:
                 plug = fn_node.findPlug(attr, True)
-            except RuntimeError:
-                break
-            else:
                 value_getter = getattr(plug, _mplug_type_map(value))
                 if value_getter() != value:
                     break
+            except RuntimeError:
+                break
         else:
             matches.update(full_path_names)
 
