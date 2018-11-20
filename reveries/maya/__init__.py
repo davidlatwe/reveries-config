@@ -25,6 +25,7 @@ log = logging.getLogger("reveries.maya")
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "maya", "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "maya", "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "maya", "create")
+INVENTORY_PATH = os.path.join(PLUGINS_DIR, "maya", "inventory")
 
 PYMEL_MOCK_FLAG = os.path.join(os.environ["MAYA_APP_DIR"], "pymel.mock")
 
@@ -38,6 +39,7 @@ def install():  # pragma: no cover
     pyblish.register_plugin_path(PUBLISH_PATH)
     avalon.register_plugin_path(avalon.Loader, LOAD_PATH)
     avalon.register_plugin_path(avalon.Creator, CREATE_PATH)
+    avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
 
     # install callbacks
     log.info("Installing callbacks ... ")
