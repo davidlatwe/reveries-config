@@ -6,6 +6,7 @@ from avalon import maya, api as avalon
 
 from .. import utils
 from .lib import set_scene_timeline
+from .vendor import sticker
 
 from . import PYMEL_MOCK_FLAG
 
@@ -32,6 +33,10 @@ def on_init(_):
 
 def on_new(_):
     set_scene_timeline()
+
+
+def on_open(_):
+    sticker.reveal()  # Show custom icon
 
 
 def on_save(_):

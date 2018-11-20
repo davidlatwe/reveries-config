@@ -43,6 +43,7 @@ def install():  # pragma: no cover
     log.info("Installing callbacks ... ")
     avalon.on("init", callbacks.on_init)
     avalon.on("new", callbacks.on_new)
+    avalon.on("open", callbacks.on_open)
     avalon.on("save", callbacks.on_save)
     avalon.before("save", callbacks.before_save)
 

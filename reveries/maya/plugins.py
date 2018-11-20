@@ -8,6 +8,8 @@ import avalon.maya
 
 from . import lib
 
+from .vendor import sticker
+
 from .capsule import namespaced
 from .utils import update_id_on_import
 from ..utils import get_representation_path_
@@ -16,6 +18,8 @@ from ..plugins import (
     message_box_error,
     SelectInvalidAction,
 )
+
+from .. import REVERIES_ICONS
 
 
 AVALON_PORTS = ":AVALON_PORTS"
@@ -322,6 +326,7 @@ def _subset_containerising(name, namespace, nodes, ports, context,
     """
     from avalon.maya.pipeline import containerise
     from reveries.maya.lib import connect_message
+    from maya import cmds
 
     interface = subset_interfacing(name=name,
                                    namespace=namespace,
@@ -337,6 +342,16 @@ def _subset_containerising(name, namespace, nodes, ports, context,
     #           -> container.message
     connect_message(group_name, interface, AVALON_VESSEL_ATTR)
     connect_message(container, interface, AVALON_CONTAINER_ATTR)
+
+    # Apply icons
+    container_icon = os.path.join(REVERIES_ICONS, "container-01.png")
+    interface_icon = os.path.join(REVERIES_ICONS, "interface-01.png")
+    sticker.put(container, container_icon)
+    sticker.put(interface, interface_icon)
+
+    if cmds.objExists(group_name):
+        package_icon = os.path.join(REVERIES_ICONS, "package-01.png")
+        sticker.put(group_name, package_icon)
 
     return container
 
