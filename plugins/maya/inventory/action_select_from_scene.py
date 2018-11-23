@@ -17,7 +17,7 @@ class SelectFromScene(avalon.api.InventoryAction):
     def process(self, containers):
 
         containers = avalon.maya.ls()
-        container_names = list(c["objectName"] for c in containers)
+        container_names = set(c["objectName"] for c in containers)
 
         selected = cmds.ls(sl=True)
         selected_items = set()
