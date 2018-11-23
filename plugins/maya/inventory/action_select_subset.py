@@ -10,7 +10,7 @@ from reveries.maya.plugins import (
 class SelectSubset(avalon.api.InventoryAction):
 
     label = "Select Subset"
-    icon = "mouse-pointer"
+    icon = "cube"
     color = "#d8d8d8"
 
     def process(self, containers):
