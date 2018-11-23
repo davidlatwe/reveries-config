@@ -26,14 +26,17 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        try:
+        if entry_path in cmds.file(query=True, reference=True):
+
             existing_reference = cmds.file(entry_path,
                                            query=True,
                                            referenceNode=True)
-        except RuntimeError as e:
-            if e.message.rstrip() != "Cannot find the scene file.":
-                raise
 
+            self.log.info("Reusing existing lookdev..")
+            nodes = cmds.referenceQuery(existing_reference, nodes=True)
+            namespace = nodes[0].split(":", 1)[0]
+
+        else:
             self.log.info("Loading lookdev for the first time..")
             nodes = cmds.file(
                 entry_path,
@@ -41,10 +44,6 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
                 reference=True,
                 returnNewNodes=True
             )
-        else:
-            self.log.info("Reusing existing lookdev..")
-            nodes = cmds.referenceQuery(existing_reference, nodes=True)
-            namespace = nodes[0].split(":", 1)[0]
 
         # Assign shaders
         self._assign_shaders(representation, namespace)
