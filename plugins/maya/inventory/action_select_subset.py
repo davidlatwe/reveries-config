@@ -17,6 +17,9 @@ class SelectSubset(avalon.api.InventoryAction):
         groups = list()
 
         for container in containers:
+            if container.get("loader") == "LookLoader":
+                continue
+
             interface = get_interface_from_container(container["objectName"])
             group = get_group_from_interface(interface)
             groups.append(group)
