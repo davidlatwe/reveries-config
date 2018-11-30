@@ -121,6 +121,8 @@ def subset_interfacing(name,
     main_interface = cmds.ls(AVALON_PORTS, type="objectSet")
     if not main_interface:
         main_interface = cmds.sets(empty=True, name=AVALON_PORTS)
+        _icon = os.path.join(REVERIES_ICONS, "interface_main-01.png")
+        sticker.put(main_interface, _icon)
     else:
         main_interface = main_interface[0]
 
@@ -324,7 +326,7 @@ def _subset_containerising(name, namespace, nodes, ports, context,
                            cls_name, group_name):
     """Containerise loaded subset and build interface
     """
-    from avalon.maya.pipeline import containerise
+    from avalon.maya.pipeline import containerise, AVALON_CONTAINERS
     from reveries.maya.lib import connect_message
     from maya import cmds
 
@@ -338,6 +340,11 @@ def _subset_containerising(name, namespace, nodes, ports, context,
                              nodes=nodes,
                              context=context,
                              loader=cls_name)
+    # Put icon to main container
+    main_container = cmds.ls(AVALON_CONTAINERS, type="objectSet")[0]
+    _icon = os.path.join(REVERIES_ICONS, "container_main-01.png")
+    sticker.put(main_container, _icon)
+
     # interface -> top_group.message
     #           -> container.message
     connect_message(group_name, interface, AVALON_VESSEL_ATTR)
