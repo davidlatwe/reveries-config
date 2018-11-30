@@ -8,8 +8,8 @@ from reveries.maya.capsule import maintained_selection
 
 class SelectAssigned(avalon.api.InventoryAction):
 
-    label = "Select Assigned"
-    icon = "hand-o-right"
+    label = "Look Assigned"
+    icon = "eye"
     color = "#d8d8d8"
 
     @staticmethod

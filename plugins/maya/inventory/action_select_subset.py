@@ -10,8 +10,9 @@ from reveries.maya.plugins import (
 class SelectSubset(avalon.api.InventoryAction):
 
     label = "Select Subset"
-    icon = "cube"
+    icon = "hand-o-down"
     color = "#d8d8d8"
+    order = 99
 
     def process(self, containers):
         groups = list()

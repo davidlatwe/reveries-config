@@ -7,8 +7,9 @@ from maya import cmds
 class SelectFromScene(avalon.api.InventoryAction):
 
     label = "Select From Scene"
-    icon = "hand-o-down"
-    color = "#d8d8d8"
+    icon = "hand-o-up"
+    color = "#66aa66"
+    order = 100
 
     @staticmethod
     def is_compatible(container):
