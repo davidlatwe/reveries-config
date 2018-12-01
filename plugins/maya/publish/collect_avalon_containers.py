@@ -13,7 +13,9 @@ class CollectAvalonContainers(pyblish.api.ContextPlugin):
         root_containers = dict()
         sub_containers = dict()
 
-        for container in avalon.maya.ls():
+        containers = avalon.maya.pipeline.update_hierarchy(avalon.maya.ls())
+
+        for container in containers:
 
             key = container["objectName"]
 
