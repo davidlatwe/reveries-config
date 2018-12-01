@@ -260,8 +260,16 @@ def update_container(container, asset, subset, version, representation):
     if not origin_asset == update_asset:
         asset_changed = True
         # Update namespace
-        new_namespace = _unique_root_namespace(update_asset)
-        cmds.namespace(parent=":", rename=(namespace, new_namespace[1:]))
+        parent_namespace = namespace.rsplit(":", 1)[0] + ":"
+        with namespaced(parent_namespace, new=False) as parent_namespace:
+            parent_namespace = parent_namespace[1:]
+
+            new_namespace = _unique_root_namespace(update_asset,
+                                                   parent_namespace)
+            cmds.namespace(parent=":" + parent_namespace,
+                           rename=(namespace.rsplit(":", 1)[-1],
+                                   new_namespace[1:].rsplit(":", 1)[-1]))
+
         namespace = new_namespace
         # Update data
         cmds.setAttr(container + ".namespace", namespace, type="string")
@@ -363,11 +371,11 @@ def _subset_containerising(name, namespace, nodes, ports, context,
     return container
 
 
-def _unique_root_namespace(asset_name):
+def _unique_root_namespace(asset_name, parent_namespace=""):
     from avalon.maya import lib
     unique = lib.unique_namespace(
         asset_name + "_",
-        prefix="_" if asset_name[0].isdigit() else "",
+        prefix=parent_namespace + ("_" if asset_name[0].isdigit() else ""),
         suffix="_",
     )
     return ":" + unique  # Ensure in root
