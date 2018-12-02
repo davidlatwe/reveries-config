@@ -269,8 +269,13 @@ def maintained_selection():
 
 
 @contextlib.contextmanager
-def nodes_publishing(nodes):
-    """Publish nodes with integrity lock and restore lock state on exit
+def nodes_locker(nodes, lock=True, lockName=True, lockUnpublished=True):
+    """Lock or unlock nodes and restore lock state on exit
+
+    For node publishing, suggest using:
+        - lock=False
+        - lockName=True
+        - lockUnpublished=True
 
     This will lock nodes' all attributes and names, but not locking nodes
     entirely, so still able to add custom attributes and nodes will remain
@@ -291,11 +296,10 @@ def nodes_publishing(nodes):
         #                      will raise RuntimeError and nothing will
         #                      be locked. But if this flag supplied, it
         #                      will silently ignore components.
-
         cmds.lockNode(nodes,
-                      lock=False,
-                      lockName=True,
-                      lockUnpublished=True,
+                      lock=lock,
+                      lockName=lockName,
+                      lockUnpublished=lockUnpublished,
                       ignoreComponents=True)
         yield
 
