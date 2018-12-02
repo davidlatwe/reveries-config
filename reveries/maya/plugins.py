@@ -238,6 +238,7 @@ def get_group_from_interface(interface):
 def update_container(container, asset, subset, version, representation):
     """
     """
+    from reveries.maya.capsule import nodes_locker
     import maya.cmds as cmds
 
     asset_changed = False
@@ -298,6 +299,13 @@ def update_container(container, asset, subset, version, representation):
         # Rename interface
         interface = cmds.rename(
             interface, _container_naming(namespace, name, "PORT"))
+        # Rename reference node
+        reference_node = next((n for n in cmds.sets(container, query=True)
+                              if cmds.nodeType(n) == "reference"), None)
+        if reference_node:
+            # Unlock reference node
+            with nodes_locker(reference_node, False, False, False):
+                cmds.rename(reference_node, namespace + "RN")
 
     # Update interface data:
     #   subset id,
