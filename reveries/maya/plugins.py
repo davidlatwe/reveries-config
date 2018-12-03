@@ -344,7 +344,21 @@ def _subset_containerising(name, namespace, nodes, ports, context,
     """
     from avalon.maya.pipeline import containerise, AVALON_CONTAINERS
     from reveries.maya.lib import connect_message
+    from reveries.maya.capsule import nodes_locker
     from maya import cmds
+
+    reference_node = next(iter(cmds.ls(nodes, type="reference")), None)
+    if reference_node:
+        # Unlock reference node
+        with nodes_locker(reference_node, False, False, False):
+            # Save current namespace
+            cmds.addAttr(reference_node,
+                         longName="originNamespace",
+                         dataType="string")
+            cmds.setAttr(reference_node + ".originNamespace",
+                         namespace,
+                         type="string",
+                         lock=True)
 
     interface = subset_interfacing(name=name,
                                    namespace=namespace,
