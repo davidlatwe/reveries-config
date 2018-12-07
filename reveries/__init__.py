@@ -21,6 +21,7 @@ PYBLISH_PATH = os.path.dirname(pyblish.__file__)
 PYBLISH_DEFAULT = os.path.join(PYBLISH_PATH, "plugins")
 
 CONTRACTOR_PATH = os.path.join(PLUGINS_DIR, "global", "contractor")
+LAUNCHER_ACTION_PATH = os.path.join(PLUGINS_DIR, "global", "launcher")
 
 REVERIES_ICONS = os.path.join("$REVERIES_PATH", "res", "icons")
 
@@ -52,3 +53,7 @@ def uninstall():  # pragma: no cover
     pyblish.register_plugin_path(PYBLISH_DEFAULT)
 
     self.installed = False
+
+
+def register_launcher_actions():
+    avalon.register_plugin_path(avalon.Action, LAUNCHER_ACTION_PATH)
