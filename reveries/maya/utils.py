@@ -1,4 +1,5 @@
 
+import os
 import uuid
 import hashlib
 
@@ -421,3 +422,9 @@ def set_transform_id():
 
 def update_id_on_import(nodes):
     _identifier.update_verifiers(nodes)
+
+
+def generate_container_id():
+    hasher = hashlib.sha1()
+    hasher.update(os.urandom(40))
+    return "CON" + hasher.hexdigest()

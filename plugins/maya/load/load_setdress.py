@@ -91,9 +91,10 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
     def parse_sub_matrix(self, data):
         import maya.cmds as cmds
 
-        current_NS = cmds.namespaceInfo(currentNamespace=True)
-        for namespace, sub_matrix in data["subMatrix"].items():
-            full_NS = current_NS + ":" + namespace
+        current_NS = cmds.namespaceInfo(currentNamespace=True,
+                                        absoluteName=True)
+        for container_id, sub_matrix in data["subMatrix"].items():
+            full_NS = self.namespace_by_id(container_id, current_NS)
             nodes = cmds.namespaceInfo(full_NS, listOnlyDependencyNodes=True)
 
             transform_id_map = self.transform_by_id(nodes)

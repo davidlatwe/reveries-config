@@ -11,8 +11,13 @@ from . import lib
 from .vendor import sticker
 
 from .capsule import namespaced
-from .utils import update_id_on_import
+from .utils import (
+    update_id_on_import,
+    generate_container_id,
+)
+
 from ..utils import get_representation_path_
+
 from ..plugins import (
     PackageLoader,
     message_box_error,
@@ -78,6 +83,7 @@ def ls_vessels():
 
 def subset_interfacing(name,
                        namespace,
+                       container_id,
                        nodes,
                        context,
                        loader,
@@ -90,6 +96,7 @@ def subset_interfacing(name,
     Arguments:
         name (str): Name of resulting assembly
         namespace (str): Namespace under which to host interface
+        container_id (str): Container UUID
         nodes (list): Long names of nodes for interfacing
         context (dict): Asset information
         suffix (str, optional): Suffix of interface, defaults to `_PORT`.
@@ -109,6 +116,7 @@ def subset_interfacing(name,
     data["asset"] = context["asset"]["name"]
     data["name"] = name  # subset name
     data["namespace"] = namespace
+    data["containerId"] = container_id
     data["subsetId"] = str(context["subset"]["_id"])
     data["version"] = context["version"]["name"]
     data["versionId"] = str(context["version"]["_id"])
@@ -338,30 +346,23 @@ def _env_embedded_path(file_path):
     return file_path
 
 
-def _subset_containerising(name, namespace, nodes, ports, context,
-                           cls_name, group_name):
+def _subset_containerising(name,
+                           namespace,
+                           container_id,
+                           nodes,
+                           ports,
+                           context,
+                           cls_name,
+                           group_name):
     """Containerise loaded subset and build interface
     """
     from avalon.maya.pipeline import containerise, AVALON_CONTAINERS
     from reveries.maya.lib import connect_message
-    from reveries.maya.capsule import nodes_locker
     from maya import cmds
-
-    reference_node = next(iter(cmds.ls(nodes, type="reference")), None)
-    if reference_node:
-        # Unlock reference node
-        with nodes_locker(reference_node, False, False, False):
-            # Save current namespace
-            cmds.addAttr(reference_node,
-                         longName="originNamespace",
-                         dataType="string")
-            cmds.setAttr(reference_node + ".originNamespace",
-                         namespace,
-                         type="string",
-                         lock=True)
 
     interface = subset_interfacing(name=name,
                                    namespace=namespace,
+                                   container_id=container_id,
                                    nodes=ports,
                                    context=context,
                                    loader=cls_name)
@@ -446,8 +447,11 @@ class ReferenceLoader(PackageLoader):
         if not nodes:
             return
 
+        container_id = options.get("containerId", generate_container_id())
+
         container = _subset_containerising(name=name,
                                            namespace=namespace,
+                                           container_id=container_id,
                                            nodes=nodes,
                                            ports=self.interface,
                                            context=context,
@@ -585,8 +589,11 @@ class ImportLoader(PackageLoader):
 
         update_id_on_import(nodes)
 
+        container_id = options.get("containerId", generate_container_id())
+
         container = _subset_containerising(name=name,
                                            namespace=namespace,
+                                           container_id=container_id,
                                            nodes=nodes,
                                            ports=self.interface,
                                            context=context,
@@ -653,11 +660,62 @@ def parse_container_members(container):
     return _parse_members_data(entry_path)
 
 
+def _climb_interface_id(interface):
+    from maya import cmds
+
+    parent = cmds.ls(cmds.listSets(object=interface), type="objectSet")
+    for m in parent:
+        if lib.hasAttr(m, "id"):
+            if cmds.getAttr(m + ".id") == AVALON_CONTAINER_INTERFACE_ID:
+
+                yield cmds.getAttr(m + ".containerId")
+
+                for n in _climb_interface_id(m):
+
+                    yield n
+
+
 class HierarchicalLoader(PackageLoader):
     """Hierarchical referencing based asset loader
     """
 
     interface = []
+
+    def namespace_by_id(self, container_id, parent_namespace=""):
+        from reveries.maya.lib import lsAttr
+        from maya import cmds
+
+        bread_crump = container_id.split("|")
+
+        interfaces = lsAttr("containerId",
+                            bread_crump.pop(),
+                            parent_namespace + "::")
+
+        finders = {i: _climb_interface_id(i) for i in interfaces}
+
+        while bread_crump:
+            con_id = bread_crump.pop()
+            next_finders = dict()
+
+            for key, finder in finders.items():
+                _id = next(finder)
+                if con_id == _id:
+                    next_finders[key] = finder
+
+            finders = next_finders
+
+            if len(finders) == 1:
+                break
+
+        if len(finders) > 1:
+            raise RuntimeError("Container not unique, this is a bug.")
+
+        if not len(finders):
+            raise RuntimeError("Container not found, this is a bug.")
+
+        namespace = cmds.getAttr(list(finders.keys())[0] + ".namespace")
+
+        return namespace
 
     def file_path(self, file_name):
         entry_path = os.path.join(self.package_path, file_name)
@@ -747,11 +805,17 @@ class HierarchicalLoader(PackageLoader):
         import maya.cmds as cmds
         from avalon.maya.pipeline import AVALON_CONTAINERS
 
+        options = {
+            "containerId": data["containerId"],
+            "hierarchyRepresentation": data["hierarchyRepresentation"],
+        }
+
         representation_doc = data["representationDoc"]
         sub_namespace = namespace + ":" + data["namespace"]
         sub_container = avalon.api.load(data["loaderCls"],
                                         representation_doc,
-                                        namespace=sub_namespace)
+                                        namespace=sub_namespace,
+                                        options=options)
 
         sub_interface = get_interface_from_container(sub_container)
         vessel = get_group_from_interface(sub_interface)
@@ -779,6 +843,35 @@ class HierarchicalLoader(PackageLoader):
 
         # Load members data
         members = _parse_members_data(entry_path)
+
+        if "containerId" in options:
+            container_id = options["containerId"]
+            override = options["hierarchyRepresentation"]
+
+            _members = list()
+            for data in members:
+                try:
+                    sub_override = override[data["containerId"]]
+                except KeyError:
+                    # This asset has been removed in parent asset
+                    self.log.info("ASSET REMOVED.")
+                    continue
+
+                child_ident, member_data = sub_override.popitem()
+
+                child_ident = child_ident.split("|")
+                data["representationId"] = child_ident[0]
+                data["namespace"] = child_ident[1]
+
+                data["hierarchyRepresentation"] = member_data
+
+                _members.append(data)
+
+            members = _members
+
+        else:
+            container_id = generate_container_id()
+
         members = self._get_loaders(members)
 
         namespace = namespace or _unique_root_namespace(asset["name"])
@@ -817,6 +910,7 @@ class HierarchicalLoader(PackageLoader):
 
         container = _subset_containerising(name=name,
                                            namespace=namespace,
+                                           container_id=container_id,
                                            nodes=nodes,
                                            ports=self.interface,
                                            context=context,

@@ -9,8 +9,19 @@ from reveries.maya.plugins import (
     walk_containers,
     get_interface_from_container,
     get_group_from_interface,
+    AVALON_CONTAINER_INTERFACE_ID,
 )
 from reveries.lib import DEFAULT_MATRIX, matrix_equals
+
+
+def _climb_interface_id(interface):
+    parent = cmds.ls(cmds.listSets(object=interface), type="objectSet")
+    for m in parent:
+        if lib.hasAttr(m, "id"):
+            if cmds.getAttr(m + ".id") == AVALON_CONTAINER_INTERFACE_ID:
+                for n in _climb_interface_id(m):
+                    yield n
+    yield cmds.getAttr(interface + ".containerId")
 
 
 class ExtractSetDress(PackageExtractor):
@@ -32,8 +43,11 @@ class ExtractSetDress(PackageExtractor):
     ]
 
     def _collect_components_matrix(self, data, container):
-        namespace = container["namespace"][1:]
-        data["subMatrix"][namespace] = dict()
+
+        interface = get_interface_from_container(container["objectName"])
+        container_id = "|".join(_climb_interface_id(interface))
+
+        data["subMatrix"][container_id] = dict()
 
         members = cmds.sets(container["objectName"], query=True)
         transforms = cmds.ls(members,
@@ -50,10 +64,9 @@ class ExtractSetDress(PackageExtractor):
                 continue
 
             address = utils.get_id(transform)
-            data["subMatrix"][namespace][address] = matrix
+            data["subMatrix"][container_id][address] = matrix
 
         # Collect subseet group node's matrix
-        interface = get_interface_from_container(container["objectName"])
         group = get_group_from_interface(interface)
 
         matrix = cmds.xform(group,
@@ -65,7 +78,7 @@ class ExtractSetDress(PackageExtractor):
             return
 
         name = group.rsplit(":", 1)[-1]
-        data["subMatrix"][namespace]["GROUP"] = {name: matrix}
+        data["subMatrix"][container_id]["GROUP"] = {name: matrix}
 
     def _parse_sub_matrix(self):
         for data in self.data["setMembersData"]:

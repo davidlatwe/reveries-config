@@ -23,6 +23,7 @@ class CollectSetDress(pyblish.api.InstancePlugin):
         set_groups = list()  # subsets' reference group node
         inst_data = list()
 
+        self.sub_containers = instance.context.data["SubContainers"]
         root_containers = instance.context.data["RootContainers"].values()
 
         for container in root_containers:
@@ -50,13 +51,15 @@ class CollectSetDress(pyblish.api.InstancePlugin):
 
                 data = {
                     "namespace": namespace,
+                    "containerId": interface["containerId"],
                     "root": root,
                     "matrix": matrix,
                     "loader": interface["loader"],
-                    "version": interface["version"],
-                    "versionId": interface["versionId"],
                     "representation": interface["representation"],
                     "representationId": interface["representationId"],
+
+                    # Member dict
+                    "hierarchyRepresentation": self.walk_members(container),
 
                     # For extraction use, will be removed
                     "container": container,
@@ -70,3 +73,24 @@ class CollectSetDress(pyblish.api.InstancePlugin):
         instance.data["setdressRoots"] = set_roots
         instance.data["setdressGroups"] = set_groups
         instance.data["setMembersData"] = inst_data
+
+    def walk_members(self, container):
+        child_rp = dict()
+
+        for child in container["children"]:
+
+            child_container = self.sub_containers[child]
+            child_interface = get_interface_from_container(child)
+            child_interface = parse_interface(child_interface)
+
+            child_container_id = child_interface["containerId"]
+
+            child_representation_id = child_container["representation"]
+            child_namespace = child_container["namespace"].rsplit(":", 1)[-1]
+            child_ident = child_representation_id + "|" + child_namespace
+
+            child_rp[child_container_id] = {
+                child_ident: self.walk_members(child_container)
+            }
+
+        return child_rp
