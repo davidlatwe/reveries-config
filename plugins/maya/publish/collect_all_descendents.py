@@ -2,13 +2,13 @@ import pyblish.api
 from maya import cmds
 
 
-class CollectHierarchy(pyblish.api.InstancePlugin):
+class CollectAllDescendents(pyblish.api.InstancePlugin):
     """Collect instance's allDescendents
     """
 
     order = pyblish.api.CollectorOrder
     hosts = ["maya"]
-    label = "Collect Hierarchy"
+    label = "Collect All Descendents"
 
     def process(self, instance):
         # Collect all descendents
