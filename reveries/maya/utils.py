@@ -13,7 +13,7 @@ from datetime import datetime
 import maya.cmds as cmds
 from maya.api import OpenMaya as om
 from ..utils import _C4Hasher
-from .lib import AVALON_ID_ATTR_LONG
+from .lib import AVALON_ID_ATTR_LONG, hasAttr
 
 
 def _hash_MPoint(x, y, z, w):
@@ -184,11 +184,8 @@ def _get_attr(node, attr):
 def _add_attr(node, attr):
     """Internal function for attribute adding
     """
-    try:
+    if not hasAttr(node, attr):
         cmds.addAttr(node, longName=attr, dataType="string")
-    except RuntimeError:
-        # Attribute existed
-        pass
 
 
 def _set_attr(node, attr, value):
