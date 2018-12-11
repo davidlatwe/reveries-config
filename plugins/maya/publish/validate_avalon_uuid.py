@@ -1,11 +1,15 @@
 
 from collections import defaultdict
 from maya import cmds
+
 import pyblish.api
 
+from avalon.maya.pipeline import AVALON_CONTAINER_ID
+
+from reveries.maya import lib, pipeline
 from reveries.maya.utils import Identifier, get_id_status, set_avalon_uuid
 from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidAction, ls_vessels
+from reveries.maya.plugins import MayaSelectInvalidAction
 
 
 class SelectMissing(MayaSelectInvalidAction):
@@ -25,13 +29,19 @@ class RepairInvalid(RepairInstanceAction):
     label = "Regenerate AvalonUUID"
 
 
+def ls_subset_groups():
+    groups = set()
+    for node in lib.lsAttrs({"id": AVALON_CONTAINER_ID}):
+        groups.add(pipeline.get_group_from_container(node))
+    return groups
+
+
 def get_avalon_uuid(instance):
     """
     Recoed every mesh's transform node's avalon uuid attribute
     """
     uuids = defaultdict(list)
-
-    group_nodes = list(ls_vessels())
+    group_nodes = ls_subset_groups()
 
     for node in instance:
         if not cmds.nodeType(node) == "transform":

@@ -11,6 +11,7 @@ import avalon.api as avalon
 
 from pyblish import api as pyblish
 
+from . import pipeline
 from .. import PLUGINS_DIR
 from ..utils import override_event
 
@@ -102,5 +103,4 @@ def collect_container_metadata(container):
         dict: Additional key-value dataset
 
     """
-    # TODO: Collect interface data
-    return {}
+    return pipeline.container_metadata(container)

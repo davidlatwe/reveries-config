@@ -88,7 +88,8 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
     def _assign_shaders(self, representation, namespace):
         import os
         import json
-        from reveries.maya import lib, plugins
+        import avalon.maya
+        from reveries.maya import lib
 
         relationship = self.file_path(representation["data"]["link_fname"])
         # Expand $AVALON_PROJECT and friends, if used
@@ -105,16 +106,9 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
             relationships = json.load(f)
 
         # Apply shader to target subset by namespace
-        target_namespaces = list()
         target_subset = representation["data"]["target_subset"]
-
-        interfaces = lib.lsAttrs({
-            "id": plugins.AVALON_CONTAINER_INTERFACE_ID,
-            "subsetId": target_subset})
-        for interface in interfaces:
-            target_namespaces.append(
-                plugins.parse_interface(interface)["namespace"] + ":"
-            )
+        target_namespaces = [con["namespace"] for con in avalon.maya.ls()
+                             if con["subsetId"] == target_subset]
 
         lib.apply_shaders(relationships["shader_by_id"],
                           namespace,

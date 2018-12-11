@@ -6,11 +6,6 @@ import avalon.api
 import avalon.io
 import avalon.maya
 
-from . import lib
-
-from .vendor import sticker
-
-from .capsule import namespaced
 from .utils import (
     update_id_on_import,
     generate_container_id,
@@ -24,14 +19,21 @@ from ..plugins import (
     SelectInvalidAction,
 )
 
-from .. import REVERIES_ICONS
+from .pipeline import (
+    subset_group_name,
+    subset_containerising,
+    unique_root_namespace,
+    update_container,
+)
 
-
-AVALON_PORTS = ":AVALON_PORTS"
-
-AVALON_CONTAINER_INTERFACE_ID = "pyblish.avalon.interface"
-AVALON_VESSEL_ATTR = "vessel"
-AVALON_CONTAINER_ATTR = "container"
+from .hierarchy import (
+    parse_sub_containers,
+    get_representation,
+    get_loader,
+    add_subset,
+    change_subset,
+    get_referenced_containers,
+)
 
 
 REPRS_PLUGIN_MAPPING = {
@@ -40,14 +42,6 @@ REPRS_PLUGIN_MAPPING = {
     "FBX": "fbxmaya.mll",
     "GPUCache": "gpuCache.mll",
 }
-
-
-def _subset_group_name(namespace, name):
-    return "{}:{}".format(namespace, name)
-
-
-def _container_naming(namespace, name, suffix):
-    return "%s_%s_%s" % (namespace, name, suffix)
 
 
 def load_plugin(representation):
@@ -63,270 +57,6 @@ def load_plugin(representation):
         pass
     else:
         cmds.loadPlugin(plugin, quiet=True)
-
-
-def ls_interfaces():
-    """List interfaces from active Maya scene"""
-
-    interfaces = lib.lsAttr("id", AVALON_CONTAINER_INTERFACE_ID)
-    for interface in sorted(interfaces):
-        yield parse_interface(interface)
-
-
-def ls_vessels():
-    """List vessels from active Maya scene"""
-
-    interfaces = lib.lsAttr("id", AVALON_CONTAINER_INTERFACE_ID)
-    for interface in sorted(interfaces):
-        yield get_group_from_interface(interface)
-
-
-def subset_interfacing(name,
-                       namespace,
-                       container_id,
-                       nodes,
-                       context,
-                       loader,
-                       suffix="PORT"):
-    """Expose crucial `nodes` as an interface of a subset container
-
-    Interfacing enables a faster way to access nodes of loaded subsets from
-    outliner.
-
-    Arguments:
-        name (str): Name of resulting assembly
-        namespace (str): Namespace under which to host interface
-        container_id (str): Container UUID
-        nodes (list): Long names of nodes for interfacing
-        context (dict): Asset information
-        suffix (str, optional): Suffix of interface, defaults to `_PORT`.
-
-    Returns:
-        interface (str): Name of interface assembly
-
-    """
-    from collections import OrderedDict
-    from maya import cmds
-
-    interface = cmds.sets(nodes,
-                          name=_container_naming(namespace, name, suffix))
-
-    data = OrderedDict()
-    data["id"] = AVALON_CONTAINER_INTERFACE_ID
-    data["asset"] = context["asset"]["name"]
-    data["name"] = name  # subset name
-    data["namespace"] = namespace
-    data["containerId"] = container_id
-    data["subsetId"] = str(context["subset"]["_id"])
-    data["version"] = context["version"]["name"]
-    data["versionId"] = str(context["version"]["_id"])
-    data["representation"] = context["representation"]["name"]
-    data["representationId"] = str(context["representation"]["_id"])
-    data["loader"] = loader
-
-    avalon.maya.lib.imprint(interface, data)
-
-    main_interface = cmds.ls(AVALON_PORTS, type="objectSet")
-    if not main_interface:
-        main_interface = cmds.sets(empty=True, name=AVALON_PORTS)
-        _icon = os.path.join(REVERIES_ICONS, "interface_main-01.png")
-        sticker.put(main_interface, _icon)
-    else:
-        main_interface = main_interface[0]
-
-    cmds.sets(interface, addElement=main_interface)
-
-    return interface
-
-
-def parse_interface(interface):
-    """Read attributes from interface node for package dumping
-
-    Arguments:
-        interface (str): Name of interface node
-
-    Returns:
-        dict: The interface data for this interface node.
-
-    """
-    data = avalon.maya.read(interface)
-    data["objectName"] = interface
-
-    return data
-
-
-def parse_sub_containers(container):
-    """Get the Avalon containers in this container
-
-    Args:
-        container (dict): The container dict.
-
-    Returns:
-        list: A list of member container dictionaries.
-
-    """
-    import maya.cmds as cmds
-    import avalon.schema
-    from avalon.maya.pipeline import parse_container
-
-    # Get avalon containers in this package setdress container
-    containers = []
-    members = cmds.sets(container["objectName"], query=True)
-    for node in cmds.ls(members, type="objectSet"):
-        try:
-            member_container = parse_container(node)
-            containers.append(member_container)
-        except avalon.schema.ValidationError:
-            pass
-
-    return containers
-
-
-def walk_containers(container):
-    """Recursively yield sub-containers
-    """
-    for con in parse_sub_containers(container):
-        yield con
-
-        for sub_con in walk_containers(con):
-            yield sub_con
-
-
-def get_interface_from_container(container):
-    """Return interface node of container
-
-    Raise `RuntimeError` if getting none or more then one interface.
-
-    Arguments:
-        container (str): Name of container node
-
-    Returns a str
-
-    """
-    import maya.cmds as cmds
-
-    representation = cmds.getAttr(container + ".representation")
-    namespace = cmds.getAttr(container + ".namespace")
-
-    nodes = lib.lsAttrs({
-        "id": AVALON_CONTAINER_INTERFACE_ID,
-        "representationId": representation,
-        "namespace": namespace})
-
-    if not len(nodes) == 1:
-        raise RuntimeError("Container has none or more then one interface, "
-                           "this is a bug.")
-
-    return nodes[0]
-
-
-def get_group_from_interface(interface):
-    """Return group node of interface
-
-    Raise `RuntimeError` if no group found.
-
-    Arguments:
-        interface (str): Name of interface node
-
-    Returns a str
-
-    """
-    import maya.cmds as cmds
-
-    group = cmds.listConnections(interface + "." + AVALON_VESSEL_ATTR,
-                                 source=True,
-                                 destination=False,
-                                 type="transform")
-    if not group:
-        raise RuntimeError("Can not get group node, this is a bug.")
-
-    return cmds.ls(group, long=True)[0]
-
-
-def update_container(container, asset, subset, version, representation):
-    """
-    """
-    from reveries.maya.capsule import nodes_locker
-    import maya.cmds as cmds
-
-    asset_changed = False
-    subset_changed = False
-
-    interface = get_interface_from_container(container)
-
-    # Update representation id
-    cmds.setAttr(container + ".representation",
-                 str(representation["_id"]),
-                 type="string")
-    cmds.setAttr(interface + ".representationId",
-                 str(representation["_id"]),
-                 type="string")
-
-    origin_asset = cmds.getAttr(interface + ".asset")
-    update_asset = asset["name"]
-
-    namespace = cmds.getAttr(interface + ".namespace")
-    if not origin_asset == update_asset:
-        asset_changed = True
-        # Update namespace
-        parent_namespace = namespace.rsplit(":", 1)[0] + ":"
-        with namespaced(parent_namespace, new=False) as parent_namespace:
-            parent_namespace = parent_namespace[1:]
-
-            new_namespace = _unique_root_namespace(update_asset,
-                                                   parent_namespace)
-            cmds.namespace(parent=":" + parent_namespace,
-                           rename=(namespace.rsplit(":", 1)[-1],
-                                   new_namespace[1:].rsplit(":", 1)[-1]))
-
-        namespace = new_namespace
-        # Update data
-        cmds.setAttr(container + ".namespace", namespace, type="string")
-        cmds.setAttr(interface + ".namespace", namespace, type="string")
-        cmds.setAttr(interface + ".asset", update_asset, type="string")
-
-    origin_subset = cmds.getAttr(interface + ".name")
-    update_subset = subset["name"]
-
-    name = origin_subset
-    if not origin_subset == update_subset:
-        subset_changed = True
-        name = subset["name"]
-        # Rename group node
-        group = get_group_from_interface(interface)
-        group = cmds.rename(
-            group, _subset_group_name(namespace, name))
-        # Update data
-        cmds.setAttr(container + ".name", name, type="string")
-        cmds.setAttr(interface + ".name", name, type="string")
-
-    if any((asset_changed, subset_changed)):
-        # Rename container
-        container = cmds.rename(
-            container, _container_naming(namespace, name, "CON"))
-        # Rename interface
-        interface = cmds.rename(
-            interface, _container_naming(namespace, name, "PORT"))
-        # Rename reference node
-        reference_node = next((n for n in cmds.sets(container, query=True)
-                              if cmds.nodeType(n) == "reference"), None)
-        if reference_node:
-            # Unlock reference node
-            with nodes_locker(reference_node, False, False, False):
-                cmds.rename(reference_node, namespace + "RN")
-
-    # Update interface data:
-    #   subset id,
-    #   version, version id,
-    #   representation name
-    cmds.setAttr(interface + ".subsetId", subset["_id"], type="string")
-    cmds.setAttr(interface + ".version", version["name"])
-    cmds.setAttr(interface + ".versionId",
-                 version["_id"],
-                 type="string")
-    cmds.setAttr(interface + ".representation",
-                 representation["name"],
-                 type="string")
 
 
 def _env_embedded_path(file_path):
@@ -346,64 +76,6 @@ def _env_embedded_path(file_path):
     return file_path
 
 
-def _subset_containerising(name,
-                           namespace,
-                           container_id,
-                           nodes,
-                           ports,
-                           context,
-                           cls_name,
-                           group_name):
-    """Containerise loaded subset and build interface
-    """
-    from avalon.maya.pipeline import containerise, AVALON_CONTAINERS
-    from reveries.maya.lib import connect_message
-    from maya import cmds
-
-    interface = subset_interfacing(name=name,
-                                   namespace=namespace,
-                                   container_id=container_id,
-                                   nodes=ports,
-                                   context=context,
-                                   loader=cls_name)
-    container = containerise(name=name,
-                             namespace=namespace,
-                             nodes=nodes,
-                             context=context,
-                             loader=cls_name)
-    # Put icon to main container
-    main_container = cmds.ls(AVALON_CONTAINERS, type="objectSet")[0]
-    _icon = os.path.join(REVERIES_ICONS, "container_main-01.png")
-    sticker.put(main_container, _icon)
-
-    # interface -> top_group.message
-    #           -> container.message
-    connect_message(group_name, interface, AVALON_VESSEL_ATTR)
-    connect_message(container, interface, AVALON_CONTAINER_ATTR)
-
-    # Apply icons
-    container_icon = os.path.join(REVERIES_ICONS, "container-01.png")
-    interface_icon = os.path.join(REVERIES_ICONS, "interface-01.png")
-    sticker.put(container, container_icon)
-    sticker.put(interface, interface_icon)
-
-    if cmds.objExists(group_name):
-        package_icon = os.path.join(REVERIES_ICONS, "package-01.png")
-        sticker.put(group_name, package_icon)
-
-    return container
-
-
-def _unique_root_namespace(asset_name, parent_namespace=""):
-    from avalon.maya import lib
-    unique = lib.unique_namespace(
-        asset_name + "_",
-        prefix=parent_namespace + ("_" if asset_name[0].isdigit() else ""),
-        suffix="_",
-    )
-    return ":" + unique  # Ensure in root
-
-
 class ReferenceLoader(PackageLoader):
     """A basic ReferenceLoader for Maya
 
@@ -420,7 +92,7 @@ class ReferenceLoader(PackageLoader):
         return _env_embedded_path(entry_path)
 
     def group_name(self, namespace, name):
-        return _subset_group_name(namespace, name)
+        return subset_group_name(namespace, name)
 
     def process_reference(self, context, name, namespace, group, options):
         """To be implemented by subclass"""
@@ -432,7 +104,7 @@ class ReferenceLoader(PackageLoader):
 
         asset = context["asset"]
 
-        namespace = namespace or _unique_root_namespace(asset["name"])
+        namespace = namespace or unique_root_namespace(asset["name"])
 
         group_name = self.group_name(namespace, name)
 
@@ -449,15 +121,14 @@ class ReferenceLoader(PackageLoader):
 
         container_id = options.get("containerId", generate_container_id())
 
-        container = _subset_containerising(name=name,
-                                           namespace=namespace,
-                                           container_id=container_id,
-                                           nodes=nodes,
-                                           ports=self.interface,
-                                           context=context,
-                                           cls_name=self.__class__.__name__,
-                                           group_name=group_name)
-
+        container = subset_containerising(name=name,
+                                          namespace=namespace,
+                                          container_id=container_id,
+                                          nodes=nodes,
+                                          ports=self.interface,
+                                          context=context,
+                                          cls_name=self.__class__.__name__,
+                                          group_name=group_name)
         return container
 
     def update(self, container, representation):
@@ -503,7 +174,7 @@ class ReferenceLoader(PackageLoader):
 
         # Update container
         version, subset, asset, _ = parents
-        update_container(node, asset, subset, version, representation)
+        update_container(container, asset, subset, version, representation)
 
     def remove(self, container):
         """Remove an existing `container` from Maya scene
@@ -560,7 +231,7 @@ class ImportLoader(PackageLoader):
         return _env_embedded_path(entry_path)
 
     def group_name(self, namespace, name):
-        return _subset_group_name(namespace, name)
+        return subset_group_name(namespace, name)
 
     def process_import(self, context, name, namespace, options):
         """To be implemented by subclass"""
@@ -572,7 +243,7 @@ class ImportLoader(PackageLoader):
 
         asset = context['asset']
 
-        namespace = namespace or _unique_root_namespace(asset["name"])
+        namespace = namespace or unique_root_namespace(asset["name"])
 
         group_name = self.group_name(namespace, name)
 
@@ -591,15 +262,14 @@ class ImportLoader(PackageLoader):
 
         container_id = options.get("containerId", generate_container_id())
 
-        container = _subset_containerising(name=name,
-                                           namespace=namespace,
-                                           container_id=container_id,
-                                           nodes=nodes,
-                                           ports=self.interface,
-                                           context=context,
-                                           cls_name=self.__class__.__name__,
-                                           group_name=group_name)
-
+        container = subset_containerising(name=name,
+                                          namespace=namespace,
+                                          container_id=container_id,
+                                          nodes=nodes,
+                                          ports=self.interface,
+                                          context=context,
+                                          cls_name=self.__class__.__name__,
+                                          group_name=group_name)
         return container
 
     def update(self, container, representation):
@@ -648,7 +318,7 @@ def _parse_members_data(entry_path):
     return members
 
 
-def parse_container_members(container):
+def _members_data_from_container(container):
     current_repr = avalon.io.find_one({
         "_id": avalon.io.ObjectId(container["representation"]),
         "type": "representation"
@@ -660,175 +330,26 @@ def parse_container_members(container):
     return _parse_members_data(entry_path)
 
 
-def _climb_interface_id(interface):
-    from maya import cmds
-
-    parent = cmds.ls(cmds.listSets(object=interface), type="objectSet")
-    for m in parent:
-        if lib.hasAttr(m, "id"):
-            if cmds.getAttr(m + ".id") == AVALON_CONTAINER_INTERFACE_ID:
-
-                yield cmds.getAttr(m + ".containerId")
-
-                for n in _climb_interface_id(m):
-
-                    yield n
-
-
 class HierarchicalLoader(PackageLoader):
     """Hierarchical referencing based asset loader
     """
 
     interface = []
 
-    def namespace_by_id(self, container_id, parent_namespace=""):
-        from reveries.maya.lib import lsAttr
-        from maya import cmds
-
-        bread_crump = container_id.split("|")
-
-        interfaces = lsAttr("containerId",
-                            bread_crump.pop(),
-                            parent_namespace + "::")
-
-        finders = {i: _climb_interface_id(i) for i in interfaces}
-
-        while bread_crump:
-            con_id = bread_crump.pop()
-            next_finders = dict()
-
-            for key, finder in finders.items():
-                _id = next(finder)
-                if con_id == _id:
-                    next_finders[key] = finder
-
-            finders = next_finders
-
-            if len(finders) == 1:
-                break
-
-        if len(finders) > 1:
-            raise RuntimeError("Container not unique, this is a bug.")
-
-        if not len(finders):
-            raise RuntimeError("Container not found, this is a bug.")
-
-        namespace = cmds.getAttr(list(finders.keys())[0] + ".namespace")
-
-        return namespace
-
     def file_path(self, file_name):
         entry_path = os.path.join(self.package_path, file_name)
         return _env_embedded_path(entry_path)
 
     def group_name(self, namespace, name):
-        return _subset_group_name(namespace, name)
+        return subset_group_name(namespace, name)
 
-    def apply_variation(self, data, assembly):
+    def apply_variation(self, data, container):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
 
-    def update_variation(self, data_new, data_old, assembly):
+    def update_variation(self, data_new, data_old, container, force=False):
         """To be implemented by subclass"""
         raise NotImplementedError("Must be implemented by subclass")
-
-    def _get_loaders(self, members):
-        """
-        """
-        def get_representation(representation_id):
-            representation = avalon.io.find_one(
-                {"_id": avalon.io.ObjectId(representation_id)})
-
-            if representation is None:
-                raise RuntimeError("Representation not found, this is a bug.")
-
-            return representation
-
-        collected_loader = dict()
-
-        # Get all loaders
-        all_loaders = avalon.api.discover(avalon.api.Loader)
-        for data in members:
-
-            representation_id = data["representationId"]
-
-            data["representationDoc"] = get_representation(representation_id)
-
-            if representation_id in collected_loader:
-                data["loaderCls"] = collected_loader[representation_id]
-                continue
-
-            # Find the compatible loaders
-            loaders = avalon.api.loaders_from_representation(
-                all_loaders, data["representationDoc"])
-            # Get the used loader
-            Loader = next((x for x in loaders if
-                           x.__name__ == data["loader"]),
-                          None)
-
-            if Loader is None:
-                self.log.error("Loader is missing.")
-                raise RuntimeError("Loader is missing: %s", data["loader"])
-
-            data["loaderCls"] = Loader
-            collected_loader[representation_id] = Loader
-
-        return members
-
-    def _parent(self, data, namespace, group_name, vessel):
-        """
-        """
-        import maya.cmds as cmds
-        from reveries.maya.lib import to_namespace
-
-        # Parent into the setdress hierarchy
-        # Namespace is missing from root node(s), add namespace
-        # manually
-        root = to_namespace(data["root"], namespace)
-        root = cmds.ls(group_name + root, long=True)
-
-        if not len(root) == 1:
-            raise RuntimeError("Too many or no parent, this is a bug.")
-
-        root = root[0]
-        current_parent = cmds.listRelatives(vessel,
-                                            parent=True,
-                                            fullPath=True) or []
-        if root not in current_parent:
-            vessel = cmds.parent(vessel, root, relative=True)[0]
-
-        return vessel
-
-    def _add(self, data, namespace, group_name):
-        """
-        """
-        import maya.cmds as cmds
-        from avalon.maya.pipeline import AVALON_CONTAINERS
-
-        options = {
-            "containerId": data["containerId"],
-            "hierarchyRepresentation": data["hierarchyRepresentation"],
-        }
-
-        representation_doc = data["representationDoc"]
-        sub_namespace = namespace + ":" + data["namespace"]
-        sub_container = avalon.api.load(data["loaderCls"],
-                                        representation_doc,
-                                        namespace=sub_namespace,
-                                        options=options)
-
-        sub_interface = get_interface_from_container(sub_container)
-        vessel = get_group_from_interface(sub_interface)
-
-        with namespaced(namespace, new=False) as namespace:
-            vessel = self._parent(data, namespace, group_name, vessel)
-            self.apply_variation(data=data,
-                                 assembly=vessel)
-
-        cmds.sets(sub_container, remove=AVALON_CONTAINERS)
-        cmds.sets(sub_interface, remove=AVALON_PORTS)
-
-        return sub_container, sub_interface
 
     def load(self, context, name=None, namespace=None, options=None):
 
@@ -846,24 +367,24 @@ class HierarchicalLoader(PackageLoader):
 
         if "containerId" in options:
             container_id = options["containerId"]
-            override = options["hierarchyRepresentation"]
+            hierarchy = options["hierarchy"]
 
             _members = list()
             for data in members:
                 try:
-                    sub_override = override[data["containerId"]]
+                    sub_hierarchy = hierarchy[data["containerId"]]
                 except KeyError:
-                    # This asset has been removed in parent asset
-                    self.log.info("ASSET REMOVED.")
+                    self.log.warning("Asset possibly been removed in parent "
+                                     "asset. Container ID: %s",
+                                     data["containerId"])
                     continue
 
-                child_ident, member_data = sub_override.popitem()
+                child_ident, member_data = sub_hierarchy.popitem()
 
                 child_ident = child_ident.split("|")
-                data["representationId"] = child_ident[0]
+                data["representation"] = child_ident[0]
                 data["namespace"] = child_ident[1]
-
-                data["hierarchyRepresentation"] = member_data
+                data["hierarchy"] = member_data
 
                 _members.append(data)
 
@@ -872,9 +393,7 @@ class HierarchicalLoader(PackageLoader):
         else:
             container_id = generate_container_id()
 
-        members = self._get_loaders(members)
-
-        namespace = namespace or _unique_root_namespace(asset["name"])
+        namespace = namespace or unique_root_namespace(asset["name"])
         group_name = self.group_name(namespace, name)
 
         # Load the setdress alembic hierarchy
@@ -893,12 +412,18 @@ class HierarchicalLoader(PackageLoader):
         sub_interfaces = []
         for data in members:
 
-            sub_container, sub_interface = self._add(data,
-                                                     namespace,
-                                                     group_name)
+            repr_id = data["representation"]
+            data["representationDoc"] = get_representation(repr_id)
+            data["loaderCls"] = get_loader(data["loader"], repr_id)
 
-            sub_containers.append(sub_container)
-            sub_interfaces.append(sub_interface)
+            root = group_name
+            with add_subset(data, namespace, root) as sub_container:
+
+                self.apply_variation(data=data,
+                                     container=sub_container)
+
+            sub_containers.append(sub_container["objectName"])
+            sub_interfaces.append(sub_container["interface"])
 
         self[:] = hierarchy + sub_containers
         self.interface = [group_name] + sub_interfaces
@@ -908,105 +433,34 @@ class HierarchicalLoader(PackageLoader):
         if not nodes:
             return
 
-        container = _subset_containerising(name=name,
-                                           namespace=namespace,
-                                           container_id=container_id,
-                                           nodes=nodes,
-                                           ports=self.interface,
-                                           context=context,
-                                           cls_name=self.__class__.__name__,
-                                           group_name=group_name)
-
+        container = subset_containerising(name=name,
+                                          namespace=namespace,
+                                          container_id=container_id,
+                                          nodes=nodes,
+                                          ports=self.interface,
+                                          context=context,
+                                          cls_name=self.__class__.__name__,
+                                          group_name=group_name)
         return container
-
-    def _change(self, container, data_new, data_old, namespace, group_name):
-        """
-        """
-        from avalon.pipeline import get_representation_context
-
-        add_list = []
-
-        is_repr_diff = (
-            container["representation"] != data_new["representationId"])
-
-        has_override = (
-            data_old["representationId"] != data_new["representationId"])
-
-        if container["loader"] == data_new["loader"]:
-            if is_repr_diff and has_override:
-                self.log.warning("Your scene had local representation "
-                                 "overrides within the set. New "
-                                 "representations not loaded for %s.",
-                                 container["namespace"])
-            else:
-                current_repr_id = container["representation"]
-                current_repr = get_representation_context(current_repr_id)
-                loader = data_new["loaderCls"](current_repr)
-                loader.update(container, data_new["representationDoc"])
-        else:
-            avalon.api.remove(container)
-            add_list.append(data_new)
-
-        # Update parenting and matrix
-        subcon_name = container["objectName"]
-        sub_interface = get_interface_from_container(subcon_name)
-        vessel = get_group_from_interface(sub_interface)
-
-        with namespaced(namespace, new=False) as namespace:
-            vessel = self._parent(data_new, namespace, group_name, vessel)
-            self.update_variation(data_new=data_new,
-                                  data_old=data_old,
-                                  assembly=vessel)
-
-        return add_list
 
     def update(self, container, representation):
         """
         """
-
         import maya.cmds as cmds
 
-        def get_ref_node(ndoe):
-            """Find one reference node in the members of objectSet"""
-            return next((ndoe for ndoe in cmds.sets(ndoe, query=True)
-                         if cmds.nodeType(ndoe) == "reference"), None)
+        # Flag `_force_update` from `container` is a workaround
+        # should coming from `options`
+        force_update = container.pop("_force_update", False)
 
-        def abort_alert():
-            """Error message box"""
-            title = "Update Abort"
-            message = ("Imported container not supported; container must be "
-                       "referenced.")
-            self.log.error(message)
-            message_box_error(title, message)
+        # Get and check current sub-containers
+        reference_node, current_subcons = get_referenced_containers(container)
 
-        container_node = container["objectName"]
-        interface_node = get_interface_from_container(container_node)
-
-        # Assume asset has been referenced
-        reference_node = get_ref_node(container_node)
-        if not reference_node:
-            abort_alert()
-            return
-
+        # Load members data
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        # Get current sub-containers
-        current_subcons = dict()
-
-        for sub_con in parse_sub_containers(container):
-            # Assume all sub-asset has been referenced
-            if not get_ref_node(sub_con["objectName"]):
-                abort_alert()
-                return
-
-            sub_ns = sub_con["namespace"].rsplit(":", 1)[-1]
-            current_subcons[sub_ns] = sub_con
-
-        # Load members data
         members = _parse_members_data(entry_path)
-        members = self._get_loaders(members)
 
         #
         # Start updating
@@ -1024,54 +478,86 @@ class HierarchicalLoader(PackageLoader):
 
         # Get current members data
         current_members = dict()
+        new_namespaces = set(data_new["namespace"] for data_new in members)
 
-        new_namespaces = [data["namespace"] for data in members]
-        for data in parse_container_members(container):
-            if data["namespace"] not in new_namespaces:
+        for data_old in _members_data_from_container(container):
+            namespace_old = data_old["namespace"]
+
+            if namespace_old not in new_namespaces:
                 # Remove
-                sub_con = current_subcons[data["namespace"]]
-                avalon.api.remove(sub_con)
+                avalon.api.remove(current_subcons.pop(namespace_old))
             else:
-                namespace = data.pop("namespace")
-                current_members[namespace] = data
+                current_members[namespace_old] = data_old
 
         # Update sub-subsets
         namespace = container["namespace"]
         group_name = self.group_name(namespace, container["name"])
 
         add_list = []
-        for data in members:
-            sub_ns = data["namespace"]
+        for data_new in members:
+
+            repr_id = data_new["representation"]
+            data_new["representationDoc"] = get_representation(repr_id)
+            data_new["loaderCls"] = get_loader(data_new["loader"], repr_id)
+
+            sub_ns = data_new["namespace"]
+
             if sub_ns in current_members:
-                # Update
-                subcon = current_subcons[sub_ns]
+                sub_container = current_subcons[sub_ns]
                 data_old = current_members[sub_ns]
-                add_list += self._change(subcon,
-                                         data,
-                                         data_old,
-                                         namespace,
-                                         group_name)
+
+                is_repr_diff = (data_old["representation"] !=
+                                data_new["representation"])
+                has_override = (data_old["representation"] !=
+                                sub_container["representation"])
+
+                if sub_container["loader"] == data_new["loader"]:
+
+                    if is_repr_diff and has_override and not force_update:
+                        self.log.warning("Your scene had local representation "
+                                         "overrides within the set. New "
+                                         "representations not loaded for %s.",
+                                         sub_container["namespace"])
+
+                    else:
+                        # Update
+                        root = group_name
+                        with change_subset(sub_container,
+                                           data_new,
+                                           namespace,
+                                           root) as sub_container:
+
+                            self.update_variation(data_new=data_new,
+                                                  data_old=data_old,
+                                                  container=sub_container,
+                                                  force=force_update)
+                else:
+                    # Update
+                    # But Loaders are different, remove first, add later
+                    avalon.api.remove(sub_container)
+                    add_list.append(data_new)
 
             else:
-                add_list.append(data)
+                add_list.append(data_new)
 
         for data in add_list:
             # Add
-            sub_container, sub_interface = self._add(data,
-                                                     namespace,
-                                                     group_name)
-            cmds.sets(sub_container, forceElement=container_node)
-            cmds.sets(sub_interface, forceElement=interface_node)
+            root = group_name
+            on_update = container
+            with add_subset(data, namespace, root, on_update) as sub_container:
+
+                self.apply_variation(data=data,
+                                     container=sub_container)
 
         # TODO: Add all new nodes in the reference to the container
         #   Currently new nodes in an updated reference are not added to the
         #   container whereas actually they should be!
         nodes = cmds.referenceQuery(reference_node, nodes=True, dagPath=True)
-        cmds.sets(nodes, forceElement=container_node)
+        cmds.sets(nodes, forceElement=container["objectName"])
 
         # Update container
         version, subset, asset, _ = parents
-        update_container(container_node,
+        update_container(container,
                          asset,
                          subset,
                          version,

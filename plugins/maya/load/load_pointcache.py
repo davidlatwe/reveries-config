@@ -99,8 +99,6 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
         from reveries.utils import get_representation_path_
         from reveries.maya.plugins import update_container
 
-        node = container["objectName"]
-
         representation_name = representation["name"]
 
         parents = avalon.io.parenthood(representation)
@@ -109,7 +107,7 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
         # Update the cache
-        members = cmds.sets(container['objectName'], query=True)
+        members = cmds.sets(container["objectName"], query=True)
 
         if representation_name == "GPUCache":
             caches = cmds.ls(members, type="gpuCache", long=True)
@@ -150,18 +148,18 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
 
         # Update container
         version, subset, asset, _ = parents
-        update_container(node, asset, subset, version, representation)
+        update_container(container, asset, subset, version, representation)
 
     def remove(self, container):
         import maya.cmds as cmds
 
-        members = cmds.sets(container['objectName'], query=True)
+        members = cmds.sets(container["objectName"], query=True)
         cmds.lockNode(members, lock=False)
-        cmds.delete([container['objectName']] + members)
+        cmds.delete([container["objectName"]] + members)
 
         # Clean up the namespace
         try:
-            cmds.namespace(removeNamespace=container['namespace'],
+            cmds.namespace(removeNamespace=container["namespace"],
                            deleteNamespaceContent=True)
         except RuntimeError:
             pass

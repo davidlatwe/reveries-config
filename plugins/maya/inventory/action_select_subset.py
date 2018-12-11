@@ -1,10 +1,6 @@
 
 import avalon.api
 from maya import cmds
-from reveries.maya.plugins import (
-    get_interface_from_container,
-    get_group_from_interface,
-)
 
 
 class SelectSubset(avalon.api.InventoryAction):
@@ -21,8 +17,6 @@ class SelectSubset(avalon.api.InventoryAction):
             if container.get("loader") == "LookLoader":
                 continue
 
-            interface = get_interface_from_container(container["objectName"])
-            group = get_group_from_interface(interface)
-            groups.append(group)
+            groups.append(container["subsetGroup"])
 
         cmds.select(groups)

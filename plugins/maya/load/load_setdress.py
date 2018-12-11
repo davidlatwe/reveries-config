@@ -18,8 +18,12 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         "setPackage"
     ]
 
-    def apply_variation(self, data, assembly):
+    def apply_variation(self, data, container):
+        """
+        """
         import maya.cmds as cmds
+
+        assembly = container["subsetGroup"]
 
         # Apply matrix to root node (if any matrix edits)
         matrix = data["matrix"]
@@ -34,9 +38,13 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                        objectSpace=True,
                        matrix=sub_matrix)
 
-    def update_variation(self, data_new, data_old, assembly):
+    def update_variation(self, data_new, data_old, container, force=False):
+        """
+        """
         import maya.cmds as cmds
         from reveries.lib import matrix_equals
+
+        assembly = container["subsetGroup"]
 
         current_matrix = cmds.xform(assembly,
                                     query=True,
@@ -46,7 +54,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         has_matrix_override = not matrix_equals(current_matrix,
                                                 original_matrix)
 
-        if has_matrix_override:
+        if has_matrix_override and not force:
             self.log.warning("Matrix override preserved on %s",
                              data_new["namespace"])
         else:
@@ -73,12 +81,15 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             else:
                 has_matrix_override = False
 
-            if has_matrix_override:
-                pass
+            if has_matrix_override and not force:
+                self.log.warning("Sub-Matrix override preserved on %s",
+                                 transform)
             else:
                 cmds.xform(transform, objectSpace=True, matrix=sub_matrix)
 
     def transform_by_id(self, nodes):
+        """
+        """
         import maya.cmds as cmds
         from reveries.maya.utils import get_id
 
@@ -89,12 +100,17 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         return transform_id_map
 
     def parse_sub_matrix(self, data):
+        """
+        """
         import maya.cmds as cmds
+        from reveries.lib import DEFAULT_MATRIX
+        from reveries.maya.hierarchy import container_from_id_path
 
         current_NS = cmds.namespaceInfo(currentNamespace=True,
                                         absoluteName=True)
         for container_id, sub_matrix in data["subMatrix"].items():
-            full_NS = self.namespace_by_id(container_id, current_NS)
+            container = container_from_id_path(container_id, current_NS)
+            full_NS = cmds.getAttr(container + ".namespace")
             nodes = cmds.namespaceInfo(full_NS, listOnlyDependencyNodes=True)
 
             transform_id_map = self.transform_by_id(nodes)
@@ -106,5 +122,8 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 else:
                     transform = transform_id_map.get(address)
                     matrix = sub_matrix[address]
+
+                if matrix == "<default>":
+                    matrix = DEFAULT_MATRIX
 
                 yield transform, matrix

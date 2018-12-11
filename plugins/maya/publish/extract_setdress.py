@@ -5,23 +5,11 @@ import pyblish.api
 from maya import cmds
 from reveries.plugins import PackageExtractor
 from reveries.maya import io, lib, utils
-from reveries.maya.plugins import (
+from reveries.maya.hierarchy import (
     walk_containers,
-    get_interface_from_container,
-    get_group_from_interface,
-    AVALON_CONTAINER_INTERFACE_ID,
+    container_to_id_path,
 )
 from reveries.lib import DEFAULT_MATRIX, matrix_equals
-
-
-def _climb_interface_id(interface):
-    parent = cmds.ls(cmds.listSets(object=interface), type="objectSet")
-    for m in parent:
-        if lib.hasAttr(m, "id"):
-            if cmds.getAttr(m + ".id") == AVALON_CONTAINER_INTERFACE_ID:
-                for n in _climb_interface_id(m):
-                    yield n
-    yield cmds.getAttr(interface + ".containerId")
 
 
 class ExtractSetDress(PackageExtractor):
@@ -44,10 +32,9 @@ class ExtractSetDress(PackageExtractor):
 
     def _collect_components_matrix(self, data, container):
 
-        interface = get_interface_from_container(container["objectName"])
-        container_id = "|".join(_climb_interface_id(interface))
+        id_path = container_to_id_path(container)
 
-        data["subMatrix"][container_id] = dict()
+        data["subMatrix"][id_path] = dict()
 
         members = cmds.sets(container["objectName"], query=True)
         transforms = cmds.ls(members,
@@ -61,15 +48,15 @@ class ExtractSetDress(PackageExtractor):
                                 objectSpace=True)
 
             if matrix_equals(matrix, DEFAULT_MATRIX):
-                continue
+                matrix = "<default>"
 
             address = utils.get_id(transform)
-            data["subMatrix"][container_id][address] = matrix
+            data["subMatrix"][id_path][address] = matrix
 
         # Collect subseet group node's matrix
-        group = get_group_from_interface(interface)
+        subset_group = container["subsetGroup"]
 
-        matrix = cmds.xform(group,
+        matrix = cmds.xform(subset_group,
                             query=True,
                             matrix=True,
                             objectSpace=True)
@@ -77,13 +64,21 @@ class ExtractSetDress(PackageExtractor):
         if matrix_equals(matrix, DEFAULT_MATRIX):
             return
 
-        name = group.rsplit(":", 1)[-1]
-        data["subMatrix"][container_id]["GROUP"] = {name: matrix}
+        name = subset_group.rsplit(":", 1)[-1]
+        data["subMatrix"][id_path]["GROUP"] = {name: matrix}
 
-    def _parse_sub_matrix(self):
-        for data in self.data["setMembersData"]:
+    def parse_matrix(self):
+        for data in self.data["subsetData"]:
+            container = data.pop("_container")
+            subset_group = container["subsetGroup"]
+
+            matrix = cmds.xform(subset_group,
+                                query=True,
+                                matrix=True,
+                                objectSpace=True)
+            data["matrix"] = matrix
+
             data["subMatrix"] = dict()
-            container = data.pop("container")
 
             self._collect_components_matrix(data, container)
 
@@ -97,15 +92,15 @@ class ExtractSetDress(PackageExtractor):
         entry_path = os.path.join(package_path, entry_file)
         instances_path = os.path.join(package_path, instances_file)
 
-        self._parse_sub_matrix()
+        self.parse_matrix()
 
         self.log.info("Dumping setdress members data ..")
         with open(instances_path, "w") as fp:
-            json.dump(self.data["setMembersData"], fp, ensure_ascii=False)
+            json.dump(self.data["subsetData"], fp, ensure_ascii=False)
             self.log.debug("Dumped: {}".format(instances_path))
 
         self.log.info("Extracting hierarchy ..")
-        cmds.select(self.data["setdressRoots"])
+        cmds.select(self.data["subsetSlots"])
         io.export_alembic(file=entry_path,
                           startFrame=1.0,
                           endFrame=1.0,
@@ -125,7 +120,7 @@ class ExtractSetDress(PackageExtractor):
         entry_path = os.path.join(package_path, entry_file)
         cache_path = os.path.join(package_path, cache_file)
 
-        cmds.select(self.data["setdressRoots"])
+        cmds.select(self.data["subsetSlots"])
 
         self.log.info("Extracting setDress GPUCache ..")
 
