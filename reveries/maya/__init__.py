@@ -7,15 +7,12 @@ try:
 except ImportError:
     raise ImportError("Module 'reveries.maya' require Autodesk Maya.")
 
-import avalon.maya.commands as commands
 import avalon.api as avalon
 
 from pyblish import api as pyblish
 
 from .. import PLUGINS_DIR
 from ..utils import override_event
-from .lib import set_scene_timeline
-
 
 self = sys.modules[__name__]
 self.installed = None
@@ -28,6 +25,22 @@ CREATE_PATH = os.path.join(PLUGINS_DIR, "maya", "create")
 INVENTORY_PATH = os.path.join(PLUGINS_DIR, "maya", "inventory")
 
 PYMEL_MOCK_FLAG = os.path.join(os.environ["MAYA_APP_DIR"], "pymel.mock")
+
+
+def _override():
+    import avalon.maya.commands as commands
+    import avalon.maya.pipeline as pipeline
+    import avalon.maya.lib as lib
+
+    from .lib import set_scene_timeline
+
+    # Override avalon.maya container node lister
+    log.info("Overriding <avalon.maya.pipeline._ls>")
+    pipeline._ls = lambda: lib.lsattr("id", pipeline.AVALON_CONTAINER_ID)
+
+    # Override avalon.maya menu function
+    log.info("Overriding <avalon.maya.commands.reset_frame_range>")
+    commands.reset_frame_range = set_scene_timeline
 
 
 def install():  # pragma: no cover
@@ -58,8 +71,7 @@ def install():  # pragma: no cover
     log.info("Unknown proc <CgAbBlastPanelOptChangeCallback> "
              "workaround init.")
 
-    # override avalon.maya menu function
-    commands.reset_frame_range = set_scene_timeline
+    _override()
 
     self.installed = True
 
