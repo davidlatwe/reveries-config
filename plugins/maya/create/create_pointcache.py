@@ -2,6 +2,8 @@
 import avalon.maya
 from maya import cmds
 
+from reveries.maya.pipeline import put_instance_icon
+
 
 class PointCacheCreator(avalon.maya.Creator):
     """Any cacheable object"""
@@ -28,4 +30,4 @@ class PointCacheCreator(avalon.maya.Creator):
         instance = super(PointCacheCreator, self).process()
         cmds.setAttr(instance + ".publish_contractor", lock=True)
 
-        return instance
+        return put_instance_icon(instance)

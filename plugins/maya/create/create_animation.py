@@ -3,6 +3,8 @@ from maya import cmds
 import avalon.maya
 import avalon.io
 
+from reveries.maya.pipeline import put_instance_icon
+
 
 class AnimationCreator(avalon.maya.Creator):
     """Any character or prop animation"""
@@ -28,4 +30,4 @@ class AnimationCreator(avalon.maya.Creator):
         cmds.setAttr(instance + ".format", lock=True)
         cmds.setAttr(instance + ".publish_contractor", lock=True)
 
-        return instance
+        return put_instance_icon(instance)

@@ -2,6 +2,7 @@ from maya import cmds
 import avalon.maya
 
 from reveries.maya.lib import TRANSFORM_ATTRS
+from reveries.maya.pipeline import put_instance_icon
 
 
 class RigCreator(avalon.maya.Creator):
@@ -49,4 +50,4 @@ class RigCreator(avalon.maya.Creator):
             cmds.sets(cmds.sets(name=set_name, empty=True),
                       forceElement=instance)
 
-        return instance
+        return put_instance_icon(instance)

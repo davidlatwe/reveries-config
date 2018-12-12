@@ -2,6 +2,8 @@
 import avalon.maya
 from maya import cmds
 
+from reveries.maya.pipeline import put_instance_icon
+
 
 class ModelCreator(avalon.maya.Creator):
     """Polygonal geometry"""
@@ -23,4 +25,4 @@ class ModelCreator(avalon.maya.Creator):
 
         self.build_base()
 
-        return super(ModelCreator, self).process()
+        return put_instance_icon(super(ModelCreator, self).process())

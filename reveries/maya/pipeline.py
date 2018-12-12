@@ -274,3 +274,9 @@ def subset_containerising(name,
         sticker.put(group_name, package_icon)
 
     return parse_container(container)
+
+
+def put_instance_icon(instance):
+    instance_icon = os.path.join(REVERIES_ICONS, "instance-01.png")
+    sticker.put(instance, instance_icon)
+    return instance

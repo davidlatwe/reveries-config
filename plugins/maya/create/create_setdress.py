@@ -2,6 +2,8 @@
 import avalon.maya
 from maya import cmds
 
+from reveries.maya.pipeline import put_instance_icon
+
 
 class SetDressCreator(avalon.maya.Creator):
     """A grouped package of loaded content"""
@@ -23,4 +25,4 @@ class SetDressCreator(avalon.maya.Creator):
 
         self.build_base()
 
-        return super(SetDressCreator, self).process()
+        return put_instance_icon(super(SetDressCreator, self).process())
