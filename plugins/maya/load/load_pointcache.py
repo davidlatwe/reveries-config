@@ -20,6 +20,7 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
     families = [
         "reveries.animation",
         "reveries.pointcache",
+        "reveries.setdress",
     ]
 
     representations = [
@@ -28,7 +29,7 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
         "GPUCache",
     ]
 
-    def process_reference(self, context, name, namespace, options):
+    def process_reference(self, context, name, namespace, group, options):
         import maya.cmds as cmds
         from reveries.maya.lib import get_highest_in_hierarchy
 
@@ -36,23 +37,20 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        group_name = "{}:{}".format(namespace, name)
         nodes = cmds.file(entry_path,
                           namespace=namespace,
                           sharedReferenceFile=False,
                           groupReference=True,
-                          groupName=group_name,
+                          groupName=group,
                           reference=True,
                           lockReference=True,
                           returnNewNodes=True)
 
-        reveries.maya.lib.lock_transform(group_name)
+        reveries.maya.lib.lock_transform(group)
         self[:] = nodes
 
         transforms = cmds.ls(nodes, type="transform", long=True)
         self.interface = get_highest_in_hierarchy(transforms)
-
-        return group_name
 
     def switch(self, container, representation):
         self.update(container, representation)
@@ -77,38 +75,39 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
         "FBXCache",
     ]
 
-    def process_import(self, context, name, namespace, options):
+    def process_import(self, context, name, namespace, group, options):
         import maya.cmds as cmds
 
         representation = context["representation"]
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        group_name = "{}:{}".format(namespace, name)
         nodes = cmds.file(entry_path,
                           i=True,
                           namespace=namespace,
                           returnNewNodes=True,
                           groupReference=True,
-                          groupName=group_name)
+                          groupName=group)
 
-        reveries.maya.lib.lock_transform(group_name)
+        reveries.maya.lib.lock_transform(group)
         self[:] = nodes
-
-        return group_name
 
     def update(self, container, representation):
         import maya.cmds as cmds
         import avalon.api
+        import avalon.io
+        from reveries.utils import get_representation_path_
+        from reveries.maya.plugins import update_container
 
         representation_name = representation["name"]
 
-        self.package_path = avalon.api.get_representation_path(representation)
+        parents = avalon.io.parenthood(representation)
+        self.package_path = get_representation_path_(representation, parents)
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
         # Update the cache
-        members = cmds.sets(container['objectName'], query=True)
+        members = cmds.sets(container["objectName"], query=True)
 
         if representation_name == "GPUCache":
             caches = cmds.ls(members, type="gpuCache", long=True)
@@ -147,20 +146,20 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
         else:
             raise RuntimeError("This is a bug.")
 
-        cmds.setAttr(container["objectName"] + ".representation",
-                     str(representation["_id"]),
-                     type="string")
+        # Update container
+        version, subset, asset, _ = parents
+        update_container(container, asset, subset, version, representation)
 
     def remove(self, container):
         import maya.cmds as cmds
 
-        members = cmds.sets(container['objectName'], query=True)
+        members = cmds.sets(container["objectName"], query=True)
         cmds.lockNode(members, lock=False)
-        cmds.delete([container['objectName']] + members)
+        cmds.delete([container["objectName"]] + members)
 
         # Clean up the namespace
         try:
-            cmds.namespace(removeNamespace=container['namespace'],
+            cmds.namespace(removeNamespace=container["namespace"],
                            deleteNamespaceContent=True)
         except RuntimeError:
             pass

@@ -4,12 +4,14 @@ from maya import cmds
 
 from reveries import lib
 from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.lib import TRANSFORM_ATTRS
 
 
 class ValidateTranformFreezed(pyblish.api.InstancePlugin):
-    """ All transform must be freezed
+    """ All `mesh` and `nurbsCurve` must be transform freezed
 
-    Checking `translate`, `rotate`, `scale` and `shear` are all freezed
+    Checking if translate, rotate, scale and shear freezed. When instance's
+    family is `reveries.model`, will check all `transform` nodes.
 
     """
 
@@ -26,17 +28,13 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
         MayaSelectInvalidAction,
     ]
 
-    @staticmethod
-    def get_invalid(instance):
+    @classmethod
+    def get_invalid(cls, instance):
         """Returns the invalid transforms in the instance.
 
         This is the same as checking:
         - translate == [0, 0, 0] and rotate == [0, 0, 0] and
           scale == [1, 1, 1] and shear == [0, 0, 0]
-
-        .. note::
-            This will also catch camera transforms if those
-            are in the instances.
 
         Returns:
             list: Transforms that are not identity matrix
@@ -51,9 +49,15 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
                      0.0, 0.0, 0.0, 1.0]
         _tolerance = 1e-30
 
-        _ignoring = ("clusterHandle",)
+        if instance.data["family"] == "reveries.model":
+            transforms = cmds.ls(instance, type="transform")
+        else:
+            goemetries = cmds.ls(instance, type=("mesh", "nurbsCurve"))
+            transforms = cmds.listRelatives(goemetries,
+                                            parent=True,
+                                            type="transform")
 
-        for transform in cmds.ls(instance, type="transform"):
+        for transform in transforms:
 
             matrix = cmds.xform(transform,
                                 query=True,
@@ -61,14 +65,12 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
                                 objectSpace=True)
 
             if not lib.matrix_equals(_identity, matrix, _tolerance):
-                ignore = False
 
-                for shape in cmds.listRelatives(transform, shapes=True) or []:
-                    if cmds.nodeType(shape) in _ignoring:
-                        ignore = True
-                        break
+                # If it's transform is not keyable, should be fine to ignore
+                def is_keyable(attr):
+                    return cmds.getAttr(transform + "." + attr, keyable=True)
 
-                if not ignore:
+                if any(is_keyable(attr) for attr in TRANSFORM_ATTRS):
                     invalid.append(transform)
 
         return invalid

@@ -2,6 +2,7 @@ from maya import cmds
 import avalon.maya
 
 from reveries.maya.lib import TRANSFORM_ATTRS
+from reveries.maya.pipeline import put_instance_icon
 
 
 class RigCreator(avalon.maya.Creator):
@@ -19,12 +20,12 @@ class RigCreator(avalon.maya.Creator):
     ]
 
     def build_base(self):
-        if cmds.objExists("|RIG"):
+        if cmds.objExists("|ROOT"):
             return
 
         make_empty = not ((self.options or {}).get("useSelection") and
                           bool(cmds.ls(sl=True)))
-        cmds.group(name="RIG", empty=make_empty, world=True)
+        cmds.group(name="ROOT", empty=make_empty, world=True)
 
     def process(self):
         subset_name = self.data["subset"]
@@ -40,8 +41,8 @@ class RigCreator(avalon.maya.Creator):
         self.log.info("Creating Rig instance set up ...")
 
         for attr in TRANSFORM_ATTRS:
-            cmds.setAttr("|RIG." + attr, keyable=False)
-        cmds.setAttr("|RIG.visibility", keyable=False)
+            cmds.setAttr("|ROOT." + attr, keyable=False)
+        cmds.setAttr("|ROOT.visibility", keyable=False)
 
         sub_object_sets = ["OutSet", "ControlSet"]
 
@@ -49,4 +50,4 @@ class RigCreator(avalon.maya.Creator):
             cmds.sets(cmds.sets(name=set_name, empty=True),
                       forceElement=instance)
 
-        return instance
+        return put_instance_icon(instance)

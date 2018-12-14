@@ -1,6 +1,5 @@
 
 import logging
-import uuid
 
 from maya import cmds
 from maya.api import OpenMaya as om
@@ -14,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 AVALON_ID_ATTR_LONG = "AvalonID"
-AVALON_ID_ATTR_SHORT = "avid"
 
 TRANSFORM_ATTRS = [
     "translateX", "translateY", "translateZ",
@@ -119,42 +117,6 @@ def bake_hierarchy_visibility(nodes, start_frame, end_frame, step=1):
         cmds.connectAttr(curve + ".output", node + ".visibility", force=True)
 
 
-def set_avalon_uuid(node, renew=False):
-    """Add or renew avID ( Avalon ID ) to `node`
-    """
-    write = False
-    attr = "{0}.{1}".format(node, AVALON_ID_ATTR_SHORT)
-
-    if not cmds.objExists(attr):
-        write = True
-        cmds.addAttr(node, shortName=AVALON_ID_ATTR_SHORT,
-                     longName=AVALON_ID_ATTR_LONG, dataType="string")
-
-    if write or renew:
-        _, uid = str(uuid.uuid4()).rsplit("-", 1)
-        cmds.setAttr(attr, uid, type="string")
-
-
-def get_id(node):
-    """
-    Get the `AvalonID` attribute of the given node
-    Args:
-        node (str): the name of the node to retrieve the attribute from
-
-    Returns:
-        str
-
-    """
-
-    if node is None:
-        return
-
-    if not cmds.attributeQuery(AVALON_ID_ATTR_LONG, node=node, exists=True):
-        return
-
-    return cmds.getAttr("{0}.{1}".format(node, AVALON_ID_ATTR_LONG))
-
-
 def set_scene_timeline():
     log.info("Timeline setting...")
 
@@ -240,8 +202,10 @@ def bake_camera(camera, startFrame, endFrame):
     bake_to_worldspace(transform, startFrame, endFrame)
 
 
-def lock_transform(node):
-    for attr in TRANSFORM_ATTRS:
+def lock_transform(node, additional=None):
+    attr_to_lock = TRANSFORM_ATTRS + (additional or [])
+
+    for attr in attr_to_lock:
         try:
             cmds.setAttr(node + "." + attr, lock=True)
         except RuntimeError as e:
@@ -329,31 +293,29 @@ def serialise_shaders(nodes):
     for transform in valid_nodes:
         shapes = cmds.listRelatives(transform,
                                     shapes=True,
-                                    fullPath=True) or list()
+                                    fullPath=True,
+                                    type="mesh") or list()
+        shapes = cmds.ls(shapes, noIntermediate=True)
 
-        if shapes:
-            shape = shapes[0]
-            if not cmds.nodeType(shape):
-                continue
+        try:
+            mesh = shapes[0]
+        except IndexError:
+            continue
 
-            try:
-                id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_SHORT)
+        try:
+            id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_LONG)
+        except ValueError:
+            continue
+        else:
+            if id_ not in meshes_by_id:
+                meshes_by_id[id_] = list()
 
-                if id_ not in meshes_by_id:
-                    meshes_by_id[id_] = list()
+            meshes_by_id[id_].append(mesh)
 
-                meshes_by_id[id_].append(transform)
-
-            except ValueError:
-                continue
-
-    meshes_by_shader = dict()
+    meshes_by_shader = {}
     for id_, meshes in meshes_by_id.items():
-        shape = cmds.listRelatives(meshes,
-                                   shapes=True,
-                                   fullPath=True) or list()
 
-        for shader in cmds.listConnections(shape,
+        for shader in cmds.listConnections(meshes,
                                            type="shadingEngine",
                                            source=False,
                                            destination=True) or list():
@@ -367,14 +329,11 @@ def serialise_shaders(nodes):
             if shader not in meshes_by_shader:
                 meshes_by_shader[shader] = list()
 
-            shaded = cmds.sets(shader, query=True) or list()
+            shaded = cmds.ls(cmds.sets(shader, query=True), long=True)
             meshes_by_shader[shader].extend(shaded)
 
     shader_by_id = {}
     for shader, shaded in meshes_by_shader.items():
-
-        if shader not in shader_by_id:
-            shader_by_id[shader] = list()
 
         for mesh in shaded:
 
@@ -383,13 +342,23 @@ def serialise_shaders(nodes):
 
             transform = name
             if cmds.objectType(transform) == "mesh":
-                transform = cmds.listRelatives(name, parent=True)[0]
+                transform = cmds.listRelatives(name,
+                                               parent=True,
+                                               fullPath=True)[0]
+
+            if transform not in valid_nodes:
+                # Ignore nodes which were not in the query list
+                continue
 
             try:
-                id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_SHORT)
-                shader_by_id[shader].append(mesh.replace(name, id_))
-            except KeyError:
+                id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_LONG)
+            except ValueError:
                 continue
+            else:
+                if shader not in shader_by_id:
+                    shader_by_id[shader] = list()
+
+                shader_by_id[shader].append(mesh.replace(name, id_))
 
         # Remove duplicates
         shader_by_id[shader] = list(set(shader_by_id[shader]))
@@ -397,12 +366,14 @@ def serialise_shaders(nodes):
     return shader_by_id
 
 
-def apply_shaders(relationships, namespace=None):
+def apply_shaders(relationships, namespace=None, target_namespaces=None):
     """Given a dictionary of `relationships`, apply shaders to meshes
 
     Arguments:
         relationships (avalon-core:shaders-1.0): A dictionary of
             shaders and how they relate to meshes.
+        namespace (str, optional): namespace that need to apply to shaders
+        target_namespaces (list, optional): model namespaces
 
     """
 
@@ -414,6 +385,8 @@ def apply_shaders(relationships, namespace=None):
             for shader in relationships
         }
 
+    target_namespaces = target_namespaces or [None]
+
     for shader, ids in relationships.items():
         print("Looking for '%s'.." % shader)
         shader = next(iter(cmds.ls(shader)), None)
@@ -422,16 +395,19 @@ def apply_shaders(relationships, namespace=None):
         for id_ in ids:
             mesh, faces = (id_.rsplit(".", 1) + [""])[:2]
 
-            # Find all meshes matching this particular ID
-            # Convert IDs to mesh + id, e.g. "nameOfNode.f[1:100]"
-            meshes = list(".".join([mesh, faces])
-                          for mesh in lsAttr(AVALON_ID_ATTR_SHORT, value=mesh))
+            for target_namespace in target_namespaces:
+                # Find all meshes matching this particular ID
+                # Convert IDs to mesh + id, e.g. "nameOfNode.f[1:100]"
+                meshes = list(".".join([mesh, faces])
+                              for mesh in lsAttr(AVALON_ID_ATTR_LONG,
+                                                 value=mesh,
+                                                 namespace=target_namespace))
 
-            if not meshes:
-                continue
+                if not meshes:
+                    continue
 
-            print("Assigning '%s' to '%s'" % (shader, ", ".join(meshes)))
-            cmds.sets(meshes, forceElement=shader)
+                print("Assigning '%s' to '%s'" % (shader, ", ".join(meshes)))
+                cmds.sets(meshes, forceElement=shader)
 
 
 def hasAttr(node, attr):
@@ -453,13 +429,14 @@ def hasAttr(node, attr):
     return cmds.objExists(node + "." + attr)
 
 
-def lsAttr(attr, value=None):
+def lsAttr(attr, value=None, namespace=None):
     """Return nodes matching `key` and `value`
 
     Arguments:
         attr (str): Name of Maya attribute
         value (object, optional): Value of attribute. If none
             is provided, return all nodes with this attribute.
+        namespace (str): Search under this namespace, default all.
 
     Example:
         >> lsAttr("id", "myId")
@@ -468,13 +445,30 @@ def lsAttr(attr, value=None):
         ["myNode", "myOtherNode"]
 
     """
+    namespace = namespace or ""
 
     if value is None:
-        return cmds.ls("*.%s" % attr)
-    return lsAttrs({attr: value})
+        return cmds.ls("{0}*.{1}".format(namespace, attr),
+                       long=True,
+                       recursive=True)
+    return lsAttrs({attr: value}, namespace=namespace)
 
 
-def lsAttrs(attrs):
+def _mplug_type_map(value):
+    _map = {
+        float: "asDouble",
+        int: "asInt",
+        bool: "asBool",
+    }
+    try:
+        return _map[type(value)]
+    except KeyError:
+        if isinstance(value, string_types):
+            return "asString"
+        return None
+
+
+def lsAttrs(attrs, namespace=None):
     """Return nodes with the given attribute(s).
 
     Arguments:
@@ -488,7 +482,21 @@ def lsAttrs(attrs):
 
     Returns a list.
 
+    Raise `TypeError` if value type not supported.
+    Currently supported value types are:
+        * `float`
+        * `int`
+        * `bool`
+        * `str`
+
     """
+    namespace = namespace or ""
+
+    # Type check
+    for attr, value in attrs.items():
+        if _mplug_type_map(value) is None:
+            raise TypeError("Unsupported value type {0!r} on attribute {1!r}"
+                            "".format(type(value), attr))
 
     dep_fn = om.MFnDependencyNode()
     dag_fn = om.MFnDagNode()
@@ -497,7 +505,7 @@ def lsAttrs(attrs):
     first_attr = attrs.iterkeys().next()
 
     try:
-        selection_list.add("*.{0}".format(first_attr),
+        selection_list.add("{0}*.{1}".format(namespace, first_attr),
                            searchChildNamespaces=True)
     except RuntimeError as e:
         if str(e).endswith("Object does not exist"):
@@ -514,10 +522,11 @@ def lsAttrs(attrs):
             fn_node = dep_fn.setObject(node)
             full_path_names = [fn_node.name()]
 
-        for attr in attrs:
+        for attr, value in attrs.items():
             try:
                 plug = fn_node.findPlug(attr, True)
-                if plug.asString() != attrs[attr]:
+                value_getter = getattr(plug, _mplug_type_map(value))
+                if value_getter() != value:
                     break
             except RuntimeError:
                 break
@@ -680,6 +689,8 @@ def connect_message(source, target, attrname, lock=True):
 
         source.message -> target.attrname
 
+    Pop warning if source or target node does not exists.
+
     Args:
         source (str): Message output node
         target (str): Message input node
@@ -687,8 +698,31 @@ def connect_message(source, target, attrname, lock=True):
         lock (bool, optional): Lock attribute if set to True (default True)
 
     """
+    if not cmds.objExists(source):
+        cmds.warning("Source node {!r} not exists.".format(source))
+        return
+    if not cmds.objExists(target):
+        cmds.warning("Target node {!r} not exists.".format(target))
+        return
+
     cmds.addAttr(target, longName=attrname, attributeType="message")
 
     target_attr = target + "." + attrname
     cmds.connectAttr(source + ".message", target_attr)
     cmds.setAttr(target_attr, lock=lock)
+
+
+def to_namespace(node, namespace):
+    """Return node name as if it's inside the namespace.
+
+    Args:
+        node (str): Node name
+        namespace (str): Namespace
+
+    Returns:
+        str: The node in the namespace.
+
+    """
+    namespace_prefix = "|{}:".format(namespace)
+    node = namespace_prefix.join(node.split("|"))
+    return node

@@ -2,6 +2,8 @@
 import avalon.maya
 from maya import cmds
 
+from reveries.maya.pipeline import put_instance_icon
+
 
 class CameraCreator(avalon.maya.Creator):
     """Single baked camera"""
@@ -22,4 +24,4 @@ class CameraCreator(avalon.maya.Creator):
         instance = super(CameraCreator, self).process()
         cmds.setAttr(instance + ".publish_contractor", lock=True)
 
-        return instance
+        return put_instance_icon(instance)

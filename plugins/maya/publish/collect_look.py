@@ -1,7 +1,9 @@
 
 import pyblish.api
 import avalon.io
+from avalon.pipeline import AVALON_CONTAINER_ID
 from maya import cmds
+from reveries.maya import lib
 
 
 class CollectLook(pyblish.api.InstancePlugin):
@@ -19,9 +21,26 @@ class CollectLook(pyblish.api.InstancePlugin):
                          noIntermediate=True,
                          type="mesh")
 
+        # Collect paired model container
+        paired = list()
+        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
+        for mesh in meshes:
+            transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
+            for set_ in cmds.listSets(object=transform):
+                if set_ in containers and set_ not in paired:
+                    paired.append(set_)
+        instance.data["paired_container"] = paired
+
         # Collect shading networks
         shaders = cmds.listConnections(meshes, type="shadingEngine")
-        upstream_nodes = cmds.listHistory(shaders, pruneDagObjects=True)
+        upstream_nodes = cmds.listHistory(shaders)
+        # (NOTE): The flag `pruneDagObjects` will also filter out
+        # `place3dTexture` type node.
+
+        # Remove unwanted types
+        unwanted_types = ("groupId", "groupParts", "mesh")
+        unwanted = set(cmds.ls(upstream_nodes, type=unwanted_types))
+        upstream_nodes = list(set(upstream_nodes) - unwanted)
 
         instance.data["dag_members"] = instance[:]
         instance[:] = upstream_nodes

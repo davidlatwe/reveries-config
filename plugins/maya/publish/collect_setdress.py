@@ -1,31 +1,78 @@
 
 import pyblish.api
-from reveries.maya.plugins import parse_group_from_interface
+import maya.cmds as cmds
 
 
-class CollectSetDress(pyblish.api.InstancePlugin):
-    """Collect avalon sets
+class CollectHierarchyData(pyblish.api.InstancePlugin):
+    """Collect hierarcial container data
     """
 
     order = pyblish.api.CollectorOrder + 0.2
     hosts = ["maya"]
-    label = "Collect SetDress"
-    families = ["reveries.setdress"]
+    label = "Collect Hierarchy Data"
+    families = [
+        "reveries.setdress",
+    ]
 
     def process(self, instance):
 
-        all_roots = dict()
+        subset_slots = list()  # subsets' reference group node's parent node
+        subset_data = list()
 
-        for interface in instance.data["interfaces"]:
-            try:
-                root = parse_group_from_interface(interface)
-            except RuntimeError:
-                root = None
+        self.sub_containers = instance.context.data["SubContainers"]
+        root_containers = instance.context.data["RootContainers"].values()
 
-            all_roots[str(interface)] = root
+        for container in root_containers:
 
-        for intf, root in all_roots.items():
-            self.log.debug(intf)
-            self.log.debug(">>  " + root)
+            subset_group = container["subsetGroup"]
 
-        instance.data["setdressRoots"] = all_roots
+            if subset_group in instance:
+                self.log.info("Collecting {!r} ..".format(subset_group))
+
+                # The namespace stored in container was absolute name,
+                # need to save as relative name.
+                # e.g. ":awesome" -> "awesome"
+                namespace = container["namespace"][1:]
+
+                slot = cmds.listRelatives(subset_group,
+                                          parent=True,
+                                          fullPath=True)
+                slot = (slot or [None])[0]
+
+                data = {
+                    "namespace": namespace,
+                    "containerId": container["containerId"],
+                    "slot": slot,
+                    "loader": container["loader"],
+                    "representation": container["representation"],
+                    "hierarchy": self.walk_hierarchy(container),
+
+                    # For extraction use, will be removed
+                    "_container": container,
+                }
+
+                subset_data.append(data)
+
+                if slot not in subset_slots:
+                    subset_slots.append(slot)
+
+        instance.data["subsetSlots"] = subset_slots
+        instance.data["subsetData"] = subset_data
+
+    def walk_hierarchy(self, container):
+        child_rp = dict()
+
+        for child in container["children"]:
+
+            child_container = self.sub_containers[child]
+            child_container_id = child_container["containerId"]
+
+            child_representation_id = child_container["representation"]
+            child_namespace = child_container["namespace"].rsplit(":", 1)[-1]
+            child_ident = child_representation_id + "|" + child_namespace
+
+            child_rp[child_container_id] = {
+                child_ident: self.walk_hierarchy(child_container)
+            }
+
+        return child_rp

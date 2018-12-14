@@ -216,6 +216,32 @@ def namespaced(namespace, new=True):
 
 
 @contextlib.contextmanager
+def root_namespaced():
+    """Back to root namespace during context
+    """
+    original = cmds.namespaceInfo(currentNamespace=True)
+
+    try:
+        cmds.namespace(set=":")
+        yield
+    finally:
+        cmds.namespace(set=original)
+
+
+@contextlib.contextmanager
+def relative_namespaced():
+    """Entering relative namespace mode
+    """
+    relative = cmds.namespace(query=True, relativeNames=True)
+
+    try:
+        cmds.namespace(relativeNames=True)
+        yield
+    finally:
+        cmds.namespace(relativeNames=relative)
+
+
+@contextlib.contextmanager
 def maintained_selection():
     """Maintain selection during context
 
@@ -240,3 +266,48 @@ def maintained_selection():
                         noExpand=True)
         else:
             cmds.select(clear=True)
+
+
+@contextlib.contextmanager
+def nodes_locker(nodes, lock=True, lockName=True, lockUnpublished=True):
+    """Lock or unlock nodes and restore lock state on exit
+
+    For node publishing, suggest using:
+        - lock=False
+        - lockName=True
+        - lockUnpublished=True
+
+    This will lock nodes' all attributes and names, but not locking nodes
+    entirely, so still able to add custom attributes and nodes will remain
+    deletable.
+
+    """
+    nodes = cmds.ls(nodes, objectsOnly=True, long=True)
+    is_lock = cmds.lockNode(nodes, query=True, lock=True)
+    is_lockName = cmds.lockNode(nodes, query=True, lockName=True)
+    is_lockUnpub = cmds.lockNode(nodes, query=True, lockUnpublished=True)
+
+    try:
+        # (NOTE) `lockNode` command flags:
+        #    lock: If flag not supplied, default `True`
+        #    lockName: If flag not supplied, default `False`
+        #    lockUnpublished: No default, change nothing if not supplied
+        #    ignoreComponents: If components presence in the input list,
+        #                      will raise RuntimeError and nothing will
+        #                      be locked. But if this flag supplied, it
+        #                      will silently ignore components.
+        cmds.lockNode(nodes,
+                      lock=lock,
+                      lockName=lockName,
+                      lockUnpublished=lockUnpublished,
+                      ignoreComponents=True)
+        yield
+
+    finally:
+        # Restore lock states
+        for _ in range(len(nodes)):
+            cmds.lockNode(nodes.pop(0),
+                          lock=is_lock.pop(0),
+                          lockName=is_lockName.pop(0),
+                          lockUnpublished=is_lockUnpub.pop(0),
+                          ignoreComponents=True)

@@ -19,26 +19,23 @@ class MayaShareLoader(ReferenceLoader, avalon.api.Loader):
         "mayaAscii",
     ]
 
-    def process_reference(self, context, name, namespace, options):
+    def process_reference(self, context, name, namespace, group, options):
         import maya.cmds as cmds
 
         representation = context["representation"]
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        group_name = "{}:{}".format(namespace, name)
         nodes = cmds.file(entry_path,
                           namespace=namespace,
                           sharedReferenceFile=False,
                           groupReference=True,
-                          groupName=group_name,
+                          groupName=group,
                           reference=True,
                           lockReference=False,
                           returnNewNodes=True)
 
         self[:] = nodes
-
-        return group_name
 
     def switch(self, container, representation):
         self.update(container, representation)

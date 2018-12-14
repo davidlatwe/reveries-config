@@ -1,9 +1,13 @@
 
 from collections import defaultdict
 from maya import cmds
+
 import pyblish.api
 
-from reveries.maya.lib import AVALON_ID_ATTR_SHORT, set_avalon_uuid
+from avalon.maya.pipeline import AVALON_CONTAINER_ID
+
+from reveries.maya import lib, pipeline
+from reveries.maya.utils import Identifier, get_id_status, set_avalon_uuid
 from reveries.plugins import RepairInstanceAction
 from reveries.maya.plugins import MayaSelectInvalidAction
 
@@ -25,32 +29,37 @@ class RepairInvalid(RepairInstanceAction):
     label = "Regenerate AvalonUUID"
 
 
+def ls_subset_groups():
+    groups = set()
+    for node in lib.lsAttrs({"id": AVALON_CONTAINER_ID}):
+        groups.add(pipeline.get_group_from_container(node))
+    return groups
+
+
 def get_avalon_uuid(instance):
     """
     Recoed every mesh's transform node's avalon uuid attribute
     """
     uuids = defaultdict(list)
+    group_nodes = ls_subset_groups()
 
     for node in instance:
-        # Only check transforms with shapes that are meshes
         if not cmds.nodeType(node) == "transform":
             continue
-        shapes = cmds.listRelatives(node, shapes=True, type="mesh") or []
-        meshes = cmds.ls(shapes, type="mesh", ni=True)
-        if not meshes:
+
+        if node in group_nodes:
+            # Subset groups are auto generated on reference, meaningless
+            # to have id.
             continue
+
         # get uuid
-        try:
-            uuid = cmds.getAttr(node + "." + AVALON_ID_ATTR_SHORT)
-        except ValueError:
-            uuid = None
-        uuids[uuid].append(node)
+        uuids[get_id_status(node)].append(node)
 
     return uuids
 
 
 class ValidateAvalonUUID(pyblish.api.InstancePlugin):
-    """All models ( mesh node's transfrom ) must have an UUID
+    """All transfrom must have an UUID
     """
 
     order = pyblish.api.ValidatorOrder
@@ -64,28 +73,24 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         RepairInvalid,
     ]
 
-    families = [
-        "reveries.model",
-    ]
-
-    @staticmethod
-    def get_invalid_missing(instance, uuids=None):
+    @classmethod
+    def get_invalid_missing(cls, instance, uuids=None):
 
         if uuids is None:
             uuids = get_avalon_uuid(instance)
 
-        invalid = uuids[None]
+        invalid = uuids.get(Identifier.Untracked, [])
 
         return invalid
 
-    @staticmethod
-    def get_invalid_duplicated(instance, uuids=None):
+    @classmethod
+    def get_invalid_duplicated(cls, instance, uuids=None):
 
         if uuids is None:
             uuids = get_avalon_uuid(instance)
 
-        invalid = [n for _id, nds in uuids.items()
-                   if len(nds) > 1 for n in nds]
+        invalid = [node for node in uuids.get(Identifier.Duplicated, [])
+                   if ":" not in node]
 
         return invalid
 
@@ -123,4 +128,4 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         invalid = (cls.get_invalid_missing(instance) +
                    cls.get_invalid_duplicated(instance))
         for node in invalid:
-            set_avalon_uuid(node, renew=True)
+            set_avalon_uuid(node)

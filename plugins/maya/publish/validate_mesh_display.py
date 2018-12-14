@@ -20,8 +20,8 @@ class ValidateShapeDisplay(pyblish.api.InstancePlugin):
         MayaSelectInvalidAction,
     ]
 
-    @staticmethod
-    def get_invalid(instance):
+    @classmethod
+    def get_invalid(cls, instance):
 
         from maya import cmds
 

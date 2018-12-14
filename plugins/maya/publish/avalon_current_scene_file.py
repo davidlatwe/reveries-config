@@ -5,11 +5,11 @@ from maya import cmds
 import pyblish.api
 
 
-class CollectMayaCurrentFile(pyblish.api.ContextPlugin):
+class CurrentSceneFile(pyblish.api.ContextPlugin):
     """Inject the current working file into context"""
 
-    order = pyblish.api.CollectorOrder - 0.4
-    label = "Maya Current File"
+    order = pyblish.api.ExtractorOrder - 0.495
+    label = "Current Scene File"
     hosts = ["maya"]
 
     def process(self, context):

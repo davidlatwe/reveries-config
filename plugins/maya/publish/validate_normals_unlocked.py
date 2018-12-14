@@ -1,7 +1,18 @@
 from maya import cmds
 
 import pyblish.api
-import reveries
+from reveries.plugins import RepairInstanceAction
+from reveries.maya.plugins import MayaSelectInvalidAction
+
+
+class SelectInvalid(MayaSelectInvalidAction):
+
+    label = "Select Locked"
+
+
+class RepairInvalid(RepairInstanceAction):
+
+    label = "Unlock & Smooth (NO History)"
 
 
 class ValidateNormalsUnlocked(pyblish.api.Validator):
@@ -16,8 +27,12 @@ class ValidateNormalsUnlocked(pyblish.api.Validator):
     hosts = ["maya"]
     families = ["reveries.model"]
     label = "Mesh Normals Unlocked"
-    actions = [reveries.plugins.SelectInvalidAction,
-               reveries.plugins.RepairInstanceAction]
+    actions = [
+        pyblish.api.Category("Select"),
+        SelectInvalid,
+        pyblish.api.Category("Fix It"),
+        RepairInvalid,
+    ]
 
     @staticmethod
     def has_locked_normals(mesh):
@@ -48,3 +63,7 @@ class ValidateNormalsUnlocked(pyblish.api.Validator):
         invalid = cls.get_invalid(instance)
         for mesh in invalid:
             cmds.polyNormalPerVertex(mesh, unFreezeNormal=True)
+            # Smooth edge after unlock
+            cmds.polySoftEdge(mesh,
+                              constructionHistory=False,
+                              angle=180)

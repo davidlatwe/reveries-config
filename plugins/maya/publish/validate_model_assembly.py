@@ -20,8 +20,8 @@ class ValidateModelAssembly(pyblish.api.InstancePlugin):
 
         root = cmds.ls(instance, assemblies=True)
 
-        if not (len(root) == 1 and root[0] == "MODEL"):
+        if not (len(root) == 1 and root[0] == "ROOT"):
             self.log.error(
-                "'%s' Must have a single root called 'MODEL'." % (instance)
+                "'%s' Must have a single root called 'ROOT'." % (instance)
             )
             raise Exception("%s <Model Assembly> Failed." % instance)

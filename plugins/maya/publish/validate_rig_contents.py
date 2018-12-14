@@ -46,8 +46,8 @@ class ValidateRigContents(pyblish.api.InstancePlugin):
         SelectInvalidOutsiders,
     ]
 
-    @staticmethod
-    def get_invalid_outsider(instance):
+    @classmethod
+    def get_invalid_outsider(cls, instance):
         invalid = list()
 
         all_members = cmds.sets("ControlSet", union="OutSet")
@@ -58,8 +58,8 @@ class ValidateRigContents(pyblish.api.InstancePlugin):
 
         return invalid
 
-    @staticmethod
-    def get_invalid_contorl_member(instance):
+    @classmethod
+    def get_invalid_contorl_member(cls, instance):
         invalid = list()
 
         for node in cmds.sets("ControlSet", query=True):
@@ -74,8 +74,8 @@ class ValidateRigContents(pyblish.api.InstancePlugin):
 
         return invalid
 
-    @staticmethod
-    def get_invalid_out_member(instance):
+    @classmethod
+    def get_invalid_out_member(cls, instance):
         invalid = list()
 
         for node in cmds.sets("OutSet", query=True):

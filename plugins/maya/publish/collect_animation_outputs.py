@@ -15,12 +15,11 @@ class CollectAnimationOutputs(pyblish.api.InstancePlugin):
     def process(self, instance):
         """Collect the hierarchy nodes"""
 
-        family = instance.data["family"]
         out_set = next((member for member in instance if
                         member.endswith("OutSet")), None)
 
         assert out_set, ("Expecting OutSet for instance of family"
-                         " '%s'" % family)
+                         " '%s'" % instance.data["family"])
 
         members = cmds.ls(cmds.sets(out_set, query=True), long=True)
 

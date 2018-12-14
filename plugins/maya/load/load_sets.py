@@ -20,14 +20,17 @@ class SetsLoader(avalon.api.Loader):
     representations = [
         "mayaBinary",
         "Alembic",
-        "SetDress",
+        "setPackage",
     ]
 
     def load(self, context, name, namespace, options):
 
         import avalon.api
         import avalon.maya
-        from reveries.maya.plugins import ReferenceLoader
+        from reveries.maya.plugins import (
+            ReferenceLoader,
+            HierarchicalLoader,
+        )
 
         representation = context["representation"]
 
@@ -35,9 +38,11 @@ class SetsLoader(avalon.api.Loader):
         Loaders = avalon.api.loaders_from_representation(available_loaders,
                                                          representation)
 
-        Loader = next(L for L in Loaders if issubclass(L, ReferenceLoader))
+        Loader = next(L for L in Loaders
+                      if issubclass(L, (ReferenceLoader,
+                                        HierarchicalLoader,
+                                        )))
         loader = Loader(context)
-
         container = loader.load(context, name, namespace, options)
 
         self._place_set(container)
@@ -46,9 +51,8 @@ class SetsLoader(avalon.api.Loader):
 
     def _place_set(self, container):
         from maya import cmds
-        from reveries.maya.plugins import parse_group_from_container
 
-        group = parse_group_from_container(container)
+        group = container["subsetGroup"]
         location = self._camera_coi()
 
         if location is not None:

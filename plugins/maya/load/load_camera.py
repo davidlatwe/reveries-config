@@ -22,30 +22,27 @@ class CameraLoader(ReferenceLoader, avalon.api.Loader):
         "FBX",
     ]
 
-    def process_reference(self, context, name, namespace, options):
+    def process_reference(self, context, name, namespace, group, options):
         import maya.cmds as cmds
 
         representation = context["representation"]
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        group_name = "{}:{}".format(namespace, name)
         nodes = cmds.file(entry_path,
                           namespace=namespace,
                           sharedReferenceFile=False,
                           groupReference=True,
-                          groupName=group_name,
+                          groupName=group,
                           reference=True,
                           lockReference=True,
                           returnNewNodes=True)
 
-        reveries.maya.lib.lock_transform(group_name)
+        reveries.maya.lib.lock_transform(group)
         self[:] = nodes
 
         self.interface = cmds.listRelatives(cmds.ls(nodes, type="camera"),
                                             parent=True)
-
-        return group_name
 
     def switch(self, container, representation):
         self.update(container, representation)

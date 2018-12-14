@@ -16,8 +16,8 @@ class ValidateFileTextures(pyblish.api.InstancePlugin):
         "reveries.look",
     ]
 
-    @staticmethod
-    def get_invalid(instance):
+    @classmethod
+    def get_invalid(cls, instance):
 
         file_nodes = cmds.ls(instance, type="file")
 

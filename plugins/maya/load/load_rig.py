@@ -24,7 +24,7 @@ class RigLoader(ReferenceLoader, avalon.api.Loader):
         "mayaBinary",
     ]
 
-    def process_reference(self, context, name, namespace, options):
+    def process_reference(self, context, name, namespace, group, options):
 
         import maya.cmds as cmds
         from reveries.maya.lib import get_highest_in_hierarchy
@@ -33,14 +33,12 @@ class RigLoader(ReferenceLoader, avalon.api.Loader):
 
         entry_path = self.file_path(representation["data"]["entry_fname"])
 
-        group_name = "{}:{}".format(namespace, name)
-
         nodes = cmds.file(entry_path,
                           namespace=namespace,
                           reference=True,
                           returnNewNodes=True,
                           groupReference=True,
-                          groupName=group_name)
+                          groupName=group)
 
         self[:] = nodes
 
@@ -48,8 +46,6 @@ class RigLoader(ReferenceLoader, avalon.api.Loader):
         root = get_highest_in_hierarchy(transforms)
         sets = cmds.ls(nodes, type="objectSet")
         self.interface = root + sets
-
-        return group_name
 
     def switch(self, container, representation):
         self.update(container, representation)

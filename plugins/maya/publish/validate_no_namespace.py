@@ -28,8 +28,8 @@ class ValidateNoNamespace(pyblish.api.InstancePlugin):
         RepairInvalid,
     ]
 
-    @staticmethod
-    def get_invalid(instance):
+    @classmethod
+    def get_invalid(cls, instance):
 
         invalid = [node for node in instance if get_namespace(node)]
 
