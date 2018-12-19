@@ -189,7 +189,7 @@ def update_container(container, asset, subset, version, representation):
         with namespaced(parent_namespace, new=False) as parent_namespace:
             parent_namespace = parent_namespace[1:]
 
-            new_namespace = unique_root_namespace(update_asset,
+            new_namespace = unique_root_namespace(asset["name"],
                                                   parent_namespace)
             cmds.namespace(parent=":" + parent_namespace,
                            rename=(namespace.rsplit(":", 1)[-1],
