@@ -107,7 +107,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         # Apply shader to target subset by namespace
         target_subset = representation["data"]["target_subset"]
-        target_namespaces = [con["namespace"] for con in avalon.maya.ls()
+        target_namespaces = [con["namespace"] + ":" for con in avalon.maya.ls()
                              if con["subsetId"] == target_subset]
 
         lib.apply_shaders(relationships["shader_by_id"],
