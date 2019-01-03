@@ -126,12 +126,14 @@ class ExtractLook(PackageExtractor):
         # Custom attributes in assembly node which require to be animated.
         self.log.info("Serialising animatable attributes..")
         animatable = dict()
-        root = cmds.ls(self.data["dag_members"], assemblies=True)[0]
-        for attr in cmds.listAttr(root, userDefined=True) or list():
-            animatable[attr] = cmds.listConnections(root + "." + attr,
-                                                    destination=True,
-                                                    source=False,
-                                                    plugs=True)
+        root = cmds.ls(self.data["dag_members"], assemblies=True)
+        if root:
+            root = root[0]
+            for attr in cmds.listAttr(root, userDefined=True) or list():
+                animatable[attr] = cmds.listConnections(root + "." + attr,
+                                                        destination=True,
+                                                        source=False,
+                                                        plugs=True)
 
         meshes = cmds.ls(self.data["dag_members"],
                          visible=True,
