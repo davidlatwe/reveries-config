@@ -43,14 +43,32 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             return
 
         # Assemble data and create version, representations
-        version, representations = self.register(instance)
+        subset, version, representations = self.register(instance)
 
         # Integrate representations' files to shareable space
         self.log.info("Integrating representations to shareable space ...")
         self.integrate()
 
         # Write version and representations to database
-        self.write_database(instance, version, representations)
+        version_id = self.write_database(instance, version, representations)
+
+        # Update dependent
+        asset = instance.data["asset_doc"]
+        dependent = {
+            "asset": {
+                "_id": asset["_id"],
+                "name": asset["name"],
+            },
+            "subset": {
+                "_id": subset["_id"],
+                "name": subset["name"],
+            },
+            "version": {
+                "_id": version_id,
+                "name": version["name"],
+            },
+        }
+        self.update_dependent(instance, dependent)
 
     def register(self, instance):
 
@@ -131,13 +149,12 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 "parent": None,  # write this later
                 "name": package,
                 "data": repr_data,
-                "dependencies": instance.data.get("dependencies", "").split(),
             }
             representations.append(representation)
 
         self.transfers["auxiliaries"] += instance.data["auxiliaries"]
 
-        return version, representations
+        return subset, version, representations
 
     def integrate(self):
         """Move the files
@@ -239,6 +256,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         io.insert_many(representations)
 
+        return version_id
+
     def get_subset(self, instance):
 
         asset_id = instance.data["asset_doc"]["_id"]
@@ -310,12 +329,16 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         source = os.path.join("{root}", relative_path).replace("\\", "/")
         hash_val = context.data["sourceFingerprint"]["currentHash"]
 
-        version_data = {"families": families,
-                        "time": context.data["time"],
-                        "author": context.data["user"],
-                        "source": source,
-                        "hash": hash_val,
-                        "comment": context.data.get("comment")}
+        version_data = {
+            "families": families,
+            "time": context.data["time"],
+            "author": context.data["user"],
+            "source": source,
+            "hash": hash_val,
+            "comment": context.data.get("comment"),
+            "dependencies": instance.data.get("dependencies", []),
+            "dependents": [],
+        }
 
         # Include optional data if present in
         optionals = ["startFrame", "endFrame", "step", "handles"]
@@ -324,3 +347,12 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 version_data[key] = instance.data[key]
 
         return version_data
+
+    def update_dependent(self, instance, dependent):
+
+        for dependency in instance.data["dependencies"]:
+            version_id = dependency["version"]["_id"]
+
+            filter_ = {"_id": version_id}
+            update = {"$push": {"data.dependents": dependent}}
+            io.update_many(filter_, update)
