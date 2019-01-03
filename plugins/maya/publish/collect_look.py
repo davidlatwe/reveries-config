@@ -29,7 +29,7 @@ class CollectLook(pyblish.api.InstancePlugin):
             for set_ in cmds.listSets(object=transform):
                 if set_ in containers and set_ not in paired:
                     paired.append(set_)
-        instance.data["paired_container"] = paired
+        instance.data["pairedContainers"] = paired
 
         # Collect shading networks
         shaders = cmds.listConnections(meshes, type="shadingEngine")

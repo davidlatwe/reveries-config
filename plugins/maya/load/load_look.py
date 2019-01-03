@@ -106,9 +106,9 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
             relationships = json.load(f)
 
         # Apply shader to target subset by namespace
-        target_subset = representation["data"]["target_subset"]
+        targets = [str(tg) for tg in representation["data"]["targetSubsets"]]
         target_namespaces = [con["namespace"] + ":" for con in avalon.maya.ls()
-                             if con["subsetId"] == target_subset]
+                             if con["subsetId"] in targets]
 
         lib.apply_shaders(relationships["shader_by_id"],
                           namespace,

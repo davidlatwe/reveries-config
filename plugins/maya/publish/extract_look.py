@@ -177,11 +177,12 @@ class ExtractLook(PackageExtractor):
                         vray_attrs[parent[0]] = values
 
         # Get model subset id
-        container_name = self.data["paired_container"][0]
-        model_container = parse_container(container_name)
-        representation_id = model_container["representation"]
-        context = get_representation_context(representation_id)
-        target_subset = str(context["subset"]["_id"])
+        targets = list()
+        for container_name in self.data["pairedContainers"]:
+            model_container = parse_container(container_name)
+            representation_id = model_container["representation"]
+            context = get_representation_context(representation_id)
+            targets.append(context["subset"]["_id"])
 
         relationships = {
             "shader_by_id": shader_by_id,
@@ -197,7 +198,7 @@ class ExtractLook(PackageExtractor):
         self.add_data({
             "link_fname": link_file,
             "textures": self.data["look_textures"],
-            "target_subset": target_subset,
+            "targetSubsets": targets,
         })
 
         self.log.info("Extracted {name} to {path}".format(
