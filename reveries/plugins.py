@@ -128,6 +128,47 @@ def find_contractor(contractor_name=""):
     return None
 
 
+def create_dependency_instance(dependent,
+                               name,
+                               family,
+                               members,
+                               category=None):
+
+    """Create dependency instance from dependent instance
+
+    Creating instance for unpublished or stray (not containerized) assets,
+    which have dependency relation with current existed instances while
+    publishing.
+
+    Example use case, publishing *look* with unpublished textures in Maya.
+
+    Arguments:
+        dependent (pyblish.api.Instance): dependent instance
+        name (str): dependency instance name and subset name
+        family (str): dependency instance's family
+        members (list): dependency instance's member
+        category (str, optional): dependency instance's visual category
+
+    """
+    pregenerated_version_id = avalon.io.ObjectId()
+
+    if category is None:
+        category = family + " (stray)"
+
+    context = dependent.context
+    dependent_data = dependent.data
+    dependent_data["futureDependencies"].append(pregenerated_version_id)
+
+    instance = context.create_instance(name)
+    instance[:] = members
+    instance.data.update(dependent_data)
+
+    instance.data["family"] = family
+    instance.data["subset"] = name
+    instance.data["category"] = category
+    instance.data["pregeneratedVersionId"] = pregenerated_version_id
+
+
 class PackageLoader(object):
     """Load representation into host application
 
