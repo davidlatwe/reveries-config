@@ -10,7 +10,7 @@ class ValidateAvalonDependencies(pyblish.api.InstancePlugin):
     label = "Validate Dependencies"
     order = pyblish.api.ValidatorOrder
 
-    def prcocess(self, instance):
+    def process(self, instance):
         if "dependencies" not in instance.data:
             raise Exception("Dependencies not collected, this is a bug.")
 
