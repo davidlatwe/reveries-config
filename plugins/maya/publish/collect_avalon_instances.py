@@ -60,6 +60,10 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
 
             data = avalon.maya.lib.read(objset)
 
+            # For dependency tracking
+            data["dependencies"] = dict()
+            data["futureDependencies"] = dict()
+
             # Create the instance
             self.log.info("Creating instance for {}".format(objset))
             name = cmds.ls(objset, long=False)[0]   # use short name
