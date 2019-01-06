@@ -132,6 +132,7 @@ def create_dependency_instance(dependent,
                                name,
                                family,
                                members,
+                               optional=False,
                                category=None):
 
     """Create dependency instance from dependent instance
@@ -147,26 +148,39 @@ def create_dependency_instance(dependent,
         name (str): dependency instance name and subset name
         family (str): dependency instance's family
         members (list): dependency instance's member
+        optional (bool, optional): can be opt-out or not, default False
         category (str, optional): dependency instance's visual category
 
     """
-    pregenerated_version_id = avalon.io.ObjectId()
-
     if category is None:
         category = family + " (stray)"
 
+    pregenerated_version_id = avalon.io.ObjectId()
+    dependent.data["futureDependencies"][name] = pregenerated_version_id
+
     context = dependent.context
-    dependent_data = dependent.data
-    dependent_data["futureDependencies"].append(pregenerated_version_id)
 
     instance = context.create_instance(name)
     instance[:] = members
-    instance.data.update(dependent_data)
 
+    instance.data["id"] = dependent.data["id"]
     instance.data["family"] = family
+    instance.data["asset"] = dependent.data["asset"]
     instance.data["subset"] = name
+    instance.data["active"] = True
+    instance.data["optional"] = optional
     instance.data["category"] = category
     instance.data["pregeneratedVersionId"] = pregenerated_version_id
+    # For dependency tracking
+    instance.data["dependencies"] = dict()
+    instance.data["futureDependencies"] = dict()
+
+    # Move to front, because dependency instance should be integrated before
+    # dependent instance
+    context.pop()
+    context.insert(0, instance)
+
+    return instance
 
 
 class PackageLoader(object):
