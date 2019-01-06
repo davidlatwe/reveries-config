@@ -25,7 +25,6 @@ LAUNCHER_ACTION_PATH = os.path.join(PLUGINS_DIR, "global", "launcher")
 
 REVERIES_ICONS = os.path.join("$REVERIES_PATH", "res", "icons")
 
-os.environ["PYBLISH_QML_FOSTER"] = "true"
 os.environ["REVERIES_PATH"] = os.path.dirname(PACKAGE_DIR)
 
 __all__ = [
