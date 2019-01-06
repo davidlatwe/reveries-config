@@ -1,9 +1,37 @@
 
 import pyblish.api
-import avalon.io
 from avalon.pipeline import AVALON_CONTAINER_ID
 from maya import cmds
+from reveries import plugins
 from reveries.maya import lib
+
+
+def create_texture_subset_from_look(look_instance, textures):
+    """
+    """
+    look_name = "look"
+    texture_name = "texture"
+    family = "reveries.texture"
+    subset = texture_name + look_instance.data["subset"][len(look_name):]
+
+    plugins.create_dependency_instance(look_instance,
+                                       subset,
+                                       family,
+                                       textures)
+
+
+def find_stray_textures(instance, containers):
+
+    stray = list()
+
+    for file_node in cmds.ls(instance, type="file"):
+        sets = cmds.listSets(object=file_node) or []
+        if any(s in containers for s in sets):
+            continue
+
+        stray.append(file_node)
+
+    return stray
 
 
 class CollectLook(pyblish.api.InstancePlugin):
@@ -21,9 +49,10 @@ class CollectLook(pyblish.api.InstancePlugin):
                          noIntermediate=True,
                          type="mesh")
 
+        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
+
         # Collect paired model container
         paired = list()
-        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
         for mesh in meshes:
             transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
             for set_ in cmds.listSets(object=transform):
@@ -45,30 +74,6 @@ class CollectLook(pyblish.api.InstancePlugin):
         instance.data["dag_members"] = instance[:]
         instance[:] = upstream_nodes
 
-        # Collect previous texture file hash.
-        # dict {hash: "/file/path"}
-        instance.data["look_textures"] = dict()
-
-        asset_id = instance.data["asset_doc"]["_id"]
-        subset = avalon.io.find_one({"type": "subset",
-                                     "parent": asset_id,
-                                     "name": instance.data["subset"]})
-        if subset is None:
-            return
-
-        version = avalon.io.find_one({"type": "version",
-                                      "parent": subset["_id"]},
-                                     {"name": True},
-                                     sort=[("name", -1)])
-        if version is None:
-            return
-
-        representation = avalon.io.find_one({"type": "representation",
-                                             "name": "LookDev",
-                                             "parent": version["_id"]},
-                                            {"data.textures": True})
-        if representation is None:
-            raise Exception("Version exists but no representation, "
-                            "this is a bug.")
-
-        instance.data["look_textures"] = representation["data"]["textures"]
+        stray = find_stray_textures(instance, containers)
+        if stray:
+            create_texture_subset_from_look(instance, stray)
