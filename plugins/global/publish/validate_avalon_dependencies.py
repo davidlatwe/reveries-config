@@ -16,22 +16,33 @@ class ValidateAvalonDependencies(pyblish.api.InstancePlugin):
 
         dependencies = instance.data["dependencies"]
         asset_id = instance.data["asset_doc"]["_id"]
+        subset = avalon.io.find_one({"type": "subset",
+                                     "parent": asset_id,
+                                     "name": instance.data["subset"]})
+
+        if subset is None:
+            # Never been published
+            return
 
         # Ensure Acyclic
-        acyclic = self.is_acyclic(dependencies, asset_id)
+        acyclic = self.is_acyclic(dependencies, subset["_id"])
         if not acyclic:
             raise Exception("Cyclic dependency detected, this is invalid.")
 
-    def is_acyclic(self, dependencies, current_asset_id):
-        for dependency in dependencies:
-            if dependency["asset"]["_id"] == current_asset_id:
+    def is_acyclic(self, dependencies, current_subset_id):
+        for version_id in dependencies:
+
+            version_id = avalon.io.ObjectId(version_id)
+            version = avalon.io.find_one({"_id": version_id})
+
+            if version is None:
+                continue
+
+            if version["parent"] == current_subset_id:
                 return False
 
-            version_id = dependency["version"]["_id"]
-            version = avalon.io.find_one({"_id": version_id})
             dependencies = version["data"]["dependencies"]
-
-            if not self.is_acyclic(dependencies, current_asset_id):
+            if not self.is_acyclic(dependencies, current_subset_id):
                 return False
 
         return True

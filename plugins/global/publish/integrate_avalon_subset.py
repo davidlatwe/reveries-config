@@ -53,22 +53,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         version_id = self.write_database(instance, version, representations)
 
         # Update dependent
-        asset = instance.data["asset_doc"]
-        dependent = {
-            "asset": {
-                "_id": asset["_id"],
-                "name": asset["name"],
-            },
-            "subset": {
-                "_id": subset["_id"],
-                "name": subset["name"],
-            },
-            "version": {
-                "_id": version_id,
-                "name": version["name"],
-            },
-        }
-        self.update_dependent(instance, dependent)
+        self.update_dependent(instance, version_id)
 
     def register(self, instance):
 
@@ -245,6 +230,10 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #
         self.log.info("Registering version {} to database ..."
                       "".format(version["name"]))
+
+        if "pregeneratedVersionId" in instance.data:
+            version["_id"] = instance.data["pregeneratedVersionId"]
+
         version_id = io.insert_one(version).inserted_id
 
         # Write representations
@@ -336,8 +325,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             "source": source,
             "hash": hash_val,
             "comment": context.data.get("comment"),
-            "dependencies": instance.data.get("dependencies", []),
-            "dependents": [],
+            "dependencies": instance.data.get("dependencies", dict()),
+            "dependents": dict(),
         }
 
         # Include optional data if present in
@@ -348,11 +337,12 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         return version_data
 
-    def update_dependent(self, instance, dependent):
+    def update_dependent(self, instance, version_id):
 
-        for dependency in instance.data["dependencies"]:
-            version_id = dependency["version"]["_id"]
+        version_id = str(version_id)
+        field = "data.dependents." + version_id
 
-            filter_ = {"_id": version_id}
-            update = {"$push": {"data.dependents": dependent}}
+        for version_id_, data in instance.data["dependencies"].items():
+            filter_ = {"_id": io.ObjectId(version_id_)}
+            update = {"$set": {field: {"count": data["count"]}}}
             io.update_many(filter_, update)

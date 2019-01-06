@@ -4,7 +4,7 @@ import avalon.io
 
 
 class CollectAvalonDependencies(pyblish.api.ContextPlugin):
-    """
+    """Collect Avalon dependencies from containers
     """
 
     order = pyblish.api.CollectorOrder + 0.4
@@ -18,12 +18,14 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
         container_members = dict()
 
         for container in root_containers:
-            members = cmds.ls(cmds.sets(container, query=True), long=True)
+            members = cmds.sets(container, query=True) or []
+            shapes = cmds.listRelatives(members, shapes=True) or []
+            members = cmds.ls(members + shapes, long=True)
             container_members[container] = set(members)
 
         for instance in context:
-            instance.data["dependencies"] = list()
-            _cached = dict()
+
+            self.log.info("Collecting dependency: %s" % instance.data["name"])
 
             hierarchy = set(instance)
             _history = cmds.listHistory(instance, leaf=False)
@@ -35,36 +37,28 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
                     # Not dependent
                     continue
 
+                namespace = root_containers[con]["namespace"]
+                name = root_containers[con]["name"]
+
                 repr_id = root_containers[con]["representation"]
                 repr_id = avalon.io.ObjectId(repr_id)
-
                 representation = avalon.io.find_one({"_id": repr_id})
                 version = avalon.io.find_one({"_id": representation["parent"]})
-                subset = avalon.io.find_one({"_id": version["parent"]})
-                asset = avalon.io.find_one({"_id": subset["parent"]})
 
-                if repr_id not in _cached:
+                self.register_dependency(instance, version["_id"])
+                self.log.info("Collected: %s - %s" % (namespace, name))
 
-                    dependency = {
-                        "asset": {
-                            "_id": asset["_id"],
-                            "name": asset["name"],
-                        },
-                        "subset": {
-                            "_id": subset["_id"],
-                            "name": subset["name"],
-                        },
-                        "version": {
-                            "_id": version["_id"],
-                            "name": version["name"],
-                        },
-                        "count": 1,
-                    }
+            future_dependencies = instance.data["futureDependencies"]
+            for name, pregenerated_version_id in future_dependencies.items():
+                self.register_dependency(instance, pregenerated_version_id)
+                self.log.info("Collected (Future): %s" % name)
 
-                    _cached[repr_id] = dependency
-                    instance.data["dependencies"].append(dependency)
+    def register_dependency(self, instance, version_id):
+        """
+        """
+        version_id = str(version_id)
 
-                else:
-                    _cached[repr_id]["count"] += 1
-
-                self.log.info("Dependency collected: %s" % subset["name"])
+        if version_id not in instance.data["dependencies"]:
+            instance.data["dependencies"][version_id] = {"count": 1}
+        else:
+            instance.data["dependencies"][version_id]["count"] += 1
