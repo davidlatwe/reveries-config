@@ -4,12 +4,10 @@ import json
 import contextlib
 
 import pyblish.api
-import avalon.api
 
 from avalon.maya.pipeline import parse_container
 from avalon.pipeline import get_representation_context
 from reveries.plugins import PackageExtractor
-from reveries.utils import hash_file
 
 
 class ExtractLook(PackageExtractor):
@@ -39,11 +37,6 @@ class ExtractLook(PackageExtractor):
         entry_file = self.file_name("ma")
         package_path = self.create_package(entry_file)
 
-        version_dir = self.data["version_dir"].replace(
-            avalon.api.registered_root(), "$AVALON_PROJECTS"
-        )
-        self.log.debug("Version Dir: {!r}".format(version_dir))
-
         # Extract shaders
         #
         entry_path = os.path.join(package_path, entry_file)
@@ -51,50 +44,20 @@ class ExtractLook(PackageExtractor):
         self.log.info("Extracting shaders..")
 
         with contextlib.nested(
-            capsule.no_undo(),
             maya.maintained_selection(),
+            capsule.undo_chunk(),
             capsule.no_refresh(),
         ):
-            # Extract Textures
-            #
-            file_nodes = cmds.ls(self.member, type="file")
-            file_hashes = self.data["look_textures"]
+            # From texture extractor
+            file_node_path = self.context.data.get("fileNodePath")
+            if file_node_path is not None:
+                # Change texture path to published location
+                for file_node in cmds.ls(self.member, type="file"):
+                    attr_name = file_node + ".fileTextureName"
+                    final_path = file_node_path[file_node]
 
-            # hash file to check which to copy and which to remain old link
-            for node in file_nodes:
-                attr_name = node + ".fileTextureName"
-
-                img_path = cmds.getAttr(attr_name,
-                                        expandEnvironmentVariables=True)
-
-                hash_value = hash_file(img_path)
-                try:
-                    final_path = file_hashes[hash_value]
-                except KeyError:
-                    paths = [
-                        version_dir,
-                        "textures",
-                    ]
-                    paths += node.split(":")  # Namespace as fsys hierarchy
-                    paths.append(os.path.basename(img_path))  # image name
-                    #
-                    # Include node name as part of the path should prevent
-                    # file name collision which may introduce by two or
-                    # more file nodes sourcing from different directory
-                    # with same file name but different file content.
-                    #
-                    # For example:
-                    #   File_A.fileTextureName = "asset/a/texture.png"
-                    #   File_B.fileTextureName = "asset/b/texture.png"
-                    #
-                    final_path = os.path.join(*paths)
-
-                    file_hashes[hash_value] = final_path
-                    self.data["auxiliaries"].append((img_path, final_path))
-
-                # Set texture file path to publish location
-                cmds.setAttr(attr_name, final_path, type="string")
-                self.log.debug("Texture Path: {!r}".format(final_path))
+                    # Set texture file path to publish location
+                    cmds.setAttr(attr_name, final_path, type="string")
 
             # Select full shading network
             # If only select shadingGroups, and if there are any node
@@ -126,12 +89,14 @@ class ExtractLook(PackageExtractor):
         # Custom attributes in assembly node which require to be animated.
         self.log.info("Serialising animatable attributes..")
         animatable = dict()
-        root = cmds.ls(self.data["dag_members"], assemblies=True)[0]
-        for attr in cmds.listAttr(root, userDefined=True) or list():
-            animatable[attr] = cmds.listConnections(root + "." + attr,
-                                                    destination=True,
-                                                    source=False,
-                                                    plugs=True)
+        root = cmds.ls(self.data["dag_members"], assemblies=True)
+        if root:
+            root = root[0]
+            for attr in cmds.listAttr(root, userDefined=True) or list():
+                animatable[attr] = cmds.listConnections(root + "." + attr,
+                                                        destination=True,
+                                                        source=False,
+                                                        plugs=True)
 
         meshes = cmds.ls(self.data["dag_members"],
                          visible=True,
@@ -175,11 +140,12 @@ class ExtractLook(PackageExtractor):
                         vray_attrs[parent[0]] = values
 
         # Get model subset id
-        container_name = self.data["paired_container"][0]
-        model_container = parse_container(container_name)
-        representation_id = model_container["representation"]
-        context = get_representation_context(representation_id)
-        target_subset = str(context["subset"]["_id"])
+        targets = list()
+        for container_name in self.data["pairedContainers"]:
+            model_container = parse_container(container_name)
+            representation_id = model_container["representation"]
+            context = get_representation_context(representation_id)
+            targets.append(context["subset"]["_id"])
 
         relationships = {
             "shader_by_id": shader_by_id,
@@ -194,8 +160,7 @@ class ExtractLook(PackageExtractor):
 
         self.add_data({
             "link_fname": link_file,
-            "textures": self.data["look_textures"],
-            "target_subset": target_subset,
+            "targetSubsets": targets,
         })
 
         self.log.info("Extracted {name} to {path}".format(

@@ -128,6 +128,61 @@ def find_contractor(contractor_name=""):
     return None
 
 
+def create_dependency_instance(dependent,
+                               name,
+                               family,
+                               members,
+                               optional=False,
+                               category=None):
+
+    """Create dependency instance from dependent instance
+
+    Creating instance for unpublished or stray (not containerized) assets,
+    which have dependency relation with current existed instances while
+    publishing.
+
+    Example use case, publishing *look* with unpublished textures in Maya.
+
+    Arguments:
+        dependent (pyblish.api.Instance): dependent instance
+        name (str): dependency instance name and subset name
+        family (str): dependency instance's family
+        members (list): dependency instance's member
+        optional (bool, optional): can be opt-out or not, default False
+        category (str, optional): dependency instance's visual category
+
+    """
+    if category is None:
+        category = family + " (stray)"
+
+    pregenerated_version_id = avalon.io.ObjectId()
+    dependent.data["futureDependencies"][name] = pregenerated_version_id
+
+    context = dependent.context
+
+    instance = context.create_instance(name)
+    instance[:] = members
+
+    instance.data["id"] = dependent.data["id"]
+    instance.data["family"] = family
+    instance.data["asset"] = dependent.data["asset"]
+    instance.data["subset"] = name
+    instance.data["active"] = True
+    instance.data["optional"] = optional
+    instance.data["category"] = category
+    instance.data["pregeneratedVersionId"] = pregenerated_version_id
+    # For dependency tracking
+    instance.data["dependencies"] = dict()
+    instance.data["futureDependencies"] = dict()
+
+    # Move to front, because dependency instance should be integrated before
+    # dependent instance
+    context.pop()
+    context.insert(0, instance)
+
+    return instance
+
+
 class PackageLoader(object):
     """Load representation into host application
 

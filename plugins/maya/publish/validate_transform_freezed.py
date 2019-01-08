@@ -3,8 +3,19 @@ import pyblish.api
 from maya import cmds
 
 from reveries import lib
+from reveries.plugins import RepairInstanceAction
 from reveries.maya.plugins import MayaSelectInvalidAction
 from reveries.maya.lib import TRANSFORM_ATTRS
+
+
+class SelectInvalid(MayaSelectInvalidAction):
+
+    label = "Select Unfreezed"
+
+
+class FreezeTransform(RepairInstanceAction):
+
+    label = "Freeze Transform"
 
 
 class ValidateTranformFreezed(pyblish.api.InstancePlugin):
@@ -25,7 +36,9 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
 
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidAction,
+        SelectInvalid,
+        pyblish.api.Category("Fix It"),
+        FreezeTransform,
     ]
 
     @classmethod
@@ -88,3 +101,9 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
             raise ValueError("%s <Transform Freezed> Failed." % instance.name)
 
         self.log.info("%s <Transform Freezed> Passed." % instance.name)
+
+    @classmethod
+    def fix(cls, instance):
+        """Freeze transforms"""
+        for item in cls.get_invalid(instance):
+            cmds.makeIdentity(item, apply=True)

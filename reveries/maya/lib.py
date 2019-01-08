@@ -398,10 +398,10 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
             for target_namespace in target_namespaces:
                 # Find all meshes matching this particular ID
                 # Convert IDs to mesh + id, e.g. "nameOfNode.f[1:100]"
-                meshes = list(".".join([mesh, faces])
-                              for mesh in lsAttr(AVALON_ID_ATTR_LONG,
-                                                 value=mesh,
-                                                 namespace=target_namespace))
+                meshes = list(".".join([m, faces])
+                              for m in lsAttr(AVALON_ID_ATTR_LONG,
+                                              value=mesh,
+                                              namespace=target_namespace))
 
                 if not meshes:
                     continue

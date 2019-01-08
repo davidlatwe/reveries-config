@@ -12,8 +12,8 @@ class CollectAssetDocument(pyblish.api.InstancePlugin):
 
     """
 
-    label = "Asset Document"
-    order = pyblish.api.CollectorOrder
+    label = "Find Asset Document"
+    order = pyblish.api.CollectorOrder + 0.3
 
     def process(self, instance):
 

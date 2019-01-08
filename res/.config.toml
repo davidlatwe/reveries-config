@@ -1,11 +1,8 @@
 schema = "avalon-core:config-1.0"
-[[apps]]
-name = "shell"
-label = "Shell"
 
 [[apps]]
 name = "maya2018"
-label = "Autodesk Maya 2018"
+label = "Maya 2018"
 
 [[tasks]]
 name = "model"
@@ -26,8 +23,8 @@ name = "lookdev"
 name = "layout"
 
 [template]
-work = "{root}/{project}/Maya/Avalon/{silo}/{asset}/work/{task}"
-publish = "{root}/{project}/Maya/Avalon/{silo}/{asset}/publish/{subset}/v{version:0>3}/{representation}"
+work = "{root}/{project}/Avalon/{silo}/{asset}/work/{task}/{user}/{app}"
+publish = "{root}/{project}/Avalon/{silo}/{asset}/publish/{subset}/v{version:0>3}/{representation}"
 
 
 [[families]]

@@ -12,7 +12,7 @@ class CollectDelegatedInstance(pyblish.api.ContextPlugin):
 
     """
 
-    order = pyblish.api.CollectorOrder - 0.2
+    order = pyblish.api.CollectorOrder + 0.3
     label = "Delegated Instance"
 
     def process(self, context):
