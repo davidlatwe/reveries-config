@@ -39,9 +39,9 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         # Check Delegation
         #
         # Contractor completed long-run publish process
-        delegated = instance.context.data.get("contractor_accepted")
+        delegated = instance.context.data.get("contractorAccepted")
         # Is delegating long-run publish process
-        if instance.data.get("use_contractor") and not delegated:
+        if instance.data.get("useContractor") and not delegated:
             return
 
         # Assemble data and create version, representations
@@ -100,7 +100,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         subset = self.get_subset(instance)
 
         # get next version
-        next_version = instance.data["version_next"]
+        next_version = instance.data["versionNext"]
         version_data = self.create_version_data(context, instance)
         locations = [api.Session["AVALON_LOCATION"]]
         version = self.create_version(subset=subset,
@@ -114,8 +114,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         representations = []
 
         # `template` extracted from `ExtractPublishDir` plugin
-        template_data = instance.data["publish_dir_elem"][0]
-        template_publish = instance.data["publish_dir_elem"][1]
+        template_data = instance.data["publishDirElem"][0]
+        template_publish = instance.data["publishDirElem"][1]
 
         # Should not have any kind of check on files here, that should be done
         # by extractors, here only need to publish representation dirs.
@@ -268,7 +268,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     def get_subset(self, instance):
 
-        asset_id = instance.data["asset_doc"]["_id"]
+        asset_id = instance.data["assetDoc"]["_id"]
 
         subset = io.find_one({"type": "subset",
                               "parent": asset_id,

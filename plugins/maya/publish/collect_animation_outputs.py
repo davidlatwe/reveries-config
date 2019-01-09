@@ -24,7 +24,7 @@ class CollectAnimationOutputs(pyblish.api.InstancePlugin):
         members = cmds.ls(cmds.sets(out_set, query=True), long=True)
 
         # Store data in the instance for the validator
-        instance.data["out_animation"] = members
+        instance.data["outAnimation"] = members
 
         if len(members) == 0:
             self.log.warning(

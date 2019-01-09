@@ -18,7 +18,7 @@ class ValidateSceneSaved(pyblish.api.ContextPlugin):
         if cmds.file(q=True, modified=True):
             raise RuntimeError("Save scene before publish.")
 
-        if not context.data.get("contractor_accepted"):
+        if not context.data.get("contractorAccepted"):
             assert not maya.is_locked(), (
                 "This file is locked, please save scene under a new name."
             )

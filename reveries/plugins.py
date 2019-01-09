@@ -55,10 +55,10 @@ class BaseContractor(object):
             if instance.data.get("publish") is False:
                 continue
 
-            if instance.data.get("use_contractor") is False:
+            if instance.data.get("useContractor") is False:
                 continue
 
-            if not instance.data.get("publish_contractor") == self.name:
+            if not instance.data.get("publishContractor") == self.name:
                 continue
 
             # instance subset name
@@ -71,7 +71,7 @@ class BaseContractor(object):
             # same params.
             #
             key = "AVALON_DELEGATED_VERSION_NUM_%d" % ind
-            environment[key] = instance.data["version_next"]
+            environment[key] = instance.data["versionNext"]
 
         return environment
 
@@ -268,7 +268,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         self.member = instance[:]
         self.subset_doc = avalon.io.find_one({
             "type": "subset",
-            "parent": self.data["asset_doc"]["_id"],
+            "parent": self.data["assetDoc"]["_id"],
             "name": self.data["subset"],
         })
 
@@ -378,8 +378,8 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
             retry_time += 1
 
-        self.data["publish_dir_elem"] = (self._publish_key, self._publish_path)
-        self.data["version_next"] = version_number
+        self.data["publishDirElem"] = (self._publish_key, self._publish_path)
+        self.data["versionNext"] = version_number
         self.data["version_dir"] = version_dir
 
         self.log.debug("Next version: {}".format(version_number))
@@ -479,8 +479,8 @@ class DelegatablePackageExtractor(PackageExtractor):
         """
         self._process(instance)
 
-        use_contractor = self.data.get("use_contractor")
-        accepted = self.context.data.get("contractor_accepted")
+        use_contractor = self.data.get("useContractor")
+        accepted = self.context.data.get("contractorAccepted")
         on_delegate = use_contractor and not accepted
 
         if on_delegate:
@@ -495,9 +495,9 @@ class DelegatablePackageExtractor(PackageExtractor):
 
     def _get_version(self):
         # get version
-        if self.context.data.get("contractor_accepted"):
+        if self.context.data.get("contractorAccepted"):
             # version lock if publish process has been delegated.
-            return self.data["version_next"]
+            return self.data["versionNext"]
         else:
             return super(DelegatablePackageExtractor, self)._get_version()
 

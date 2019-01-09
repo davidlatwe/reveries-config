@@ -83,13 +83,13 @@ class ExtractLook(PackageExtractor):
 
         self.log.info("Serialising shaders..")
 
-        shader_by_id = lib.serialise_shaders(self.data["dag_members"])
+        shader_by_id = lib.serialise_shaders(self.data["dagMembers"])
 
         # Animatable attrs
         # Custom attributes in assembly node which require to be animated.
         self.log.info("Serialising animatable attributes..")
         animatable = dict()
-        root = cmds.ls(self.data["dag_members"], assemblies=True)
+        root = cmds.ls(self.data["dagMembers"], assemblies=True)
         if root:
             root = root[0]
             for attr in cmds.listAttr(root, userDefined=True) or list():
@@ -98,7 +98,7 @@ class ExtractLook(PackageExtractor):
                                                         source=False,
                                                         plugs=True)
 
-        meshes = cmds.ls(self.data["dag_members"],
+        meshes = cmds.ls(self.data["dagMembers"],
                          visible=True,
                          noIntermediate=True,
                          type="mesh")
@@ -148,10 +148,10 @@ class ExtractLook(PackageExtractor):
             targets.append(context["subset"]["_id"])
 
         relationships = {
-            "shader_by_id": shader_by_id,
+            "shaderById": shader_by_id,
             "animatable": animatable,
-            "crease_sets": crease_sets,
-            "vray_attrs": vray_attrs,
+            "creaseSets": crease_sets,
+            "vrayAttrs": vray_attrs,
         }
 
         self.log.info("Extracting serialisation..")
@@ -159,7 +159,7 @@ class ExtractLook(PackageExtractor):
             json.dump(relationships, f, indent=4)
 
         self.add_data({
-            "link_fname": link_file,
+            "linkFname": link_file,
             "targetSubsets": targets,
         })
 

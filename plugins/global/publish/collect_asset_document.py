@@ -8,7 +8,7 @@ class CollectAssetDocument(pyblish.api.InstancePlugin):
     """Collect asset document from database
 
     keys in instance.data:
-        * asset_doc
+        * assetDoc
 
     """
 
@@ -29,4 +29,4 @@ class CollectAssetDocument(pyblish.api.InstancePlugin):
                                     "parent": project["_id"]})
         assert asset is not None, ("Could not find current asset '%s'" % ASSET)
 
-        instance.data["asset_doc"] = asset
+        instance.data["assetDoc"] = asset

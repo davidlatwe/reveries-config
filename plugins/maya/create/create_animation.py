@@ -23,11 +23,11 @@ class AnimationCreator(avalon.maya.Creator):
         cache_mode = settings.get("animation_cache", "Alembic")
         self.data["format"] = cache_mode
 
-        self.data["publish_contractor"] = self.contractor
-        self.data["use_contractor"] = False
+        self.data["publishContractor"] = self.contractor
+        self.data["useContractor"] = False
 
         instance = super(AnimationCreator, self).process()
         cmds.setAttr(instance + ".format", lock=True)
-        cmds.setAttr(instance + ".publish_contractor", lock=True)
+        cmds.setAttr(instance + ".publishContractor", lock=True)
 
         return put_instance_icon(instance)

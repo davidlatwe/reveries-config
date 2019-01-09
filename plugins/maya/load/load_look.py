@@ -91,7 +91,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         import avalon.maya
         from reveries.maya import lib
 
-        relationship = self.file_path(representation["data"]["link_fname"])
+        relationship = self.file_path(representation["data"]["linkFname"])
         # Expand $AVALON_PROJECT and friends, if used
         relationship = os.path.expandvars(relationship)
 
@@ -110,6 +110,6 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         target_namespaces = [con["namespace"] + ":" for con in avalon.maya.ls()
                              if con["subsetId"] in targets]
 
-        lib.apply_shaders(relationships["shader_by_id"],
+        lib.apply_shaders(relationships["shaderById"],
                           namespace,
                           target_namespaces)

@@ -25,14 +25,14 @@ class PublishReports(pyblish.api.ContextPlugin):
 
         for instance in context:
             subset = instance.data["subset"]
-            version = instance.data["version_next"]
+            version = instance.data["versionNext"]
 
             self.log.info("Subset: {}".format(subset))
             self.log.info("Version: {}".format(version))
 
             self.log.info("Representations:")
             for package in instance.data["packages"]:
-                publish_contractor = instance.data.get("publish_contractor")
+                publish_contractor = instance.data.get("publishContractor")
 
                 self.log.info("    {}".format(package))
                 self.log.info("    - Publish contractor: {}"

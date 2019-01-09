@@ -18,10 +18,10 @@ class CameraCreator(avalon.maya.Creator):
     def process(self):
         self.data["capture_png"] = True
 
-        self.data["publish_contractor"] = self.contractor
-        self.data["use_contractor"] = True
+        self.data["publishContractor"] = self.contractor
+        self.data["useContractor"] = True
 
         instance = super(CameraCreator, self).process()
-        cmds.setAttr(instance + ".publish_contractor", lock=True)
+        cmds.setAttr(instance + ".publishContractor", lock=True)
 
         return put_instance_icon(instance)

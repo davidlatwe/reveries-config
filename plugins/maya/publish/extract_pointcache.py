@@ -34,7 +34,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
 
     def extract(self):
 
-        if self.data.get("static_cache"):
+        if self.data.get("staticCache"):
             self.start_frame = cmds.currentTime(query=True)
             self.end_frame = cmds.currentTime(query=True)
         else:
@@ -48,7 +48,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
             capsule.evaluation("off"),
             avalon.maya.maintained_selection(),
         ):
-            out_geo = self.data.get("out_animation", self.member)
+            out_geo = self.data.get("outAnimation", self.member)
             cmds.select(out_geo, replace=True)
 
             super(ExtractPointCache, self).extract()

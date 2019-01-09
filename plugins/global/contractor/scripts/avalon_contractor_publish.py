@@ -58,8 +58,8 @@ def parse_environment(context):
     log.info("Found {} delegated instances.".format(len(assignment)))
 
     # set flag
-    context.data["contractor_accepted"] = True
-    context.data["contractor_assignment"] = assignment
+    context.data["contractorAccepted"] = True
+    context.data["contractorAssignment"] = assignment
 
 
 def publish():
