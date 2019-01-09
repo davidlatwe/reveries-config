@@ -37,8 +37,9 @@ def clear_stage(prefix="tmp"):
     os.chdir(cwd_backup)
 
 
-def get_timeline_data():
-    project = avalon.io.find_one({"type": "project"})
+def get_timeline_data(project=None):
+    if project is None:
+        project = avalon.io.find_one({"type": "project"})
     asset = avalon.Session["AVALON_ASSET"]
     asset = avalon.io.find_one({"name": asset, "type": "asset"})
 
@@ -62,16 +63,17 @@ def get_timeline_data():
     return edit_in, edit_out, handles, fps
 
 
-def compose_timeline_data():
-    edit_in, edit_out, handles, fps = get_timeline_data()
+def compose_timeline_data(project=None):
+    edit_in, edit_out, handles, fps = get_timeline_data(project)
     start_frame = edit_in - handles
     end_frame = edit_out + handles
 
     return start_frame, end_frame, fps
 
 
-def get_resolution_data():
-    project = avalon.io.find_one({"type": "project"})
+def get_resolution_data(project=None):
+    if project is None:
+        project = avalon.io.find_one({"type": "project"})
     resolution_width = project["data"].get("resolution_width", 1920)
     resolution_height = project["data"].get("resolution_height", 1080)
     return resolution_width, resolution_height

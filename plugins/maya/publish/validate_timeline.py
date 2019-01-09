@@ -31,7 +31,8 @@ class ValidateTimeline(pyblish.api.ContextPlugin):
 
     def process(self, context):
 
-        start_frame, end_frame, fps = utils.compose_timeline_data()
+        project = context.data["projectDoc"]
+        start_frame, end_frame, fps = utils.compose_timeline_data(project)
 
         start = context.data.get("startFrame")
         end = context.data.get("endFrame")

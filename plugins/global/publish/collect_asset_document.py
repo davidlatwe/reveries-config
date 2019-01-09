@@ -20,9 +20,7 @@ class CollectAssetDocument(pyblish.api.InstancePlugin):
         # Required environment variables
         ASSET = instance.data["asset"]
 
-        project = avalon.io.find_one(
-            {"type": "project"}, projection={"config.template.publish": True})
-        assert project is not None, "Could not find project document."
+        project = instance.context.data["projectDoc"]
 
         asset = avalon.io.find_one({"type": "asset",
                                     "name": ASSET,

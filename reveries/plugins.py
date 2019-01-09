@@ -272,9 +272,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             "name": self.data["subset"],
         })
 
-        project = avalon.io.find_one(
-            {"type": "project"},
-            projection={"config.template.publish": True})
+        project = instance.context.data["projectDoc"]
 
         self._publish_path = project["config"]["template"]["publish"]
 
