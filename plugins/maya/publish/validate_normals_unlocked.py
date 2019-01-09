@@ -45,7 +45,7 @@ class ValidateNormalsUnlocked(pyblish.api.Validator):
     def get_invalid(cls, instance):
         """Return the meshes with locked normals in instance"""
 
-        meshes = cmds.ls(instance, type='mesh', long=True)
+        meshes = cmds.ls(instance, type="mesh", long=True)
         return [mesh for mesh in meshes if cls.has_locked_normals(mesh)]
 
     def process(self, instance):
