@@ -332,15 +332,16 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         families += current_families
 
         # create relative source path for DB
-        relative_path = os.path.relpath(context.data["currentMaking"],
-                                        api.registered_root())
-        source = os.path.join("{root}", relative_path).replace("\\", "/")
+        source = context.data["currentMaking"]
+        source = source.replace(api.registered_root(), "{root}")
+        source = source.replace("\\", "/")
         hash_val = context.data["sourceFingerprint"]["currentHash"]
 
         version_data = {
             "families": families,
             "time": context.data["time"],
             "author": context.data["user"],
+            "task": api.Session.get("AVALON_TASK"),
             "source": source,
             "hash": hash_val,
             "comment": context.data.get("comment"),
