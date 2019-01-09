@@ -61,29 +61,30 @@ class ExtractTexture(PackageExtractor):
             img_path = cmds.getAttr(attr_name,
                                     expandEnvironmentVariables=True)
 
+            img_name = os.path.basename(img_path)
+            paths = [package_path]
+            paths += file_node.split(":")  # Namespace as fsys hierarchy
+            paths.append(img_name)  # image name
+            #
+            # Include node name as part of the path should prevent
+            # file name collision which may introduce by two or
+            # more file nodes sourcing from different directory
+            # with same file name but different file content.
+            #
+            # For example:
+            #   File_A.fileTextureName = "asset/a/texture.png"
+            #   File_B.fileTextureName = "asset/b/texture.png"
+            #
+            final_path = os.path.join(*paths)
+
             hash_value = hash_file(img_path)
             try:
-                final_path = latest_hashes[hash_value]
+                previous_path = latest_hashes[hash_value]
             except KeyError:
-                paths = [
-                    package_path,
-                ]
-                paths += file_node.split(":")  # Namespace as fsys hierarchy
-                paths.append(os.path.basename(img_path))  # image name
-                #
-                # Include node name as part of the path should prevent
-                # file name collision which may introduce by two or
-                # more file nodes sourcing from different directory
-                # with same file name but different file content.
-                #
-                # For example:
-                #   File_A.fileTextureName = "asset/a/texture.png"
-                #   File_B.fileTextureName = "asset/b/texture.png"
-                #
-                final_path = os.path.join(*paths)
-                self.data["auxiliaries"].append((img_path, final_path))
-
                 latest_hashes[hash_value] = final_path
+                self.data["files"].append((img_path, final_path))
+            else:
+                self.data["hardlinks"].append((previous_path, final_path))
 
             self.context.data["fileNodePath"][file_node] = final_path
             self.log.debug("Texture Path: {!r}".format(final_path))

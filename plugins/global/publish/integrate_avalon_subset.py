@@ -6,6 +6,7 @@ import shutil
 import errno
 import pyblish.api
 from avalon import api, io
+from avalon.vendor import filelink
 
 
 log = logging.getLogger(__name__)
@@ -32,7 +33,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     def process(self, instance):
 
         self.transfers = dict(packages=list(),
-                              auxiliaries=list())
+                              files=list(),
+                              hardlinks=list())
 
         # Check Delegation
         #
@@ -123,11 +125,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             template_data["representation"] = package
             publish_path = template_publish.format(**template_data)
 
-            src = os.path.join(stagingdir, package)
-            dst = publish_path
-
-            self.transfers["packages"].append([src, dst])
-
             representation = {
                 "schema": "avalon-core:representation-2.0",
                 "type": "representation",
@@ -137,7 +134,13 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             }
             representations.append(representation)
 
-        self.transfers["auxiliaries"] += instance.data["auxiliaries"]
+            src = os.path.join(stagingdir, package)
+            dst = publish_path
+
+            self.transfers["packages"].append([src, dst])
+
+        self.transfers["files"] += instance.data["files"]
+        self.transfers["hardlinks"] += instance.data["hardlinks"]
 
         return subset, version, representations
 
@@ -177,14 +180,16 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
                 self.log.info("Copying {0}: {1} -> {2}".format(job, src, dst))
                 if src == dst:
-                    self.log.warning("Source and destination are the same, "
-                                     "will not copy.")
+                    self.log.debug("Source and destination are the same, "
+                                   "will not copy.")
                     continue
 
                 if job == "packages":
                     self.copy_dir(src, dst)
-                if job == "auxiliaries":
+                if job == "files":
                     self.copy_file(src, dst)
+                if job == "hardlinks":
+                    self.hardlink_file(src, dst)
 
     def copy_dir(self, src, dst):
         """ Copy given source to destination
@@ -218,6 +223,20 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             msg = "An unexpected error occurred."
             self.log.critical(msg)
             raise OSError(msg)
+
+    def hardlink_file(self, src, dst):
+
+        dirname = os.path.dirname(dst)
+        try:
+            os.makedirs(dirname)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                pass
+            else:
+                self.log.critical("An unexpected error occurred.")
+                raise
+
+        filelink.create(src, dst, filelink.HARDLINK)
 
     def write_database(self, instance, version, representations):
         """Write version and representations to database

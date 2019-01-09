@@ -302,8 +302,11 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         if "packages" not in self.data:
             self.data["packages"] = dict()
 
-        if "auxiliaries" not in self.data:
-            self.data["auxiliaries"] = list()
+        if "files" not in self.data:
+            self.data["files"] = list()
+
+        if "hardlinks" not in self.data:
+            self.data["hardlinks"] = list()
 
     def _get_version(self):
         version = None
