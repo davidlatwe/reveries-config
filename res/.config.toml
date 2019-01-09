@@ -43,6 +43,11 @@ label = "Look"
 icon = "paint-brush"
 
 [[families]]
+name = "reveries.texture"
+label = "Texture"
+icon = "picture-o"
+
+[[families]]
 name = "reveries.setdress"
 label = "Set Dress"
 icon = "tree"
