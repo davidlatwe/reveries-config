@@ -99,7 +99,6 @@ class ExtractLook(PackageExtractor):
                                                         plugs=True)
 
         meshes = cmds.ls(self.data["dagMembers"],
-                         visible=True,
                          noIntermediate=True,
                          type="mesh")
 

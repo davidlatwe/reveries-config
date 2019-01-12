@@ -31,7 +31,6 @@ class CollectLook(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         meshes = cmds.ls(instance,
-                         visible=True,
                          noIntermediate=True,
                          type="mesh")
 
