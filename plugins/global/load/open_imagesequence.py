@@ -27,7 +27,6 @@ class PlayImageSequence(PackageLoader, avalon.api.Loader):
 
     families = [
         "reveries.camera",
-        "reveries.playblast",
     ]
 
     representations = [

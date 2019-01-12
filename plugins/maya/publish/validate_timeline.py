@@ -22,7 +22,6 @@ class ValidateTimeline(pyblish.api.ContextPlugin):
         "reveries.animation",
         "reveries.pointcache",
         "reveries.camera",
-        "reveries.playblast",
     ]
     actions = [
         pyblish.api.Category("Fix It"),

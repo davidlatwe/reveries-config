@@ -13,7 +13,6 @@ class ValidateCameraCenterOfInterest(pyblish.api.InstancePlugin):
     label = "Center Of Interest"
     families = [
         "reveries.camera",
-        "reveries.playblast",
     ]
 
     def process(self, instance):
