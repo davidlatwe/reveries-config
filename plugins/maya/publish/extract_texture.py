@@ -33,7 +33,8 @@ class ExtractTexture(PackageExtractor):
             avalon.api.registered_root(), "$AVALON_PROJECTS"
         )
 
-        self.context.data["fileNodePath"] = dict()
+        if "fileNodePath" not in self.context.data:
+            self.context.data["fileNodePath"] = dict()
 
         # Extract textures
         #
@@ -87,6 +88,7 @@ class ExtractTexture(PackageExtractor):
                 self.data["hardlinks"].append((previous_path, final_path))
 
             self.context.data["fileNodePath"][file_node] = final_path
+            self.log.debug("FileNode: {!r}".format(file_node))
             self.log.debug("Texture Path: {!r}".format(final_path))
 
         self.add_data({"hashes": latest_hashes})
