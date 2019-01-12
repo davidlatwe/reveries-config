@@ -68,6 +68,6 @@ label = "Camera"
 icon = "video-camera"
 
 [[families]]
-name = "reveries.mayaShare"
-label = "MayaShare(.ma)"
+name = "reveries.mayashare"
+label = "Maya Share (.ma)"
 icon = "share-square-o"

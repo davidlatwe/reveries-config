@@ -13,7 +13,7 @@ class MayaShareLoader(ReferenceLoader, avalon.api.Loader):
 
     hosts = ["maya"]
 
-    families = ["reveries.mayaShare"]
+    families = ["reveries.mayashare"]
 
     representations = [
         "mayaAscii",

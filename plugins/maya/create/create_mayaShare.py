@@ -5,11 +5,11 @@ from reveries.maya.pipeline import put_instance_icon
 
 
 class MayaShareCreator(avalon.maya.Creator):
-    """Share work as MayaAscii file"""
+    """Share work as MayaAscii with minimum validation"""
 
-    name = "MayaShareDefault"
-    label = "MayaShare(.ma)"
-    family = "reveries.mayaShare"
+    name = "mayashareDefault"
+    label = "Maya Share (.ma)"
+    family = "reveries.mayashare"
     icon = "share-square-o"
 
     def process(self):

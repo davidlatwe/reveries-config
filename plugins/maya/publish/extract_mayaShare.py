@@ -14,7 +14,7 @@ class ExtractMayaShare(PackageExtractor):
     label = "Extract MayaShare (mayaAscii)"
     order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
-    families = ["reveries.mayaShare"]
+    families = ["reveries.mayashare"]
 
     representations = [
         "mayaAscii",
