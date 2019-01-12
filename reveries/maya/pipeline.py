@@ -280,3 +280,18 @@ def put_instance_icon(instance):
     instance_icon = os.path.join(REVERIES_ICONS, "instance-01.png")
     sticker.put(instance, instance_icon)
     return instance
+
+
+def find_stray_textures(instance, containers):
+    """Find file nodes that were not containerized
+    """
+    stray = list()
+
+    for file_node in cmds.ls(instance, type="file"):
+        sets = cmds.listSets(object=file_node) or []
+        if any(s in containers for s in sets):
+            continue
+
+        stray.append(file_node)
+
+    return stray
