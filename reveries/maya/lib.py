@@ -390,7 +390,10 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
     for shader, ids in relationships.items():
         print("Looking for '%s'.." % shader)
         shader = next(iter(cmds.ls(shader)), None)
-        assert shader, "Associated shader not part of asset, this is a bug"
+        if shader is None:
+            log.warning("{!r} Not found. Skipping..".format(shader))
+            log.warning("Associated shader not part of asset, this is a bug.")
+            continue
 
         for id_ in ids:
             mesh, faces = (id_.rsplit(".", 1) + [""])[:2]
