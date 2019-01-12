@@ -8,7 +8,7 @@ from reveries.maya.pipeline import put_instance_icon
 class PointCacheCreator(avalon.maya.Creator):
     """Any cacheable object"""
 
-    name = "PointCacheDefault"
+    name = "pointcacheDefault"
     label = "PointCache"
     family = "reveries.pointcache"
     icon = "diamond"
