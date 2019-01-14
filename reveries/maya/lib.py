@@ -117,10 +117,11 @@ def bake_hierarchy_visibility(nodes, start_frame, end_frame, step=1):
         cmds.connectAttr(curve + ".output", node + ".visibility", force=True)
 
 
-def set_scene_timeline():
+def set_scene_timeline(project=None, asset_name=None):
     log.info("Timeline setting...")
 
-    start_frame, end_frame, fps = utils.compose_timeline_data()
+    start_frame, end_frame, fps = utils.compose_timeline_data(project,
+                                                              asset_name)
     fps = FPS_MAP.get(fps)
 
     if fps is None:

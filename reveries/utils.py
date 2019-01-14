@@ -37,10 +37,10 @@ def clear_stage(prefix="tmp"):
     os.chdir(cwd_backup)
 
 
-def get_timeline_data(project=None):
+def get_timeline_data(project=None, asset_name=None):
     if project is None:
         project = avalon.io.find_one({"type": "project"})
-    asset = avalon.Session["AVALON_ASSET"]
+    asset = asset_name or avalon.Session["AVALON_ASSET"]
     asset = avalon.io.find_one({"name": asset, "type": "asset"})
 
     def get_time(key):
@@ -63,8 +63,8 @@ def get_timeline_data(project=None):
     return edit_in, edit_out, handles, fps
 
 
-def compose_timeline_data(project=None):
-    edit_in, edit_out, handles, fps = get_timeline_data(project)
+def compose_timeline_data(project=None, asset_name=None):
+    edit_in, edit_out, handles, fps = get_timeline_data(project, asset_name)
     start_frame = edit_in - handles
     end_frame = edit_out + handles
 
