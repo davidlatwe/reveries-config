@@ -227,6 +227,33 @@ def message_box_warning(title, message, optional=False):
         return respond == QtWidgets.QMessageBox.Ok
 
 
+def context_process(process):
+    """Decorator, an workaround for pyblish/pyblish-base#250
+
+    This will make instance plugin process only run once, just like
+    context plugin.
+
+    And instead of passing `instance` arg, this will change to pass `context`
+    to the `process`.
+
+    """
+    def _context_process(self, instance):
+        context = instance.context
+        processed_tag = "_" + self.__class__.__name__ + "_validated_"
+
+        if context.data.get(processed_tag):
+            self.log.info("Operated on context level, skipping.")
+            return
+        # Mark as validated
+        context.data[processed_tag] = True
+
+        result = process(self, context)
+
+        return result
+
+    return _context_process
+
+
 def skip_stage(extractor):
     """Decorator, indicate the extractor will directly save to publish dir
     """
