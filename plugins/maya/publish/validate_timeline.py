@@ -3,7 +3,7 @@ import pyblish.api
 
 from reveries import utils
 from reveries.maya.lib import set_scene_timeline
-from reveries.plugins import RepairContextAction
+from reveries.plugins import RepairContextAction, context_process
 
 
 class RepairInvalid(RepairContextAction):
@@ -11,7 +11,7 @@ class RepairInvalid(RepairContextAction):
     label = "Reset Timeline"
 
 
-class ValidateTimeline(pyblish.api.ContextPlugin):
+class ValidateTimeline(pyblish.api.InstancePlugin):
     """Valides the frame ranges and fps.
     """
 
@@ -22,16 +22,21 @@ class ValidateTimeline(pyblish.api.ContextPlugin):
         "reveries.animation",
         "reveries.pointcache",
         "reveries.camera",
+        "reveries.imgseq",
     ]
     actions = [
         pyblish.api.Category("Fix It"),
         RepairInvalid,
     ]
 
+    @context_process
     def process(self, context):
 
+        asset_name = self.swap_asset(context)
+
         project = context.data["projectDoc"]
-        start_frame, end_frame, fps = utils.compose_timeline_data(project)
+        start_frame, end_frame, fps = utils.compose_timeline_data(project,
+                                                                  asset_name)
 
         start = context.data.get("startFrame")
         end = context.data.get("endFrame")
@@ -58,6 +63,13 @@ class ValidateTimeline(pyblish.api.ContextPlugin):
         if is_invalid:
             raise ValueError("Timeline does not match with project settings.")
 
+    def swap_asset(self, context):
+        for instance in context:
+            families = instance.data.get("families", [])
+            if "reveries.imgseq.turntable" in families:
+                return "LookDevStage"
+
     @classmethod
     def fix(cls, context):
-        set_scene_timeline()
+        asset_name = cls.swap_asset(context)
+        set_scene_timeline(asset_name=asset_name)
