@@ -732,6 +732,14 @@ def to_namespace(node, namespace):
     return node
 
 
+def ls_startup_cameras():
+    cameras = [cam for cam in cmds.ls(cameras=True, long=True)
+               if cmds.camera(cam, query=True, startupCamera=True)]
+    cameras += cmds.listRelatives(cameras, parent=True, fullPath=True)
+
+    return cameras
+
+
 def acquire_lock_state(nodes):
     nodes = cmds.ls(nodes, objectsOnly=True, long=True)
     is_lock = cmds.lockNode(nodes, query=True, lock=True)

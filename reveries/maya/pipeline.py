@@ -22,6 +22,48 @@ AVALON_GROUP_ATTR = "subsetGroup"
 AVALON_CONTAINER_ATTR = "container"
 
 
+_node_lock_state = {"_": None}
+
+
+def is_editable():
+    return _node_lock_state["_"] is None
+
+
+def reset_edit_lock():
+    _node_lock_state["_"] = None
+
+
+def lock_edit():
+    """Restrict scene modifications
+
+    All nodes will be locked, except:
+        * default nodes
+        * startup cameras
+
+    """
+    all_nodes = set(cmds.ls(objectsOnly=True, long=True))
+    defaults = set(cmds.ls(defaultNodes=True))
+    cameras = set(lib.ls_startup_cameras())
+    materials = set(cmds.ls(materials=True))
+
+    nodes_to_lock = list((all_nodes - defaults - cameras).union(materials))
+
+    # Save current lock state
+    _node_lock_state["_"] = lib.acquire_lock_state(nodes_to_lock)
+    # Lock
+    lib.lock_nodes(nodes_to_lock)
+
+
+def unlock_edit():
+    """Unleash scene modifications
+
+    Restore all nodes' previous lock states
+
+    """
+    lib.restore_lock_state(_node_lock_state["_"])
+    reset_edit_lock()
+
+
 def subset_group_name(namespace, name):
     return "{}:{}".format(namespace, name)
 
