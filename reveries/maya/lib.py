@@ -730,3 +730,47 @@ def to_namespace(node, namespace):
     namespace_prefix = "|{}:".format(namespace)
     node = namespace_prefix.join(node.split("|"))
     return node
+
+
+def acquire_lock_state(nodes):
+    nodes = cmds.ls(nodes, objectsOnly=True, long=True)
+    is_lock = cmds.lockNode(nodes, query=True, lock=True)
+    is_lockName = cmds.lockNode(nodes, query=True, lockName=True)
+    is_lockUnpub = cmds.lockNode(nodes, query=True, lockUnpublished=True)
+
+    return {
+        "uuids": cmds.ls(nodes, uuid=True),
+        "isLock": is_lock,
+        "isLockName": is_lockName,
+        "isLockUnpublished": is_lockUnpub
+    }
+
+
+def lock_nodes(nodes, lock=True, lockName=True, lockUnpublished=True):
+    # (NOTE) `lockNode` command flags:
+    #    lock: If flag not supplied, default `True`
+    #    lockName: If flag not supplied, default `False`
+    #    lockUnpublished: No default, change nothing if not supplied
+    #    ignoreComponents: If components presence in the input list,
+    #                      will raise RuntimeError and nothing will
+    #                      be locked. But if this flag supplied, it
+    #                      will silently ignore components.
+    cmds.lockNode(nodes,
+                  lock=lock,
+                  lockName=lockName,
+                  lockUnpublished=lockUnpublished,
+                  ignoreComponents=True)
+
+
+def restore_lock_state(lock_state):
+    for _ in range(len(lock_state["uuids"])):
+        uuid = lock_state["uuids"].pop(0)
+        node = cmds.ls(uuid)
+        if not node:
+            continue
+
+        cmds.lockNode(node,
+                      lock=lock_state["isLock"].pop(0),
+                      lockName=lock_state["isLockName"].pop(0),
+                      lockUnpublished=lock_state["isLockUnpublished"].pop(0),
+                      ignoreComponents=True)
