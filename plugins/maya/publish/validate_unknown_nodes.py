@@ -1,7 +1,7 @@
 
 import pyblish.api
 from reveries.plugins import context_process
-from reveries.plugins import RepairInstanceAction
+from reveries.plugins import RepairContextAction
 from reveries.maya.plugins import MayaSelectInvalidAction
 
 
@@ -10,7 +10,7 @@ class SelectUnknownNodes(MayaSelectInvalidAction):
     label = "Select Unknown"
 
 
-class DeleteUnknownNodes(RepairInstanceAction):
+class DeleteUnknownNodes(RepairContextAction):
 
     label = "Delete Unknown"
 
@@ -49,9 +49,9 @@ class ValidateUnknownNodes(pyblish.api.InstancePlugin):
             raise Exception("Scene contain unknown nodes.")
 
     @classmethod
-    def fix(cls, instance):
+    def fix(cls, context):
         """Delete unknown nodes"""
         from maya import cmds
-        for item in cls.get_invalid(instance):
+        for item in cls.get_invalid(context):
             if cmds.objExists(item):
                 cmds.delete(item)
