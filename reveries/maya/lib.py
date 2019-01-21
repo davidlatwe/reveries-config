@@ -37,6 +37,43 @@ FPS_MAP = {
 }
 
 
+def query_by_renderlayer(node, attr, layer):
+    """Query attribute without switching renderLayer when layer overridden
+
+    Arguments:
+        node (str): node name
+        attr (str): node attribute name
+        layer (str): renderLayer name
+
+    """
+    if not cmds.ls(layer, type="renderLayer"):
+        raise ValueError("RenderLayer not exists: %s" % layer)
+
+    node_attr = node + "." + attr
+    if not cmds.objExists(node_attr):
+        raise AttributeError("Attribute not exists: %s" % node_attr)
+
+    current = cmds.editRenderLayerGlobals(query=True, currentRenderLayer=True)
+    if layer == current:
+        return cmds.getAttr(node_attr)
+
+    try:
+        # For type correct, because bool value may return as float
+        # from renderlayer.adjustments
+        type_ = eval(cmds.getAttr(node_attr, type=True))
+    except NameError:
+        type_ = (lambda _: _)
+
+    for conn in cmds.listConnections(node_attr, type="renderLayer",
+                                     source=False, plugs=True):
+        if not conn.startswith("%s.adjustments" % layer):
+            continue
+        # layer.adjustments[*].plug -> layer.adjustments[*].value
+        return type_(cmds.getAttr(conn.rsplit(".", 1)[0] + ".value"))
+    # No override
+    return cmds.getAttr(node_attr)
+
+
 def is_visible(node,
                displayLayer=True,
                intermediateObject=True,
