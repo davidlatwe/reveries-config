@@ -425,3 +425,13 @@ def generate_container_id():
     hasher = hashlib.sha1()
     hasher.update(os.urandom(40))
     return "CON" + hasher.hexdigest()
+
+
+def get_renderer_by_layer(layer):
+    return lib.query_by_renderlayer("defaultRenderGlobals",
+                                    "currentRenderer",
+                                    layer)
+
+
+def get_current_renderlayer():
+    return cmds.editRenderLayerGlobals(query=True, currentRenderLayer=True)
