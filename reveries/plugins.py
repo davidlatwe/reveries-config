@@ -239,7 +239,7 @@ def context_process(process):
     """
     def _context_process(self, instance):
         context = instance.context
-        processed_tag = "_" + self.__class__.__name__ + "_validated_"
+        processed_tag = "_" + self.__class__.__name__ + "_processed_"
 
         if context.data.get(processed_tag):
             self.log.info("Operated on context level, skipping.")
