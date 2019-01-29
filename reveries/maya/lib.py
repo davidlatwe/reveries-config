@@ -65,7 +65,7 @@ def query_by_renderlayer(node, attr, layer):
         type_ = (lambda _: _)
 
     for conn in cmds.listConnections(node_attr, type="renderLayer",
-                                     source=False, plugs=True):
+                                     source=False, plugs=True) or []:
         if not conn.startswith("%s.adjustments" % layer):
             continue
         # layer.adjustments[*].plug -> layer.adjustments[*].value
