@@ -10,7 +10,7 @@ except ImportError:
 
 from datetime import datetime
 
-import maya.cmds as cmds
+from maya import cmds, mel
 from maya.api import OpenMaya as om
 from ..utils import _C4Hasher
 from . import lib
@@ -427,7 +427,8 @@ def generate_container_id():
     return "CON" + hasher.hexdigest()
 
 
-def get_renderer_by_layer(layer):
+def get_renderer_by_layer(layer=None):
+    layer = layer or get_current_renderlayer()
     return lib.query_by_renderlayer("defaultRenderGlobals",
                                     "currentRenderer",
                                     layer)
@@ -435,3 +436,146 @@ def get_renderer_by_layer(layer):
 
 def get_current_renderlayer():
     return cmds.editRenderLayerGlobals(query=True, currentRenderLayer=True)
+
+
+def get_render_filename_prefix(layer=None):
+    renderer = get_renderer_by_layer(layer)
+
+    if renderer == "vray":
+        return lib.query_by_renderlayer("vraySettings",
+                                        "fileNamePrefix",
+                                        layer)
+    else:
+        return lib.query_by_renderlayer("defaultRenderGlobals",
+                                        "imageFilePrefix",
+                                        layer)
+
+
+def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
+    """
+    """
+    renderer = get_renderer_by_layer(layer)
+    prefix = get_render_filename_prefix(layer) or ""
+    multi_render_cams = len(lib.ls_renderable_cameras(layer)) > 1
+    has_renderlayers = bool(mel.eval("IsRenderLayersOn"))
+    is_animated = cmds.getAttr("defaultRenderGlobals.animation")
+    padding_str = ""
+    scene_name = cmds.file(query=True,
+                           sceneName=True,
+                           shortName=True).rsplit(".", 1)[0]
+
+    # (NOTE) There's another *Deep EXR* in both VRay("exr (deep)") and
+    #   Arnold("deepexr"), it's not being handled here since it's a rarely
+    #   used format.
+
+    if renderer == "vray":
+        from . import vray
+
+        if not cmds.objExists("vraySettings"):
+            vray.utils.create_vray_settings()
+
+        ext, is_multichannel_exr = vray.utils.get_vray_output_image_format()
+
+        separate_folders = cmds.getAttr("vraySettings"
+                                        ".relements_separateFolders")
+        separate_rgba = cmds.getAttr("vraySettings"
+                                     ".relements_separateRGBA")
+
+        prefix = prefix or scene_name
+
+        if renderpass and separate_folders:
+            head, tail = os.path.split(prefix)
+            prefix = "/".join([head, renderpass, tail])
+
+        elif not renderpass and separate_folders and separate_rgba:
+            head, tail = os.path.split(prefix)
+            prefix = "/".join([head, "rgba", tail])
+
+        # Put <Camera> tag if having multiple renderable cameras and
+        # <Camera> tag not in prefix
+        if (multi_render_cams and
+                not any(t in prefix for t in ["<Camera>", "<camera>", "%c"])):
+            prefix = "/".join(["<Camera>", prefix])
+
+        # Put <Layer> tag if having multiple renderlayers and
+        # <Layer> tag not in prefix
+        if (has_renderlayers and
+                not any(t in prefix for t in ["<Layer>", "<layer>", "%l"])):
+            prefix = "/".join(["<Layer>", prefix])
+
+        # Don't transform if the prefix is blank, so we can just default to
+        # the scene file name.
+        if prefix:
+            prefix = mel.eval("vrayTransformFilename("
+                              "\"{0}\", \"{1}\", \"{2}\", 0, 0, 0)"
+                              "".format(prefix, camera, scene_name))
+
+        pass_sep = cmds.getAttr("vraySettings"
+                                ".fileNameRenderElementSeparator")
+        if renderpass and not is_multichannel_exr:
+            prefix = prefix + pass_sep + renderpass
+
+        elif (not renderpass and separate_folders and
+                separate_rgba and not is_multichannel_exr):
+            prefix = prefix + pass_sep + "rgba"
+
+        if is_animated:
+            padding_str = "#" * cmds.getAttr("vraySettings.fileNamePadding")
+
+            # When rendering to a non-raw format, vray places a period before
+            # the padding, even though it doesn't show up in the render
+            # globals filename.
+            if ext == "vrimg":
+                output_prefix = prefix + padding_str + "." + ext
+            else:
+                output_prefix = prefix + "." + padding_str + "." + ext
+        else:
+            output_prefix = prefix + "." + ext
+
+    else:
+        # Not VRay
+
+        current_prefix = prefix
+        prefix = prefix or scene_name
+
+        if renderer == "arnold" and "<RenderPass>" not in prefix:
+            from . import arnold
+            aov_names = arnold.utils.get_arnold_aov_names(layer)
+            if aov_names:
+                prefix = "/".join(["<RenderPass>", prefix])
+
+        # Put <Camera> tag if having multiple renderable cameras and
+        # <Camera> tag not in prefix
+        if (multi_render_cams and
+                not any(t in prefix for t in ["<Camera>", "%c"])):
+            prefix = "/".join(["<Camera>", prefix])
+
+        # Put <RenderLayer> tag if having multiple renderlayers and
+        # <RenderLayer> tag not in prefix
+        if (has_renderlayers and
+                not any(t in prefix
+                        for t in ["<RenderLayer>", "<Layer>", "%l"])):
+            prefix = "/".join(["<RenderLayer>", prefix])
+
+        padding_str = "#" * cmds.getAttr("defaultRenderGlobals"
+                                         ".extensionPadding")
+
+        cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
+                     prefix,
+                     type="string")
+
+        output_prefix = cmds.renderSettings(
+            genericFrameImageName=padding_str,
+            layer=layer,
+            camera=camera,
+            customTokenString="RenderPass=" + renderpass)[0]
+
+        cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
+                     current_prefix,
+                     type="string")
+
+    if is_animated and on_frame is not None:
+        frame_str = "%%0%dd" % len(padding_str) % on_frame
+        output_prefix = output_prefix.replace(padding_str, frame_str)
+
+    return output_prefix
