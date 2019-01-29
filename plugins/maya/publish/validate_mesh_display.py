@@ -32,7 +32,6 @@ class ValidateShapeDisplay(pyblish.api.InstancePlugin):
             ".lodVisibility": True,
             ".template": False,
             ".hideOnPlayback": False,
-            ".intermediateObject": False,
             ".hiddenInOutliner": False,
             ".ghosting": False
         }
