@@ -327,18 +327,18 @@ class PackageExtractor(pyblish.api.InstancePlugin):
                              "subset": self.data["subset"],
                              "version": None}
 
-        format_ = self.data.get("format")
+        extract_type = self.data.get("extractType")
 
-        if format_ is None:
-            self.log.debug("No specific format, extract all supported type "
-                           "of representations.")
+        if extract_type is None:
+            self.log.debug("No specific extraction type, extract all "
+                           "supported type of representations.")
             self._active_representations = self.representations
 
-        elif format_ in self.representations:
-            self._active_representations = [format_]
+        elif extract_type in self.representations:
+            self._active_representations = [extract_type]
 
         else:
-            msg = "{!r} not supported. This is a bug.".format(format_)
+            msg = "{!r} not supported. This is a bug.".format(extract_type)
             raise RuntimeError(msg)
 
         if "packages" not in self.data:
