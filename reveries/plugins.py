@@ -22,13 +22,14 @@ class BaseContractor(object):
 
     def __init__(self):
         self.log = logging.getLogger(self.name)
+        self.__cached_context = None
 
     def fulfill(self):
         raise NotImplementedError
 
-    def assemble_environment(self, context):
-        """Include critical variables with submission
-        """
+    def _parse_context(self, context):
+        if self.__cached_context is not None:
+            return self.__cached_context
 
         # Save Session
         #
@@ -52,29 +53,42 @@ class BaseContractor(object):
             key = "AVALON_CONTEXT_" + entry
             environment[key] = context.data[entry]
 
+        self.__cached_context = environment
+        return environment
+
+    def assemble_environment(self, instance):
+        """Compose submission required environment variables for instance
+
+        Return:
+            environment (dict): A set of contract variables, return `None` if
+                instance is not assigning to this contractor or publish is
+                disabled.
+
+        """
+        if instance.data.get("publish") is False:
+            return
+        if instance.data.get("useContractor") is False:
+            return
+        if not instance.data.get("publishContractor") == self.name:
+            return
+
+        context = instance.context
+        index = context.index(instance)
+        environment = self._parse_context(context).copy()
+
         # Save Instances' name and version
         #
-        for ind, instance in enumerate(context):
-            if instance.data.get("publish") is False:
-                continue
-
-            if instance.data.get("useContractor") is False:
-                continue
-
-            if not instance.data.get("publishContractor") == self.name:
-                continue
-
-            # instance subset name
-            key = "AVALON_DELEGATED_SUBSET_%d" % ind
-            environment[key] = instance.data["name"]
-            #
-            # instance subset version
-            #
-            # This should prevent version bump when re-running publish with
-            # same params.
-            #
-            key = "AVALON_DELEGATED_VERSION_NUM_%d" % ind
-            environment[key] = instance.data["versionNext"]
+        # instance subset name
+        key = "AVALON_DELEGATED_SUBSET_%d" % index
+        environment[key] = instance.data["subset"]
+        #
+        # instance subset version
+        #
+        # This should prevent version bump when re-running publish with
+        # same params.
+        #
+        key = "AVALON_DELEGATED_VERSION_NUM_%d" % index
+        environment[key] = instance.data["versionNext"]
 
         return environment
 
