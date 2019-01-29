@@ -8,7 +8,6 @@ from reveries.maya.pipeline import put_instance_icon
 class CameraCreator(avalon.maya.Creator):
     """Single baked camera"""
 
-    name = "cameraDefault"
     label = "Camera"
     family = "reveries.camera"
     icon = "video-camera"

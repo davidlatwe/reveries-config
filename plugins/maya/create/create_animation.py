@@ -9,7 +9,6 @@ from reveries.maya.pipeline import put_instance_icon
 class AnimationCreator(avalon.maya.Creator):
     """Any character or prop animation"""
 
-    name = "animationDefault"
     label = "Animation"
     family = "reveries.animation"
     icon = "male"

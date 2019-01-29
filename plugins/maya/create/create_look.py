@@ -7,7 +7,6 @@ from reveries.maya.pipeline import put_instance_icon
 class LookCreator(avalon.maya.Creator):
     """Shader connections defining shape look"""
 
-    name = "lookDefault"
     label = "Look"
     family = "reveries.look"
     icon = "paint-brush"
