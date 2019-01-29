@@ -15,6 +15,9 @@ class ValidateSceneSaved(pyblish.api.ContextPlugin):
     def process(self, context):
         from avalon import maya
 
+        if context.data.get("_ignore_modifications"):
+            return
+
         if cmds.file(q=True, modified=True):
             raise RuntimeError("Save scene before publish.")
 
