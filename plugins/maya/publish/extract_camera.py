@@ -4,17 +4,15 @@ import contextlib
 
 import pyblish.api
 import avalon
-import reveries.utils
 
 from reveries.maya import io, lib, capsule
-from reveries.plugins import DelegatablePackageExtractor
+from reveries.plugins import PackageExtractor
 
 from maya import cmds
 
 
-class ExtractCamera(DelegatablePackageExtractor):
+class ExtractCamera(PackageExtractor):
     """
-    TODO: publish multiple cameras
     """
 
     order = pyblish.api.ExtractorOrder
@@ -28,7 +26,6 @@ class ExtractCamera(DelegatablePackageExtractor):
         "mayaAscii",
         "Alembic",
         "FBX",
-        "PNGSequence",
     ]
 
     def extract(self):
@@ -84,22 +81,3 @@ class ExtractCamera(DelegatablePackageExtractor):
         with avalon.maya.maintained_selection():
             io.export_fbx_set_camera()
             io.export_fbx(entry_path)
-
-    def extract_PNGSequence(self):
-
-        if not self.data.get("capture_png"):
-            return
-
-        entry_file = self.file_name("png")
-        package_path = self.create_package(entry_file)
-        entry_path = os.path.join(package_path, entry_file)
-
-        project = self.context.data["projectDoc"]
-        width, height = reveries.utils.get_resolution_data(project)
-        camera = cmds.ls(self.member, type="camera")[0]
-        io.capture_seq(camera,
-                       entry_path,
-                       self.start,
-                       self.end,
-                       width,
-                       height)
