@@ -26,13 +26,11 @@ class PlayImageSequence(PackageLoader, avalon.api.Loader):
     color = "orange"
 
     families = [
-        "reveries.camera",
-        "reveries.playblast",
+        "reveries.imgseq",
     ]
 
     representations = [
         "PNGSequence",
-        "QuickTime",
     ]
 
     def load(self, context, name, namespace, data):

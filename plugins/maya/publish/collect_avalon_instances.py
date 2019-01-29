@@ -27,6 +27,8 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
     def process(self, context):
         from maya import cmds
 
+        objset_data = list()
+
         for objset in cmds.ls("*.id",
                               long=True,            # Produce full names
                               type="objectSet",     # Only consider objectSets
@@ -59,6 +61,19 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
                 continue
 
             data = avalon.maya.lib.read(objset)
+            data["objectName"] = objset
+
+            objset_data.append(data)
+
+        # Sorting instances via using `data.publishOrder` as prim key
+        ordering = (lambda data: (data.get("publishOrder", 0),
+                                  data["family"],
+                                  data.get("name", ""),
+                                  data["objectName"],
+                                  ))
+
+        for data in sorted(objset_data, key=ordering):
+            objset = data["objectName"]
 
             # For dependency tracking
             data["dependencies"] = dict()
@@ -74,7 +89,5 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
             # Produce diagnostic message for any graphical
             # user interface interested in visualising it.
             self.log.info("Found: \"%s\" " % instance.data["name"])
-
-        context[:] = sorted(context)
 
         return context

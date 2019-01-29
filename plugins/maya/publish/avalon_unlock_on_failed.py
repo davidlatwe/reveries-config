@@ -9,6 +9,7 @@ class UnlockSceneOnFailed(pyblish.api.ContextPlugin):
 
     label = "Unlock On Failed"
     order = pyblish.api.IntegratorOrder + 0.499
+    hosts = ["maya"]
 
     def process(self, context):
 

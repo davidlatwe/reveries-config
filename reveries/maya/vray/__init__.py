@@ -10,7 +10,6 @@ from .utils import (
 )
 
 # Requirement, obviously
-# Version: 3.52
 cmds.loadPlugin('vrayformaya', quiet=True)
 
 

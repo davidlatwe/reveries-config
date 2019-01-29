@@ -94,7 +94,8 @@ class ExtractCamera(DelegatablePackageExtractor):
         package_path = self.create_package(entry_file)
         entry_path = os.path.join(package_path, entry_file)
 
-        width, height = reveries.utils.get_resolution_data()
+        project = self.context.data["projectDoc"]
+        width, height = reveries.utils.get_resolution_data(project)
         camera = cmds.ls(self.member, type="camera")[0]
         io.capture_seq(camera,
                        entry_path,

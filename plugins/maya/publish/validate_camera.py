@@ -12,7 +12,6 @@ class ValidateCamera(pyblish.api.InstancePlugin):
     label = "Validate Camera"
     families = [
         "reveries.camera",
-        "reveries.playblast",
     ]
 
     def process(self, instance):

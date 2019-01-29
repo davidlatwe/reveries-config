@@ -37,6 +37,43 @@ FPS_MAP = {
 }
 
 
+def query_by_renderlayer(node, attr, layer):
+    """Query attribute without switching renderLayer when layer overridden
+
+    Arguments:
+        node (str): node name
+        attr (str): node attribute name
+        layer (str): renderLayer name
+
+    """
+    if not cmds.ls(layer, type="renderLayer"):
+        raise ValueError("RenderLayer not exists: %s" % layer)
+
+    node_attr = node + "." + attr
+    if not cmds.objExists(node_attr):
+        raise AttributeError("Attribute not exists: %s" % node_attr)
+
+    current = cmds.editRenderLayerGlobals(query=True, currentRenderLayer=True)
+    if layer == current:
+        return cmds.getAttr(node_attr)
+
+    try:
+        # For type correct, because bool value may return as float
+        # from renderlayer.adjustments
+        type_ = eval(cmds.getAttr(node_attr, type=True))
+    except NameError:
+        type_ = (lambda _: _)
+
+    for conn in cmds.listConnections(node_attr, type="renderLayer",
+                                     source=False, plugs=True) or []:
+        if not conn.startswith("%s.adjustments" % layer):
+            continue
+        # layer.adjustments[*].plug -> layer.adjustments[*].value
+        return type_(cmds.getAttr(conn.rsplit(".", 1)[0] + ".value"))
+    # No override
+    return cmds.getAttr(node_attr)
+
+
 def is_visible(node,
                displayLayer=True,
                intermediateObject=True,
@@ -117,10 +154,11 @@ def bake_hierarchy_visibility(nodes, start_frame, end_frame, step=1):
         cmds.connectAttr(curve + ".output", node + ".visibility", force=True)
 
 
-def set_scene_timeline():
+def set_scene_timeline(project=None, asset_name=None):
     log.info("Timeline setting...")
 
-    start_frame, end_frame, fps = utils.compose_timeline_data()
+    start_frame, end_frame, fps = utils.compose_timeline_data(project,
+                                                              asset_name)
     fps = FPS_MAP.get(fps)
 
     if fps is None:
@@ -390,7 +428,10 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
     for shader, ids in relationships.items():
         print("Looking for '%s'.." % shader)
         shader = next(iter(cmds.ls(shader)), None)
-        assert shader, "Associated shader not part of asset, this is a bug"
+        if shader is None:
+            log.warning("{!r} Not found. Skipping..".format(shader))
+            log.warning("Associated shader not part of asset, this is a bug.")
+            continue
 
         for id_ in ids:
             mesh, faces = (id_.rsplit(".", 1) + [""])[:2]
@@ -726,3 +767,64 @@ def to_namespace(node, namespace):
     namespace_prefix = "|{}:".format(namespace)
     node = namespace_prefix.join(node.split("|"))
     return node
+
+
+def ls_startup_cameras():
+    cameras = [cam for cam in cmds.ls(cameras=True, long=True)
+               if cmds.camera(cam, query=True, startupCamera=True)]
+    cameras += cmds.listRelatives(cameras, parent=True, fullPath=True)
+
+    return cameras
+
+
+def ls_renderable_cameras(layer=None):
+    layer = layer or cmds.editRenderLayerGlobals(query=True,
+                                                 currentRenderLayer=True)
+    return [
+        cam for cam in cmds.ls(type="camera", long=True)
+        if query_by_renderlayer(cam, "renderable", layer)
+    ]
+
+
+def acquire_lock_state(nodes):
+    nodes = cmds.ls(nodes, objectsOnly=True, long=True)
+    is_lock = cmds.lockNode(nodes, query=True, lock=True)
+    is_lockName = cmds.lockNode(nodes, query=True, lockName=True)
+    is_lockUnpub = cmds.lockNode(nodes, query=True, lockUnpublished=True)
+
+    return {
+        "uuids": cmds.ls(nodes, uuid=True),
+        "isLock": is_lock,
+        "isLockName": is_lockName,
+        "isLockUnpublished": is_lockUnpub
+    }
+
+
+def lock_nodes(nodes, lock=True, lockName=True, lockUnpublished=True):
+    # (NOTE) `lockNode` command flags:
+    #    lock: If flag not supplied, default `True`
+    #    lockName: If flag not supplied, default `False`
+    #    lockUnpublished: No default, change nothing if not supplied
+    #    ignoreComponents: If components presence in the input list,
+    #                      will raise RuntimeError and nothing will
+    #                      be locked. But if this flag supplied, it
+    #                      will silently ignore components.
+    cmds.lockNode(nodes,
+                  lock=lock,
+                  lockName=lockName,
+                  lockUnpublished=lockUnpublished,
+                  ignoreComponents=True)
+
+
+def restore_lock_state(lock_state):
+    for _ in range(len(lock_state["uuids"])):
+        uuid = lock_state["uuids"].pop(0)
+        node = cmds.ls(uuid)
+        if not node:
+            continue
+
+        cmds.lockNode(node,
+                      lock=lock_state["isLock"].pop(0),
+                      lockName=lock_state["isLockName"].pop(0),
+                      lockUnpublished=lock_state["isLockUnpublished"].pop(0),
+                      ignoreComponents=True)

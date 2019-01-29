@@ -6,6 +6,7 @@ import shutil
 import errno
 import pyblish.api
 from avalon import api, io
+from avalon.vendor import filelink
 
 
 log = logging.getLogger(__name__)
@@ -32,14 +33,15 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     def process(self, instance):
 
         self.transfers = dict(packages=list(),
-                              auxiliaries=list())
+                              files=list(),
+                              hardlinks=list())
 
         # Check Delegation
         #
         # Contractor completed long-run publish process
-        delegated = instance.context.data.get("contractor_accepted")
+        delegated = instance.context.data.get("contractorAccepted")
         # Is delegating long-run publish process
-        if instance.data.get("use_contractor") and not delegated:
+        if instance.data.get("useContractor") and not delegated:
             return
 
         # Assemble data and create version, representations
@@ -98,7 +100,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         subset = self.get_subset(instance)
 
         # get next version
-        next_version = instance.data["version_next"]
+        next_version = instance.data["versionNext"]
         version_data = self.create_version_data(context, instance)
         locations = [api.Session["AVALON_LOCATION"]]
         version = self.create_version(subset=subset,
@@ -112,8 +114,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         representations = []
 
         # `template` extracted from `ExtractPublishDir` plugin
-        template_data = instance.data["publish_dir_elem"][0]
-        template_publish = instance.data["publish_dir_elem"][1]
+        template_data = instance.data["publishDirElem"][0]
+        template_publish = instance.data["publishDirElem"][1]
 
         # Should not have any kind of check on files here, that should be done
         # by extractors, here only need to publish representation dirs.
@@ -122,11 +124,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
             template_data["representation"] = package
             publish_path = template_publish.format(**template_data)
-
-            src = os.path.join(stagingdir, package)
-            dst = publish_path
-
-            self.transfers["packages"].append([src, dst])
 
             representation = {
                 "schema": "avalon-core:representation-2.0",
@@ -137,7 +134,13 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             }
             representations.append(representation)
 
-        self.transfers["auxiliaries"] += instance.data["auxiliaries"]
+            src = os.path.join(stagingdir, package)
+            dst = publish_path
+
+            self.transfers["packages"].append([src, dst])
+
+        self.transfers["files"] += instance.data["files"]
+        self.transfers["hardlinks"] += instance.data["hardlinks"]
 
         return subset, version, representations
 
@@ -177,14 +180,16 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
                 self.log.info("Copying {0}: {1} -> {2}".format(job, src, dst))
                 if src == dst:
-                    self.log.warning("Source and destination are the same, "
-                                     "will not copy.")
+                    self.log.debug("Source and destination are the same, "
+                                   "will not copy.")
                     continue
 
                 if job == "packages":
                     self.copy_dir(src, dst)
-                if job == "auxiliaries":
+                if job == "files":
                     self.copy_file(src, dst)
+                if job == "hardlinks":
+                    self.hardlink_file(src, dst)
 
     def copy_dir(self, src, dst):
         """ Copy given source to destination
@@ -219,6 +224,20 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             self.log.critical(msg)
             raise OSError(msg)
 
+    def hardlink_file(self, src, dst):
+
+        dirname = os.path.dirname(dst)
+        try:
+            os.makedirs(dirname)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                pass
+            else:
+                self.log.critical("An unexpected error occurred.")
+                raise
+
+        filelink.create(src, dst, filelink.HARDLINK)
+
     def write_database(self, instance, version, representations):
         """Write version and representations to database
 
@@ -249,7 +268,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     def get_subset(self, instance):
 
-        asset_id = instance.data["asset_doc"]["_id"]
+        asset_id = instance.data["assetDoc"]["_id"]
 
         subset = io.find_one({"type": "subset",
                               "parent": asset_id,
@@ -313,15 +332,16 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         families += current_families
 
         # create relative source path for DB
-        relative_path = os.path.relpath(context.data["currentMaking"],
-                                        api.registered_root())
-        source = os.path.join("{root}", relative_path).replace("\\", "/")
+        source = context.data["currentMaking"]
+        source = source.replace(api.registered_root(), "{root}")
+        source = source.replace("\\", "/")
         hash_val = context.data["sourceFingerprint"]["currentHash"]
 
         version_data = {
             "families": families,
             "time": context.data["time"],
             "author": context.data["user"],
+            "task": api.Session.get("AVALON_TASK"),
             "source": source,
             "hash": hash_val,
             "comment": context.data.get("comment"),

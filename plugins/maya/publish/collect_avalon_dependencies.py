@@ -4,7 +4,7 @@ import avalon.io
 
 
 class CollectAvalonDependencies(pyblish.api.ContextPlugin):
-    """Collect Avalon dependencies from containers
+    """Collect Avalon dependencies from root containers
     """
 
     order = pyblish.api.CollectorOrder + 0.4
@@ -17,21 +17,28 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
         root_containers = context.data["RootContainers"]
         container_members = dict()
 
+        # Collect root containers' members
+
         for container in root_containers:
             members = cmds.sets(container, query=True) or []
             shapes = cmds.listRelatives(members, shapes=True) or []
             members = cmds.ls(members + shapes, long=True)
             container_members[container] = set(members)
 
+        # Scan dependencies for each instance
+
         for instance in context:
 
             self.log.info("Collecting dependency: %s" % instance.data["name"])
 
+            # Collect nodes which related to instnace's member
             hierarchy = set(instance)
             _history = cmds.listHistory(instance, leaf=False)
             history = set(cmds.ls(_history, long=True))
             instance_nodes = hierarchy.union(history)
 
+            # Compute dependency from the coverage between instance and
+            # container.
             for con, con_member in container_members.items():
                 if not instance_nodes.intersection(con_member):
                     # Not dependent
@@ -48,6 +55,8 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
                 self.register_dependency(instance, version["_id"])
                 self.log.info("Collected: %s - %s" % (namespace, name))
 
+            # Register dependency from data.futureDependencies for those
+            # not yet being published (containerized in scene).
             future_dependencies = instance.data["futureDependencies"]
             for name, pregenerated_version_id in future_dependencies.items():
                 self.register_dependency(instance, pregenerated_version_id)

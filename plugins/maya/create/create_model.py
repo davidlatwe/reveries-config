@@ -8,10 +8,15 @@ from reveries.maya.pipeline import put_instance_icon
 class ModelCreator(avalon.maya.Creator):
     """Polygonal geometry"""
 
-    name = "modelDefault"
     label = "Model"
     family = "reveries.model"
     icon = "cubes"
+
+    defaults = [
+        "default",
+        "polyHigh",
+        "polyLow",
+    ]
 
     def build_base(self):
         if cmds.objExists("|ROOT"):

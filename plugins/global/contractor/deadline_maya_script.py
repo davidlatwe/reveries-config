@@ -30,7 +30,7 @@ class ContractorDeadlineMayaScript(BaseContractor):
         comment = context.data.get("comment", "")
         time = context.data["time"]
 
-        project = avalon.io.find_one({"type": "project"})
+        project = context.data["projectDoc"]
         deadline_job = project["data"]["deadline"]["job"]
         pool = deadline_job["maya_cache_pool"]
         group = deadline_job["maya_cache_group"]

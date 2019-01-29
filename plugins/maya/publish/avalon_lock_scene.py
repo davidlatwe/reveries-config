@@ -16,6 +16,7 @@ class AvalonLockScene(pyblish.api.ContextPlugin):
 
     label = "Lock Scene"
     order = pyblish.api.ExtractorOrder - 0.499
+    hosts = ["maya"]
 
     def process(self, context):
 

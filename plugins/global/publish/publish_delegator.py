@@ -16,7 +16,7 @@ class PublishDelegator(pyblish.api.ContextPlugin):
 
     def process(self, context):
 
-        if context.data.get("contractor_accepted"):
+        if context.data.get("contractorAccepted"):
             # Already in contractor's hand.
             return
 
@@ -27,15 +27,15 @@ class PublishDelegator(pyblish.api.ContextPlugin):
             if instance.data.get("publish") is False:
                 continue
 
-            if instance.data.get("use_contractor") is False:
+            if instance.data.get("useContractor") is False:
                 continue
 
-            contractor_name = instance.data.get("publish_contractor")
+            contractor_name = instance.data.get("publishContractor")
             if contractor_name is None:
                 continue
 
             if not isinstance(contractor_name, string_types):
-                raise TypeError("`publish_contractor` should be a string, "
+                raise TypeError("`publishContractor` should be a string, "
                                 "not {}.".format(type(contractor_name)))
 
             # Find contractor

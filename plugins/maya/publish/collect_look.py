@@ -3,7 +3,7 @@ import pyblish.api
 from avalon.pipeline import AVALON_CONTAINER_ID
 from maya import cmds
 from reveries import plugins
-from reveries.maya import lib
+from reveries.maya import lib, pipeline
 
 
 def create_texture_subset_from_look(look_instance, textures):
@@ -20,20 +20,6 @@ def create_texture_subset_from_look(look_instance, textures):
                                        textures)
 
 
-def find_stray_textures(instance, containers):
-
-    stray = list()
-
-    for file_node in cmds.ls(instance, type="file"):
-        sets = cmds.listSets(object=file_node) or []
-        if any(s in containers for s in sets):
-            continue
-
-        stray.append(file_node)
-
-    return stray
-
-
 class CollectLook(pyblish.api.InstancePlugin):
     """Collect mesh's shading network and objectSets
     """
@@ -45,7 +31,6 @@ class CollectLook(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         meshes = cmds.ls(instance,
-                         visible=True,
                          noIntermediate=True,
                          type="mesh")
 
@@ -62,18 +47,18 @@ class CollectLook(pyblish.api.InstancePlugin):
 
         # Collect shading networks
         shaders = cmds.listConnections(meshes, type="shadingEngine")
-        upstream_nodes = cmds.listHistory(shaders)
+        upstream_nodes = cmds.ls(cmds.listHistory(shaders), long=True)
         # (NOTE): The flag `pruneDagObjects` will also filter out
         # `place3dTexture` type node.
 
         # Remove unwanted types
         unwanted_types = ("groupId", "groupParts", "mesh")
-        unwanted = set(cmds.ls(upstream_nodes, type=unwanted_types))
+        unwanted = set(cmds.ls(upstream_nodes, type=unwanted_types, long=True))
         upstream_nodes = list(set(upstream_nodes) - unwanted)
 
-        instance.data["dag_members"] = instance[:]
+        instance.data["dagMembers"] = instance[:]
         instance[:] = upstream_nodes
 
-        stray = find_stray_textures(instance, containers)
+        stray = pipeline.find_stray_textures(instance, containers)
         if stray:
             create_texture_subset_from_look(instance, stray)

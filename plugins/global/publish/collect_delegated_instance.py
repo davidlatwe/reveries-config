@@ -16,17 +16,17 @@ class CollectDelegatedInstance(pyblish.api.ContextPlugin):
     label = "Delegated Instance"
 
     def process(self, context):
-        if not context.data.get("contractor_accepted"):
+        if not context.data.get("contractorAccepted"):
             return
 
-        assignment = context.data["contractor_assignment"]
+        assignment = context.data["contractorAssignment"]
 
         collected_count = 0
         for instance in context:
             name = instance.data["name"]
             if name in assignment:
                 # version lock
-                instance.data["version_next"] = assignment[name]
+                instance.data["versionNext"] = assignment[name]
                 self.log.info("{} collected.".format(name))
                 collected_count += 1
             else:

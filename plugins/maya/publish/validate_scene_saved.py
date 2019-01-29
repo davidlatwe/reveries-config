@@ -15,10 +15,13 @@ class ValidateSceneSaved(pyblish.api.ContextPlugin):
     def process(self, context):
         from avalon import maya
 
+        if context.data.get("_ignore_modifications"):
+            return
+
         if cmds.file(q=True, modified=True):
             raise RuntimeError("Save scene before publish.")
 
-        if not context.data.get("contractor_accepted"):
+        if not context.data.get("contractorAccepted"):
             assert not maya.is_locked(), (
                 "This file is locked, please save scene under a new name."
             )

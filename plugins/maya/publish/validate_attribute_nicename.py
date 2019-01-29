@@ -57,7 +57,7 @@ class ValidateAttributeNiceName(pyblish.api.InstancePlugin):
     def get_invalid(cls, instance):
         from maya import cmds
 
-        if instance.context.data["mayaVersion"] >= 20180300:
+        if instance.context.data["mayaVersionAPI"] >= 20180300:
             return None
 
         invalid = dict()

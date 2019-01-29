@@ -22,10 +22,25 @@ name = "lookdev"
 [[tasks]]
 name = "layout"
 
+[[tasks]]
+name = "lighting"
+
 [template]
 work = "{root}/{project}/Avalon/{silo}/{asset}/work/{task}/{user}/{app}"
 publish = "{root}/{project}/Avalon/{silo}/{asset}/publish/{subset}/v{version:0>3}/{representation}"
 
+
+# Family name should be lower case
+
+[[families]]
+name = "reveries.shotpkg"
+label = "Shot Package"
+icon = "shopping-basket"
+
+[[families]]
+name = "reveries.imgseq"
+label = "Image Sequence"
+icon = "film"
 
 [[families]]
 name = "reveries.model"
@@ -41,6 +56,11 @@ icon = "sitemap"
 name = "reveries.look"
 label = "Look"
 icon = "paint-brush"
+
+[[families]]
+name = "reveries.texture"
+label = "Texture"
+icon = "picture-o"
 
 [[families]]
 name = "reveries.setdress"
@@ -63,6 +83,11 @@ label = "Camera"
 icon = "video-camera"
 
 [[families]]
-name = "reveries.mayaShare"
-label = "MayaShare(.ma)"
+name = "reveries.lightset"
+label = "Light Set"
+icon = "lightbulb-o"
+
+[[families]]
+name = "reveries.mayashare"
+label = "Maya Share (.ma)"
 icon = "share-square-o"

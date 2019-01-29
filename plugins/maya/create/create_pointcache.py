@@ -8,7 +8,6 @@ from reveries.maya.pipeline import put_instance_icon
 class PointCacheCreator(avalon.maya.Creator):
     """Any cacheable object"""
 
-    name = "PointCacheDefault"
     label = "PointCache"
     family = "reveries.pointcache"
     icon = "diamond"
@@ -22,12 +21,12 @@ class PointCacheCreator(avalon.maya.Creator):
             "FBXCache",
         ]
 
-        self.data["static_cache"] = False
+        self.data["staticCache"] = False
 
-        self.data["publish_contractor"] = self.contractor
-        self.data["use_contractor"] = False
+        self.data["publishContractor"] = self.contractor
+        self.data["useContractor"] = False
 
         instance = super(PointCacheCreator, self).process()
-        cmds.setAttr(instance + ".publish_contractor", lock=True)
+        cmds.setAttr(instance + ".publishContractor", lock=True)
 
         return put_instance_icon(instance)

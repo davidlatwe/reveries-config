@@ -15,7 +15,7 @@ class ValidateAvalonDependencies(pyblish.api.InstancePlugin):
             raise Exception("Dependencies not collected, this is a bug.")
 
         dependencies = instance.data["dependencies"]
-        asset_id = instance.data["asset_doc"]["_id"]
+        asset_id = instance.data["assetDoc"]["_id"]
         subset = avalon.io.find_one({"type": "subset",
                                      "parent": asset_id,
                                      "name": instance.data["subset"]})

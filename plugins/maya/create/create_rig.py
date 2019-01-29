@@ -8,15 +8,14 @@ from reveries.maya.pipeline import put_instance_icon
 class RigCreator(avalon.maya.Creator):
     """Animatable Controller"""
 
-    name = "rigDefault"
     label = "Rig"
     family = "reveries.rig"
     icon = "sitemap"
 
-    rig_subsets = [
-        name,
-        "rigXGen",
-        "rigCloth",
+    defaults = [
+        "default",
+        "XGen",
+        "cloth",
     ]
 
     def build_base(self):
@@ -28,13 +27,6 @@ class RigCreator(avalon.maya.Creator):
         cmds.group(name="ROOT", empty=make_empty, world=True)
 
     def process(self):
-        subset_name = self.data["subset"]
-
-        # Check subset name, prevent typo
-        if subset_name not in self.rig_subsets:
-            err_msg = "Invalid subset name: {}".format(subset_name)
-            raise RuntimeError(err_msg)
-
         self.build_base()
 
         instance = super(RigCreator, self).process()
