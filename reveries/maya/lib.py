@@ -777,6 +777,15 @@ def ls_startup_cameras():
     return cameras
 
 
+def ls_renderable_cameras(layer=None):
+    layer = layer or cmds.editRenderLayerGlobals(query=True,
+                                                 currentRenderLayer=True)
+    return [
+        cam for cam in cmds.ls(type="camera", long=True)
+        if query_by_renderlayer(cam, "renderable", layer)
+    ]
+
+
 def acquire_lock_state(nodes):
     nodes = cmds.ls(nodes, objectsOnly=True, long=True)
     is_lock = cmds.lockNode(nodes, query=True, lock=True)
