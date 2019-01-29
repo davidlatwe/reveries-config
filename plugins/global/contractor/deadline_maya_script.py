@@ -12,6 +12,12 @@ from reveries.plugins import BaseContractor
 
 
 class ContractorDeadlineMayaScript(BaseContractor):
+    """Publish via running script on Deadline
+
+    Grouping instances via their Deadline Pool, Group, Priority settings, then
+    submitting jobs per instance group.
+
+    """
 
     name = "deadline.maya.script"
 
@@ -28,13 +34,8 @@ class ContractorDeadlineMayaScript(BaseContractor):
         fname = os.path.basename(fpath)
         name, ext = os.path.splitext(fname)
         comment = context.data.get("comment", "")
-        time = context.data["time"]
 
-        project = context.data["projectDoc"]
-        deadline_job = project["data"]["deadline"]["job"]
-        pool = deadline_job["maya_cache_pool"]
-        group = deadline_job["maya_cache_group"]
-        priority = deadline_job["maya_cache_priority"]
+        batch_name = "avalon.script: " + fname
 
         script_file = os.path.join(os.path.dirname(__file__),
                                    "scripts",
@@ -51,53 +52,80 @@ class ContractorDeadlineMayaScript(BaseContractor):
         # https://docs.thinkboxsoftware.com
         #    /products/deadline/8.0/1_User%20Manual/manual
         #    /manual-submission.html#job-info-file-options
-        payload = {
-            "JobInfo": {
-                "Plugin": "MayaBatch",
-                "BatchName": fname,  # Top-level group name
-                "Name": "%s - %s" % ("Publishing Context", time),
-                "UserName": getpass.getuser(),
-                "MachineName": platform.node(),
-                "Comment": comment,
-                "Pool": pool,
-                "Group": group,
-                "Priority": priority,
-            },
-            "PluginInfo": {
-                # Input
-                "SceneFile": fpath,
-                # Resolve relative references
-                "ProjectPath": workspace,
-                # Mandatory for Deadline
-                "Version": context.data["mayaVersion"],
-                "ScriptJob": True,
-                "ScriptFilename": script_file,
-            },
-            # Mandatory for Deadline, may be empty
-            "AuxFiles": [],
-            "IdOnly": True
-        }
-
-        environment = self.assemble_environment(context)
-
-        payload["JobInfo"].update({
-            "EnvironmentKeyValue%d" % index: "{key}={value}".format(
-                key=key,
-                value=environment[key]
-            ) for index, key in enumerate(environment)
-        })
-
-        self.log.info("Submitting..")
-        self.log.info(json.dumps(
-            payload, indent=4, sort_keys=True)
-        )
 
         auth = os.environ["AVALON_DEADLINE_AUTH"].split(":")
-        response = requests.post(url, json=payload, auth=tuple(auth))
 
-        if response.ok:
-            self.log.info("Complete.")
-        else:
-            msg = response.text
-            self.log.error(msg)
-            raise Exception(msg)
+        # Grouping instances
+
+        instance_group = dict()
+        for instance in context:
+            dl_pool = instance.data["deadlinePool"]
+            dl_group = instance.data["deadlineGroup"]
+            dl_priority = instance.data["deadlinePriority"]
+
+            group_key = (dl_pool, dl_group, dl_priority)
+
+            if group_key not in instance_group:
+                instance_group[group_key] = list()
+
+            instance_group[group_key].append(instance)
+
+        for settings, group in instance_group.items():
+            dl_pool, dl_group, dl_priority = settings
+
+            self.log.info("Grouping: %s" % settings)
+
+            environment = dict()
+            for instance in group:
+                self.log.info("Adding instance: %s" % instance.data["subset"])
+                environment.update(self.assemble_environment(instance))
+
+            payload = {
+                "JobInfo": {
+                    "Plugin": "MayaBatch",
+                    "BatchName": batch_name,  # Top-level group name
+                    "Name": "%s - %s" % (batch_name, instance.data["subset"]),
+                    "UserName": getpass.getuser(),
+                    "MachineName": platform.node(),
+                    "Comment": comment,
+                    "Pool": dl_pool,
+                    "Group": dl_group,
+                    "Priority": dl_priority,
+                },
+                "PluginInfo": {
+                    # Input
+                    "SceneFile": fpath,
+                    # Resolve relative references
+                    "ProjectPath": workspace,
+                    # Mandatory for Deadline
+                    "Version": context.data["mayaVersion"],
+                    "ScriptJob": True,
+                    "ScriptFilename": script_file,
+                },
+                # Mandatory for Deadline, may be empty
+                "AuxFiles": [],
+                "IdOnly": True
+            }
+
+            payload["JobInfo"].update({
+                "EnvironmentKeyValue%d" % index: "{key}={value}".format(
+                    key=key,
+                    value=environment[key]
+                ) for index, key in enumerate(environment)
+            })
+
+            self.log.info("Submitting..")
+            self.log.info(json.dumps(
+                payload, indent=4, sort_keys=True)
+            )
+
+            response = requests.post(url, json=payload, auth=tuple(auth))
+
+            if response.ok:
+                self.log.info("Success.")
+            else:
+                msg = response.text
+                self.log.error(msg)
+                raise Exception(msg)
+
+        self.log.info("Completed.")
