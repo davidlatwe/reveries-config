@@ -13,20 +13,24 @@ class AnimationCreator(avalon.maya.Creator):
     family = "reveries.animation"
     icon = "male"
 
-    contractor = "deadline.maya.script"
-
     def process(self):
+        # Build pipeline render settings
+
         project = avalon.io.find_one({"type": "project"},
                                      projection={"data": True})
-        settings = project["data"]["pipeline"]["maya"]
-        cache_mode = settings.get("animation_cache", "Alembic")
-        self.data["format"] = cache_mode
+        pipeline = project["data"]["pipeline"]["maya"]
+        deadline = project["data"]["deadline"]["maya"]
 
-        self.data["publishContractor"] = self.contractor
-        self.data["useContractor"] = False
+        priority = deadline["priorities"]["pointcache"]
+
+        self.data["extractType"] = pipeline.get("pointcache", "Alembic")
+
+        self.data["deadlineEnable"] = False
+        self.data["deadlinePriority"] = priority
+        self.data["deadlinePool"] = ["none"] + deadline["pool"]
+        self.data["deadlineGroup"] = deadline["group"]
 
         instance = super(AnimationCreator, self).process()
-        cmds.setAttr(instance + ".format", lock=True)
-        cmds.setAttr(instance + ".publishContractor", lock=True)
+        cmds.setAttr(instance + ".extractType", lock=True)
 
         return put_instance_icon(instance)
