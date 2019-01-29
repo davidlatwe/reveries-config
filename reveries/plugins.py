@@ -44,7 +44,10 @@ class BaseContractor(object):
 
         # Save Context data from source
         #
-        context_data_entry = ["comment", "user"]
+        context_data_entry = [
+            "comment",
+            "user",
+        ]
         for entry in context_data_entry:
             key = "AVALON_CONTEXT_" + entry
             environment[key] = context.data[entry]
