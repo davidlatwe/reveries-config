@@ -405,7 +405,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
         self.data["publishDirElem"] = (self._publish_key, self._publish_path)
         self.data["versionNext"] = version_number
-        self.data["version_dir"] = version_dir
+        self.data["versionDir"] = version_dir
 
         self.log.debug("Next version: {}".format(version_number))
         self.log.debug("Version dir: {}".format(version_dir))
@@ -469,7 +469,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
         if not staging_dir:
             if self._extract_to_publish_dir:
-                staging_dir = self.data["version_dir"]
+                staging_dir = self.data["versionDir"]
             else:
                 staging_dir = temp_dir(prefix="pyblish_tmp_")
 
