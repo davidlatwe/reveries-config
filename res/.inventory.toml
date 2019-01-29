@@ -12,13 +12,22 @@ edit_out = 200
 
 [pipeline]
 [pipeline.maya]
-animation_cache = "Alembic"
+pointcache = "Alembic"
 
 [deadline]
-[deadline.job]
-maya_cache_pool = "1---less_than_15minutes"
-maya_cache_group = "maya2017vray36"
-maya_cache_priority = 95
-maya_render_pool = "1---less_than_15minutes"
-maya_render_group = "maya2017vray36"
-maya_render_priority = 60
+[deadline.maya]
+pool = [
+	"1---less_than_15minutes",
+	"2---about_30minutes",
+	"3---about_90minutes",
+	"4---more_than_120minutes",
+]
+group = [
+	"maya2017vray36",
+	"maya2018_2",
+]
+[deadline.maya.priorities]
+pointcache = 95
+batchrender = 70
+turntable = 80
+playblast = 95
