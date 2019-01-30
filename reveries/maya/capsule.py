@@ -183,6 +183,18 @@ def undo_chunk_when_no_undo():
 
     Use with caution !!!
 
+    Example:
+    The scene will have a polyTorus and a cube but no sphere,
+    and only the polyTorus' creation can be undone.
+
+    >>> cmds.polyTorus()
+    >>> with no_undo(flush=False):
+    ...    cmds.polyCube()
+    ...    with undo_chunk_when_no_undo():
+    ...        print(cmds.polySphere())
+    ...
+    ['pSphere1', 'polySphere1']
+
     """
     keyword = __no_undo_type["_"]
     if keyword is None:
