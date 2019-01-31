@@ -16,36 +16,6 @@ def publish_on_lock(instance):
         instance.data["publish"] = False
 
 
-def collect_output_paths(instance):
-    renderer = instance.data["renderer"]
-    layer = instance.data["renderlayer"]
-
-    paths = OrderedDict()
-
-    if renderer == "vray":
-        import reveries.maya.vray.utils as utils_
-        aov_names = utils_.get_vray_element_names(layer)
-
-    elif renderer == "arnold":
-        import reveries.maya.arnold.utils as utils_
-        aov_names = utils_.get_arnold_aov_names(layer)
-
-    else:
-        aov_names = []
-
-    aov_names.append("")
-
-    output_dir = instance.context.data["outputDir"]
-
-    for aov in aov_names:
-        output_prefix = utils.compose_render_filename(layer, aov)
-        output_path = output_dir + "/" + output_prefix
-
-        paths[aov] = output_path.replace("\\", "/")
-
-    instance.data["outputPaths"] = paths
-
-
 def set_extraction_type(instance):
     if len(instance.data["outputPaths"]) > 1:
         instance.data["extractType"] = "imageSequenceSet"
@@ -127,6 +97,8 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         for layer in sorted(renderlayers,
                             key=lambda l: cmds.getAttr("%s.displayOrder" % l)):
 
+            self.log.debug("Creating instance for renderlayer: %s" % layer)
+
             # Check if layer is in valid (linked) layers
             if layer not in valid_layers:
                 self.log.warning("%s is invalid, skipping" % layer)
@@ -189,6 +161,38 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                                             parent=True, fullPath=True) or []
             instance += transforms
 
+    def collect_output_paths(self, instance):
+        renderer = instance.data["renderer"]
+        layer = instance.data["renderlayer"]
+
+        paths = OrderedDict()
+
+        if renderer == "vray":
+            import reveries.maya.vray.utils as utils_
+            aov_names = utils_.get_vray_element_names(layer)
+
+        elif renderer == "arnold":
+            import reveries.maya.arnold.utils as utils_
+            aov_names = utils_.get_arnold_aov_names(layer)
+
+        else:
+            aov_names = []
+
+        aov_names.append("")
+
+        output_dir = instance.context.data["outputDir"]
+
+        for aov in aov_names:
+            output_prefix = utils.compose_render_filename(layer, aov)
+            output_path = output_dir + "/" + output_prefix
+
+            paths[aov] = output_path.replace("\\", "/")
+
+            self.log.debug("Collecting AOV output path: %s" % aov)
+            self.log.debug("                      path: %s" % paths[aov])
+
+        instance.data["outputPaths"] = paths
+
     def process_playblast(self, instance, layer):
         """
         """
@@ -211,7 +215,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         """
         """
         # Update subset name with layername
-        instance.data["subset"] += "@" + instance.name
+        instance.data["subset"] += "." + instance.name
 
         # Inject shadow family
         instance.data["families"] = ["reveries.imgseq.turntable"]
@@ -232,14 +236,14 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         render_cam = list(instance_cam.intersection(renderable_cam))
         instance.data["renderCam"] = render_cam
 
-        collect_output_paths(instance)
+        self.collect_output_paths(instance)
         set_extraction_type(instance)
 
     def process_batchrender(self, instance, layer):
         """
         """
         # Update subset name with layername
-        instance.data["subset"] += "@" + instance.name
+        instance.data["subset"] += "." + instance.name
 
         # Inject shadow family
         instance.data["families"] = ["reveries.imgseq.batchrender"]
@@ -259,5 +263,5 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         render_cam = list(instance_cam.intersection(renderable_cam))
         instance.data["renderCam"] = render_cam
 
-        collect_output_paths(instance)
+        self.collect_output_paths(instance)
         set_extraction_type(instance)
