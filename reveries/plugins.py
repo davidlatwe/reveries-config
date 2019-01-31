@@ -93,6 +93,47 @@ class BaseContractor(object):
         return environment
 
 
+def parse_contract_environment(context):
+    """Assign delegated instances via parsing the environment
+    """
+    assignment = dict()
+    os_environ = os.environ.copy()
+
+    AVALON_CONTEXT_ = "AVALON_CONTEXT_"
+    AVALON_DELEGATED_SUBSET_ = "AVALON_DELEGATED_SUBSET_"
+    AVALON_DELEGATED_VERSION_NUM_ = "AVALON_DELEGATED_VERSION_NUM_"
+
+    for key in os_environ:
+
+        # Context
+        if key.startswith(AVALON_CONTEXT_):
+            # Read Context data
+            #
+            entry = key[len(AVALON_CONTEXT_):]
+            context.data[entry] = os_environ[key]
+
+        # Instance
+        if key.startswith(AVALON_DELEGATED_SUBSET_):
+            # Read Instances' name and version
+            #
+            num_key = key.replace(AVALON_DELEGATED_SUBSET_,
+                                  AVALON_DELEGATED_VERSION_NUM_)
+            subset_name = os_environ[key]
+            version_num = int(os_environ[num_key])
+
+            # Assign instance
+            assignment[subset_name] = version_num
+
+            print("Assigned subset {0!r}\n\tVer. Num: {1!r}"
+                  "".format(subset_name, version_num))
+
+    print("Found {} delegated instances.".format(len(assignment)))
+
+    # Update context
+    context.data["contractorAccepted"] = True
+    context.data["contractorAssignment"] = assignment
+
+
 def find_contractor(contractor_name=""):
     """
     """

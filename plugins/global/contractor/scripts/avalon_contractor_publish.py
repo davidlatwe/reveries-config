@@ -1,5 +1,4 @@
 
-import os
 import json
 import copy
 import logging
@@ -7,6 +6,7 @@ import pyblish.api
 import pyblish.util
 
 from reveries.utils import publish_results_formatting
+from reveries.plugins import parse_contract_environment
 
 
 log = logging.getLogger("Contractor")
@@ -28,46 +28,12 @@ def check_success(context):
             raise RuntimeError(result["error"]["message"])
 
 
-def parse_environment(context):
-    assignment = dict()
-    os_environ = os.environ
-
-    context_prefix = "AVALON_CONTEXT_"
-    instance_prefix = "AVALON_DELEGATED_SUBSET_"
-    version_prefix = "AVALON_DELEGATED_VERSION_NUM_"
-
-    for key in os_environ:
-
-        if key.startswith(context_prefix):
-            # Read Context data
-            #
-            entry = key[len(context_prefix):]
-            context.data[entry] = os_environ[key]
-
-        if key.startswith(instance_prefix):
-            # Read Instances' name and version
-            #
-            num_key = key.replace(instance_prefix, version_prefix)
-            subset_name = os_environ[key]
-            version_num = int(os_environ[num_key])
-
-            assignment[subset_name] = version_num
-            log.info("Assigned subset {0!r}\n\tVer. Num: {1!r}"
-                     "".format(subset_name, version_num))
-
-    log.info("Found {} delegated instances.".format(len(assignment)))
-
-    # set flag
-    context.data["contractorAccepted"] = True
-    context.data["contractorAssignment"] = assignment
-
-
 def publish():
 
     context = pyblish.api.Context()
 
     log.info("Parsing environment ...")
-    parse_environment(context)
+    parse_contract_environment(context)
 
     log.info("Collecting instances ...")
     pyblish.util.collect(context)
