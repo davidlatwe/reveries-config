@@ -26,6 +26,9 @@ class AvalonLockScene(pyblish.api.ContextPlugin):
         assert all(result["success"] for result in context.data["results"]), (
             "Integration failed, aborting.")
 
+        if maya.is_locked():
+            return
+
         maya.lock()
 
         with maya.lock_ignored():
