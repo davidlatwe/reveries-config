@@ -56,13 +56,13 @@ class ExtractPlayblast(DelegatablePackageExtractor):
         length = end_frame - start_frame + 1
         collections, _ = clique.assemble(files, minimum_items=length)
 
-        assert (len(collections) == 1,
-                "Extraction failed, possible insufficient sequence length.")
+        assert len(collections) == 1, ("Extraction failed, possible "
+                                       "insufficient sequence length.")
 
         sequence = collections[0]
 
-        assert (len(sequence.indexes) == length,
-                "Sequence length not match, this is a bug.")
+        assert len(sequence.indexes) == length, ("Sequence length not match, "
+                                                 "this is a bug.")
 
         entry_fname = (sequence.head +
                        "%%0%dd" % sequence.padding +
