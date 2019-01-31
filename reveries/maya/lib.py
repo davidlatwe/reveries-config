@@ -55,7 +55,7 @@ def query_by_renderlayer(node, attr, layer):
 
     current = cmds.editRenderLayerGlobals(query=True, currentRenderLayer=True)
     if layer == current:
-        return cmds.getAttr(node_attr)
+        return cmds.getAttr(node_attr, asString=True)
 
     try:
         # For type correct, because bool value may return as float
@@ -64,14 +64,29 @@ def query_by_renderlayer(node, attr, layer):
     except NameError:
         type_ = (lambda _: _)
 
+    def get_value(conn):
+        return type_(cmds.getAttr(conn.rsplit(".", 1)[0] + ".value",
+                                  asString=True))
+
+    origin_value = None
     for conn in cmds.listConnections(node_attr, type="renderLayer",
                                      source=False, plugs=True) or []:
+        if not conn.startswith("defaultRenderLayer.adjustments"):
+            # Origin value
+            origin_value = get_value(conn)
+            continue
+
         if not conn.startswith("%s.adjustments" % layer):
             continue
         # layer.adjustments[*].plug -> layer.adjustments[*].value
-        return type_(cmds.getAttr(conn.rsplit(".", 1)[0] + ".value"))
+        return get_value(conn)
+
+    if origin_value is not None:
+        # Override in other layer
+        return origin_value
+
     # No override
-    return cmds.getAttr(node_attr)
+    return cmds.getAttr(node_attr, asString=True)
 
 
 def is_visible(node,
