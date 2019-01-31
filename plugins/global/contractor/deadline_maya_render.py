@@ -124,7 +124,8 @@ class ContractorDeadlineMayaRender(BaseContractor):
             response = requests.post(url, json=payload, auth=tuple(auth))
 
             if response.ok:
-                self.log.info("Success.")
+                jobid = eval(response.text)["_id"]
+                self.log.info("Success. JobID: %s" % jobid)
             else:
                 msg = response.text
                 self.log.error(msg)
