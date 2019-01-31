@@ -39,6 +39,7 @@ def lock_edit():
     All nodes will be locked, except:
         * default nodes
         * startup cameras
+        * renderLayerManager
 
     """
     all_nodes = set(cmds.ls(objectsOnly=True, long=True))
@@ -47,6 +48,7 @@ def lock_edit():
     materials = set(cmds.ls(materials=True))
 
     nodes_to_lock = list((all_nodes - defaults - cameras).union(materials))
+    nodes_to_lock.remove("renderLayerManager")
 
     # Save current lock state
     _node_lock_state["_"] = lib.acquire_lock_state(nodes_to_lock)

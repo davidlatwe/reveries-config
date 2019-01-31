@@ -35,7 +35,7 @@ class CameraLoader(ReferenceLoader, avalon.api.Loader):
                           groupReference=True,
                           groupName=group,
                           reference=True,
-                          lockReference=True,
+                          lockReference=False,
                           returnNewNodes=True)
 
         reveries.maya.lib.lock_transform(group)

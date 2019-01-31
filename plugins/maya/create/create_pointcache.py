@@ -1,6 +1,5 @@
 
 import avalon.maya
-from maya import cmds
 
 from reveries.maya.pipeline import put_instance_icon
 
@@ -12,10 +11,8 @@ class PointCacheCreator(avalon.maya.Creator):
     family = "reveries.pointcache"
     icon = "diamond"
 
-    contractor = "deadline.maya.script"
-
     def process(self):
-        self.data["format"] = [
+        self.data["extractType"] = [
             "Alembic",
             "GPUCache",
             "FBXCache",
@@ -23,10 +20,17 @@ class PointCacheCreator(avalon.maya.Creator):
 
         self.data["staticCache"] = False
 
-        self.data["publishContractor"] = self.contractor
-        self.data["useContractor"] = False
+        # Build pipeline render settings
 
-        instance = super(PointCacheCreator, self).process()
-        cmds.setAttr(instance + ".publishContractor", lock=True)
+        project = avalon.io.find_one({"type": "project"},
+                                     projection={"data": True})
+        deadline = project["data"]["deadline"]["maya"]
 
-        return put_instance_icon(instance)
+        priority = deadline["priorities"]["pointcache"]
+
+        self.data["deadlineEnable"] = False
+        self.data["deadlinePriority"] = priority
+        self.data["deadlinePool"] = ["none"] + deadline["pool"]
+        self.data["deadlineGroup"] = deadline["group"]
+
+        return put_instance_icon(super(PointCacheCreator, self).process())

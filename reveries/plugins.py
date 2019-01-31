@@ -22,13 +22,14 @@ class BaseContractor(object):
 
     def __init__(self):
         self.log = logging.getLogger(self.name)
+        self.__cached_context = None
 
     def fulfill(self):
         raise NotImplementedError
 
-    def assemble_environment(self, context):
-        """Include critical variables with submission
-        """
+    def _parse_context(self, context):
+        if self.__cached_context is not None:
+            return self.__cached_context
 
         # Save Session
         #
@@ -44,36 +45,93 @@ class BaseContractor(object):
 
         # Save Context data from source
         #
-        context_data_entry = ["comment", "user"]
+        context_data_entry = [
+            "comment",
+            "user",
+        ]
         for entry in context_data_entry:
             key = "AVALON_CONTEXT_" + entry
             environment[key] = context.data[entry]
 
+        self.__cached_context = environment
+        return environment
+
+    def assemble_environment(self, instance):
+        """Compose submission required environment variables for instance
+
+        Return:
+            environment (dict): A set of contract variables, return `None` if
+                instance is not assigning to this contractor or publish is
+                disabled.
+
+        """
+        if instance.data.get("publish") is False:
+            return
+        if instance.data.get("useContractor") is False:
+            return
+        if not instance.data.get("publishContractor") == self.name:
+            return
+
+        context = instance.context
+        index = context.index(instance)
+        environment = self._parse_context(context).copy()
+
         # Save Instances' name and version
         #
-        for ind, instance in enumerate(context):
-            if instance.data.get("publish") is False:
-                continue
-
-            if instance.data.get("useContractor") is False:
-                continue
-
-            if not instance.data.get("publishContractor") == self.name:
-                continue
-
-            # instance subset name
-            key = "AVALON_DELEGATED_SUBSET_%d" % ind
-            environment[key] = instance.data["name"]
-            #
-            # instance subset version
-            #
-            # This should prevent version bump when re-running publish with
-            # same params.
-            #
-            key = "AVALON_DELEGATED_VERSION_NUM_%d" % ind
-            environment[key] = instance.data["versionNext"]
+        # instance subset name
+        key = "AVALON_DELEGATED_SUBSET_%d" % index
+        environment[key] = instance.data["subset"]
+        #
+        # instance subset version
+        #
+        # This should prevent version bump when re-running publish with
+        # same params.
+        #
+        key = "AVALON_DELEGATED_VERSION_NUM_%d" % index
+        environment[key] = instance.data["versionNext"]
 
         return environment
+
+
+def parse_contract_environment(context):
+    """Assign delegated instances via parsing the environment
+    """
+    assignment = dict()
+    os_environ = os.environ.copy()
+
+    AVALON_CONTEXT_ = "AVALON_CONTEXT_"
+    AVALON_DELEGATED_SUBSET_ = "AVALON_DELEGATED_SUBSET_"
+    AVALON_DELEGATED_VERSION_NUM_ = "AVALON_DELEGATED_VERSION_NUM_"
+
+    for key in os_environ:
+
+        # Context
+        if key.startswith(AVALON_CONTEXT_):
+            # Read Context data
+            #
+            entry = key[len(AVALON_CONTEXT_):]
+            context.data[entry] = os_environ[key]
+
+        # Instance
+        if key.startswith(AVALON_DELEGATED_SUBSET_):
+            # Read Instances' name and version
+            #
+            num_key = key.replace(AVALON_DELEGATED_SUBSET_,
+                                  AVALON_DELEGATED_VERSION_NUM_)
+            subset_name = os_environ[key]
+            version_num = int(os_environ[num_key])
+
+            # Assign instance
+            assignment[subset_name] = version_num
+
+            print("Assigned subset {0!r}\n\tVer. Num: {1!r}"
+                  "".format(subset_name, version_num))
+
+    print("Found {} delegated instances.".format(len(assignment)))
+
+    # Update context
+    context.data["contractorAccepted"] = True
+    context.data["contractorAssignment"] = assignment
 
 
 def find_contractor(contractor_name=""):
@@ -310,18 +368,18 @@ class PackageExtractor(pyblish.api.InstancePlugin):
                              "subset": self.data["subset"],
                              "version": None}
 
-        format_ = self.data.get("format")
+        extract_type = self.data.get("extractType")
 
-        if format_ is None:
-            self.log.debug("No specific format, extract all supported type "
-                           "of representations.")
+        if extract_type is None:
+            self.log.debug("No specific extraction type, extract all "
+                           "supported type of representations.")
             self._active_representations = self.representations
 
-        elif format_ in self.representations:
-            self._active_representations = [format_]
+        elif extract_type in self.representations:
+            self._active_representations = [extract_type]
 
         else:
-            msg = "{!r} not supported. This is a bug.".format(format_)
+            msg = "{!r} not supported. This is a bug.".format(extract_type)
             raise RuntimeError(msg)
 
         if "packages" not in self.data:
@@ -405,7 +463,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
         self.data["publishDirElem"] = (self._publish_key, self._publish_path)
         self.data["versionNext"] = version_number
-        self.data["version_dir"] = version_dir
+        self.data["versionDir"] = version_dir
 
         self.log.debug("Next version: {}".format(version_number))
         self.log.debug("Version dir: {}".format(version_dir))
@@ -460,16 +518,25 @@ class PackageExtractor(pyblish.api.InstancePlugin):
                                                ext=extension)
 
     def create_package(self, entry_fname):
-        """Create representation dir
+        """Create representation stage dir
+
+        Register and create a staging directory for extraction usage later on.
+
+        The default staging directory is generated by `tempfile.mkdtemp()` with
+        "pyblish_tmp_" prefix, but if the extraction method get decorated with
+        `skip_stage`, the staging directory will be the publish directory.
 
         This should only be called in actual extraction process.
+
+        Return:
+            repr_dir (str): staging directory
 
         """
         staging_dir = self.data.get("stagingDir", None)
 
         if not staging_dir:
             if self._extract_to_publish_dir:
-                staging_dir = self.data["version_dir"]
+                staging_dir = self.data["versionDir"]
             else:
                 staging_dir = temp_dir(prefix="pyblish_tmp_")
 

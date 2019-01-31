@@ -6,7 +6,7 @@ from reveries.maya.plugins import MayaSelectInvalidAction
 class ValidateMeshSingleShape(pyblish.api.InstancePlugin):
     """Transforms with a mesh must ever only contain a single mesh
 
-    This ensures models only contain a single shape node.
+    This ensures models only contain a single Non-Intermediate shape node.
 
     """
 
@@ -26,24 +26,24 @@ class ValidateMeshSingleShape(pyblish.api.InstancePlugin):
 
         invalid = list()
 
-        meshes = cmds.ls(instance, type='mesh', ni=True, long=True)
+        meshes = cmds.ls(instance, type="mesh", long=True)
 
         # get meshes transform
-        transforms = cmds.listRelatives(meshes, parent=True)
+        transforms = cmds.listRelatives(meshes,
+                                        parent=True,
+                                        fullPath=True) or []
 
-        for transform in set(transforms):
-            shapes = cmds.listRelatives(transform, shapes=True) or list()
+        for transform in transforms:
+            shapes = cmds.listRelatives(transform,
+                                        shapes=True,
+                                        fullPath=True) or []
+            non_intermediate = [s for s in shapes
+                                if not cmds.getAttr(s + ".intermediateObject")]
 
             # Ensure the one child is a shape
-            has_single_shape = len(shapes) == 1
+            has_single_shape = len(non_intermediate) == 1
 
-            # Ensure the one shape is of type "mesh"
-            has_single_mesh = (
-                has_single_shape and
-                cmds.nodeType(shapes[0]) == "mesh"
-            )
-
-            if not (has_single_shape and has_single_mesh):
+            if not has_single_shape:
                 invalid.append(transform)
 
         return invalid

@@ -132,6 +132,9 @@ def no_refresh():
         cmds.refresh(suspend=False)
 
 
+__no_undo_type = {"_": None}
+
+
 @contextlib.contextmanager
 def no_undo(flush=False):
     """Disable the undo queue during the context
@@ -143,12 +146,14 @@ def no_undo(flush=False):
     """
     original = cmds.undoInfo(query=True, state=True)
     keyword = "state" if flush else "stateWithoutFlush"
+    __no_undo_type["_"] = keyword
 
     try:
         cmds.undoInfo(**{keyword: False})
         yield
     finally:
         cmds.undoInfo(**{keyword: original})
+        __no_undo_type["_"] = None
 
 
 @contextlib.contextmanager
@@ -158,8 +163,8 @@ def undo_chunk():
     Use with caution !
 
     """
-    cmds.undoInfo(ock=True)
     try:
+        cmds.undoInfo(ock=True)
         yield
     finally:
         cmds.undoInfo(cck=True)
@@ -168,6 +173,49 @@ def undo_chunk():
             cmds.undo()
         except RuntimeError as e:
             cmds.warning(str(e))
+
+
+@contextlib.contextmanager
+def undo_chunk_when_no_undo():
+    """Open undo chunk and undo when exit back to context with no undo
+
+    This should only be used under the `no_undo` context.
+
+    Use with caution !!!
+
+    Example:
+    The scene will have a polyTorus and a cube but no sphere,
+    and only the polyTorus' creation can be undone.
+
+    >>> cmds.polyTorus()
+    >>> with no_undo(flush=False):
+    ...    cmds.polyCube()
+    ...    with undo_chunk_when_no_undo():
+    ...        print(cmds.polySphere())
+    ...
+    ['pSphere1', 'polySphere1']
+
+    """
+    keyword = __no_undo_type["_"]
+    if keyword is None:
+        raise RuntimeError("The keyword of undo state is `None`, "
+                           "this is a bug.")
+
+    original = cmds.undoInfo(query=True, state=True)
+    cmds.undoInfo(**{keyword: True})
+
+    try:
+        cmds.undoInfo(ock=True)
+        yield
+    finally:
+        cmds.undoInfo(cck=True)
+
+        try:  # Undo without RuntimeError: no command to undo
+            cmds.undo()
+        except RuntimeError as e:
+            cmds.warning(str(e))
+
+        cmds.undoInfo(**{keyword: original})
 
 
 @contextlib.contextmanager

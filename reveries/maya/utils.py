@@ -506,6 +506,10 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
         # Don't transform if the prefix is blank, so we can just default to
         # the scene file name.
         if prefix:
+            for tag in ("<Layer>", "<layer>", "%l"):
+                # We need to replace renderlayer tag by ourself if we don't
+                # switch renderlayer.
+                prefix = prefix.replace(tag, layer)
             prefix = mel.eval("vrayTransformFilename("
                               "\"{0}\", \"{1}\", \"{2}\", 0, 0, 0)"
                               "".format(prefix, camera, scene_name))

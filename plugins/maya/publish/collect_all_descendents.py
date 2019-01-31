@@ -17,3 +17,6 @@ class CollectAllDescendents(pyblish.api.InstancePlugin):
                                        fullPath=True) or []
 
         instance[:] = sorted(list(set(instance[:])))
+
+        self.log.debug("Descendents collected for instance {!r}."
+                       "".format(str(instance.name)))

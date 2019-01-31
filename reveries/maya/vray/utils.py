@@ -41,7 +41,7 @@ def get_vray_output_image_format():
                                  value=True)
     else:
         ext = cmds.getAttr("vraySettings.imageFormatStr")
-        if ext == "":
+        if not ext:
             # For some reason this happens if you have not
             # changed the format
             ext = "png"

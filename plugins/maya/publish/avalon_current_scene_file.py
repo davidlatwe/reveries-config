@@ -8,7 +8,7 @@ import pyblish.api
 class CurrentSceneFile(pyblish.api.ContextPlugin):
     """Inject the current working file into context"""
 
-    order = pyblish.api.ExtractorOrder - 0.495
+    order = pyblish.api.CollectorOrder - 0.4
     label = "Current Scene File"
     hosts = ["maya"]
 

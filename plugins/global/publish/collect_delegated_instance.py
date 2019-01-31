@@ -23,7 +23,7 @@ class CollectDelegatedInstance(pyblish.api.ContextPlugin):
 
         collected_count = 0
         for instance in context:
-            name = instance.data["name"]
+            name = instance.data["subset"]
             if name in assignment:
                 # version lock
                 instance.data["versionNext"] = assignment[name]

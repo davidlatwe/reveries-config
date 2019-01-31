@@ -45,7 +45,10 @@ class ExtractModel(PackageExtractor):
         package_path = self.create_package(entry_file)
         entry_path = os.path.join(package_path, entry_file)
 
-        mesh_nodes = cmds.ls(self.member, type="mesh", ni=True, long=True)
+        mesh_nodes = cmds.ls(self.member,
+                             type="mesh",
+                             noIntermediate=True,
+                             long=True)
         clay_shader = "initialShadingGroup"
 
         # Hash model
@@ -62,7 +65,17 @@ class ExtractModel(PackageExtractor):
         self.log.info("Extracting %s" % str(self.member))
         cmds.select(self.member, noExpand=True)
 
-        with capsule.assign_shader(mesh_nodes, shadingEngine=clay_shader):
+        with contextlib.nested(
+            capsule.assign_shader(mesh_nodes, shadingEngine=clay_shader),
+            capsule.undo_chunk_when_no_undo(),
+        ):
+            # Remove mesh history, for removing all intermediate nodes
+            transforms = cmds.ls(self.member, type="transform")
+            cmds.delete(transforms, constructionHistory=True)
+            # Remove all stray shapes, ensure no intermediate nodes
+            all_meshes = set(cmds.ls(self.member, type="mesh", long=True))
+            cmds.delete(list(all_meshes - set(mesh_nodes)))
+
             cmds.file(
                 entry_path,
                 force=True,
