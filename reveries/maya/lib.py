@@ -71,7 +71,7 @@ def query_by_renderlayer(node, attr, layer):
     origin_value = None
     for conn in cmds.listConnections(node_attr, type="renderLayer",
                                      source=False, plugs=True) or []:
-        if not conn.startswith("defaultRenderLayer.adjustments"):
+        if conn.startswith("defaultRenderLayer.adjustments"):
             # Origin value
             origin_value = get_value(conn)
             continue
