@@ -1,10 +1,10 @@
 
-import json
 import copy
 import logging
 import pyblish.api
 import pyblish.util
 
+from bson import json_util
 from reveries.utils import publish_results_formatting
 from reveries.plugins import parse_contract_environment
 
@@ -15,7 +15,7 @@ log = logging.getLogger("Contractor")
 def show_data(context):
     data = copy.deepcopy(context.data)
     data["results"] = publish_results_formatting(context)
-    log.info(json.dumps(data, indent=4, sort_keys=True))
+    log.info(json_util.dumps(data, indent=4, sort_keys=True))
 
 
 def check_success(context):
@@ -23,8 +23,8 @@ def check_success(context):
         if not result["success"]:
             show_data(context)
             log.error(result["plugin"]["name"])
-            log.error(json.dumps(result["error"],
-                                 indent=4, sort_keys=True))
+            log.error(json_util.dumps(result["error"],
+                                      indent=4, sort_keys=True))
             raise RuntimeError(result["error"]["message"])
 
 
