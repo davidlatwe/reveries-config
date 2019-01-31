@@ -126,9 +126,44 @@ class ContractorDeadlineMayaRender(BaseContractor):
             if response.ok:
                 jobid = eval(response.text)["_id"]
                 self.log.info("Success. JobID: %s" % jobid)
+                self.submit_publish_script(payload, jobid, url, auth)
             else:
                 msg = response.text
                 self.log.error(msg)
                 raise Exception(msg)
 
         self.log.info("Completed.")
+
+    def submit_publish_script(self, payload, jobid, url, auth):
+        # Clean up
+        for key in list(payload["JobInfo"].keys()):
+            if (key.startswith("OutputDirectory") or
+                    key.startswith("OutputFilename")):
+                payload["JobInfo"].pop(key)
+
+        payload["JobInfo"].pop("Frames")
+        payload["PluginInfo"].pop("OutputFilePath")
+        payload["PluginInfo"].pop("OutputFilePrefix")
+
+        # Update
+        payload["JobInfo"].update({
+            "Name": "_intergrate " + payload["JobInfo"]["Name"],
+            "Priority": 99,
+            "JobDependencies": jobid,
+        })
+        payload["PluginInfo"].update({
+            "ScriptJob": True,
+            "ScriptFilename": os.path.join(os.path.dirname(__file__),
+                                           "scripts",
+                                           "avalon_contractor_publish.py"),
+        })
+
+        response = requests.post(url, json=payload, auth=tuple(auth))
+
+        if response.ok:
+            jobid = eval(response.text)["_id"]
+            self.log.info("Success. JobID: %s" % jobid)
+        else:
+            msg = response.text
+            self.log.error(msg)
+            raise Exception(msg)
