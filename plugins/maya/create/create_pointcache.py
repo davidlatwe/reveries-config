@@ -12,21 +12,19 @@ class PointCacheCreator(avalon.maya.Creator):
     icon = "diamond"
 
     def process(self):
-        self.data["extractType"] = [
-            "Alembic",
-            "GPUCache",
-            "FBXCache",
-        ]
-
-        self.data["staticCache"] = False
-
         # Build pipeline render settings
 
         project = avalon.io.find_one({"type": "project"},
                                      projection={"data": True})
+        pipeline = project["data"]["pipeline"]["maya"]
         deadline = project["data"]["deadline"]["maya"]
 
+        cache_type = pipeline["pointcache"]
         priority = deadline["priorities"]["pointcache"]
+
+        self.data["extractType"] = cache_type[:]
+
+        self.data["staticCache"] = False
 
         self.data["deadlineEnable"] = False
         self.data["deadlinePriority"] = priority
