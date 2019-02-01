@@ -43,8 +43,16 @@ def get_avalon_uuid(instance):
     uuids = defaultdict(list)
     group_nodes = ls_subset_groups()
 
-    for node in instance:
-        if not cmds.nodeType(node) == "transform":
+    family = instance.data["family"]
+    required_types = pipeline.uuid_required_node_types(family)
+
+    lock_state = cmds.lockNode(instance, query=True, lock=True)
+    for node, lock in zip(instance, lock_state):
+        if lock:
+            print("Skipping locked node: %s" % node)
+            continue
+
+        if cmds.nodeType(node) not in required_types:
             continue
 
         if node in group_nodes:
@@ -59,12 +67,21 @@ def get_avalon_uuid(instance):
 
 
 class ValidateAvalonUUID(pyblish.api.InstancePlugin):
-    """All transfrom must have an UUID
+    """All transfrom and types required by each family must have an UUID
     """
 
     order = pyblish.api.ValidatorOrder
     hosts = ["maya"]
     label = "Avalon UUID"
+    families = [
+        "reveries.model",
+        "reveries.rig",
+        "reveries.look",
+        "reveries.setdress",
+        "reveries.camera",
+        "reveries.lightset",
+        "reveries.mayashare",
+    ]
     actions = [
         pyblish.api.Category("Select"),
         SelectMissing,

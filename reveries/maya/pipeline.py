@@ -339,3 +339,44 @@ def find_stray_textures(instance, containers):
         stray.append(file_node)
 
     return stray
+
+
+_uuid_required_node_types = {
+    "reveries.model": {
+        "transform",
+    },
+    "reveries.rig": {
+        "transform",
+    },
+    "reveries.look": {
+        "transform",
+        "shadingDependNode",
+        "THdependNode",
+    },
+    "reveries.setdress": {
+        "transform",
+    },
+    "reveries.camera": {
+        "transform",
+        "camera",
+    },
+    "reveries.lightset": {
+        "transform",
+        "light",
+        "locator",
+    },
+}
+
+
+def uuid_required_node_types(family):
+    try:
+        types = _uuid_required_node_types[family]
+    except KeyError:
+        if family == "reveries.mayashare":
+            types = set()
+            for typ in _uuid_required_node_types.values():
+                types.update(typ)
+        else:
+            raise
+
+    return list(types)
