@@ -19,7 +19,6 @@ class ExtractPointCache(DelegatablePackageExtractor):
     hosts = ["maya"]
     label = "Extract PointCache"
     families = [
-        "reveries.animation",
         "reveries.pointcache",
     ]
 

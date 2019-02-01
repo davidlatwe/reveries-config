@@ -1,17 +1,16 @@
-import pyblish.api
 
+import pyblish.api
 import maya.cmds as cmds
 
 
-class CollectAnimationOutputs(pyblish.api.InstancePlugin):
+class CollectDeformedOutputs(pyblish.api.InstancePlugin):
     """Collect out geometry data for instance.
     """
 
     order = pyblish.api.CollectorOrder + 0.2
-    label = "Collect Animation Outputs"
+    label = "Collect Deformed Outputs"
     hosts = ["maya"]
     families = [
-        "reveries.animation",
         "reveries.pointcache",
     ]
 

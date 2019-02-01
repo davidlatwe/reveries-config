@@ -18,7 +18,6 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
     hosts = ["maya"]
 
     families = [
-        "reveries.animation",
         "reveries.pointcache",
         "reveries.setdress",
     ]
@@ -66,7 +65,6 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
     hosts = ["maya"]
 
     families = [
-        "reveries.animation",
         "reveries.pointcache",
     ]
 
