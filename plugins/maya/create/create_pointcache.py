@@ -5,7 +5,11 @@ from reveries.maya.pipeline import put_instance_icon
 
 
 class PointCacheCreator(avalon.maya.Creator):
-    """Any cacheable object"""
+    """Extract pointcache for deformable objects
+
+    Extract cache for each loaded subset
+
+    """
 
     label = "PointCache"
     family = "reveries.pointcache"
