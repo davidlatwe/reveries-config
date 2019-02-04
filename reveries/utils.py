@@ -13,13 +13,27 @@ from pyblish_qml.ipc import formatting
 
 
 def temp_dir(prefix=""):
-    """Provide a temporary directory
+    """Provide a temporary directory for staging
+
     This temporary directory is generated through `tempfile.mkdtemp()`
+
+    Arguments:
+        prefix (str, optional): Prefix name of the temporary directory
+
     """
     return tempfile.mkdtemp(prefix=prefix)
 
 
 def clear_stage(prefix="tmp"):
+    """Remove temporary staging directory with prefix
+
+    Remove temporary directory which named with prefix in
+    `tempfile.gettempdir()`
+
+    Arguments:
+        prefix (str, optional): Prefix name of the temporary directory
+
+    """
     tempdir = tempfile.gettempdir()
     cwd_backup = os.getcwd()
 
