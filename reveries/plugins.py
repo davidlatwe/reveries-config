@@ -17,6 +17,8 @@ from . import CONTRACTOR_PATH
 
 
 class BaseContractor(object):
+    """Publish contractor base class
+    """
 
     name = ""
 
@@ -192,7 +194,6 @@ def create_dependency_instance(dependent,
                                members,
                                optional=False,
                                category=None):
-
     """Create dependency instance from dependent instance
 
     Creating instance for unpublished or stray (not containerized) assets,
@@ -295,6 +296,7 @@ def context_process(process):
     to the `process`.
 
     """
+
     def _context_process(self, instance):
         context = instance.context
         processed_tag = "_" + self.__class__.__name__ + "_processed_"
