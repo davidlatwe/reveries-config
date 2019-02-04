@@ -52,22 +52,33 @@ def clear_stage(prefix="pyblish_tmp_"):
 
 
 def get_timeline_data(project=None, asset_name=None):
+    """Get asset timeline data from project document
+
+    Arguments:
+        project (dict, optional): Project document, query from database if
+            not provided.
+        asset_name (str, optional): Asset name, get from `avalon.Session` if
+            not provided.
+
+    Returns:
+        edit_in (int),
+        edit_out (int),
+        handles (int),
+        fps (float)
+
+    """
     if project is None:
         project = avalon.io.find_one({"type": "project"})
     asset = asset_name or avalon.Session["AVALON_ASSET"]
     asset = avalon.io.find_one({"name": asset, "type": "asset"})
 
-    def get_time(key):
-        try:
-            value = asset["data"][key]
-        except KeyError:
-            value = project["data"][key]
-        return value
+    def get(key):
+        return asset["data"].get(key, project["data"][key])
 
-    edit_in = get_time("edit_in")
-    edit_out = get_time("edit_out")
-    handles = get_time("handles")
-    fps = get_time("fps")
+    edit_in = get("edit_in")
+    edit_out = get("edit_out")
+    handles = get("handles")
+    fps = get("fps")
 
     if handles < 1:
         # (TODO) davidlatwe
