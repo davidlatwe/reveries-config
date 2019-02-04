@@ -12,7 +12,7 @@ import avalon
 from pyblish_qml.ipc import formatting
 
 
-def temp_dir(prefix=""):
+def temp_dir(prefix="pyblish_tmp_"):
     """Provide a temporary directory for staging
 
     This temporary directory is generated through `tempfile.mkdtemp()`
@@ -24,7 +24,7 @@ def temp_dir(prefix=""):
     return tempfile.mkdtemp(prefix=prefix)
 
 
-def clear_stage(prefix="tmp"):
+def clear_stage(prefix="pyblish_tmp_"):
     """Remove temporary staging directory with prefix
 
     Remove temporary directory which named with prefix in
