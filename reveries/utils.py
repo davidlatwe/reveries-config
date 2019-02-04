@@ -54,6 +54,9 @@ def clear_stage(prefix="pyblish_tmp_"):
 def get_timeline_data(project=None, asset_name=None):
     """Get asset timeline data from project document
 
+    Get timeline data from asset if asset has it's own settings, or get from
+    project.
+
     Arguments:
         project (dict, optional): Project document, query from database if
             not provided.
@@ -89,6 +92,23 @@ def get_timeline_data(project=None, asset_name=None):
 
 
 def compose_timeline_data(project=None, asset_name=None):
+    """Compute and return start frame, end frame and fps
+
+    Get timeline data from asset if asset has it's own settings, or get from
+    project.
+
+    Arguments:
+        project (dict, optional): Project document, query from database if
+            not provided.
+        asset_name (str, optional): Asset name, get from `avalon.Session` if
+            not provided.
+
+    Returns:
+        start_frame (int),
+        end_frame (int),
+        fps (float)
+
+    """
     edit_in, edit_out, handles, fps = get_timeline_data(project, asset_name)
     start_frame = edit_in - handles
     end_frame = edit_out + handles
@@ -97,6 +117,20 @@ def compose_timeline_data(project=None, asset_name=None):
 
 
 def get_resolution_data(project=None):
+    """Get resolution data from project
+
+    If resolution data is not defined in project settings, return Full HD res
+    (1920, 1080).
+
+    Arguments:
+        project (dict, optional): Project document, query from database if
+            not provided.
+
+    Returns:
+        resolution_width (int),
+        resolution_height (int)
+
+    """
     if project is None:
         project = avalon.io.find_one({"type": "project"})
     resolution_width = project["data"].get("resolution_width", 1920)
