@@ -136,7 +136,7 @@ def subset_interfacing(name,
 
 
 def get_interface_from_container(container):
-    """Return interface node from container
+    """Return interface node from container node
 
     Raise `RuntimeError` if getting none or more then one interface.
 
@@ -156,7 +156,7 @@ def get_interface_from_container(container):
 
 
 def get_container_from_interface(interface):
-    """Return container node from interface
+    """Return container node from interface node
 
     Raise `RuntimeError` if getting none or more then one container.
 
@@ -176,18 +176,31 @@ def get_container_from_interface(interface):
 
 
 def get_group_from_container(container):
+    """Get top group node name from container node
+
+    Arguments:
+        container (str): Name of container node
+
     """
-    """
+    # Get all transform nodes from container node
     transforms = cmds.ls(cmds.sets(container, query=True),
                          type="transform",
                          long=True)
     if not transforms:
         return None
+    # First member of sorted transform list is the top group node
     return sorted(transforms)[0]
 
 
 def container_metadata(container):
-    """
+    """Get additional data from container node
+
+    Arguments:
+        container (str): Name of container node
+
+    Returns:
+        (dict)
+
     """
     interface = get_interface_from_container(container)
     subset_group = get_group_from_container(container)
@@ -207,7 +220,14 @@ def container_metadata(container):
 
 
 def parse_container(container):
-    """
+    """Parse data from container node with additional data
+
+    Arguments:
+        container (str): Name of container node
+
+    Returns:
+        data (dict)
+
     """
     data = avalon.maya.pipeline.parse_container(container)
     data.update(container_metadata(container))
@@ -215,7 +235,15 @@ def parse_container(container):
 
 
 def update_container(container, asset, subset, version, representation):
-    """
+    """Update container node attributes' value and namespace
+
+    Arguments:
+        container (dict): container document
+        asset (dict): asset document
+        subset (dict): subset document
+        version (dict): version document
+        representation (dict): representation document
+
     """
     container_node = container["objectName"]
 
@@ -286,6 +314,21 @@ def subset_containerising(name,
                           cls_name,
                           group_name):
     """Containerise loaded subset and build interface
+
+    Containerizing imported/referenced nodes and creating interface node,
+    and the interface node will connected to container node and top group
+    node's `message` attribute.
+
+    Arguments:
+        name (str): Name of resulting assembly
+        namespace (str): Namespace under which to host interface
+        container_id (str): Container UUID
+        nodes (list): Long names of imported/referenced nodes
+        ports (list): Long names of nodes for interfacing
+        context (dict): Asset information
+        cls_name (str): avalon Loader class name
+        group_name (str): Top group node of imported/referenced new nodes
+
     """
     interface = subset_interfacing(name=name,
                                    namespace=namespace,
