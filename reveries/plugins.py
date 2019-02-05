@@ -17,7 +17,7 @@ from . import CONTRACTOR_PATH
 
 
 class BaseContractor(object):
-    """Publish contractor base class
+    """Publish delegation contractor base class
     """
 
     name = ""
@@ -316,6 +316,14 @@ def context_process(process):
 
 def skip_stage(extractor):
     """Decorator, indicate the extractor will directly save to publish dir
+
+    This will make `PackageExtractor.create_package()` return representation's
+    versioned dir in publish space.
+
+    And the `instance.data["stagingDir"]` will be set to versioned dir instead
+    of random dir in temp folder. So there should be no file/dir copy while
+    intergation since the representation already exists in final destination.
+
     """
 
     def _skip_stage(self, *args, **kwargs):
@@ -329,46 +337,151 @@ def skip_stage(extractor):
 
 
 class PackageExtractor(pyblish.api.InstancePlugin):
-    """Reveries' extractor base class.
+    """Reveries' extractor base class
+
+    * This extractor extracts representation as one package(dir), not single
+      file.
+
+    * This extractor can extract multiple representations that defined in
+      attribute `representations`.
+
+        - If the instance data has `"extractType"` value, then only that type
+          of representation will be extracted, instead of extracting all
+          supported representations.
+
+        - You MUST implement representation extract method with this function
+          nameing: `extract_<representationName>`. For example, if you have
+          "mayaAscii" in representations list, then the subclass MUST have
+          a method called `extract_mayaAscii`.
+
+    * This extractor will lock version by the context data entry
+      `"sourceFingerprint"`.
+
+        - The data `"sourceFingerprint"` is a workfile hashing or any other
+          feature data that able to identify the workfile change. This should
+          be collected via other collector plugin.
+
+        - Before extraction process started, this extractor will create a
+          version dir in publish space, and bind that version dir with current
+          workfile's fingerprint.
+
+        - This normally won't happen in production, but if the version dir
+          exists, and the fingerprint does not matched, version will bumped
+          and create a new version dir to retry (only retry 3 times).
+          This will happen if multiple artist publishing same subset with long
+          extraction time, or bugs that cause publish fail during extraction.
+
+        - If the version dir exists, and the fingerprint matched, the pre-
+          existed content in that version dir will be removed.
+
+        - This ensures the version number of the subset will get, after this
+          publish session been completed, no matter what happened during
+          long extraction time.
+
+    Example usage:
+
+        ```python
+
+        class ExtractMyWork(PackageExtractor):
+            order = pyblish.api.ExtractorOrder
+            hosts = ["maya"]
+            families = ["reveries.work"]
+            representations = [
+                "mayaAscii",
+                "Alembic",
+            ]
+
+            def extract_mayaAscii(self):
+                entry_file = self.file_name("ma")
+                package_path = self.create_package()
+                entry_path = os.path.join(package_path, entry_file)
+                self.add_data({"some": "data"})
+
+            def extract_Alembic(self):
+                ...
+
+        ```
+
+    Attributes:
+        context (pyblish.api.Context): Current pyblish context object
+        data (dict): Current pyblish instance data
+        member (list): Current pyblish instance members
+        representations (list): Names of representations that can be extracted
 
     """
 
     families = []
+    representations = []
 
     metadata = ".fingerprint.json"
 
-    def process(self, instance):
+    def extract(self):
+        """Multi-representation extraction process
+
+        Override this method if any pre-extraction job or context is needed.
+        For example:
+
+            ```python
+
+            def extract(self):
+                # Some pre-extraction job
+                self.extra_attr = somthing
+                # Pre-extraction context
+                with pre_extraction_context:
+                    super(MyExtractor, self).extract()
+
+            ```
+
         """
+        extract_methods = list()
+        for repr_ in self._active_representations:
+            method = getattr(self, "extract_" + repr_, None)
+            if method is None:
+                msg = ("This extractor does not have the method to "
+                       "extract {!r}".format(repr_))
+                self.log.error(msg)
+                raise AttributeError(msg)
+
+            extract_methods.append((method, repr_))
+
+        for method, repr_ in extract_methods:
+            self._current_representation = repr_
+            method()
+
+    def process(self, instance):
+        """Extractor's main process
+
+        This should NOT be re-implemented.
+
         """
         self._process(instance)
-        self._get_version_dir()
+        self._acquire_version_dir()
         self.extract()
 
     def _process(self, instance):
-        self._active_representations = list()
-        self._current_representation = None
-        self._extract_to_publish_dir = False
-        self._version_locked = False
-
+        """Pre-extraction process
+        """
         self.context = instance.context
         self.data = instance.data
         self.member = instance[:]
-        self.subset_doc = avalon.io.find_one({
+
+        self._active_representations = list()
+        self._current_representation = None
+        self._extract_to_publish_dir = False
+        self._subset_doc = avalon.io.find_one({
             "type": "subset",
             "parent": self.data["assetDoc"]["_id"],
             "name": self.data["subset"],
         })
 
         project = instance.context.data["projectDoc"]
-
-        self._publish_path = project["config"]["template"]["publish"]
-
-        self._publish_key = {"root": avalon.api.registered_root(),
-                             "project": avalon.api.Session["AVALON_PROJECT"],
-                             "silo": avalon.api.Session["AVALON_SILO"],
-                             "asset": avalon.api.Session["AVALON_ASSET"],
-                             "subset": self.data["subset"],
-                             "version": None}
+        self._publish_dir_template = project["config"]["template"]["publish"]
+        self._publish_dir_key = {"root": avalon.api.registered_root(),
+                                 "project": avalon.Session["AVALON_PROJECT"],
+                                 "silo": avalon.Session["AVALON_SILO"],
+                                 "asset": avalon.Session["AVALON_ASSET"],
+                                 "subset": self.data["subset"],
+                                 "version": None}
 
         extract_type = self.data.get("extractType")
 
@@ -386,19 +499,18 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
         if "packages" not in self.data:
             self.data["packages"] = dict()
-
         if "files" not in self.data:
             self.data["files"] = list()
-
         if "hardlinks" not in self.data:
             self.data["hardlinks"] = list()
 
-    def _get_version(self):
+    def _get_next_version(self):
+        """Get current subset instance's next version number"""
         version = None
         version_number = 1  # assume there is no version yet, we start at `1`
-        if self.subset_doc is not None:
+        if self._subset_doc is not None:
             version = avalon.io.find_one({"type": "version",
-                                          "parent": self.subset_doc["_id"]},
+                                          "parent": self._subset_doc["_id"]},
                                          {"name": True},
                                          sort=[("name", -1)])
 
@@ -408,25 +520,52 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
         return version_number
 
-    def _get_version_dir(self):
+    def _acquire_version_dir(self, version_locked=False):
+        """Get a version dir which binded to current workfile
         """
-        """
-
-        # Lacking the representation, extract version dir instead
-        version_dir_template = os.path.dirname(self._publish_path)
+        version_dir_template = os.path.dirname(self._publish_dir_template)
 
         def format_version_dir(version_number):
-            self._publish_key["version"] = version_number
-            version_dir = version_dir_template.format(**self._publish_key)
+            self._publish_dir_key["version"] = version_number
+            version_dir = version_dir_template.format(**self._publish_dir_key)
             # Clean the path
             version_dir = os.path.abspath(os.path.normpath(version_dir))
 
             return version_dir
 
+        def is_version_matched(version_dir):
+            """Does the fingerprint in this version match with workfile ?"""
+            metadata_path = os.path.join(version_dir, self.metadata)
+            # Load fingerprint from version dir
+            with open(metadata_path, "r") as fp:
+                metadata = json.load(fp)
+
+            return metadata == self.context.data["sourceFingerprint"]
+
+        def create_version_dir(version_dir):
+            """Create a version named dir and dump workfile fingerprint"""
+            os.makedirs(version_dir)
+            metadata_path = os.path.join(version_dir, self.metadata)
+            # Save workfile fingerprint to version dir
+            with open(metadata_path, "w") as fp:
+                json.dump(self.context.data["sourceFingerprint"], fp, indent=4)
+
+        def clean_version_dir(version_dir):
+            """Remove all content from the version dir, except fingerprint"""
+            dir_content = os.listdir(version_dir)
+            dir_content.remove(self.metadata)
+
+            for item in dir_content:
+                item_path = os.path.join(version_dir, item)
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+                elif os.path.isfile(item_path):
+                    os.remove(item_path)
+
         # Check
         max_retry_time = 3
         retry_time = 0
-        version = self._get_version()
+        version = self._get_next_version()
 
         while True:
             if retry_time > max_retry_time:
@@ -437,84 +576,55 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             elif retry_time:
                 self.log.debug("Retry Time: {}".format(retry_time))
 
+            # Bump version
             version_number = version + retry_time
             self.log.debug("Trying Version: {}".format(version_number))
-
             version_dir = format_version_dir(version_number)
             self.log.debug("Version Dir: {}".format(version_dir))
 
             if os.path.isdir(version_dir):
-                if self._verify_version_dir(version_dir):
+                if is_version_matched(version_dir):
+                    # This version dir match the current workfile, remove
+                    # previous extracted stuff.
                     self.log.debug("Cleaning version dir.")
-                    self._clean_version_dir(version_dir)
+                    clean_version_dir(version_dir)
                     break
 
-                elif self._version_locked:
+                elif version_locked:
+                    # This should not happend.
+                    # If the version is locked, the workfile should never
+                    # changed.
                     msg = ("Critical Error: Version locked but version dir is "
                            "not available ('sourceFingerprint' not match), "
                            "this is a bug.")
                     self.log.critical(msg)
                     raise Exception(msg)
 
+                else:
+                    # Version dir has been created, but the `sourceFingerprint`
+                    # not matched because the workfile has changed.
+                    # Try next version.
+                    pass
+
             else:
-                self.log.debug("Booking version dir.")
-                self._book_version_dir(version_dir)
+                self.log.debug("Creating version dir.")
+                create_version_dir(version_dir)
                 break
 
             retry_time += 1
 
-        self.data["publishDirElem"] = (self._publish_key, self._publish_path)
         self.data["versionNext"] = version_number
         self.data["versionDir"] = version_dir
+        self.data["publishDirElem"] = (self._publish_dir_key,
+                                       self._publish_dir_template)
 
         self.log.debug("Next version: {}".format(version_number))
         self.log.debug("Version dir: {}".format(version_dir))
 
         return version_dir
 
-    def _verify_version_dir(self, version_dir):
-        metadata_path = os.path.join(version_dir, self.metadata)
-        with open(metadata_path, "r") as fp:
-            metadata = json.load(fp)
-
-        return metadata == self.context.data["sourceFingerprint"]
-
-    def _book_version_dir(self, version_dir):
-        os.makedirs(version_dir)
-        metadata_path = os.path.join(version_dir, self.metadata)
-        with open(metadata_path, "w") as fp:
-            json.dump(self.context.data["sourceFingerprint"], fp, indent=4)
-
-    def _clean_version_dir(self, version_dir):
-        dir_content = os.listdir(version_dir)
-        dir_content.remove(self.metadata)
-
-        for item in dir_content:
-            item_path = os.path.join(version_dir, item)
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
-            elif os.path.isfile(item_path):
-                os.remove(item_path)
-
-    def extract(self):
-        """
-        """
-        extract_methods = list()
-        for repr_ in self._active_representations:
-            method = getattr(self, "extract_" + repr_, None)
-            if method is None:
-                msg = ("This extractor does not have the method to "
-                       "extract {!r}".format(repr_))
-                self.log.error(msg)
-                raise AttributeError(msg)
-
-            extract_methods.append((method, repr_))
-
-        for method, repr_ in extract_methods:
-            self._current_representation = repr_
-            method()
-
     def file_name(self, extension, suffix=""):
+        """Convenient method for composing file name with default format"""
         return "{subset}{suffix}.{ext}".format(subset=self.data["subset"],
                                                suffix=suffix,
                                                ext=extension)
@@ -524,11 +634,11 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
         Register and create a staging directory for extraction usage later on.
 
+        MUST call this in every representation's extraction process.
+
         The default staging directory is generated by `tempfile.mkdtemp()` with
         "pyblish_tmp_" prefix, but if the extraction method get decorated with
         `skip_stage`, the staging directory will be the publish directory.
-
-        This should only be called in actual extraction process.
 
         Return:
             repr_dir (str): staging directory
@@ -553,7 +663,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             os.makedirs(repr_dir)
 
         repr_data = {
-            "entry_fname": entry_fname,
+            "entry_fname": entry_fname,  # (TODO) Should not do this at here
         }
         # Stage package for integration
         self.data["packages"][self._current_representation] = repr_data
@@ -561,15 +671,60 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         return repr_dir
 
     def add_data(self, data):
+        """Add(Update) data to representation
+
+        Arguments:
+            data (dict): Additional representation data
+
         """
-        """
+        if self._current_representation not in self.data["packages"]:
+            self.data["packages"][self._current_representation] = dict()
         self.data["packages"][self._current_representation].update(data)
+
+    def add_file(self, src, dst):
+        """Add file to copy queue
+
+        Arguments:
+            src (str): Source file path
+            dst (str): The path that file needs to be copied to
+
+        """
+        self.data["files"].append((src, dst))
+
+    def add_hardlink(self, src, dst):
+        """Add file to hardlink queue
+
+        Arguments:
+            src (str): Source file path
+            dst (str): The path that file needs to be hardlinked to
+
+        """
+        self.data["hardlinks"].append((src, dst))
 
 
 class DelegatablePackageExtractor(PackageExtractor):
+    """Reveries' delegatable extractor base class
+
+    This class inherited `PackageExtractor`, and re-implemented the `process`
+    method and stuff that enables the ability to skip or run the extraction
+    via context and instance data flags.
+
+    If instance data has `"useContractor"` entry and set to `True`, then this
+    instance will be delegated.
+
+    If the context data has `"contractorAccepted"` entry and set to `True`,
+    which indicate that this publish session is running in contractor, and
+    the delegated instance will be extracted.
+
+    The usage is just the same as `PackageExtractor`.
+
+    """
 
     def process(self, instance):
-        """
+        """Delegatable extractor's main process
+
+        This should NOT be re-implemented.
+
         """
         self._process(instance)
 
@@ -577,28 +732,30 @@ class DelegatablePackageExtractor(PackageExtractor):
         accepted = self.context.data.get("contractorAccepted")
         on_delegate = use_contractor and not accepted
 
+        # Skip extraction if the instance is going to be delegated
+
         if on_delegate:
-            self._get_version_dir()
-            self._delegate()
+            # The active representations of this instance will be delegated
+            # to contractor for remote extraction.
+            # Bind with a version dir and skip current extraction.
+            self._acquire_version_dir()
+            for repr_ in self._active_representations:
+                self.log.info("Delegating representation {0} of {1}"
+                              "".format(repr_, self.data["name"]))
         else:
+            version_locked = False
             if accepted:
-                self._version_locked = True
+                version_locked = True
                 self.log.debug("Version Locked.")
-            self._get_version_dir()
+            self._acquire_version_dir(version_locked)
             self.extract()
 
-    def _get_version(self):
-        # get version
+    def _get_next_version(self):
         if self.context.data.get("contractorAccepted"):
             # version lock if publish process has been delegated.
             return self.data["versionNext"]
         else:
-            return super(DelegatablePackageExtractor, self)._get_version()
-
-    def _delegate(self):
-        for repr_ in self._active_representations:
-            self.log.info("Delegating representation {0} of {1}"
-                          "".format(repr_, self.data["name"]))
+            return super(DelegatablePackageExtractor, self)._get_next_version()
 
 
 def _get_errored_instances_from_context(context, include_warning=False):
