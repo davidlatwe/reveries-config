@@ -265,7 +265,7 @@ def update_container(container, asset, subset, version, representation):
                     container_naming(namespace, name, "PORT"))
         # Rename reference node
         reference_node = next((n for n in cmds.sets(container_node, query=True)
-                              if cmds.nodeType(n) == "reference"), None)
+                               if cmds.nodeType(n) == "reference"), None)
         if reference_node:
             # Unlock reference node
             with nodes_locker(reference_node, False, False, False):
