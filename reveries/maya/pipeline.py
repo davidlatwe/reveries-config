@@ -94,6 +94,9 @@ def subset_interfacing(name,
     Interfacing enables a faster way to access nodes of loaded subsets from
     outliner.
 
+    (NOTE) Yes, currently, the `containerId` attribute is in interface node,
+           not in container.
+
     Arguments:
         name (str): Name of resulting assembly
         namespace (str): Namespace under which to host interface

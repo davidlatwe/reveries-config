@@ -46,7 +46,14 @@ def parse_sub_containers(container):
 
 
 def walk_containers(container):
-    """Recursively yield sub-containers
+    """Recursively yield input container's sub-containers
+
+    Args:
+        container (dict): The container dict.
+
+    Yields:
+        dict: sub-container
+
     """
     for con in parse_sub_containers(container):
         yield con
@@ -55,39 +62,72 @@ def walk_containers(container):
 
 
 def climb_container_id(interface):
-    """
-    From buttom to top
+    """Recursively yield container ID from buttom(leaf) to top(root)
+
+    Args:
+        interface (str): The interface node name
+
+    Yields:
+        str: container id
+
     """
     parents = cmds.ls(cmds.listSets(object=interface), type="objectSet")
     for m in parents:
+        # Find interface node
         if (lib.hasAttr(m, "id") and
                 cmds.getAttr(m + ".id") == AVALON_INTERFACE_ID):
+
             yield cmds.getAttr(m + ".containerId")
+            # Next parent
             for n in climb_container_id(m):
                 yield n
 
 
 def walk_container_id(interface):
-    """
-    From top to buttom
+    """Recursively yield container ID from top(root) to buttom(leaf)
+
+    Args:
+        interface (str): The interface node name
+
+    Yields:
+        str: container id
+
     """
     parents = cmds.ls(cmds.listSets(object=interface), type="objectSet")
     for m in parents:
+        # Find interface node
         if (lib.hasAttr(m, "id") and
                 cmds.getAttr(m + ".id") == AVALON_INTERFACE_ID):
+            # Find next parent before yielding `containerId`
             for n in walk_container_id(m):
                 yield n
+
     yield cmds.getAttr(interface + ".containerId")
 
 
 def container_to_id_path(container):
-    """
+    """Return the id path of the container
+
+    Args:
+        container (dict): The container dict.
+
+    Returns:
+        str: container id path
+
     """
     return "|".join(walk_container_id(container["interface"]))
 
 
 def container_from_id_path(container_id_path, parent_namespace):
-    """
+    """Find container node from container id path
+
+    Args:
+        container_id_path (str): The container id path
+        parent_namespace (str): Namespace
+
+    Returns:
+        str: container node name
+
     """
     container_ids = container_id_path.split("|")
 
