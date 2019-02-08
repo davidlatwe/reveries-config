@@ -207,7 +207,9 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["publishContractor"] = "deadline.maya.script"
 
         # Collect cameras
-        instance.data["renderCam"] = cmds.ls(instance,
+        hierarchy = instance[:]
+        hierarchy += cmds.listRelatives(instance, allDescendents=True)
+        instance.data["renderCam"] = cmds.ls(hierarchy,
                                              type="camera",
                                              long=True)
 
@@ -228,9 +230,8 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["publishContractor"] = "deadline.maya.render"
 
         # Collect renderable cameras
-        hierarchy = cmds.listRelatives(instance,
-                                       allDescendents=True,
-                                       fullPath=True)
+        hierarchy = instance[:]
+        hierarchy += cmds.listRelatives(instance, allDescendents=True)
         instance_cam = set(cmds.ls(hierarchy, type="camera", long=True))
         renderable_cam = set(lib.ls_renderable_cameras(layer))
         render_cam = list(instance_cam.intersection(renderable_cam))
@@ -255,9 +256,8 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["publishContractor"] = "deadline.maya.render"
 
         # Collect renderable cameras
-        hierarchy = cmds.listRelatives(instance,
-                                       allDescendents=True,
-                                       fullPath=True)
+        hierarchy = instance[:]
+        hierarchy += cmds.listRelatives(instance, allDescendents=True)
         instance_cam = set(cmds.ls(hierarchy, type="camera", long=True))
         renderable_cam = set(lib.ls_renderable_cameras(layer))
         render_cam = list(instance_cam.intersection(renderable_cam))
