@@ -17,6 +17,7 @@ from ..plugins import (
     PackageLoader,
     message_box_error,
     SelectInvalidAction,
+    SelectInvalidContextAction,
 )
 
 from .pipeline import (
@@ -600,3 +601,8 @@ class MayaSelectInvalidAction(SelectInvalidAction):
     def deselect(self):
         from maya import cmds
         cmds.select(deselect=True)
+
+
+class MayaSelectInvalidContextAction(SelectInvalidContextAction,
+                                     MayaSelectInvalidAction):
+    """ Select invalid nodes in context"""

@@ -911,3 +911,43 @@ class SelectInvalidAction(pyblish.api.Action):
 
     def deselect(self):
         raise NotImplementedError
+
+
+class SelectInvalidContextAction(SelectInvalidAction):
+    """Select invalid nodes from context
+
+    To retrieve the invalid nodes this assumes a static `get_invalid()`
+    method is available on the plugin.
+
+    """
+
+    def process(self, context, plugin):
+        invalid_getter_name = "get_invalid"
+        if self.symptom:
+            invalid_getter_name = "get_invalid_" + self.symptom
+
+        if not hasattr(plugin, invalid_getter_name):
+            raise RuntimeError("Plug-in does not have {!r} method."
+                               "".format(invalid_getter_name))
+
+        invalid_getter = getattr(plugin, invalid_getter_name)
+
+        # Get the invalid nodes for the plug-ins
+        self.log.info("Finding invalid nodes..")
+
+        invalid = invalid_getter(context)
+        if invalid:
+            if isinstance(invalid, (list, tuple)):
+                pass
+            elif isinstance(invalid, dict):
+                invalid = list(invalid.keys())
+            else:
+                self.log.warning("Plug-in returned to be invalid, "
+                                 "but has no selectable nodes.")
+
+            self.log.info("Selecting invalid nodes: %s" % ", ".join(invalid))
+            self.select(invalid)
+
+        else:
+            self.log.info("No invalid nodes found.")
+            self.deselect()
