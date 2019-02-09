@@ -44,15 +44,15 @@ class ExtractPointCache(DelegatablePackageExtractor):
             capsule.evaluation("off"),
             avalon.maya.maintained_selection(),
         ):
-            out_geo = self.data["outCache"]
-            cmds.select(out_geo, replace=True)
-
-            super(ExtractPointCache, self).extract()
+            for namespace, out_geo in self.data["outCache"].items():
+                self.out_name = namespace
+                cmds.select(out_geo, replace=True)
+                super(ExtractPointCache, self).extract()
 
     def extract_Alembic(self):
         entry_file = self.file_name("abc")
         package_path = self.create_package(entry_file)
-        entry_path = os.path.join(package_path, entry_file)
+        entry_path = os.path.join(package_path, self.out_name, entry_file)
 
         root = cmds.ls(sl=True, long=True)
 
@@ -69,7 +69,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
     def extract_FBXCache(self):
         entry_file = self.file_name("fbx")
         package_path = self.create_package(entry_file)
-        entry_path = os.path.join(package_path, entry_file)
+        entry_path = os.path.join(package_path, self.out_name, entry_file)
 
         # bake visible key
         with capsule.maintained_selection():
@@ -82,8 +82,8 @@ class ExtractPointCache(DelegatablePackageExtractor):
         entry_file = self.file_name("ma")
         cache_file = self.file_name("abc")
         package_path = self.create_package(entry_file)
-        entry_path = os.path.join(package_path, entry_file)
-        cache_path = os.path.join(package_path, cache_file)
+        entry_path = os.path.join(package_path, self.out_name, entry_file)
+        cache_path = os.path.join(package_path, self.out_name, cache_file)
 
         io.export_gpu(cache_path, self.start_frame, self.end_frame)
         io.wrap_gpu(entry_path, cache_file, self.data["subset"])
