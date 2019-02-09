@@ -1,9 +1,10 @@
 
 import pyblish.api
+from reveries.plugins import context_process
 from reveries.maya.plugins import MayaSelectInvalidContextAction
 
 
-class ValidateNoNameCollision(pyblish.api.ContextPlugin):
+class ValidateNoNameCollision(pyblish.api.InstancePlugin):
     """Ensure nodes' base name won't change when removing namespaces"""
 
     order = pyblish.api.ValidatorOrder
@@ -16,6 +17,13 @@ class ValidateNoNameCollision(pyblish.api.ContextPlugin):
         pyblish.api.Category("Select"),
         MayaSelectInvalidContextAction,
     ]
+
+    @context_process
+    def process(self, context):
+        invalid = self.get_invalid(context)
+
+        if invalid:
+            raise Exception("Name collision found.")
 
     @classmethod
     def get_invalid(cls, context):
@@ -42,9 +50,3 @@ class ValidateNoNameCollision(pyblish.api.ContextPlugin):
                 invalid.append(renamed)
 
         return invalid
-
-    def process(self, context):
-        invalid = self.get_invalid(context)
-
-        if invalid:
-            raise Exception("Name collision found.")
