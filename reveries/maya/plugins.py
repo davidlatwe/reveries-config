@@ -105,7 +105,9 @@ class ReferenceLoader(PackageLoader):
 
         asset = context["asset"]
 
-        namespace = namespace or unique_root_namespace(asset["name"])
+        asset_name = asset["data"].get("shortName", asset["name"])
+        family_name = context["version"]["data"]["families"][0].split(".")[-1]
+        namespace = namespace or unique_root_namespace(asset_name, family_name)
 
         group_name = self.group_name(namespace, name)
 
@@ -244,7 +246,9 @@ class ImportLoader(PackageLoader):
 
         asset = context['asset']
 
-        namespace = namespace or unique_root_namespace(asset["name"])
+        asset_name = asset["data"].get("shortName", asset["name"])
+        family_name = context["version"]["data"]["families"][0].split(".")[-1]
+        namespace = namespace or unique_root_namespace(asset_name, family_name)
 
         group_name = self.group_name(namespace, name)
 
@@ -394,7 +398,9 @@ class HierarchicalLoader(PackageLoader):
         else:
             container_id = generate_container_id()
 
-        namespace = namespace or unique_root_namespace(asset["name"])
+        asset_name = asset["data"].get("shortName", asset["name"])
+        family_name = context["version"]["data"]["families"][0].split(".")[-1]
+        namespace = namespace or unique_root_namespace(asset_name, family_name)
         group_name = self.group_name(namespace, name)
 
         # Load the setdress alembic hierarchy

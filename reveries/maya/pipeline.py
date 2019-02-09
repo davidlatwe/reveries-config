@@ -74,9 +74,9 @@ def container_naming(namespace, name, suffix):
     return "%s_%s_%s" % (namespace, name, suffix)
 
 
-def unique_root_namespace(asset_name, parent_namespace=""):
+def unique_root_namespace(asset_name, family_name, parent_namespace=""):
     unique = avalon.maya.lib.unique_namespace(
-        asset_name + "_",
+        asset_name + "_" + family_name + "_",
         prefix=parent_namespace + ("_" if asset_name[0].isdigit() else ""),
         suffix="_",
     )
@@ -263,8 +263,10 @@ def update_container(container, asset, subset, version, representation):
         parent_namespace = namespace.rsplit(":", 1)[0] + ":"
         with namespaced(parent_namespace, new=False) as parent_namespace:
             parent_namespace = parent_namespace[1:]
-
-            new_namespace = unique_root_namespace(asset["name"],
+            asset_name = asset["data"].get("shortName", asset["name"])
+            family_name = version["data"]["families"][0].split(".")[-1]
+            new_namespace = unique_root_namespace(asset_name,
+                                                  family_name,
                                                   parent_namespace)
             cmds.namespace(parent=":" + parent_namespace,
                            rename=(namespace.rsplit(":", 1)[-1],
