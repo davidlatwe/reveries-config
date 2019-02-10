@@ -2,6 +2,7 @@
 import os
 import json
 import logging
+import contextlib
 from maya import cmds
 
 from . import capsule
@@ -19,8 +20,9 @@ def export_fbx(out_path, selected=True):
         pymel.FBXResetExport()
 
 
+@contextlib.contextmanager
 def export_fbx_set_pointcache(cache_set_name):
-    cmds.sets(cmds.ls(sl=True), name=cache_set_name)
+    set_node = cmds.sets(cmds.ls(sl=True), name=cache_set_name)
     fbx_export_settings(reset=True,
                         log=False,
                         ascii=True,
@@ -34,6 +36,10 @@ def export_fbx_set_pointcache(cache_set_name):
                         skins=False,
                         input_conns=False,
                         )
+    try:
+        yield
+    finally:
+        cmds.delete(set_node)
 
 
 def export_fbx_set_camera():
@@ -356,24 +362,121 @@ def export_gpu(out_path, startFrame, endFrame):
                   )
 
 
-def wrap_gpu(wrapper_path, gpu_path, node_name):
-    """
+def wrap_gpu(wrapper_path, gpu_files):
+    """Wrapping GPU caches into a MayaAscii file
+
+    (NOTE) The file path of `gpu_files` should be a relative path, relative to
+        `wrapper_path`.
+
+        For example:
+            ```python
+
+            wrapper_path = ".../publish/pointcache/v001/Alembic/pointcache.ma"
+            gpu_files = [("Peter_01/pointcache.abc", "Peter_01"), ...]
+
+            ```
+
+    Args:
+        wrapper_path (str): MayaAscii file path
+        gpu_files (list): A list of tuple of .abc file path and cached
+            asset name.
+
     """
     MayaAscii_template = """//Maya ASCII scene
 requires maya "2016";
 requires -nodeType "gpuCache" "gpuCache" "1.0";
+"""
+    gpu_node_template = """
+$cachefile = `file -q -loc "{filePath}"`;  // Resolve relative path
 createNode transform -n "{nodeName}";
 createNode gpuCache -n "{nodeName}Shape" -p "{nodeName}";
-    setAttr -k off ".v";
-    setAttr ".covm[0]"  0 1 1;
-    setAttr ".cdvm[0]"  0 1 1;
-    setAttr ".cfn" -type "string" "{filePath}";
-    setAttr ".cmp" -type "string" "|";
+    setAttr ".cfn" -type "string" $cachefile;
 """
+    gpu_script = ""
+    for gpu_path, node_name in gpu_files:
+        gpu_script += gpu_node_template.format(nodeName=node_name,
+                                               filePath=gpu_path)
 
     with open(wrapper_path, "w") as maya_file:
-        maya_file.write(MayaAscii_template.format(nodeName=node_name,
-                                                  filePath=gpu_path))
+        maya_file.write(MayaAscii_template + gpu_script)
+
+
+def wrap_abc(wrapper_path, abc_files):
+    """Wrapping Alembic caches into a MayaAscii file
+
+    (NOTE) The file path of `gpu_files` should be a relative path, relative to
+        `wrapper_path`.
+
+        For example:
+            ```python
+
+            wrapper_path = ".../publish/pointcache/v001/Alembic/pointcache.ma"
+            gpu_files = [("Peter_01/pointcache.abc", "Peter_01"), ...]
+
+            ```
+
+    Args:
+        wrapper_path (str): MayaAscii file path
+        abc_files (list): A list of tuple of .abc file path and cached
+            asset name.
+
+    """
+    MayaAscii_template = """//Maya ASCII scene
+requires maya "2016";
+requires -nodeType "AlembicNode" "AbcImport" "1.0";
+{abcScript}
+currentTime `currentTime -q`;  // Trigger refresh
+"""
+    abc_node_template = """
+$cachefile = `file -q -loc "{filePath}"`;  // Resolve relative path
+group -n "{groupName}" -empty -world;
+AbcImport -reparent "|{groupName}" -mode import $cachefile;
+"""
+    abc_script = ""
+    for abc_path, group_name in abc_files:
+        abc_script += abc_node_template.format(groupName=group_name,
+                                               filePath=abc_path)
+
+    with open(wrapper_path, "w") as maya_file:
+        maya_file.write(MayaAscii_template.format(abcScript=abc_script))
+
+
+def wrap_fbx(wrapper_path, fbx_files):
+    """Wrapping FBX caches into a MayaAscii file
+
+    (NOTE) The file path of `gpu_files` should be a relative path, relative to
+        `wrapper_path`.
+
+        For example:
+            ```python
+
+            wrapper_path = ".../publish/pointcache/v001/Alembic/pointcache.ma"
+            gpu_files = [("Peter_01/pointcache.fbx", "Peter_01"), ...]
+
+            ```
+
+    Args:
+        wrapper_path (str): MayaAscii file path
+        fbx_files (list): A list of tuple of .fbx file path and cached
+            asset name.
+
+    """
+    MayaAscii_template = """//Maya ASCII scene
+requires maya "2016";
+requires "fbxmaya";
+FBXResetImport;
+"""
+    fbx_node_template = """
+$cachefile = `file -q -loc "{filePath}"`;  // Resolve relative path
+file -import -type "FBX" -groupReference -groupName "{groupName}" $cachefile";
+"""
+    fbx_script = ""
+    for fbx_path, group_name in fbx_files:
+        fbx_script += fbx_node_template.format(groupName=group_name,
+                                               filePath=fbx_path)
+
+    with open(wrapper_path, "w") as maya_file:
+        maya_file.write(MayaAscii_template + fbx_script)
 
 
 def capture_seq(camera,

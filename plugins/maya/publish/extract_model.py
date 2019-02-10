@@ -110,7 +110,7 @@ class ExtractModel(PackageExtractor):
 
         frame = cmds.currentTime(query=True)
         io.export_gpu(cache_path, frame, frame)
-        io.wrap_gpu(entry_path, cache_file, self.data["subset"])
+        io.wrap_gpu(entry_path, [(cache_file, self.data["subset"])])
 
         self.add_data({
             "entryFileName": entry_file,
