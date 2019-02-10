@@ -5,7 +5,10 @@ import avalon.api
 
 import reveries.maya.lib
 from reveries.plugins import message_box_warning
-from reveries.maya.plugins import ReferenceLoader, ImportLoader
+from reveries.maya.plugins import (
+    ReferenceLoader,
+    ImportLoader,
+)
 
 
 class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
@@ -34,7 +37,7 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
 
         representation = context["representation"]
 
-        entry_path = self.file_path(representation["data"]["entryFileName"])
+        entry_path = self.file_path(representation)
 
         nodes = cmds.file(entry_path,
                           namespace=namespace,
@@ -78,7 +81,7 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
 
         representation = context["representation"]
 
-        entry_path = self.file_path(representation["data"]["entryFileName"])
+        entry_path = self.file_path(representation)
 
         nodes = cmds.file(entry_path,
                           i=True,
@@ -102,7 +105,7 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
 
-        entry_path = self.file_path(representation["data"]["entryFileName"])
+        entry_path = self.file_path(representation)
 
         # Update the cache
         members = cmds.sets(container["objectName"], query=True)

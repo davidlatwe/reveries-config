@@ -60,16 +60,13 @@ def load_plugin(representation):
         cmds.loadPlugin(plugin, quiet=True)
 
 
-def _env_embedded_path(file_path):
+def env_embedded_path(file_path):
     """Embed environment var `$AVALON_PROJECTS` into file path
 
     This will ensure reference or cache path resolvable when project root
     moves to other place.
 
     """
-    if not os.path.isfile(file_path):
-        raise IOError("File Not Found: {!r}".format(file_path))
-
     file_path = file_path.replace(
         avalon.api.registered_root(), "$AVALON_PROJECTS"
     )
@@ -77,7 +74,24 @@ def _env_embedded_path(file_path):
     return file_path
 
 
-class ReferenceLoader(PackageLoader):
+class MayaBaseLoader(PackageLoader):
+
+    interface = []
+
+    def file_path(self, representation):
+        file_name = representation["data"]["entryFileName"]
+        entry_path = os.path.join(self.package_path, file_name)
+
+        if not os.path.isfile(entry_path):
+            raise IOError("File Not Found: {!r}".format(entry_path))
+
+        return env_embedded_path(entry_path)
+
+    def group_name(self, namespace, name):
+        return subset_group_name(namespace, name)
+
+
+class ReferenceLoader(MayaBaseLoader):
     """A basic ReferenceLoader for Maya
 
     This will implement the basic behavior for a loader to inherit from that
@@ -85,15 +99,6 @@ class ReferenceLoader(PackageLoader):
     `update` logic.
 
     """
-
-    interface = []
-
-    def file_path(self, file_name):
-        entry_path = os.path.join(self.package_path, file_name)
-        return _env_embedded_path(entry_path)
-
-    def group_name(self, namespace, name):
-        return subset_group_name(namespace, name)
 
     def process_reference(self, context, name, namespace, group, options):
         """To be implemented by subclass"""
@@ -162,7 +167,7 @@ class ReferenceLoader(PackageLoader):
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
 
-        entry_path = self.file_path(representation["data"]["entryFileName"])
+        entry_path = self.file_path(representation)
 
         cmds.file(entry_path,
                   loadReference=reference_node,
@@ -225,16 +230,7 @@ class ReferenceLoader(PackageLoader):
         return True
 
 
-class ImportLoader(PackageLoader):
-
-    interface = []
-
-    def file_path(self, file_name):
-        entry_path = os.path.join(self.package_path, file_name)
-        return _env_embedded_path(entry_path)
-
-    def group_name(self, namespace, name):
-        return subset_group_name(namespace, name)
+class ImportLoader(MayaBaseLoader):
 
     def process_import(self, context, name, namespace, options):
         """To be implemented by subclass"""
@@ -323,30 +319,20 @@ def _parse_members_data(entry_path):
     return members
 
 
-def _members_data_from_container(container):
-    current_repr = avalon.io.find_one({
-        "_id": avalon.io.ObjectId(container["representation"]),
-        "type": "representation"
-    })
-    package_path = avalon.api.get_representation_path(current_repr)
-    entry_file = current_repr["data"]["entryFileName"]
-    entry_path = os.path.join(package_path, entry_file)
-
-    return _parse_members_data(entry_path)
-
-
-class HierarchicalLoader(PackageLoader):
+class HierarchicalLoader(MayaBaseLoader):
     """Hierarchical referencing based asset loader
     """
 
-    interface = []
+    def _members_data_from_container(self, container):
+        current_repr = avalon.io.find_one({
+            "_id": avalon.io.ObjectId(container["representation"]),
+            "type": "representation"
+        })
+        package_path = avalon.api.get_representation_path(current_repr)
+        entry_file = self.file_path(current_repr)
+        entry_path = os.path.join(package_path, entry_file)
 
-    def file_path(self, file_name):
-        entry_path = os.path.join(self.package_path, file_name)
-        return _env_embedded_path(entry_path)
-
-    def group_name(self, namespace, name):
-        return subset_group_name(namespace, name)
+        return _parse_members_data(entry_path)
 
     def apply_variation(self, data, container):
         """To be implemented by subclass"""
@@ -365,7 +351,7 @@ class HierarchicalLoader(PackageLoader):
         asset = context["asset"]
 
         representation = context["representation"]
-        entry_path = self.file_path(representation["data"]["entryFileName"])
+        entry_path = self.file_path(representation)
 
         # Load members data
         members = _parse_members_data(entry_path)
@@ -465,7 +451,7 @@ class HierarchicalLoader(PackageLoader):
         # Load members data
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
-        entry_path = self.file_path(representation["data"]["entryFileName"])
+        entry_path = self.file_path(representation)
 
         members = _parse_members_data(entry_path)
 
@@ -487,7 +473,7 @@ class HierarchicalLoader(PackageLoader):
         current_members = dict()
         new_namespaces = set(data_new["namespace"] for data_new in members)
 
-        for data_old in _members_data_from_container(container):
+        for data_old in self._members_data_from_container(container):
             namespace_old = data_old["namespace"]
 
             if namespace_old not in new_namespaces:
