@@ -31,7 +31,7 @@ class ExtractRender(DelegatablePackageExtractor):
         if not self.context.data.get("contractorAccepted"):
             self.start_local_rendering()
 
-        repr_dir = self.create_package(None)
+        repr_dir = self.create_package()
 
         # Assume the rendering has been completed at this time being,
         # start to check and extract the rendering outputs
@@ -52,7 +52,7 @@ class ExtractRender(DelegatablePackageExtractor):
         if not self.context.data.get("contractorAccepted"):
             self.start_local_rendering()
 
-        repr_dir = self.create_package(None)
+        repr_dir = self.create_package()
 
         # Assume the rendering has been completed at this time being,
         # start to check and extract the rendering outputs
@@ -89,7 +89,7 @@ class ExtractRender(DelegatablePackageExtractor):
         self.add_data({"sequence": {
             seq_name: {
                 "imageFormat": self.data["fileExt"],
-                "entry_fname": entry_fname,
+                "entryFileName": entry_fname,
                 "seqStart": list(sequence.indexes)[0],
                 "seqEnd": list(sequence.indexes)[-1],
                 "startFrame": start_frame,
@@ -102,7 +102,7 @@ class ExtractRender(DelegatablePackageExtractor):
         for file in files:
             src = seq_dir + "/" + file
             dst = os.path.join(repr_dir, seq_name, file)
-            self.data["hardlinks"].append((src, dst))
+            self.add_hardlink(src, dst)
 
     def start_local_rendering(self):
         """Start rendering at local with GUI

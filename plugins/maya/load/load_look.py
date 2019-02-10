@@ -24,7 +24,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         representation = context["representation"]
 
-        entry_path = self.file_path(representation["data"]["entry_fname"])
+        entry_path = self.file_path(representation["data"]["entryFileName"])
 
         if entry_path in cmds.file(query=True, reference=True):
 

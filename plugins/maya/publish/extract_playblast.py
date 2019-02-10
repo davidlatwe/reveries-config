@@ -35,7 +35,7 @@ class ExtractPlayblast(DelegatablePackageExtractor):
         end_frame = self.context.data["endFrame"]
 
         entry_file = self.file_name(self.ext)
-        publish_dir = self.create_package(entry_file)
+        publish_dir = self.create_package()
         entry_path = os.path.join(publish_dir, entry_file)
 
         project = self.context.data["projectDoc"]
@@ -70,7 +70,7 @@ class ExtractPlayblast(DelegatablePackageExtractor):
 
         self.add_data({
             "imageFormat": self.ext,
-            "entry_fname": entry_fname,
+            "entryFileName": entry_fname,
             "seqStart": list(sequence.indexes)[0],
             "seqEnd": list(sequence.indexes)[-1],
             "startFrame": start_frame,

@@ -42,7 +42,7 @@ class ExtractModel(PackageExtractor):
 
     def extract_mayaBinary(self):
         entry_file = self.file_name("mb")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         mesh_nodes = cmds.ls(self.member,
@@ -92,6 +92,10 @@ class ExtractModel(PackageExtractor):
                 constructionHistory=False
             )
 
+        self.add_data({
+            "entryFileName": entry_file,
+        })
+
         self.log.info("Extracted {name} to {path}".format(
             name=self.data["subset"],
             path=entry_path)
@@ -100,10 +104,14 @@ class ExtractModel(PackageExtractor):
     def extract_GPUCache(self):
         entry_file = self.file_name("ma")
         cache_file = self.file_name("abc")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
         cache_path = os.path.join(package_path, cache_file)
 
         frame = cmds.currentTime(query=True)
         io.export_gpu(cache_path, frame, frame)
         io.wrap_gpu(entry_path, cache_file, self.data["subset"])
+
+        self.add_data({
+            "entryFileName": entry_file,
+        })

@@ -34,7 +34,7 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
 
         representation = context["representation"]
 
-        entry_path = self.file_path(representation["data"]["entry_fname"])
+        entry_path = self.file_path(representation["data"]["entryFileName"])
 
         nodes = cmds.file(entry_path,
                           namespace=namespace,
@@ -78,7 +78,7 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
 
         representation = context["representation"]
 
-        entry_path = self.file_path(representation["data"]["entry_fname"])
+        entry_path = self.file_path(representation["data"]["entryFileName"])
 
         nodes = cmds.file(entry_path,
                           i=True,
@@ -102,7 +102,7 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
 
-        entry_path = self.file_path(representation["data"]["entry_fname"])
+        entry_path = self.file_path(representation["data"]["entryFileName"])
 
         # Update the cache
         members = cmds.sets(container["objectName"], query=True)

@@ -162,7 +162,7 @@ class ReferenceLoader(PackageLoader):
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
 
-        entry_path = self.file_path(representation["data"]["entry_fname"])
+        entry_path = self.file_path(representation["data"]["entryFileName"])
 
         cmds.file(entry_path,
                   loadReference=reference_node,
@@ -329,7 +329,7 @@ def _members_data_from_container(container):
         "type": "representation"
     })
     package_path = avalon.api.get_representation_path(current_repr)
-    entry_file = current_repr["data"]["entry_fname"]
+    entry_file = current_repr["data"]["entryFileName"]
     entry_path = os.path.join(package_path, entry_file)
 
     return _parse_members_data(entry_path)
@@ -365,7 +365,7 @@ class HierarchicalLoader(PackageLoader):
         asset = context["asset"]
 
         representation = context["representation"]
-        entry_path = self.file_path(representation["data"]["entry_fname"])
+        entry_path = self.file_path(representation["data"]["entryFileName"])
 
         # Load members data
         members = _parse_members_data(entry_path)
@@ -465,7 +465,7 @@ class HierarchicalLoader(PackageLoader):
         # Load members data
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
-        entry_path = self.file_path(representation["data"]["entry_fname"])
+        entry_path = self.file_path(representation["data"]["entryFileName"])
 
         members = _parse_members_data(entry_path)
 

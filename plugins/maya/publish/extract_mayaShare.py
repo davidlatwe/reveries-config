@@ -23,7 +23,7 @@ class ExtractMayaShare(PackageExtractor):
     def extract_mayaAscii(self):
         # Define extract output file path
         entry_file = self.file_name("ma")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         # Perform extraction
@@ -39,6 +39,10 @@ class ExtractMayaShare(PackageExtractor):
                       constraints=True,
                       expressions=True,
                       constructionHistory=True)
+
+        self.add_data({
+            "entryFileName": entry_file,
+        })
 
         self.log.info("Extracted {name} to {path}".format(
             name=self.data["subset"],

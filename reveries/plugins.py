@@ -498,7 +498,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             raise RuntimeError(msg)
 
         if "packages" not in self.data:
-            self.data["packages"] = dict()
+            self.data["packages"] = dict()  # representations' data
         if "files" not in self.data:
             self.data["files"] = list()
         if "hardlinks" not in self.data:
@@ -629,7 +629,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
                                                suffix=suffix,
                                                ext=extension)
 
-    def create_package(self, entry_fname):
+    def create_package(self):
         """Create representation stage dir
 
         Register and create a staging directory for extraction usage later on.
@@ -661,12 +661,6 @@ class PackageExtractor(pyblish.api.InstancePlugin):
                              "happen. Files may overwritten.")
         else:
             os.makedirs(repr_dir)
-
-        repr_data = {
-            "entry_fname": entry_fname,  # (TODO) Should not do this at here
-        }
-        # Stage package for integration
-        self.data["packages"][self._current_representation] = repr_data
 
         return repr_dir
 

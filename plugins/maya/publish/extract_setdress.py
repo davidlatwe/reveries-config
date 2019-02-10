@@ -88,7 +88,7 @@ class ExtractSetDress(PackageExtractor):
     def extract_setPackage(self):
         entry_file = self.file_name("abc")
         instances_file = self.file_name("json")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
         instances_path = os.path.join(package_path, instances_file)
 
@@ -109,6 +109,11 @@ class ExtractSetDress(PackageExtractor):
                           writeVisibility=True,
                           writeCreases=True,
                           attr=[lib.AVALON_ID_ATTR_LONG])
+
+        self.add_data({
+            "entryFileName": entry_file,
+        })
+
         self.log.debug("Exported: {}".format(entry_path))
 
         cmds.select(clear=True)
@@ -116,7 +121,7 @@ class ExtractSetDress(PackageExtractor):
     def extract_GPUCache(self):
         entry_file = self.file_name("ma")
         cache_file = self.file_name("abc")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
         cache_path = os.path.join(package_path, cache_file)
 
@@ -127,5 +132,9 @@ class ExtractSetDress(PackageExtractor):
         frame = cmds.currentTime(query=True)
         io.export_gpu(cache_path, frame, frame)
         io.wrap_gpu(entry_path, cache_file, self.data["subset"])
+
+        self.add_data({
+            "entryFileName": entry_file,
+        })
 
         self.log.debug("Exported: {}".format(entry_path))

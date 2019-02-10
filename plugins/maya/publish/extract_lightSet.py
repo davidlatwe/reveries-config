@@ -26,7 +26,7 @@ class ExtractLightSet(PackageExtractor):
         from reveries.maya import capsule
 
         entry_file = self.file_name("ma")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
 
         # Extract lights
         #
@@ -66,3 +66,7 @@ class ExtractLightSet(PackageExtractor):
                       exportSelected=True,
                       preserveReferences=False,
                       constructionHistory=False)
+
+        self.add_data({
+            "entryFileName": entry_file,
+        })
