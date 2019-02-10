@@ -12,7 +12,7 @@ import avalon.api
 import avalon.io
 
 from .vendor import six
-from .utils import temp_dir
+from .utils import temp_dir, deep_update
 from . import CONTRACTOR_PATH
 
 
@@ -673,7 +673,8 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         """
         if self._current_representation not in self.data["packages"]:
             self.data["packages"][self._current_representation] = dict()
-        self.data["packages"][self._current_representation].update(data)
+
+        deep_update(self.data["packages"][self._current_representation], data)
 
     def add_file(self, src, dst):
         """Add file to copy queue

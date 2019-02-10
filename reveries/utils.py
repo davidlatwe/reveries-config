@@ -366,3 +366,13 @@ def get_representation_path_(representation, parents):
         "app": avalon.api.Session.get("AVALON_APP", ""),
         "task": avalon.api.Session.get("AVALON_TASK", "")
     })
+
+
+def deep_update(d, update):
+    """Recursively update dict value"""
+    for k, v in update.items():
+        if isinstance(v, dict):
+            d[k] = deep_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
