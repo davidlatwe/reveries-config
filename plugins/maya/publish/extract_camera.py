@@ -48,7 +48,7 @@ class ExtractCamera(PackageExtractor):
     def extract_mayaAscii(self):
 
         entry_file = self.file_name("ma")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         with avalon.maya.maintained_selection():
@@ -63,21 +63,33 @@ class ExtractCamera(PackageExtractor):
                       shader=False,
                       expressions=False)
 
+        self.add_data({
+            "entryFileName": entry_file,
+        })
+
     def extract_Alembic(self):
 
         entry_file = self.file_name("abc")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         with avalon.maya.maintained_selection():
             io.export_alembic(entry_path, self.start, self.end)
 
+        self.add_data({
+            "entryFileName": entry_file,
+        })
+
     def extract_FBX(self):
 
         entry_file = self.file_name("fbx")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         with avalon.maya.maintained_selection():
             io.export_fbx_set_camera()
             io.export_fbx(entry_path)
+
+        self.add_data({
+            "entryFileName": entry_file,
+        })

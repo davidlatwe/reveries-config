@@ -25,7 +25,7 @@ class ExtractRig(PackageExtractor):
     def extract_mayaBinary(self):
         # Define extract output file path
         entry_file = self.file_name("mb")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         # Perform extraction
@@ -36,15 +36,28 @@ class ExtractRig(PackageExtractor):
             maya.maintained_selection(),
         ):
             cmds.select(self.member, noExpand=True)
-            cmds.file(entry_path,
-                      force=True,
-                      typ="mayaBinary",
-                      exportSelected=True,
-                      preserveReferences=False,
-                      channels=True,
-                      constraints=True,
-                      expressions=True,
-                      constructionHistory=True)
+
+            with capsule.undo_chunk_when_no_undo():
+                # Remove loaded subset's namespace before exporting
+                for namespace in self.context.data["loadedNamespace"]:
+                    if not cmds.namespace(exists=namespace):
+                        continue
+                    cmds.namespace(removeNamespace=namespace,
+                                   mergeNamespaceWithRoot=True)
+
+                cmds.file(entry_path,
+                          force=True,
+                          typ="mayaBinary",
+                          exportSelected=True,
+                          preserveReferences=False,
+                          channels=True,
+                          constraints=True,
+                          expressions=True,
+                          constructionHistory=True)
+
+        self.add_data({
+            "entryFileName": entry_file,
+        })
 
         self.log.info("Extracted {name} to {path}".format(
             name=self.data["subset"],

@@ -11,7 +11,6 @@ class ValidateDeadlineConnection(pyblish.api.InstancePlugin):
     label = "Validate Deadline Web Service"
     order = pyblish.api.ValidatorOrder
     families = [
-        "reveries.animation",
         "reveries.pointcache",
         "reveries.imgseq",
     ]

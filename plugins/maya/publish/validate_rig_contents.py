@@ -8,19 +8,19 @@ from reveries.maya.plugins import MayaSelectInvalidAction
 
 class SelectInvalidOutsiders(MayaSelectInvalidAction):
 
-    label = "Select Outsiders"
+    label = "Outsiders"
     symptom = "outsider"
 
 
 class SelectInvalidControls(MayaSelectInvalidAction):
 
-    label = "Select Invalid Controls"
+    label = "Invalid Controls"
     symptom = "contorl_member"
 
 
 class SelectInvalidOutNodes(MayaSelectInvalidAction):
 
-    label = "Select Invalid Out Nodes"
+    label = "Invalid Out Nodes"
     symptom = "out_member"
 
 
@@ -67,7 +67,9 @@ class ValidateRigContents(pyblish.api.InstancePlugin):
                 invalid.append(node)
                 continue
 
-            for chd in cmds.listRelatives(node, children=True) or []:
+            for chd in cmds.listRelatives(node,
+                                          children=True,
+                                          fullPath=True) or []:
                 if cmds.nodeType(node) == "mesh":
                     invalid.append(node)
                     break
@@ -83,11 +85,15 @@ class ValidateRigContents(pyblish.api.InstancePlugin):
                 invalid.append(node)
                 continue
 
-            if not cmds.listRelatives(node, children=True):
+            children = cmds.listRelatives(node,
+                                          children=True,
+                                          fullPath=True) or []
+
+            if not children:
                 invalid.append(node)
                 continue
 
-            for chd in cmds.listRelatives(node, children=True):
+            for chd in children:
                 if not cmds.nodeType(chd) == "mesh":
                     invalid.append(node)
                     break

@@ -36,35 +36,22 @@ def ls_subset_groups():
     return groups
 
 
-def get_avalon_uuid(instance):
-    """
-    Recoed every mesh's transform node's avalon uuid attribute
-    """
-    uuids = defaultdict(list)
-    group_nodes = ls_subset_groups()
-
-    for node in instance:
-        if not cmds.nodeType(node) == "transform":
-            continue
-
-        if node in group_nodes:
-            # Subset groups are auto generated on reference, meaningless
-            # to have id.
-            continue
-
-        # get uuid
-        uuids[get_id_status(node)].append(node)
-
-    return uuids
-
-
 class ValidateAvalonUUID(pyblish.api.InstancePlugin):
-    """All transfrom must have an UUID
+    """All transfrom and types required by each family must have an UUID
     """
 
     order = pyblish.api.ValidatorOrder
     hosts = ["maya"]
     label = "Avalon UUID"
+    families = [
+        "reveries.model",
+        "reveries.rig",
+        "reveries.look",
+        "reveries.setdress",
+        "reveries.camera",
+        "reveries.lightset",
+        "reveries.mayashare",
+    ]
     actions = [
         pyblish.api.Category("Select"),
         SelectMissing,
@@ -77,7 +64,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     def get_invalid_missing(cls, instance, uuids=None):
 
         if uuids is None:
-            uuids = get_avalon_uuid(instance)
+            uuids = cls.get_avalon_uuid(instance)
 
         invalid = uuids.get(Identifier.Untracked, [])
 
@@ -87,7 +74,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     def get_invalid_duplicated(cls, instance, uuids=None):
 
         if uuids is None:
-            uuids = get_avalon_uuid(instance)
+            uuids = cls.get_avalon_uuid(instance)
 
         invalid = [node for node in uuids.get(Identifier.Duplicated, [])
                    if ":" not in node]
@@ -96,7 +83,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        uuids_dict = get_avalon_uuid(instance)
+        uuids_dict = self.get_avalon_uuid(instance)
 
         is_invalid = False
 
@@ -129,3 +116,30 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                    cls.get_invalid_duplicated(instance))
         for node in invalid:
             set_avalon_uuid(node)
+
+    @classmethod
+    def get_avalon_uuid(cls, instance):
+        uuids = defaultdict(list)
+        group_nodes = ls_subset_groups()
+
+        family = instance.data["family"]
+        required_types = pipeline.uuid_required_node_types(family)
+
+        lock_state = cmds.lockNode(instance, query=True, lock=True)
+        for node, lock in zip(instance, lock_state):
+            if lock:
+                cls.log.debug("Skipping locked node: %s" % node)
+                continue
+
+            if cmds.nodeType(node) not in required_types:
+                continue
+
+            if node in group_nodes:
+                # Subset groups are auto generated on reference, meaningless
+                # to have id.
+                continue
+
+            # get uuid
+            uuids[get_id_status(node)].append(node)
+
+        return uuids

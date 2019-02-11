@@ -35,7 +35,7 @@ class ExtractLook(PackageExtractor):
         from reveries.maya import lib, capsule
 
         entry_file = self.file_name("ma")
-        package_path = self.create_package(entry_file)
+        package_path = self.create_package()
 
         # Extract shaders
         #
@@ -160,6 +160,7 @@ class ExtractLook(PackageExtractor):
         self.add_data({
             "linkFname": link_file,
             "targetSubsets": targets,
+            "entryFileName": entry_file,
         })
 
         self.log.info("Extracted {name} to {path}".format(

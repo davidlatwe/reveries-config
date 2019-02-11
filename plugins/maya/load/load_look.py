@@ -24,7 +24,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         representation = context["representation"]
 
-        entry_path = self.file_path(representation["data"]["entry_fname"])
+        entry_path = self.file_path(representation)
 
         if entry_path in cmds.file(query=True, reference=True):
 
@@ -91,9 +91,8 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         import avalon.maya
         from reveries.maya import lib
 
-        relationship = self.file_path(representation["data"]["linkFname"])
-        # Expand $AVALON_PROJECT and friends, if used
-        relationship = os.path.expandvars(relationship)
+        file_name = representation["data"]["linkFname"]
+        relationship = os.path.join(self.package_path, file_name)
 
         if not os.path.isfile(relationship):
             self.log.warning("Look development asset "

@@ -5,28 +5,30 @@ from reveries.maya.pipeline import put_instance_icon
 
 
 class PointCacheCreator(avalon.maya.Creator):
-    """Any cacheable object"""
+    """Extract pointcache for deformable objects
+
+    Extract cache for each loaded subset
+
+    """
 
     label = "PointCache"
     family = "reveries.pointcache"
     icon = "diamond"
 
     def process(self):
-        self.data["extractType"] = [
-            "Alembic",
-            "GPUCache",
-            "FBXCache",
-        ]
-
-        self.data["staticCache"] = False
-
         # Build pipeline render settings
 
         project = avalon.io.find_one({"type": "project"},
                                      projection={"data": True})
+        pipeline = project["data"]["pipeline"]["maya"]
         deadline = project["data"]["deadline"]["maya"]
 
+        cache_type = pipeline["pointcache"]
         priority = deadline["priorities"]["pointcache"]
+
+        self.data["extractType"] = cache_type[:]
+
+        self.data["staticCache"] = False
 
         self.data["deadlineEnable"] = False
         self.data["deadlinePriority"] = priority

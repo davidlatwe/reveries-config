@@ -27,7 +27,7 @@ class ExtractTexture(PackageExtractor):
 
         from maya import cmds
 
-        package_path = self.create_package(None)
+        package_path = self.create_package()
 
         package_path = package_path.replace(
             avalon.api.registered_root(), "$AVALON_PROJECTS"
@@ -83,9 +83,9 @@ class ExtractTexture(PackageExtractor):
                 previous_path = latest_hashes[hash_value]
             except KeyError:
                 latest_hashes[hash_value] = final_path
-                self.data["files"].append((img_path, final_path))
+                self.add_file(img_path, final_path)
             else:
-                self.data["hardlinks"].append((previous_path, final_path))
+                self.add_hardlink(previous_path, final_path)
 
             self.context.data["fileNodePath"][file_node] = final_path
             self.log.debug("FileNode: {!r}".format(file_node))

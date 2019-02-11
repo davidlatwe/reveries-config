@@ -31,7 +31,11 @@ class ValidateNoNamespace(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
 
-        invalid = [node for node in instance if get_namespace(node)]
+        context = instance.context
+        protected = context.data.get("loadedNamespaceContent", set())
+
+        invalid = [node for node in instance
+                   if node not in protected and get_namespace(node)]
 
         return invalid
 

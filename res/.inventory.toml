@@ -12,7 +12,11 @@ edit_out = 200
 
 [pipeline]
 [pipeline.maya]
-pointcache = "Alembic"
+pointcache = [
+    "Alembic",
+    "GPUCache",
+    "FBXCache",
+]  # This also determined the preferable cache format by order.
 
 [deadline]
 [deadline.maya]

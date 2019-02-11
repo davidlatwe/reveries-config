@@ -31,7 +31,6 @@ class ValidateWorkfileInWorkspace(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder
     label = "Workfile In Workspace"
     families = [
-        "reveries.animation",
         "reveries.pointcache",
         "reveries.imgseq",
     ]

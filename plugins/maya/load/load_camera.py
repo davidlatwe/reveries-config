@@ -27,7 +27,7 @@ class CameraLoader(ReferenceLoader, avalon.api.Loader):
 
         representation = context["representation"]
 
-        entry_path = self.file_path(representation["data"]["entry_fname"])
+        entry_path = self.file_path(representation)
 
         nodes = cmds.file(entry_path,
                           namespace=namespace,

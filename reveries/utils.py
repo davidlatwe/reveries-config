@@ -12,14 +12,28 @@ import avalon
 from pyblish_qml.ipc import formatting
 
 
-def temp_dir(prefix=""):
-    """Provide a temporary directory
+def temp_dir(prefix="pyblish_tmp_"):
+    """Provide a temporary directory for staging
+
     This temporary directory is generated through `tempfile.mkdtemp()`
+
+    Arguments:
+        prefix (str, optional): Prefix name of the temporary directory
+
     """
     return tempfile.mkdtemp(prefix=prefix)
 
 
-def clear_stage(prefix="tmp"):
+def clear_stage(prefix="pyblish_tmp_"):
+    """Remove temporary staging directory with prefix
+
+    Remove temporary directory which named with prefix in
+    `tempfile.gettempdir()`
+
+    Arguments:
+        prefix (str, optional): Prefix name of the temporary directory
+
+    """
     tempdir = tempfile.gettempdir()
     cwd_backup = os.getcwd()
 
@@ -38,22 +52,36 @@ def clear_stage(prefix="tmp"):
 
 
 def get_timeline_data(project=None, asset_name=None):
+    """Get asset timeline data from project document
+
+    Get timeline data from asset if asset has it's own settings, or get from
+    project.
+
+    Arguments:
+        project (dict, optional): Project document, query from database if
+            not provided.
+        asset_name (str, optional): Asset name, get from `avalon.Session` if
+            not provided.
+
+    Returns:
+        edit_in (int),
+        edit_out (int),
+        handles (int),
+        fps (float)
+
+    """
     if project is None:
         project = avalon.io.find_one({"type": "project"})
     asset = asset_name or avalon.Session["AVALON_ASSET"]
     asset = avalon.io.find_one({"name": asset, "type": "asset"})
 
-    def get_time(key):
-        try:
-            value = asset["data"][key]
-        except KeyError:
-            value = project["data"][key]
-        return value
+    def get(key):
+        return asset["data"].get(key, project["data"][key])
 
-    edit_in = get_time("edit_in")
-    edit_out = get_time("edit_out")
-    handles = get_time("handles")
-    fps = get_time("fps")
+    edit_in = get("edit_in")
+    edit_out = get("edit_out")
+    handles = get("handles")
+    fps = get("fps")
 
     if handles < 1:
         # (TODO) davidlatwe
@@ -64,6 +92,23 @@ def get_timeline_data(project=None, asset_name=None):
 
 
 def compose_timeline_data(project=None, asset_name=None):
+    """Compute and return start frame, end frame and fps
+
+    Get timeline data from asset if asset has it's own settings, or get from
+    project.
+
+    Arguments:
+        project (dict, optional): Project document, query from database if
+            not provided.
+        asset_name (str, optional): Asset name, get from `avalon.Session` if
+            not provided.
+
+    Returns:
+        start_frame (int),
+        end_frame (int),
+        fps (float)
+
+    """
     edit_in, edit_out, handles, fps = get_timeline_data(project, asset_name)
     start_frame = edit_in - handles
     end_frame = edit_out + handles
@@ -72,6 +117,20 @@ def compose_timeline_data(project=None, asset_name=None):
 
 
 def get_resolution_data(project=None):
+    """Get resolution data from project
+
+    If resolution data is not defined in project settings, return Full HD res
+    (1920, 1080).
+
+    Arguments:
+        project (dict, optional): Project document, query from database if
+            not provided.
+
+    Returns:
+        resolution_width (int),
+        resolution_height (int)
+
+    """
     if project is None:
         project = avalon.io.find_one({"type": "project"})
     resolution_width = project["data"].get("resolution_width", 1920)
@@ -307,3 +366,13 @@ def get_representation_path_(representation, parents):
         "app": avalon.api.Session.get("AVALON_APP", ""),
         "task": avalon.api.Session.get("AVALON_TASK", "")
     })
+
+
+def deep_update(d, update):
+    """Recursively update dict value"""
+    for k, v in update.items():
+        if isinstance(v, dict):
+            d[k] = deep_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d

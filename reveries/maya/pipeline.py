@@ -74,9 +74,9 @@ def container_naming(namespace, name, suffix):
     return "%s_%s_%s" % (namespace, name, suffix)
 
 
-def unique_root_namespace(asset_name, parent_namespace=""):
+def unique_root_namespace(asset_name, family_name, parent_namespace=""):
     unique = avalon.maya.lib.unique_namespace(
-        asset_name + "_",
+        asset_name + "_" + family_name + "_",
         prefix=parent_namespace + ("_" if asset_name[0].isdigit() else ""),
         suffix="_",
     )
@@ -93,6 +93,9 @@ def subset_interfacing(name,
 
     Interfacing enables a faster way to access nodes of loaded subsets from
     outliner.
+
+    (NOTE) Yes, currently, the `containerId` attribute is in interface node,
+           not in container.
 
     Arguments:
         name (str): Name of resulting assembly
@@ -136,7 +139,7 @@ def subset_interfacing(name,
 
 
 def get_interface_from_container(container):
-    """Return interface node from container
+    """Return interface node from container node
 
     Raise `RuntimeError` if getting none or more then one interface.
 
@@ -156,7 +159,7 @@ def get_interface_from_container(container):
 
 
 def get_container_from_interface(interface):
-    """Return container node from interface
+    """Return container node from interface node
 
     Raise `RuntimeError` if getting none or more then one container.
 
@@ -176,18 +179,31 @@ def get_container_from_interface(interface):
 
 
 def get_group_from_container(container):
+    """Get top group node name from container node
+
+    Arguments:
+        container (str): Name of container node
+
     """
-    """
+    # Get all transform nodes from container node
     transforms = cmds.ls(cmds.sets(container, query=True),
                          type="transform",
                          long=True)
     if not transforms:
         return None
+    # First member of sorted transform list is the top group node
     return sorted(transforms)[0]
 
 
 def container_metadata(container):
-    """
+    """Get additional data from container node
+
+    Arguments:
+        container (str): Name of container node
+
+    Returns:
+        (dict)
+
     """
     interface = get_interface_from_container(container)
     subset_group = get_group_from_container(container)
@@ -207,7 +223,14 @@ def container_metadata(container):
 
 
 def parse_container(container):
-    """
+    """Parse data from container node with additional data
+
+    Arguments:
+        container (str): Name of container node
+
+    Returns:
+        data (dict)
+
     """
     data = avalon.maya.pipeline.parse_container(container)
     data.update(container_metadata(container))
@@ -215,7 +238,15 @@ def parse_container(container):
 
 
 def update_container(container, asset, subset, version, representation):
-    """
+    """Update container node attributes' value and namespace
+
+    Arguments:
+        container (dict): container document
+        asset (dict): asset document
+        subset (dict): subset document
+        version (dict): version document
+        representation (dict): representation document
+
     """
     container_node = container["objectName"]
 
@@ -232,8 +263,10 @@ def update_container(container, asset, subset, version, representation):
         parent_namespace = namespace.rsplit(":", 1)[0] + ":"
         with namespaced(parent_namespace, new=False) as parent_namespace:
             parent_namespace = parent_namespace[1:]
-
-            new_namespace = unique_root_namespace(asset["name"],
+            asset_name = asset["data"].get("shortName", asset["name"])
+            family_name = version["data"]["families"][0].split(".")[-1]
+            new_namespace = unique_root_namespace(asset_name,
+                                                  family_name,
                                                   parent_namespace)
             cmds.namespace(parent=":" + parent_namespace,
                            rename=(namespace.rsplit(":", 1)[-1],
@@ -265,7 +298,7 @@ def update_container(container, asset, subset, version, representation):
                     container_naming(namespace, name, "PORT"))
         # Rename reference node
         reference_node = next((n for n in cmds.sets(container_node, query=True)
-                              if cmds.nodeType(n) == "reference"), None)
+                               if cmds.nodeType(n) == "reference"), None)
         if reference_node:
             # Unlock reference node
             with nodes_locker(reference_node, False, False, False):
@@ -286,6 +319,21 @@ def subset_containerising(name,
                           cls_name,
                           group_name):
     """Containerise loaded subset and build interface
+
+    Containerizing imported/referenced nodes and creating interface node,
+    and the interface node will connected to container node and top group
+    node's `message` attribute.
+
+    Arguments:
+        name (str): Name of resulting assembly
+        namespace (str): Namespace under which to host interface
+        container_id (str): Container UUID
+        nodes (list): Long names of imported/referenced nodes
+        ports (list): Long names of nodes for interfacing
+        context (dict): Asset information
+        cls_name (str): avalon Loader class name
+        group_name (str): Top group node of imported/referenced new nodes
+
     """
     interface = subset_interfacing(name=name,
                                    namespace=namespace,
@@ -339,3 +387,44 @@ def find_stray_textures(instance, containers):
         stray.append(file_node)
 
     return stray
+
+
+_uuid_required_node_types = {
+    "reveries.model": {
+        "transform",
+    },
+    "reveries.rig": {
+        "transform",
+    },
+    "reveries.look": {
+        "transform",
+        "shadingDependNode",
+        "THdependNode",
+    },
+    "reveries.setdress": {
+        "transform",
+    },
+    "reveries.camera": {
+        "transform",
+        "camera",
+    },
+    "reveries.lightset": {
+        "transform",
+        "light",
+        "locator",
+    },
+}
+
+
+def uuid_required_node_types(family):
+    try:
+        types = _uuid_required_node_types[family]
+    except KeyError:
+        if family == "reveries.mayashare":
+            types = set()
+            for typ in _uuid_required_node_types.values():
+                types.update(typ)
+        else:
+            raise
+
+    return list(types)
