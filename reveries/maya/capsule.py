@@ -70,6 +70,9 @@ def assign_shader(meshes, shadingEngine):
                                            type="shadingEngine",
                                            source=False,
                                            destination=True) or list():
+            if shader == shadingEngine:
+                continue
+
             if shader not in meshes_by_shader:
                 meshes_by_shader[shader] = []
 
