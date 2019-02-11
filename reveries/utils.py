@@ -6,6 +6,10 @@ import codecs
 import shutil
 import weakref
 import getpass
+import errno
+import pymongo
+
+from avalon import io, Session
 
 import pyblish.api
 import avalon
@@ -376,3 +380,122 @@ def deep_update(d, update):
         else:
             d[k] = v
     return d
+
+
+class AssetGraber(object):
+    """Copy asset and it's dependencies to another project
+
+    This is used for copying asset representation and all it's dependency
+    assets from current project to another project.
+
+    Example:
+        >>> # Init with the name of the destination project
+        >>> graber = AssetGraber("other_project")
+        >>> # Input representation ID
+        >>> graber.grab("5c6159dbed9f0d0509a34e27")
+        >>> # Grab another...
+        >>> graber.grab("5c6159dbed9f0d0509a34e38")
+
+    """
+
+    def __init__(self, project):
+        self.project = project
+        self._project = None
+        self._mongo_client = None
+        self._database = None
+        self._collection = None
+        self._connected = False
+
+    def grab(self, representation_id):
+        """Copy representation to project
+
+        Args:
+            representation_id (str or ObjectId): representation id
+
+        """
+        if not self._connected:
+            self._connect()
+        if isinstance(representation_id, str):
+            representation_id = io.ObjectId(representation_id)
+        self._copy_representations(representation_id)
+
+    def _connect(self):
+        timeout = int(Session["AVALON_TIMEOUT"])
+        self._mongo_client = pymongo.MongoClient(
+            Session["AVALON_MONGO"], serverSelectionTimeoutMS=timeout)
+        self._database = self._mongo_client[Session["AVALON_DB"]]
+        self._collection = self._database[self.project]
+        self._connected = True
+
+        self._project = self._find_one({"type": "project"})
+
+    def _insert_one(self, item):
+        assert isinstance(item, dict), "item must be of type <dict>"
+        return self._collection.insert_one(item)
+
+    def _find_one(self, filter, projection=None, sort=None):
+        assert isinstance(filter, dict), "filter must be <dict>"
+        return self._collection.find_one(
+            filter=filter,
+            projection=projection,
+            sort=sort
+        )
+
+    def _copy_representations(self, representation_id):
+        """Copy all documents and files of representation and dependencies"""
+        # Representation
+        representation = self._find_one({"_id": representation_id})
+        if not representation:
+            representation = io.find_one({"_id": representation_id})
+            self._insert_one(representation)
+
+            # Version
+            version = io.find_one({"_id": representation["parent"]})
+            if not self._find_one({"_id": version["_id"]}):
+                self._insert_one(version)
+
+                # Subset
+                subset = io.find_one({"_id": version["parent"]})
+                if not self._find_one({"_id": subset["_id"]}):
+                    self._insert_one(subset)
+
+                    # Asset
+                    asset = io.find_one({"_id": subset["parent"]})
+                    if not self._find_one({"_id": asset["_id"]}):
+                        asset["parent"] = self._project["_id"]
+                        self._insert_one(asset)
+
+                        # Asset Visual Parent
+                        parent_id = asset["data"]["visualParent"]
+                        if parent_id:
+                            parent_id = io.ObjectId(parent_id)
+                            if not self._find_one({"_id": parent_id}):
+                                parent_asset = io.find_one({"_id": parent_id})
+                                parent_asset["parent"] = self._project["_id"]
+                                self._insert_one(parent_asset)
+
+                # Dependencies
+                for dependency_id in version["data"]["dependencies"]:
+                    dependency_id = io.ObjectId(dependency_id)
+                    for representation_ in io.find({"parent": dependency_id}):
+                        self._copy_representations(representation_["_id"])
+
+        # Copy package
+        parents = io.parenthood(representation)
+        src_package = get_representation_path_(representation, parents)
+        parents = parents[:-1] + [self._project]
+        dst_package = get_representation_path_(representation, parents)
+        self._copy_dir(src_package, dst_package)
+
+    def _copy_dir(self, src, dst):
+        """ Copy given source to destination"""
+        try:
+            shutil.copytree(src, dst)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                msg = "Representation dir existed."
+            else:
+                msg = "An unexpected error occurred."
+
+            self.log.critical(msg)
+            raise OSError(msg)
