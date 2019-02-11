@@ -44,18 +44,19 @@ def no_smooth_preview():
     """
     disable mesh smooth preview
     """
-    smoothed = list()
+    smoothed = dict()
     try:
         smooth_mesh = cmds.ls("*.displaySmoothMesh", recursive=True)
         for attr in set(smooth_mesh):
-            if cmds.getAttr(attr):
-                smoothed.append(attr)
-                cmds.setAttr(attr, False)
+            value = cmds.getAttr(attr)
+            if value:
+                smoothed[attr] = value
+                cmds.setAttr(attr, 0)
         yield
 
     finally:
-        for attr in smoothed:
-            cmds.setAttr(attr, True)
+        for attr, value in smoothed.items():
+            cmds.setAttr(attr, value)
 
 
 @contextlib.contextmanager
@@ -70,6 +71,9 @@ def assign_shader(meshes, shadingEngine):
                                            type="shadingEngine",
                                            source=False,
                                            destination=True) or list():
+            if shader == shadingEngine:
+                continue
+
             if shader not in meshes_by_shader:
                 meshes_by_shader[shader] = []
 
