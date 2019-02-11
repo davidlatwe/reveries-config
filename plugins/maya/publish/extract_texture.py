@@ -6,6 +6,7 @@ import avalon.api
 import avalon.io
 
 from reveries.plugins import PackageExtractor, skip_stage
+from reveries.maya.plugins import env_embedded_path
 from reveries.utils import hash_file
 
 
@@ -28,10 +29,7 @@ class ExtractTexture(PackageExtractor):
         from maya import cmds
 
         package_path = self.create_package()
-
-        package_path = package_path.replace(
-            avalon.api.registered_root(), "$AVALON_PROJECTS"
-        )
+        package_path = env_embedded_path(package_path)
 
         if "fileNodePath" not in self.context.data:
             self.context.data["fileNodePath"] = dict()
