@@ -493,9 +493,6 @@ class AssetGraber(object):
             shutil.copytree(src, dst)
         except OSError as e:
             if e.errno == errno.EEXIST:
-                msg = "Representation dir existed."
+                print("Representation dir existed.")
             else:
-                msg = "An unexpected error occurred."
-
-            self.log.critical(msg)
-            raise OSError(msg)
+                raise OSError("An unexpected error occurred.")
