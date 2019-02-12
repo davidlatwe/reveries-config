@@ -1,4 +1,5 @@
 
+import os
 import avalon.api
 from reveries.maya.plugins import ReferenceLoader
 
@@ -26,7 +27,8 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         entry_path = self.file_path(representation)
 
-        if entry_path in cmds.file(query=True, reference=True):
+        expanded = os.path.expandvars(entry_path).replace("\\", "/")
+        if expanded in cmds.file(query=True, reference=True):
 
             existing_reference = cmds.file(entry_path,
                                            query=True,
