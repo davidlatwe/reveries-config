@@ -119,7 +119,7 @@ class AssetOutliner(QtWidgets.QWidget):
 
         # Collect all nodes by hash (optimization)
         if not selection:
-            nodes = cmds.ls(dag=True,  long=True)
+            nodes = cmds.ls(dag=True, long=True)
         else:
             nodes = commands.get_selected_nodes()
         id_nodes = commands.create_asset_id_hash(nodes)
