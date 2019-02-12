@@ -28,17 +28,8 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         entry_path = self.file_path(representation)
 
         expanded = os.path.expandvars(entry_path).replace("\\", "/")
-        if expanded in cmds.file(query=True, reference=True):
+        if expanded not in cmds.file(query=True, reference=True):
 
-            existing_reference = cmds.file(entry_path,
-                                           query=True,
-                                           referenceNode=True)
-
-            self.log.info("Reusing existing lookdev..")
-            nodes = cmds.referenceQuery(existing_reference, nodes=True)
-            namespace = nodes[0].split(":", 1)[0]
-
-        else:
             self.log.info("Loading lookdev for the first time..")
             nodes = cmds.file(
                 entry_path,
@@ -48,8 +39,9 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
                 returnNewNodes=True
             )
 
-        # Assign shaders
-        self._assign_shaders(representation, namespace)
+        else:
+            self.log.warning("Already Existed in scene.")
+            return
 
         self[:] = nodes
 
@@ -61,7 +53,16 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         self.interface = shading_engines + shaders
 
     def update(self, container, representation):
+        """Update look assignment
+
+        Before update reference, assign back to `lambert1`, then reassign to
+        the updated look. This could prevent shader lost when the shadingEngine
+        node name changed in other version.
+
+        """
         from maya import cmds
+        from reveries.maya import lib
+        from avalon.maya.pipeline import AVALON_CONTAINER_ID
 
         # Assign to lambert1
         nodes = cmds.sets(container["objectName"], query=True)
@@ -69,12 +70,29 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         shaded = cmds.ls(cmds.sets(shaders, query=True), long=True)
         cmds.sets(shaded, forceElement="initialShadingGroup")
 
+        # Find shaded subsets from nodes
+        shaded_subsets = list()
+
+        shaded_nodes = set(cmds.ls(shaded, objectsOnly=True, long=True))
+        containers = {
+            con: set(cmds.ls(cmds.sets(con, query=True), long=True))
+            for con in lib.lsAttrs({"id": AVALON_CONTAINER_ID})
+            if not cmds.getAttr(con + ".loader") == "LookLoader"
+        }
+        for con, content in containers.items():
+            if shaded_nodes.intersection(content):
+                shaded_subsets.append(con)
+
         # Update
         super(LookLoader, self).update(container, representation)
 
+        if not shaded_subsets:
+            self.log.warning("Shader has no assignment.")
+            return
+
         # Reassign shaders
         namespace = container["namespace"][1:]
-        self._assign_shaders(representation, namespace)
+        self._assign_shaders(representation, namespace, shaded_subsets)
 
     def remove(self, container):
         from maya import cmds
@@ -93,11 +111,13 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         return True
 
-    def _assign_shaders(self, representation, namespace):
+    def _assign_shaders(self, representation, namespace, containers):
+        """Assign shaders to containers
+        """
         import os
         import json
-        import avalon.maya
         from reveries.maya import lib
+        from maya import cmds
 
         file_name = representation["data"]["linkFname"]
         relationship = os.path.join(self.package_path, file_name)
@@ -113,9 +133,8 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
             relationships = json.load(f)
 
         # Apply shader to target subset by namespace
-        targets = [str(tg) for tg in representation["data"]["targetSubsets"]]
-        target_namespaces = [con["namespace"] + ":" for con in avalon.maya.ls()
-                             if con["subsetId"] in targets]
+        target_namespaces = [cmds.getAttr(con + ".namespace") + ":"
+                             for con in containers]
 
         lib.apply_shaders(relationships["shaderById"],
                           namespace,
