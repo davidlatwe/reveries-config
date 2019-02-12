@@ -62,6 +62,7 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
 
             data = avalon.maya.lib.read(objset)
             data["objectName"] = objset
+            data["setMembers"] = members
 
             objset_data.append(data)
 
@@ -74,6 +75,7 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
 
         for data in sorted(objset_data, key=ordering):
             objset = data["objectName"]
+            members = data.pop("setMembers")
 
             # For dependency tracking
             data["dependencies"] = dict()
@@ -83,7 +85,7 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
             self.log.info("Creating instance for {}".format(objset))
             name = cmds.ls(objset, long=False)[0]   # use short name
             instance = context.create_instance(data.get("name", name))
-            instance[:] = members
+            instance[:] = cmds.ls(members, long=True)
             instance.data.update(data)
 
             # Produce diagnostic message for any graphical
