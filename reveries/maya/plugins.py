@@ -238,6 +238,15 @@ class ReferenceLoader(MayaBaseLoader):
         nodes = cmds.referenceQuery(reference_node, nodes=True, dagPath=True)
         cmds.sets(nodes, forceElement=node)
 
+        # Remove any placeHolderList attribute entries from the set that
+        # are remaining from nodes being removed from the referenced file.
+        # (NOTE) This ensures the reference update correctly when node name
+        #   changed (e.g. shadingEngine) in different version.
+        members = cmds.sets(node, query=True)
+        invalid = [x for x in members if ".placeHolderList" in x]
+        if invalid:
+            cmds.sets(invalid, remove=node)
+
         # Update container
         version, subset, asset, _ = parents
         update_container(container, asset, subset, version, representation)
