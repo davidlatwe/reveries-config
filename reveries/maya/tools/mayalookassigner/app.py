@@ -39,7 +39,7 @@ class App(QtWidgets.QWidget):
         # the widget gets garbage collected.
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
-        self.resize(750, 500)
+        self.resize(600, 400)
 
         self.setup_ui()
 
@@ -87,7 +87,7 @@ class App(QtWidgets.QWidget):
         main_splitter.setStyleSheet("QSplitter{ border: 0px; }")
         main_splitter.addWidget(asset_outliner)
         main_splitter.addWidget(looks_widget)
-        main_splitter.setSizes([350, 200])
+        main_splitter.setSizes([200, 200])
         main_layout.addWidget(main_splitter)
         main_layout.addLayout(footer)
 
