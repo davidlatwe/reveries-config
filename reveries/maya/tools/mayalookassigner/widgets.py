@@ -112,16 +112,13 @@ class AssetOutliner(QtWidgets.QWidget):
                 items = commands.create_items_from_nodes(nodes)
                 self.add_items(items)
 
-    def get_nodes(self, selection=False):
+    def get_nodes(self):
         """Find the nodes in the current scene per asset."""
 
         items = self.get_selected_items()
 
         # Collect all nodes by hash (optimization)
-        if not selection:
-            nodes = cmds.ls(dag=True, long=True)
-        else:
-            nodes = commands.get_selected_nodes()
+        nodes = cmds.ls(dag=True, long=True)
         id_nodes = commands.create_asset_id_hash(nodes)
 
         # Collect the asset item entries per asset
@@ -159,7 +156,7 @@ class AssetOutliner(QtWidgets.QWidget):
     def select_asset_from_items(self):
         """Select nodes from listed asset"""
 
-        items = self.get_nodes(selection=False)
+        items = self.get_nodes()
         nodes = []
         for item in items.values():
             nodes.extend(item["nodes"])

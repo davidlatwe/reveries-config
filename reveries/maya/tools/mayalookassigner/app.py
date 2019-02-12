@@ -60,13 +60,9 @@ class App(QtWidgets.QWidget):
 
         look_outliner = widgets.LookOutliner()  # Database look overview
 
-        assign_selected = QtWidgets.QCheckBox("Assign to selected only")
-        assign_selected.setToolTip("Whether to assign only to selected nodes "
-                                   "or to the full asset")
         remove_unused_btn = QtWidgets.QPushButton("Remove Unused Looks")
 
         looks_layout.addWidget(look_outliner)
-        looks_layout.addWidget(assign_selected)
         looks_layout.addWidget(remove_unused_btn)
 
         # Footer
@@ -107,7 +103,6 @@ class App(QtWidgets.QWidget):
 
         # Buttons
         self.remove_unused = remove_unused_btn
-        self.assign_selected = assign_selected
 
     def setup_connections(self):
         """Connect interactive widgets with actions"""
@@ -180,8 +175,7 @@ class App(QtWidgets.QWidget):
         look_items = self.look_outliner.get_selected_items()
         looks = {look["subset"] for look in look_items}
 
-        selection = self.assign_selected.isChecked()
-        asset_nodes = self.asset_outliner.get_nodes(selection=selection)
+        asset_nodes = self.asset_outliner.get_nodes()
 
         start = time.time()
         for i, (asset, item) in enumerate(asset_nodes.items()):
