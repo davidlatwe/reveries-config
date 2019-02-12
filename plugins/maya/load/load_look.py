@@ -53,7 +53,12 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         self[:] = nodes
 
-        self.interface = cmds.ls(nodes, type="shadingEngine")
+        shading_engines = cmds.ls(nodes, type="shadingEngine")
+        shaders = list()
+        for node in shading_engines:
+            shaders += cmds.listConnections(node + ".surfaceShader")
+
+        self.interface = shading_engines + shaders
 
     def update(self, container, representation):
         from maya import cmds
