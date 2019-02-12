@@ -1,11 +1,21 @@
-from collections import defaultdict
+
 import logging
+import json
 import os
 
 import maya.cmds as cmds
 
-import colorbleed.maya.lib as cblib
 from avalon import io, api
+from avalon.maya.pipeline import AVALON_CONTAINER_ID
+from avalon.vendor import six
+
+from reveries.utils import get_representation_path_
+from reveries.maya import lib
+from reveries.maya.pipeline import (
+    get_interface_from_container,
+    parse_container,
+)
+
 
 log = logging.getLogger(__name__)
 
@@ -91,24 +101,61 @@ def get_all_asset_nodes():
     return nodes
 
 
+_cached_containerized_nodes = dict()
+_interface = (lambda con: get_interface_from_container(con))
+_asset_id = (lambda con: cmds.getAttr(_interface(con) + ".assetId"))
+
+
+def get_asset_id_from_node(node):
+    """Get asset id by lookup container that this node belongs to
+    Args:
+        node (str): node long name
+
+    Returns:
+        str
+    """
+    if node in _cached_containerized_nodes:
+        return _cached_containerized_nodes[node]
+
+    _cached_containerized_nodes.clear()
+
+    containers = {
+        container: set(cmds.ls(cmds.sets(container, query=True),
+                               long=True))
+        for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID})
+        if not cmds.getAttr(container + ".loader") == "LookLoader"
+    }
+    for container, content in containers.items():
+        _id = _asset_id(container)
+        for _node in content:
+            if not lib.hasAttr(_node, lib.AVALON_ID_ATTR_LONG):
+                continue
+            _cached_containerized_nodes[_node] = _id
+
+    return _cached_containerized_nodes.get(node)
+
+
 def create_asset_id_hash(nodes):
-    """Create a hash based on cbId attribute value
+    """Create a hash based on `AvalonID` attribute value
     Args:
         nodes (list): a list of nodes
 
     Returns:
         dict
     """
-    node_id_hash = defaultdict(list)
-    for node in nodes:
-        value = cblib.get_id(node)
-        if value is None:
+    node_id_hash = dict()
+    for node in cmds.ls(nodes, long=True):
+        if not lib.hasAttr(node, lib.AVALON_ID_ATTR_LONG):
+            continue
+        asset_id = get_asset_id_from_node(node)
+        if asset_id is None:
             continue
 
-        asset_id = value.split(":")[0]
+        if asset_id not in node_id_hash:
+            node_id_hash[asset_id] = list()
         node_id_hash[asset_id].append(node)
 
-    return dict(node_id_hash)
+    return node_id_hash
 
 
 def create_items_from_nodes(nodes):
@@ -145,7 +192,7 @@ def create_items_from_nodes(nodes):
             continue
 
         # Collect available look subsets for this asset
-        looks = cblib.list_looks(asset["_id"])
+        looks = list_loaded_looks(asset["_id"])
 
         # Collect namespaces the asset is found in
         namespaces = set()
@@ -159,6 +206,19 @@ def create_items_from_nodes(nodes):
                                  "namespaces": namespaces})
 
     return asset_view_items
+
+
+def list_loaded_looks(asset_id):
+    """Return all look subsets in scene for the given asset
+    """
+    look_subsets = [
+        parse_container(container)
+        for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID})
+        if cmds.getAttr(container + ".loader") == "LookLoader" and
+        _asset_id(container) == str(asset_id)
+    ]
+
+    return look_subsets
 
 
 def remove_unused_looks():
@@ -188,3 +248,42 @@ def remove_unused_looks():
         api.remove(container)
 
     log.info("Finished removing unused looks. (see log for details)")
+
+
+def assign_look(namespaces, look):
+    """Assign looks via namespaces
+
+    Args:
+        namespaces (str, unicode or set): Target subsets' namespaces
+        look (dict): The container data of look
+
+    """
+    representation_id = io.ObjectId(look["representation"])
+    representation = io.find_one({"_id": representation_id})
+
+    parents = io.parenthood(representation)
+    package_path = get_representation_path_(representation, parents)
+
+    file_name = representation["data"]["linkFname"]
+    relationship = os.path.join(package_path, file_name)
+
+    if not os.path.isfile(relationship):
+        log.warning("Look development asset "
+                    "has no relationship data.\n"
+                    "{!r} was not found".format(relationship))
+        return
+
+    # Load map
+    with open(relationship) as f:
+        relationships = json.load(f)
+
+    namespace = look["namespace"][1:]
+
+    # Apply shader to target subset by namespace
+    if isinstance(namespaces, six.string_types):
+        namespaces = [namespaces]
+    target_namespaces = [ns + ":" for ns in namespaces]
+
+    lib.apply_shaders(relationships["shaderById"],
+                      namespace,
+                      target_namespaces)

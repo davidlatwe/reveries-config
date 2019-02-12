@@ -2,9 +2,7 @@ import sys
 import time
 import logging
 
-import colorbleed.maya.lib as cblib
-
-from avalon import style, io
+from avalon import style
 from avalon.tools import lib
 from avalon.vendor.Qt import QtWidgets, QtCore
 
@@ -200,19 +198,16 @@ class App(QtWidgets.QWidget):
                           "look for {}".format(prefix, asset))
                 continue
 
-            # Get the latest version of this asset's look subset
-            version = io.find_one({"type": "version",
-                                   "parent": assign_look["_id"]},
-                                  sort=[("name", -1)])
-
             subset_name = assign_look["name"]
             self.echo("{} Assigning {} to {}\t".format(prefix,
                                                        subset_name,
                                                        asset))
 
             # Assign look
-            cblib.assign_look_by_version(nodes=item["nodes"],
-                                         version_id=version["_id"])
+            namespaces = item.get("namespace", item["namespaces"])
+            self.log.info(namespaces)
+            commands.assign_look(namespaces=namespaces,
+                                 look=assign_look)
 
         end = time.time()
 
