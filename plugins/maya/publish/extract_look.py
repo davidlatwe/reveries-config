@@ -57,6 +57,10 @@ class ExtractLook(PackageExtractor):
                     # Set texture file path to publish location
                     cmds.setAttr(attr_name, final_path, type="string")
 
+                    # Lock colorspace
+                    attr_name = file_node + ".colorSpace"
+                    cmds.setAttr(attr_name, lock=True)
+
             # Select full shading network
             # If only select shadingGroups, and if there are any node
             # connected to Dag node (i.e. drivenKey), then the command
