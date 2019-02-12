@@ -35,6 +35,7 @@ class RigLoader(ReferenceLoader, avalon.api.Loader):
 
         nodes = cmds.file(entry_path,
                           namespace=namespace,
+                          ignoreVersion=True,
                           reference=True,
                           returnNewNodes=True,
                           groupReference=True,

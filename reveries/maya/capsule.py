@@ -81,7 +81,8 @@ def assign_shader(meshes, shadingEngine):
             meshes_by_shader[shader] += shaded
 
     try:
-        cmds.sets(meshes, edit=True, forceElement=shadingEngine)
+        for shaded in meshes_by_shader.values():
+            cmds.sets(shaded, edit=True, forceElement=shadingEngine)
 
         yield
 

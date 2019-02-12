@@ -440,11 +440,11 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
 
     target_namespaces = target_namespaces or [None]
 
-    for shader, ids in relationships.items():
-        print("Looking for '%s'.." % shader)
-        shader = next(iter(cmds.ls(shader)), None)
+    for shader_, ids in relationships.items():
+        print("Looking for '%s'.." % shader_)
+        shader = next(iter(cmds.ls(shader_)), None)
         if shader is None:
-            log.warning("{!r} Not found. Skipping..".format(shader))
+            log.warning("{!r} Not found. Skipping..".format(shader_))
             log.warning("Associated shader not part of asset, this is a bug.")
             continue
 

@@ -31,6 +31,7 @@ class CameraLoader(ReferenceLoader, avalon.api.Loader):
 
         nodes = cmds.file(entry_path,
                           namespace=namespace,
+                          ignoreVersion=True,
                           sharedReferenceFile=False,
                           groupReference=True,
                           groupName=group,

@@ -41,6 +41,7 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
 
         nodes = cmds.file(entry_path,
                           namespace=namespace,
+                          ignoreVersion=True,
                           sharedReferenceFile=False,
                           groupReference=True,
                           groupName=group,
@@ -86,6 +87,7 @@ class PointCacheImportLoader(ImportLoader, avalon.api.Loader):
         nodes = cmds.file(entry_path,
                           i=True,
                           namespace=namespace,
+                          ignoreVersion=True,
                           returnNewNodes=True,
                           groupReference=True,
                           groupName=group)
