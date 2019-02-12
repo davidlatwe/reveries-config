@@ -189,7 +189,7 @@ class App(QtWidgets.QWidget):
         for i, (asset, item) in enumerate(asset_nodes.items()):
 
             # Label prefix
-            prefix = "({}/{})".format(i+1, len(asset_nodes))
+            prefix = "({}/{})".format(i + 1, len(asset_nodes))
 
             # Assign the first matching look relevant for this asset
             # (since assigning multiple to the same nodes makes no sense)

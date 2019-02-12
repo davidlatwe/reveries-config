@@ -173,8 +173,8 @@ def remove_unused_looks():
 
     unused = list()
     for container in host.ls():
-        if container['loader'] == "LookLoader":
-            members = cmds.sets(container['objectName'], query=True)
+        if container["loader"] == "LookLoader":
+            members = cmds.sets(container["objectName"], query=True)
             look_sets = cmds.ls(members, type="objectSet")
             for look_set in look_sets:
                 # If the set is used than we consider this look *in use*

@@ -261,5 +261,3 @@ class LookOutliner(QtWidgets.QWidget):
         menu.addAction(apply_action)
 
         menu.exec_(globalpos)
-
-
