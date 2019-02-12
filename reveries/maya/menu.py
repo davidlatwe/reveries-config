@@ -21,9 +21,13 @@ def install():
 
         cmds.menuItem("Snap!", command=interactive.active_view_snapshot)
 
-        cmds.menuItem("V-Ray Attributes", command="""
+#        cmds.menuItem("V-Ray Attributes", command="""
+# import reveries.maya.tools
+# reveries.maya.tools.show('vray_attrs_setter')
+# """)
+        cmds.menuItem("Look Assigner", command="""
 import reveries.maya.tools
-reveries.maya.tools.show('vray_attrs_setter')
+reveries.maya.tools.show('mayalookassigner')
 """)
 
         # System
