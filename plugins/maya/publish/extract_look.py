@@ -5,8 +5,6 @@ import contextlib
 
 import pyblish.api
 
-from avalon.maya.pipeline import parse_container
-from avalon.pipeline import get_representation_context
 from reveries.plugins import PackageExtractor
 
 
@@ -138,14 +136,6 @@ class ExtractLook(PackageExtractor):
                     if values:
                         vray_attrs[parent[0]] = values
 
-        # Get model subset id
-        targets = list()
-        for container_name in self.data["pairedContainers"]:
-            model_container = parse_container(container_name)
-            representation_id = model_container["representation"]
-            context = get_representation_context(representation_id)
-            targets.append(context["subset"]["_id"])
-
         relationships = {
             "shaderById": shader_by_id,
             "animatable": animatable,
@@ -159,7 +149,6 @@ class ExtractLook(PackageExtractor):
 
         self.add_data({
             "linkFname": link_file,
-            "targetSubsets": targets,
             "entryFileName": entry_file,
         })
 

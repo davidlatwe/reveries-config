@@ -36,15 +36,6 @@ class CollectLook(pyblish.api.InstancePlugin):
 
         containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
 
-        # Collect paired model container
-        paired = list()
-        for mesh in meshes:
-            transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
-            for set_ in cmds.listSets(object=transform):
-                if set_ in containers and set_ not in paired:
-                    paired.append(set_)
-        instance.data["pairedContainers"] = paired
-
         # Collect shading networks
         shaders = cmds.listConnections(meshes, type="shadingEngine")
         upstream_nodes = cmds.ls(cmds.listHistory(shaders), long=True)
