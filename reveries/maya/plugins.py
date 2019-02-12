@@ -396,6 +396,7 @@ class HierarchicalLoader(MayaBaseLoader):
         hierarchy = cmds.file(entry_path,
                               reference=True,
                               namespace=namespace,
+                              ignoreVersion=True,
                               returnNewNodes=True,
                               groupReference=True,
                               groupName=group_name,

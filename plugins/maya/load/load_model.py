@@ -33,6 +33,7 @@ class ModelLoader(ReferenceLoader, avalon.api.Loader):
         with maya.maintained_selection():
             nodes = cmds.file(entry_path,
                               namespace=namespace,
+                              ignoreVersion=True,
                               reference=True,
                               returnNewNodes=True,
                               groupReference=True,
