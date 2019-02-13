@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 
 from avalon.vendor.Qt import QtWidgets, QtCore
 
@@ -12,8 +11,6 @@ from avalon.tools.projectmanager.widget import (
 from . import models
 from . import commands
 from . import views
-
-from maya import cmds
 
 
 NODEROLE = QtCore.Qt.UserRole + 1

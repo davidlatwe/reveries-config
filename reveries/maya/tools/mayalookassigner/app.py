@@ -199,7 +199,6 @@ class App(QtWidgets.QWidget):
 
             # Assign look
             namespaces = item.get("namespace", item["namespaces"])
-            self.log.info(namespaces)
             commands.assign_look(namespaces=namespaces,
                                  look=assign_look)
 
