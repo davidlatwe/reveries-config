@@ -12,6 +12,7 @@ from avalon.vendor import six
 from reveries.utils import get_representation_path_
 from reveries.maya import lib
 from reveries.maya.pipeline import (
+    AVALON_INTERFACE_ID,
     get_interface_from_container,
     parse_container,
 )
@@ -45,6 +46,29 @@ def get_namespace_from_node(node):
     """
     parts = node.rsplit("|", 1)[-1].rsplit(":", 1)
     return parts[0] if len(parts) > 1 else u":"
+
+
+def get_interface_from_namespace(namespaces):
+    """Return interface nodes from namespace
+
+    Args:
+        namespaces (str, unicode or set): Target subsets' namespaces
+
+    Returns:
+        list: List of interface node in long name
+
+    """
+    if isinstance(namespaces, six.string_types):
+        namespaces = [namespaces]
+
+    interfaces = list()
+
+    for namespace in namespaces:
+        interfaces += lib.lsAttrs({"id": AVALON_INTERFACE_ID,
+                                   "namespace": ":" + namespace})
+
+    return cmds.ls(cmds.sets(interfaces, query=True, nodesOnly=True),
+                   long=True)
 
 
 def list_descendents(nodes):

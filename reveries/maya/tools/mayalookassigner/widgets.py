@@ -117,38 +117,15 @@ class AssetOutliner(QtWidgets.QWidget):
 
         items = self.get_selected_items()
 
-        # Collect all nodes by hash (optimization)
-        nodes = cmds.ls(dag=True, long=True)
-        id_nodes = commands.create_asset_id_hash(nodes)
-
         # Collect the asset item entries per asset
-        # and collect the namespaces we'd like to apply
         assets = dict()
-        asset_namespaces = defaultdict(set)
         for item in items:
-            asset_id = str(item["asset"]["_id"])
             asset_name = item["asset"]["name"]
-            asset_namespaces[asset_name].add(item.get("namespace"))
 
-            if asset_name in assets:
-                continue
+            namespaces = item.get("namespace", item["namespaces"])
+            nodes = commands.get_interface_from_namespace(namespaces)
 
             assets[asset_name] = item
-            assets[asset_name]["nodes"] = id_nodes.get(asset_id, [])
-
-        # Filter nodes to namespace (if only namespaces were selected)
-        for asset_name in assets:
-            namespaces = asset_namespaces[asset_name]
-
-            # When None is present there should be no filtering
-            if None in namespaces:
-                continue
-
-            # Else only namespaces are selected and *not* the top entry so
-            # we should filter to only those namespaces.
-            nodes = assets[asset_name]["nodes"]
-            nodes = [node for node in nodes if
-                     commands.get_namespace_from_node(node) in namespaces]
             assets[asset_name]["nodes"] = nodes
 
         return assets
