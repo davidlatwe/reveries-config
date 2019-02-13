@@ -50,6 +50,12 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
                 repr_id = root_containers[con]["representation"]
                 repr_id = avalon.io.ObjectId(repr_id)
                 representation = avalon.io.find_one({"_id": repr_id})
+
+                if representation is None:
+                    self.log.warning("Dependency representation not found, "
+                                     "this should not happen.")
+                    continue
+
                 version = avalon.io.find_one({"_id": representation["parent"]})
 
                 self.register_dependency(instance, version["_id"])
