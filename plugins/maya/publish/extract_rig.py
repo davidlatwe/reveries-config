@@ -38,12 +38,27 @@ class ExtractRig(PackageExtractor):
             cmds.select(self.member, noExpand=True)
 
             with capsule.undo_chunk_when_no_undo():
-                # Remove loaded subset's namespace before exporting
+                # (NOTE) Current workflow may keep model stay loaded and
+                #   referenced in scene, but need to take extra care while
+                #   extracting. (Will be undone)
+
+                # - Remove loaded subset's namespace before exporting
+                #   (Not keeping model namespace)
                 for namespace in self.context.data["loadedNamespace"]:
                     if not cmds.namespace(exists=namespace):
                         continue
                     cmds.namespace(removeNamespace=namespace,
                                    mergeNamespaceWithRoot=True)
+
+                # - Remove loaded container member
+                #   If the mesh of the loaded model has been copied and edited
+                #   (mesh face detach and separation), the model container
+                #   might end up with a lots of facet member, which means there
+                #   are dag connections that would make the model container be
+                #   exported as well, and we don't want that happens.
+                #   So we just remove them all for good.
+                for container in self.context.data["RootContainers"]:
+                    cmds.sets(clear=container)
 
                 cmds.file(entry_path,
                           force=True,
