@@ -1,7 +1,5 @@
 
 import pyblish.api
-import avalon.maya
-
 from reveries.plugins import context_process
 
 
@@ -23,7 +21,7 @@ class CollectLoadedNamespaces(pyblish.api.InstancePlugin):
         loaded_namespace = set()
         loaded_content = set()
 
-        for container in avalon.maya.ls():
+        for container in context.data["RootContainers"].values():
 
             group = container["subsetGroup"]
             members = cmds.sets(container["objectName"], query=True)

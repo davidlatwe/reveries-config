@@ -39,7 +39,7 @@ class App(QtWidgets.QWidget):
         # the widget gets garbage collected.
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
-        self.resize(600, 400)
+        self.resize(680, 400)
 
         self.setup_ui()
 
@@ -87,13 +87,15 @@ class App(QtWidgets.QWidget):
         main_splitter.setStyleSheet("QSplitter{ border: 0px; }")
         main_splitter.addWidget(asset_outliner)
         main_splitter.addWidget(looks_widget)
-        main_splitter.setSizes([200, 200])
+        main_splitter.setSizes([350, 260])
         main_layout.addWidget(main_splitter)
         main_layout.addLayout(footer)
 
         # Set column width
-        asset_outliner.view.setColumnWidth(0, 200)
-        look_outliner.view.setColumnWidth(0, 150)
+        asset_outliner.view.setColumnWidth(0, 240)
+        look_outliner.view.setColumnWidth(0, 140)  # "label" column
+        look_outliner.view.setColumnWidth(1, 60)   # "version" column
+        look_outliner.view.setColumnWidth(2, 50)   # "match" column
 
         # Open widgets
         self.asset_outliner = asset_outliner
@@ -199,7 +201,6 @@ class App(QtWidgets.QWidget):
 
             # Assign look
             namespaces = item.get("namespace", item["namespaces"])
-            self.log.info(namespaces)
             commands.assign_look(namespaces=namespaces,
                                  look=assign_look)
 

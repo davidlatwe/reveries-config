@@ -12,6 +12,7 @@ from avalon.vendor import six
 from reveries.utils import get_representation_path_
 from reveries.maya import lib
 from reveries.maya.pipeline import (
+    AVALON_INTERFACE_ID,
     get_interface_from_container,
     parse_container,
 )
@@ -45,6 +46,29 @@ def get_namespace_from_node(node):
     """
     parts = node.rsplit("|", 1)[-1].rsplit(":", 1)
     return parts[0] if len(parts) > 1 else u":"
+
+
+def get_interface_from_namespace(namespaces):
+    """Return interface nodes from namespace
+
+    Args:
+        namespaces (str, unicode or set): Target subsets' namespaces
+
+    Returns:
+        list: List of interface node in long name
+
+    """
+    if isinstance(namespaces, six.string_types):
+        namespaces = [namespaces]
+
+    interfaces = list()
+
+    for namespace in namespaces:
+        interfaces += lib.lsAttrs({"id": AVALON_INTERFACE_ID,
+                                   "namespace": ":" + namespace})
+
+    return cmds.ls(cmds.sets(interfaces, query=True, nodesOnly=True),
+                   long=True)
 
 
 def list_descendents(nodes):
@@ -211,12 +235,20 @@ def create_items_from_nodes(nodes):
 def list_loaded_looks(asset_id):
     """Return all look subsets in scene for the given asset
     """
-    look_subsets = [
-        parse_container(container)
-        for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID})
-        if cmds.getAttr(container + ".loader") == "LookLoader" and
-        _asset_id(container) == str(asset_id)
-    ]
+    look_subsets = list()
+
+    for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID}):
+        if (cmds.getAttr(container + ".loader") == "LookLoader" and
+                _asset_id(container) == str(asset_id)):
+
+            look = parse_container(container)
+
+            version_id = io.ObjectId(look["versionId"])
+            version = io.find_one({"_id": version_id},
+                                  projection={"name": True})
+            look["version"] = version["name"]
+
+            look_subsets.append(look)
 
     return look_subsets
 
