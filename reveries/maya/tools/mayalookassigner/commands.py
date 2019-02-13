@@ -235,12 +235,20 @@ def create_items_from_nodes(nodes):
 def list_loaded_looks(asset_id):
     """Return all look subsets in scene for the given asset
     """
-    look_subsets = [
-        parse_container(container)
-        for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID})
-        if cmds.getAttr(container + ".loader") == "LookLoader" and
-        _asset_id(container) == str(asset_id)
-    ]
+    look_subsets = list()
+
+    for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID}):
+        if (cmds.getAttr(container + ".loader") == "LookLoader" and
+                _asset_id(container) == str(asset_id)):
+
+            look = parse_container(container)
+
+            version_id = io.ObjectId(look["versionId"])
+            version = io.find_one({"_id": version_id},
+                                  projection={"name": True})
+            look["version"] = version["name"]
+
+            look_subsets.append(look)
 
     return look_subsets
 
