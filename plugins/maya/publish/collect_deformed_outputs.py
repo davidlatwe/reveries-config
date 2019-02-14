@@ -39,6 +39,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         out_cache = dict()
+        require_avalon_uuid = set()
 
         def update_out_cache(out_set, namespace):
             members = pick_cacheable(cmds.sets(out_set, query=True) or [])
@@ -46,6 +47,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             if out_name not in out_cache:
                 out_cache[out_name] = list()
             out_cache[out_name] += members
+            require_avalon_uuid.update(members)
 
             self.log.info("Cacheables from {0!r} collected: {1!r}"
                           "".format(out_set, out_name))
@@ -84,6 +86,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
         # Store data in the instance for the validator
         instance.data["outCache"] = out_cache
+        instance.data["requireAvalonUUID"] = require_avalon_uuid
 
         # Assign contractor
         if instance.data["deadlineEnable"]:
