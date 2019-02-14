@@ -13,6 +13,8 @@ class Terminal(api.Action):
     name = "terminal"
     label = "Terminal"
     icon = "terminal"
+    color = "#7F8C9B"
+    order = 10
 
     def is_compatible(self, session):
         """Return whether the action is compatible with the session"""
