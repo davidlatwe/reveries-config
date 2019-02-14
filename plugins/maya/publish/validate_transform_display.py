@@ -2,6 +2,7 @@
 import pyblish.api
 
 from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya import lib
 
 
 class ValidateTransformDisplay(pyblish.api.InstancePlugin):
@@ -37,13 +38,15 @@ class ValidateTransformDisplay(pyblish.api.InstancePlugin):
         }
 
         for node in instance:
-            if not cmds.nodeType(node) == "transforms":
+            if not cmds.nodeType(node) == "transform":
                 continue
             # Ensure transform shape is not hidden
             not_hidden = (
                 all([cmds.getAttr(node + attr) is display_attrs[attr]
                     for attr in display_attrs.keys()])
             )
+
+            not_hidden = lib.is_visible(node) and not_hidden
 
             if not not_hidden:
                 invalid.append(node)
