@@ -3,6 +3,11 @@ import pyblish.api
 
 
 class ValidateSubsetUnique(pyblish.api.ContextPlugin):
+    """No duplicated subset
+
+    You can not publish multiple subsets with the same subset name.
+
+    """
 
     label = "Subset Unique"
     order = pyblish.api.ValidatorOrder - 0.44
@@ -28,7 +33,7 @@ class ValidateSubsetUnique(pyblish.api.ContextPlugin):
             subset = instance.data["subset"]
             if asset in subsets:
                 if subset in subsets[asset]:
-                    invalid.append(instance.data["name"])
+                    invalid.append(instance.data["objectName"])
                 else:
                     subsets[asset].append(subset)
             else:

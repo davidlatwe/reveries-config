@@ -38,11 +38,14 @@ def ls_subset_groups():
 
 class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     """All transfrom and types required by each family must have an UUID
+
+    To fix this, use *Fix It* action to regenerate UUIDs.
+
     """
 
     order = pyblish.api.ValidatorOrder
     hosts = ["maya"]
-    label = "Avalon UUID"
+    label = "Avalon UUID Assigned"
     families = [
         "reveries.model",
         "reveries.rig",

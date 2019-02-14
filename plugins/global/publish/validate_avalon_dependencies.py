@@ -4,10 +4,27 @@ import avalon.io
 
 
 class ValidateAvalonDependencies(pyblish.api.InstancePlugin):
-    """Ensure dependencies is acyclic
+    """Ensure subset dependencies is acyclic
+
+    Subset should not depend on the previous version of itself.
+
+    Normaly, a subset may depend (reference) on other subset.
+
+    For example:
+        * `rigLow` version 1 is depending `modelLow` version 5
+
+    It's also possible that a subset is depending on an older
+    version of itself. Which will create a dependency loop.
+
+    For example:
+        * `modelLow` version 4 is depending `modelLow` version 2
+
+    This may or may not be a problem in practice, but better not
+    to be that way.
+
     """
 
-    label = "Validate Dependencies"
+    label = "Avalon Dependencies Acyclic"
     order = pyblish.api.ValidatorOrder
 
     def process(self, instance):
@@ -39,6 +56,8 @@ class ValidateAvalonDependencies(pyblish.api.InstancePlugin):
                 continue
 
             if version["parent"] == current_subset_id:
+                # Current subset has been found in dependency chain.
+                # This is not okay. :(
                 return False
 
             dependencies = version["data"]["dependencies"]

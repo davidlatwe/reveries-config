@@ -5,10 +5,13 @@ from maya import cmds
 
 
 class ValidateSceneSaved(pyblish.api.ContextPlugin):
-    """Valides Maya work file is saved before publish and not locked.
+    """Maya scene should be saved before publish and not locked.
+
+    Save your work, if the scene has been locked, please *saveAs*.
+
     """
 
-    label = "Validate Scene Saved"
+    label = "Scene Saved"
     hosts = ["maya"]
     order = pyblish.api.ValidatorOrder - 0.49
 

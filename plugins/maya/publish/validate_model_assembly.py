@@ -7,7 +7,16 @@ class ValidateModelAssembly(pyblish.api.InstancePlugin):
     """Ensure the content of the instance is grouped in a single hierarchy
 
     The instance must have a single root node containing all the content.
-    This root node *must* be a top group in the outliner.
+    This root node *must* be a top group in the outliner and named "ROOT".
+
+    For example:
+
+        |ROOT  <---------- put publishing model in this group
+            L model_grp
+            |   L other_mesh_A
+            L other_mesh_B
+            .
+            .
 
     """
 

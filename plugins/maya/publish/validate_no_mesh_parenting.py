@@ -13,7 +13,17 @@ class SelectInvalid(MayaSelectInvalidAction):
 
 
 class ValidateNoMeshParenting(pyblish.api.InstancePlugin):
-    """Validate no mesh parenting under another mesh"""
+    """Validate no mesh parenting under another mesh
+
+    A transform node of a mesh can not be a parent of another transform.
+
+    For example:
+        - pCube1
+            L pCubeShape1
+            L pSphere  <--------- This is not okay.
+                L pSphereShape1
+
+    """
 
     order = pyblish.api.ValidatorOrder
     hosts = ['maya']

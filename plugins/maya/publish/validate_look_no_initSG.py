@@ -11,6 +11,13 @@ DEFAULT_SHADERS = (
 
 
 class ValidateLookNoInitSG(pyblish.api.InstancePlugin):
+    """LookDev should not be using default shaders
+
+    Models should not remain using default shaders when publishing
+    lookDev.
+    For example: lambert1
+
+    """
 
     label = "No InitShadingGroup"
     order = pyblish.api.ValidatorOrder

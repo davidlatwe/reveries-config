@@ -10,6 +10,9 @@ class ValidateModelContent(pyblish.api.InstancePlugin):
     - Must only contain: transforms, meshes and groups
     - At least one mesh
 
+    So if there are nurbs or curves or any other node that is not
+    mesh nor sub-group under *ROOT* group, this validation fails.
+
     """
 
     families = ["reveries.model"]
