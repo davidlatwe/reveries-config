@@ -3,6 +3,11 @@ import pyblish.api
 
 
 class ValidateSubsetUnique(pyblish.api.ContextPlugin):
+    """No duplicated subset
+
+    You can not publish multiple subsets with the same subset name.
+
+    """
 
     label = "Subset Unique"
     order = pyblish.api.ValidatorOrder - 0.44

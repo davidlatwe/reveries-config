@@ -4,6 +4,14 @@ import avalon.api
 
 
 class ValidateAssetSession(pyblish.api.InstancePlugin):
+    """Only the asset which assigned to this task can be published
+
+    The asset to be published should be the same as the asset of the
+    task (current workspace).
+    For example, if you are in the task of the asset *Boy*, you can
+    not publish asset *Girl* in current session.
+
+    """
 
     label = "Asset Session"
     order = pyblish.api.ValidatorOrder - 0.45

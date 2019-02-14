@@ -6,7 +6,11 @@ from reveries.maya.pipeline import put_instance_icon
 
 
 class ModelCreator(avalon.maya.Creator):
-    """Polygonal geometry"""
+    """Polygonal geometry
+
+    Select model meshes or model groups to publish
+
+    """
 
     label = "Model"
     family = "reveries.model"
