@@ -33,7 +33,7 @@ class ValidateSubsetUnique(pyblish.api.ContextPlugin):
             subset = instance.data["subset"]
             if asset in subsets:
                 if subset in subsets[asset]:
-                    invalid.append(instance.data["name"])
+                    invalid.append(instance.data["objectName"])
                 else:
                     subsets[asset].append(subset)
             else:
