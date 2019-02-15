@@ -6,7 +6,7 @@ class AvalonLockNodes(pyblish.api.ContextPlugin):
     """Flush undo queue and remove the modified state of the entire scene
     """
 
-    label = "Flush Modification"
+    label = "Lock Nodes"
     order = pyblish.api.IntegratorOrder + 0.499999
     hosts = ["maya"]
 
