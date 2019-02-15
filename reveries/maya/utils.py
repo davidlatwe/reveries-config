@@ -13,7 +13,7 @@ from datetime import datetime
 from maya import cmds, mel
 from maya.api import OpenMaya as om
 from ..utils import _C4Hasher
-from . import lib
+from . import lib, capsule
 
 
 def _hash_MPoint(x, y, z, w):
@@ -564,19 +564,20 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
         padding_str = "#" * cmds.getAttr("defaultRenderGlobals"
                                          ".extensionPadding")
 
-        cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
-                     prefix,
-                     type="string")
+        with capsule.maintained_modification():
+            cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
+                         prefix,
+                         type="string")
 
-        output_prefix = cmds.renderSettings(
-            genericFrameImageName=padding_str,
-            layer=layer,
-            camera=camera,
-            customTokenString="RenderPass=" + renderpass)[0]
+            output_prefix = cmds.renderSettings(
+                genericFrameImageName=padding_str,
+                layer=layer,
+                camera=camera,
+                customTokenString="RenderPass=" + renderpass)[0]
 
-        cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
-                     current_prefix,
-                     type="string")
+            cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
+                         current_prefix,
+                         type="string")
 
     if is_animated and on_frame is not None:
         frame_str = "%%0%dd" % len(padding_str) % on_frame
