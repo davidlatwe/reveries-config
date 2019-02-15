@@ -323,6 +323,17 @@ def maintained_selection():
 
 
 @contextlib.contextmanager
+def maintained_modification():
+    """Maintain the modified state of the entire scene
+    """
+    modified = cmds.file(query=True, modified=True)
+    try:
+        yield
+    finally:
+        cmds.file(modified=modified)
+
+
+@contextlib.contextmanager
 def nodes_locker(nodes, lock=True, lockName=True, lockUnpublished=True):
     """Lock or unlock nodes and restore lock state on exit
 
