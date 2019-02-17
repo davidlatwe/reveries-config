@@ -14,8 +14,8 @@ class ValidateDeadlineMayaScheduling(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder + 0.1
     hosts = ["maya"]
     families = [
-        "reveries.imgseq.batchrender",
-        "reveries.imgseq.turntable",
+        "reveries.pointcache",
+        "reveries.imgseq",
     ]
     actions = [
         pyblish.api.Category("Select"),
@@ -31,8 +31,15 @@ class ValidateDeadlineMayaScheduling(pyblish.api.InstancePlugin):
         priority = instance.data["deadlinePriority"]
         pool = instance.data["deadlinePool"]
 
+        project = instance.context.data["projectDoc"]
+        deadline = project["data"]["deadline"]["maya"]
+
+        job_type = instance.data.get("renderType", "pointcache")
+        priority_limit = deadline["priorities"][job_type]
+
         self.log.info("Renderlayer: %s" % instance.data["renderlayer"])
 
-        assert priority <= 80, ("Deadline priority should not greater than "
-                                "80.")
+        assert priority <= priority_limit, ("Deadline priority should not be "
+                                            "greater than %d."
+                                            "" % priority_limit)
         assert not pool == "none", ("Deadline pool did not set.")
