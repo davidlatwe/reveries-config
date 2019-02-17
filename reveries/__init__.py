@@ -55,4 +55,7 @@ def uninstall():  # pragma: no cover
 
 
 def register_launcher_actions():
+    from avalon import api
+    from launcher.actions import ProjectManagerAction
+    avalon.deregister_plugin(api.Action, ProjectManagerAction)
     avalon.register_plugin_path(avalon.Action, LAUNCHER_ACTION_PATH)
