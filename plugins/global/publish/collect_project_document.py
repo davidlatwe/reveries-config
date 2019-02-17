@@ -13,7 +13,7 @@ class CollectProjectDocument(pyblish.api.ContextPlugin):
     """
 
     label = "Find Project Document"
-    order = pyblish.api.CollectorOrder + 0.1
+    order = pyblish.api.CollectorOrder - 0.35
 
     def process(self, context):
 

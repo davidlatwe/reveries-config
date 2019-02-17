@@ -4,27 +4,27 @@ import avalon.api
 import avalon.io
 
 
-class CollectAssetDocument(pyblish.api.InstancePlugin):
+class CollectAssetDocument(pyblish.api.ContextPlugin):
     """Collect asset document from database
 
-    keys in instance.data:
+    keys in context.data:
         * assetDoc
 
     """
 
     label = "Find Asset Document"
-    order = pyblish.api.CollectorOrder + 0.3
+    order = pyblish.api.CollectorOrder - 0.34
 
-    def process(self, instance):
+    def process(self, context):
 
         # Required environment variables
-        ASSET = instance.data["asset"]
+        ASSET = avalon.api.Session["AVALON_ASSET"]
 
-        project = instance.context.data["projectDoc"]
+        project = context.data["projectDoc"]
 
         asset = avalon.io.find_one({"type": "asset",
                                     "name": ASSET,
                                     "parent": project["_id"]})
         assert asset is not None, ("Could not find current asset '%s'" % ASSET)
 
-        instance.data["assetDoc"] = asset
+        context.data["assetDoc"] = asset
