@@ -206,8 +206,20 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
     def process_turntable(self, instance, layer):
         """
         """
-        # Update subset name with layername
-        instance.data["subset"] += "." + instance.name
+        self.log.debug("Renderlayer: " + layer)
+
+        lookdev = lib.lsAttrs({"id": "pyblish.avalon.instance",
+                               "family": "reveries.look",
+                               "renderlayer": layer})
+        lookdev_name = ""
+        # There should be only one matched lookdev instance.
+        # But let's not make this assumption here.
+        for instance in lookdev:
+            lookdev_name = cmds.getAttr(instance + ".subset")
+            self.log.debug("Look: " + lookdev_name)
+
+        # Update subset name with lookDev name
+        instance.data["subset"] += "." + lookdev_name
 
         # Inject shadow family
         instance.data["families"] = ["reveries.imgseq.turntable"]
@@ -228,30 +240,22 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
         # Collect lookDev version when scene locked for dependency tracking
         if maya.is_locked():
-            layer = instance.data["renderlayer"]
-            instances = lib.lsAttrs({"id": "pyblish.avalon.instance",
-                                     "family": "reveries.look",
-                                     "renderlayer": layer})
-
-            assert len(instances), ("Look instance does not match to any "
-                                    "renderlayer, this is a bug.")
-            assert len(instances) == 1, ("Look instance matched with multiple "
-                                         "renderlayer, this is a bug.")
-
-            subset_name = cmds.getAttr(instances[0] + ".subset")
-            self.log.debug("Renderlayer: " + layer)
-            self.log.debug("Look: " + subset_name)
-
             asset_doc = instance.context.data["assetDoc"]
             subset_doc = io.find_one({"type": "subset",
                                       "parent": asset_doc["_id"],
-                                      "name": subset_name})
-            version = io.find_one({"type": "version",
-                                   "parent": subset_doc["_id"]},
-                                  {"name": True},
-                                  sort=[("name", -1)])
+                                      "name": lookdev_name})
 
-            instance.data["futureDependencies"][subset_name] = version["_id"]
+            if subset_doc is not None:  # Collector should never failed.
+                version = io.find_one({"type": "version",
+                                       "parent": subset_doc["_id"]},
+                                      {"name": True},
+                                      sort=[("name", -1)])
+
+                if version is not None:  # Collector should never failed.
+                    _id = version["_id"]
+                    # (NOTE) turntable's `futureDependencies` should be
+                    #        validated later.
+                    instance.data["futureDependencies"][lookdev_name] = _id
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)
