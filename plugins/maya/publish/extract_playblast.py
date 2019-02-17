@@ -4,7 +4,7 @@ import pyblish.api
 import reveries.utils
 
 from avalon.vendor import clique
-from reveries.maya import io
+from reveries.maya import io, capsule
 from reveries.plugins import DelegatablePackageExtractor, skip_stage
 
 
@@ -30,24 +30,28 @@ class ExtractPlayblast(DelegatablePackageExtractor):
     def extract_imageSequence(self):
         """Extract playblast sequence directly to publish dir
         """
+        from maya import cmds
+        cmds.editRenderLayerGlobals(currentRenderLayer="defaultRenderLayer")
 
-        start_frame = self.context.data["startFrame"]
-        end_frame = self.context.data["endFrame"]
+        with capsule.renderlayer(self.data["renderlayer"]):
 
-        entry_file = self.file_name(self.ext)
-        publish_dir = self.create_package()
-        entry_path = os.path.join(publish_dir, entry_file)
+            start_frame = self.context.data["startFrame"]
+            end_frame = self.context.data["endFrame"]
 
-        project = self.context.data["projectDoc"]
-        width, height = reveries.utils.get_resolution_data(project)
+            entry_file = self.file_name(self.ext)
+            publish_dir = self.create_package()
+            entry_path = os.path.join(publish_dir, entry_file)
 
-        camera = self.data["renderCam"][0]
-        io.capture_seq(camera,
-                       entry_path,
-                       start_frame,
-                       end_frame,
-                       width,
-                       height)
+            project = self.context.data["projectDoc"]
+            width, height = reveries.utils.get_resolution_data(project)
+
+            camera = self.data["renderCam"][0]
+            io.capture_seq(camera,
+                           entry_path,
+                           start_frame,
+                           end_frame,
+                           width,
+                           height)
 
         # Check image sequence length to ensure that the extraction did
         # not interrupted.

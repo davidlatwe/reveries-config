@@ -116,6 +116,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                 "renderer": renderer,
                 "fileNamePrefix": utils.get_render_filename_prefix(layer),
                 "fileExt": ext,
+                "renderCam": lib.ls_renderable_cameras(layer),
             }
 
             data.update(self.get_pipeline_attr(layer))
@@ -187,6 +188,9 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
     def process_playblast(self, instance, layer):
         """
         """
+        # Update subset name with layername
+        instance.data["subset"] += "." + instance.name
+
         # Inject shadow family
         instance.data["families"] = ["reveries.imgseq.playblast"]
         instance.data["category"] = "Playblast"
@@ -195,13 +199,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.script"
-
-        # Collect cameras
-        hierarchy = instance[:]
-        hierarchy += cmds.listRelatives(instance, allDescendents=True)
-        instance.data["renderCam"] = cmds.ls(hierarchy,
-                                             type="camera",
-                                             long=True)
 
     def process_turntable(self, instance, layer):
         """
@@ -229,14 +226,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.render"
-
-        # Collect renderable cameras
-        hierarchy = instance[:]
-        hierarchy += cmds.listRelatives(instance, allDescendents=True)
-        instance_cam = set(cmds.ls(hierarchy, type="camera", long=True))
-        renderable_cam = set(lib.ls_renderable_cameras(layer))
-        render_cam = list(instance_cam.intersection(renderable_cam))
-        instance.data["renderCam"] = render_cam
 
         # Collect lookDev version when scene locked for dependency tracking
         if maya.is_locked():
@@ -274,14 +263,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.render"
-
-        # Collect renderable cameras
-        hierarchy = instance[:]
-        hierarchy += cmds.listRelatives(instance, allDescendents=True)
-        instance_cam = set(cmds.ls(hierarchy, type="camera", long=True))
-        renderable_cam = set(lib.ls_renderable_cameras(layer))
-        render_cam = list(instance_cam.intersection(renderable_cam))
-        instance.data["renderCam"] = render_cam
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)

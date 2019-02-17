@@ -18,11 +18,11 @@ avalon_instance_id = "pyblish.avalon.instance"
 class RenderCreator(avalon.maya.Creator):
     """Create image sequence from rendering or playblast
 
-    Extract image sequence for each renderlayer. For playblast, only
-    masterLayer will be processed.
+    Extract image sequence for each renderlayer.
 
-    SetMember:
-        Cameras which were set to be renderable or a camera for playblast
+    No matter it's rendering or playblast, no need to select camera or
+    pick one into objectSet, just set one camera to be renderabled for
+    each renderlayer.
 
     """
 
