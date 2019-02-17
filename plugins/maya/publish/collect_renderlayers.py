@@ -107,6 +107,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
             # Get layer specific settings, might be overrides
             data = {
+                "objectName": self.instance_node,
                 "renderlayer": layer,
                 "startFrame": self.get_render_attr("startFrame", layer),
                 "endFrame": self.get_render_attr("endFrame", layer),

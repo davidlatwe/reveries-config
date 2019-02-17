@@ -8,8 +8,8 @@ from reveries.plugins import context_process
 class ValidateDeadlineConnection(pyblish.api.InstancePlugin):
     """Validate Deadline Web Service is running"""
 
-    label = "Validate Deadline Web Service"
-    order = pyblish.api.ValidatorOrder
+    label = "Deadline Connection"
+    order = pyblish.api.ValidatorOrder + 0.1
     families = [
         "reveries.pointcache",
         "reveries.imgseq",
