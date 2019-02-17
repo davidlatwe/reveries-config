@@ -470,7 +470,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         self._extract_to_publish_dir = False
         self._subset_doc = avalon.io.find_one({
             "type": "subset",
-            "parent": self.data["assetDoc"]["_id"],
+            "parent": self.context.data["assetDoc"]["_id"],
             "name": self.data["subset"],
         })
 

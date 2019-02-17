@@ -2,10 +2,10 @@
 import pyblish.api
 from reveries.plugins import context_process
 from reveries.plugins import RepairContextAction
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidContextAction
 
 
-class SelectUnknownNodes(MayaSelectInvalidAction):
+class SelectUnknownNodes(MayaSelectInvalidContextAction):
 
     label = "Select Unknown"
 

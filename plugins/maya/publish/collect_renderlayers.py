@@ -4,6 +4,7 @@ from maya import cmds
 from collections import OrderedDict
 
 import pyblish.api
+from avalon import io, maya
 from reveries.plugins import context_process
 from reveries.maya import lib, utils
 
@@ -115,6 +116,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                 "renderer": renderer,
                 "fileNamePrefix": utils.get_render_filename_prefix(layer),
                 "fileExt": ext,
+                "renderCam": lib.ls_renderable_cameras(layer),
             }
 
             data.update(self.get_pipeline_attr(layer))
@@ -186,6 +188,9 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
     def process_playblast(self, instance, layer):
         """
         """
+        # Update subset name with layername
+        instance.data["subset"] += "." + instance.name
+
         # Inject shadow family
         instance.data["families"] = ["reveries.imgseq.playblast"]
         instance.data["category"] = "Playblast"
@@ -195,18 +200,23 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.script"
 
-        # Collect cameras
-        hierarchy = instance[:]
-        hierarchy += cmds.listRelatives(instance, allDescendents=True)
-        instance.data["renderCam"] = cmds.ls(hierarchy,
-                                             type="camera",
-                                             long=True)
-
     def process_turntable(self, instance, layer):
         """
         """
-        # Update subset name with layername
-        instance.data["subset"] += "." + instance.name
+        self.log.debug("Renderlayer: " + layer)
+
+        lookdev = lib.lsAttrs({"id": "pyblish.avalon.instance",
+                               "family": "reveries.look",
+                               "renderlayer": layer})
+        lookdev_name = ""
+        # There should be only one matched lookdev instance.
+        # But let's not make this assumption here.
+        for instance in lookdev:
+            lookdev_name = cmds.getAttr(instance + ".subset")
+            self.log.debug("Look: " + lookdev_name)
+
+        # Update subset name with lookDev name
+        instance.data["subset"] += "." + lookdev_name
 
         # Inject shadow family
         instance.data["families"] = ["reveries.imgseq.turntable"]
@@ -217,13 +227,24 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.render"
 
-        # Collect renderable cameras
-        hierarchy = instance[:]
-        hierarchy += cmds.listRelatives(instance, allDescendents=True)
-        instance_cam = set(cmds.ls(hierarchy, type="camera", long=True))
-        renderable_cam = set(lib.ls_renderable_cameras(layer))
-        render_cam = list(instance_cam.intersection(renderable_cam))
-        instance.data["renderCam"] = render_cam
+        # Collect lookDev version when scene locked for dependency tracking
+        if maya.is_locked():
+            asset_doc = instance.context.data["assetDoc"]
+            subset_doc = io.find_one({"type": "subset",
+                                      "parent": asset_doc["_id"],
+                                      "name": lookdev_name})
+
+            if subset_doc is not None:  # Collector should never failed.
+                version = io.find_one({"type": "version",
+                                       "parent": subset_doc["_id"]},
+                                      {"name": True},
+                                      sort=[("name", -1)])
+
+                if version is not None:  # Collector should never failed.
+                    _id = version["_id"]
+                    # (NOTE) turntable's `futureDependencies` should be
+                    #        validated later.
+                    instance.data["futureDependencies"][lookdev_name] = _id
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)
@@ -242,14 +263,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.render"
-
-        # Collect renderable cameras
-        hierarchy = instance[:]
-        hierarchy += cmds.listRelatives(instance, allDescendents=True)
-        instance_cam = set(cmds.ls(hierarchy, type="camera", long=True))
-        renderable_cam = set(lib.ls_renderable_cameras(layer))
-        render_cam = list(instance_cam.intersection(renderable_cam))
-        instance.data["renderCam"] = render_cam
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)
