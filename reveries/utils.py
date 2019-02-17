@@ -87,11 +87,6 @@ def get_timeline_data(project=None, asset_name=None):
     handles = get("handles")
     fps = get("fps")
 
-    if handles < 1:
-        # (TODO) davidlatwe
-        # Should not validate at here, need `project.data` schema to do that.
-        raise ValueError("Incorrect value `Handles`: {}".format(handles))
-
     return edit_in, edit_out, handles, fps
 
 
