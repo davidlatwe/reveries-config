@@ -43,7 +43,7 @@ class ValidateNoNameCollision(pyblish.api.InstancePlugin):
             # (Note) This assumes the node has only one namespace depth,
             # hierarchical namespace will not work right.
             parts = node.rsplit("|", 1)
-            leaf = ":".join(parts.pop().split(":")[1:])
+            leaf = ":".join(parts.pop().split(":")[-1])
             renamed = "|".join(parts + [leaf])
 
             if cmds.objExists(renamed):

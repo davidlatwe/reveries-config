@@ -44,7 +44,8 @@ class ExtractRig(PackageExtractor):
 
                 # - Remove loaded subset's namespace before exporting
                 #   (Not keeping model namespace)
-                for namespace in self.context.data["loadedNamespace"]:
+                loaded_namespaces = self.context.data["loadedNamespace"]
+                for namespace in reversed(sorted(list(loaded_namespaces))):
                     if not cmds.namespace(exists=namespace):
                         continue
                     cmds.namespace(removeNamespace=namespace,
