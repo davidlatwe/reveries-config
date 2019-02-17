@@ -30,7 +30,7 @@ class PlayImageSequence(PackageLoader, avalon.api.Loader):
     ]
 
     representations = [
-        "PNGSequence",
+        "imageSequence",
     ]
 
     def load(self, context, name, namespace, data):
@@ -39,10 +39,8 @@ class PlayImageSequence(PackageLoader, avalon.api.Loader):
 
         directory = self.package_path
 
-        pattern = clique.PATTERNS["frames"]
         files = os.listdir(directory)
         collections, remainder = clique.assemble(files,
-                                                 patterns=[pattern],
                                                  minimum_items=1)
 
         assert not remainder, ("There shouldn't have been a remainder for "
@@ -55,3 +53,27 @@ class PlayImageSequence(PackageLoader, avalon.api.Loader):
         self.log.info("Opening : {}".format(filepath))
 
         open(filepath)
+
+
+class OpenImageSequence(PackageLoader, avalon.api.Loader):
+    """Open Image Sequence with system default"""
+
+    label = "Open sequence"
+    order = -10
+    icon = "folder-open"
+    color = "orange"
+
+    families = [
+        "reveries.imgseq",
+    ]
+
+    representations = [
+        "imageSequence",
+    ]
+
+    def load(self, context, name, namespace, data):
+        directory = self.package_path
+
+        self.log.info("Opening : {}".format(directory))
+
+        open(directory)

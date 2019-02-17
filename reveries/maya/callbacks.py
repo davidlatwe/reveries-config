@@ -6,7 +6,12 @@ from avalon import maya, api as avalon
 
 from .. import utils
 from .lib import set_scene_timeline
-from .pipeline import is_editable, unlock_edit, reset_edit_lock
+from .pipeline import (
+    is_editable,
+    unlock_edit,
+    reset_edit_lock,
+    lock_edit_on_open,
+)
 from .vendor import sticker
 
 from . import PYMEL_MOCK_FLAG
@@ -39,6 +44,7 @@ def on_new(_):
 
 def on_open(_):
     reset_edit_lock()
+    lock_edit_on_open()
     sticker.reveal()  # Show custom icon
 
 

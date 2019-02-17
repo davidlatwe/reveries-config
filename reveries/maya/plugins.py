@@ -25,6 +25,7 @@ from .pipeline import (
     subset_containerising,
     unique_root_namespace,
     update_container,
+    env_embedded_path,
 )
 
 from .hierarchy import (
@@ -60,26 +61,16 @@ def load_plugin(representation):
         cmds.loadPlugin(plugin, quiet=True)
 
 
-def env_embedded_path(path):
-    """Embed environment var `$AVALON_PROJECTS` and `$AVALON_PROJECT` into path
-
-    This will ensure reference or cache path resolvable when project root
-    moves to other place.
-
-    """
-    path = path.replace(
-        avalon.api.registered_root(), "$AVALON_PROJECTS", 1
-    )
-    path = path.replace(
-        avalon.Session["AVALON_PROJECT"], "$AVALON_PROJECT", 1
-    )
-
-    return path
-
-
 class MayaBaseLoader(PackageLoader):
 
     interface = []
+
+    def __init__(self, context):
+        from reveries.maya.pipeline import is_editable
+        if not is_editable():
+            raise Exception("All nodes has been locked, you may not change "
+                            "anything.")
+        super(MayaBaseLoader, self).__init__(context)
 
     def file_path(self, representation):
         file_name = representation["data"]["entryFileName"]

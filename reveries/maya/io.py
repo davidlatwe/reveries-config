@@ -348,6 +348,9 @@ def export_alembic(file,
 
 
 def export_gpu(out_path, startFrame, endFrame):
+    # Ensure alembic exporter is loaded
+    cmds.loadPlugin("gpuCache", quiet=True)
+
     cmds.gpuCache(cmds.ls(sl=True, long=True),
                   startTime=startFrame,
                   endTime=endFrame,

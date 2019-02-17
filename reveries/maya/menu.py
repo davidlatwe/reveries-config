@@ -30,6 +30,9 @@ import reveries.maya.tools
 reveries.maya.tools.show('mayalookassigner')
 """)
 
+        cmds.menuItem("Swap Modle",
+                      command=interactive.swap_to_published_model)
+
         # System
         cmds.menuItem("Load PyMel", parent="System", command="""
 import sys, os

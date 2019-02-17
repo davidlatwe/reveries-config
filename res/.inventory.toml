@@ -10,6 +10,10 @@ handles = 1
 edit_in = 101
 edit_out = 200
 
+[role]
+admin = [
+]
+
 [pipeline]
 [pipeline.maya]
 pointcache = [

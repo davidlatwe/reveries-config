@@ -10,10 +10,13 @@ except ImportError:
 
 from datetime import datetime
 
+from avalon import io
+
 from maya import cmds, mel
 from maya.api import OpenMaya as om
-from ..utils import _C4Hasher
-from . import lib
+from ..utils import _C4Hasher, get_representation_path_
+from .pipeline import get_interface_from_container, env_embedded_path
+from . import lib, capsule
 
 
 def _hash_MPoint(x, y, z, w):
@@ -564,22 +567,81 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
         padding_str = "#" * cmds.getAttr("defaultRenderGlobals"
                                          ".extensionPadding")
 
-        cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
-                     prefix,
-                     type="string")
+        with capsule.maintained_modification():
+            cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
+                         prefix,
+                         type="string")
 
-        output_prefix = cmds.renderSettings(
-            genericFrameImageName=padding_str,
-            layer=layer,
-            camera=camera,
-            customTokenString="RenderPass=" + renderpass)[0]
+            output_prefix = cmds.renderSettings(
+                genericFrameImageName=padding_str,
+                layer=layer,
+                camera=camera,
+                customTokenString="RenderPass=" + renderpass)[0]
 
-        cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
-                     current_prefix,
-                     type="string")
+            cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
+                         current_prefix,
+                         type="string")
 
     if is_animated and on_frame is not None:
         frame_str = "%%0%dd" % len(padding_str) % on_frame
         output_prefix = output_prefix.replace(padding_str, frame_str)
 
     return output_prefix
+
+
+def update_dependency(container):
+    """Update subset data and references
+
+    This is for updating dependencies and relink them to assets in current
+    project for the loaded subset that was originally moved from other project.
+
+    You need to manually update the representation id value in container before
+    using this function.
+
+    """
+
+    representation_id = cmds.getAttr(container + ".representation")
+    representation_id = io.ObjectId(representation_id)
+
+    representation = io.find_one({"_id": representation_id})
+
+    if representation is None:
+        raise Exception("Representation not found.")
+
+    version, subset, asset, project = io.parenthood(representation)
+
+    interface = get_interface_from_container(container)
+
+    cmds.setAttr(interface + ".assetId", str(asset["_id"]), type="string")
+    cmds.setAttr(interface + ".subsetId", str(subset["_id"]), type="string")
+    cmds.setAttr(interface + ".versionId", str(version["_id"]), type="string")
+
+    # Update Reference path
+    reference_node = next(iter(cmds.ls(cmds.sets(container, query=True),
+                                       type="reference")), None)
+
+    if reference_node is None:
+        # No reference to update
+        return
+
+    package_path = get_representation_path_(representation,
+                                            (version, subset, asset, project))
+
+    file_type = representation["name"]
+    if file_type == "FBXCache":
+        file_type = "FBX"
+    elif file_type in ("GPUCache", "LookDev"):
+        file_type = "MayaAscii"
+
+    file_name = representation["data"]["entryFileName"]
+    entry_path = os.path.join(package_path, file_name)
+
+    if not os.path.isfile(entry_path):
+        raise IOError("File Not Found: {!r}".format(entry_path))
+
+    entry_path = env_embedded_path(entry_path)
+
+    cmds.file(entry_path,
+              loadReference=reference_node,
+              type=file_type,
+              defaultExtensions=False)

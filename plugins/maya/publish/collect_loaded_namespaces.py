@@ -21,7 +21,11 @@ class CollectLoadedNamespaces(pyblish.api.InstancePlugin):
         loaded_namespace = set()
         loaded_content = set()
 
-        for container in context.data["RootContainers"].values():
+        all_containers = dict()
+        all_containers.update(context.data["RootContainers"])
+        all_containers.update(context.data["SubContainers"])
+
+        for container in all_containers.values():
 
             group = container["subsetGroup"]
             members = cmds.sets(container["objectName"], query=True)

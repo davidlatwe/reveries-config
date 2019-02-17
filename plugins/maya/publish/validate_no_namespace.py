@@ -18,7 +18,7 @@ class ValidateNoNamespace(pyblish.api.InstancePlugin):
         "reveries.rig",
         "reveries.look",
     ]
-    order = pyblish.api.ValidatorOrder + 0.45
+    order = pyblish.api.ValidatorOrder
     hosts = ["maya"]
     label = "No Namespaces"
     actions = [

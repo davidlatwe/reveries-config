@@ -7,6 +7,7 @@ from avalon.maya.pipeline import (
     AVALON_CONTAINER_ID,
     AVALON_CONTAINERS,
     containerise,
+    is_locked,
 )
 from maya import cmds
 from . import lib
@@ -64,6 +65,30 @@ def unlock_edit():
     """
     lib.restore_lock_state(_node_lock_state["_"])
     reset_edit_lock()
+
+
+def lock_edit_on_open():
+    publish_on_lock = [cmds.getAttr(node_attr)
+                       for node_attr in cmds.ls("*.publishOnLock")]
+    if is_locked() and any(publish_on_lock):
+        lock_edit()
+
+
+def env_embedded_path(path):
+    """Embed environment var `$AVALON_PROJECTS` and `$AVALON_PROJECT` into path
+
+    This will ensure reference or cache path resolvable when project root
+    moves to other place.
+
+    """
+    path = path.replace(
+        avalon.api.registered_root(), "$AVALON_PROJECTS", 1
+    )
+    path = path.replace(
+        avalon.Session["AVALON_PROJECT"], "$AVALON_PROJECT", 1
+    )
+
+    return path
 
 
 def subset_group_name(namespace, name):

@@ -531,10 +531,9 @@ def lsAttrs(attrs, namespace=None):
         attrs (dict): Name and value pairs of expected matches
 
     Example:
-        >> lsAttr("age")  # Return nodes with attribute `age`
-        >> lsAttr({"age": 5})  # Return nodes with an `age` of 5
+        >> lsAttrs({"age": 5})  # Return nodes with an `age` of 5
         >> # Return nodes with both `age` and `color` of 5 and blue
-        >> lsAttr({"age": 5, "color": "blue"})
+        >> lsAttrs({"age": 5, "color": "blue"})
 
     Returns a list.
 
