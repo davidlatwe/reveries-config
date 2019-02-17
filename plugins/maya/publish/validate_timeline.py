@@ -32,7 +32,7 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
     @context_process
     def process(self, context):
 
-        asset_name = self.swap_asset(context)
+        asset_name = self.swap_to_turntable_if_there_is_one(context)
 
         project = context.data["projectDoc"]
         start_frame, end_frame, fps = utils.compose_timeline_data(project,
@@ -63,13 +63,17 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
         if is_invalid:
             raise ValueError("Timeline does not match with project settings.")
 
-    def swap_asset(self, context):
+    @classmethod
+    def swap_to_turntable_if_there_is_one(cls, context):
         for instance in context:
             families = instance.data.get("families", [])
+
             if "reveries.imgseq.turntable" in families:
+                cls.log.info("Get timeline data from turntable.")
+
                 return "LookDevStage"
 
     @classmethod
     def fix(cls, context):
-        asset_name = cls.swap_asset(context)
+        asset_name = cls.swap_to_turntable_if_there_is_one(context)
         set_scene_timeline(asset_name=asset_name)

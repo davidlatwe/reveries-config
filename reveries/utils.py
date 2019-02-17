@@ -76,8 +76,11 @@ def get_timeline_data(project=None, asset_name=None):
     """
     if project is None:
         project = avalon.io.find_one({"type": "project"})
-    asset = asset_name or avalon.Session["AVALON_ASSET"]
-    asset = avalon.io.find_one({"name": asset, "type": "asset"})
+    asset_name = asset_name or avalon.Session["AVALON_ASSET"]
+    asset = avalon.io.find_one({"name": asset_name, "type": "asset"})
+
+    assert asset is not None, ("Asset {!r} not found, this is a bug."
+                               "".format(asset_name))
 
     def get(key):
         return asset["data"].get(key, project["data"][key])
