@@ -21,16 +21,22 @@ def install():
 
         cmds.menuItem("Snap!", command=interactive.active_view_snapshot)
 
+        cmds.menuItem("LookDev",
+                      label="LookDev",
+                      tearOff=True,
+                      subMenu=True,
+                      parent=self._menu)
+
 #        cmds.menuItem("V-Ray Attributes", command="""
 # import reveries.maya.tools
 # reveries.maya.tools.show('vray_attrs_setter')
 # """)
-        cmds.menuItem("Look Assigner", command="""
+        cmds.menuItem("Look Assigner", parent="LookDev", command="""
 import reveries.maya.tools
 reveries.maya.tools.show('mayalookassigner')
 """)
 
-        cmds.menuItem("Swap Modle",
+        cmds.menuItem("Swap Modle", parent="LookDev",
                       command=interactive.swap_to_published_model)
 
         # System
