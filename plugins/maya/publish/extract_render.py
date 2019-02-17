@@ -65,22 +65,32 @@ class ExtractRender(DelegatablePackageExtractor):
     def add_sequence(self, seq_dir, seq_name, repr_dir):
         """
         """
-        self.log.debug("Collecting sequence from: %s" % seq_dir)
+        self.log.info("Collecting sequence from: %s" % seq_dir)
+        assert os.path.isdir(seq_dir), "Sequence dir not exists."
         files = os.listdir(seq_dir)
 
         # (NOTE) Did not consider frame step (byFrame)
         start_frame = self.data["startFrame"]
         end_frame = self.data["endFrame"]
-        length = end_frame - start_frame + 1
-        collections, _ = clique.assemble(files, minimum_items=length)
+        length = int(end_frame) - int(start_frame) + 1
+        self.log.info("Start Frame: {}".format(start_frame))
+        self.log.info("End Frame: {}".format(end_frame))
+        self.log.info("Length: {}".format(length))
 
-        assert len(collections) == 1, ("Extraction failed, possible "
-                                       "insufficient sequence length.")
+        collections, _ = clique.assemble(files, minimum_items=length)
+        collection_count = len(collections)
+
+        assert collection_count == 1, ("Extraction failed, possible "
+                                       "insufficient sequence length. "
+                                       "Collected {} collections."
+                                       "".format(collection_count))
 
         sequence = collections[0]
+        sequence_len = len(sequence.indexes)
 
-        assert len(sequence.indexes) == length, ("Sequence length not match, "
-                                                 "this is a bug.")
+        assert sequence_len == length, ("Sequence length not match, possible "
+                                        "sequence too long ? Collected"
+                                        " {} frames.".format(sequence_len))
 
         entry_fname = (sequence.head +
                        "%%0%dd" % sequence.padding +
