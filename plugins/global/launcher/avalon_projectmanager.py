@@ -17,8 +17,8 @@ class ProjectManagerAction(api.Action):
                               projection={"data.role.admin": True})
 
         if project is not None:
-            admin = project["data"]["role"]["admin"]
             user = getpass.getuser().lower()
+            admin = project["data"].get("role", {}).get("admin", [user])
 
             if user not in admin:
                 return False
