@@ -69,7 +69,7 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
         # Sorting instances via using `data.publishOrder` as prim key
         ordering = (lambda data: (data.get("publishOrder", 0),
                                   data["family"],
-                                  data.get("name", ""),
+                                  data["subset"],
                                   data["objectName"],
                                   ))
 
@@ -83,13 +83,12 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
 
             # Create the instance
             self.log.info("Creating instance for {}".format(objset))
-            name = cmds.ls(objset, long=False)[0]   # use short name
-            instance = context.create_instance(data.get("name", name))
+            instance = context.create_instance(data["subset"])
             instance[:] = cmds.ls(members, long=True)
             instance.data.update(data)
 
             # Produce diagnostic message for any graphical
             # user interface interested in visualising it.
-            self.log.info("Found: \"%s\" " % instance.data["name"])
+            self.log.info("Found: \"%s\" " % instance.name)
 
         return context
