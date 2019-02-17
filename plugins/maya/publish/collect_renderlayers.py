@@ -239,7 +239,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             version = io.find_one({"type": "version",
                                    "parent": subset_doc["_id"]},
                                   {"name": True},
-                                  sort=(["name", -1]))
+                                  sort=[("name", -1)])
 
             instance.data["futureDependencies"][subset_name] = version["_id"]
 
