@@ -11,6 +11,8 @@ class PublishReports(pyblish.api.ContextPlugin):
     order = pyblish.api.IntegratorOrder + 0.49999
 
     def process(self, context):
+        assert all(result["success"] for result in context.data["results"]), (
+            "Atomicity not held, aborting.")
 
         project = avalon.api.Session["AVALON_PROJECT"]
         silo = avalon.api.Session["AVALON_SILO"]
@@ -24,6 +26,9 @@ class PublishReports(pyblish.api.ContextPlugin):
         self.log.info("")
 
         for instance in context:
+            if not instance.data.get("publish", True):
+                continue
+
             subset = instance.data["subset"]
             version = instance.data["versionNext"]
 
