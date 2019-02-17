@@ -12,4 +12,9 @@ class LookCreator(avalon.maya.Creator):
     icon = "paint-brush"
 
     def process(self):
+        from maya import cmds
+
+        renderlayer = cmds.editRenderLayerGlobals(query=True,
+                                                  currentRenderLayer=True)
+        self.data["renderlayer"] = renderlayer
         return put_instance_icon(super(LookCreator, self).process())

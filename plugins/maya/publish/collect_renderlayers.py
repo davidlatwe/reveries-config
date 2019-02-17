@@ -227,11 +227,21 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         instance.data["renderCam"] = render_cam
 
         # Collect lookDev version when scene locked for dependency tracking
-        # (TODO) should collect for each renderlayer
         if maya.is_locked():
+            layer = instance.data["renderlayer"]
             instances = lib.lsAttrs({"id": "pyblish.avalon.instance",
-                                     "family": "reveries.look"})
+                                     "family": "reveries.look",
+                                     "renderlayer": layer})
+
+            assert len(instances), ("Look instance does not match to any "
+                                    "renderlayer, this is a bug.")
+            assert len(instances) == 1, ("Look instance matched with multiple "
+                                         "renderlayer, this is a bug.")
+
             subset_name = cmds.getAttr(instances[0] + ".subset")
+            self.log.debug("Renderlayer: " + layer)
+            self.log.debug("Look: " + subset_name)
+
             asset_doc = instance.context.data["assetDoc"]
             subset_doc = io.find_one({"type": "subset",
                                       "parent": asset_doc["_id"],
