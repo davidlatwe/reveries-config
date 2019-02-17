@@ -22,3 +22,6 @@ class ValidateRenderSettings(pyblish.api.InstancePlugin):
         for aov, path in outputs.items():
             self.log.debug("AOV: %s" % aov)
             self.log.debug("    %s" % path)
+
+        # (TODO) Validate rendering range and frame ext format
+        #        validate animation enabled or not (single frame)
