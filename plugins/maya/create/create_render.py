@@ -74,6 +74,7 @@ class RenderCreator(avalon.maya.Creator):
         self.data["deadlineGroup"] = deadline["group"]
 
         self.data["renderType"] = variant
+        self.data["publishOnLock"] = not variant == "batchrender"
         self.data["publishOrder"] = 999
 
         instance = super(RenderCreator, self).process()
@@ -81,5 +82,7 @@ class RenderCreator(avalon.maya.Creator):
         # (TODO) Currently, force using Deadline to render
         if not variant == "playblast":
             cmds.setAttr(instance + ".deadlineEnable", lock=True)
+
+        cmds.setAttr(instance + ".publishOnLock", lock=True)
 
         return put_instance_icon(instance)

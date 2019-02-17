@@ -4,16 +4,8 @@ from maya import cmds
 from collections import OrderedDict
 
 import pyblish.api
-import avalon.maya
 from reveries.plugins import context_process
 from reveries.maya import lib, utils
-
-
-def publish_on_lock(instance):
-    """Block instance if scene is not locked"""
-    if not avalon.maya.is_locked():
-        instance.data["optional"] = False
-        instance.data["publish"] = False
 
 
 def set_extraction_type(instance):
@@ -46,6 +38,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             "deadlinePool",
             "deadlineGroup",
             "deadlinePriority",
+            "publishOnLock",
         ]
         return {k: lib.query_by_renderlayer(self.instance_node,
                                             k,
@@ -78,7 +71,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         workspace = context.data["workspaceDir"]
         context.data["outputDir"] = os.path.join(workspace, "renders")
 
-        context.data["_has_privileged_instance"] = True
         # Are there other renderlayer than defaultRenderLayer ?
         context.data["hasRenderLayers"] = len(valid_layers) > 1
         # Using Render Setup system ?
@@ -134,10 +126,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["dependencies"] = dict()
             instance.data["futureDependencies"] = dict()
 
-            # By default, image sequence can be published no matter scene is
-            # locked or not.
-            instance.data["_privilege_on_lock"] = True
-
             instance.data["family"] = "reveries.imgseq"
             instance.data["families"] = list()
             variate = getattr(self, "process_" + instance.data["renderType"])
@@ -146,8 +134,9 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             # Collect renderlayer members
 
             members = cmds.editRenderLayerMembers(layer, query=True) or []
+            members = cmds.ls(members, long=True)
 
-            instance.data["renderLayerMember"] = cmds.ls(members, long=True)
+            instance.data["renderLayerMember"] = members
             descendent = cmds.listRelatives(members, allDescendents=True) or []
             members += descendent
 
@@ -199,7 +188,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         # Inject shadow family
         instance.data["families"] = ["reveries.imgseq.playblast"]
         instance.data["category"] = "Playblast"
-        publish_on_lock(instance)
 
         # Assign contractor
         if instance.data["deadlineEnable"]:
@@ -222,7 +210,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         # Inject shadow family
         instance.data["families"] = ["reveries.imgseq.turntable"]
         instance.data["category"] = "Turntable: " + instance.data["renderer"]
-        publish_on_lock(instance)
 
         # Assign contractor
         if instance.data["deadlineEnable"]:

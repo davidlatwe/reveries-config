@@ -65,6 +65,13 @@ class MayaBaseLoader(PackageLoader):
 
     interface = []
 
+    def __init__(self, context):
+        from reveries.maya.pipeline import is_editable
+        if not is_editable():
+            raise Exception("All nodes has been locked, you may not change "
+                            "anything.")
+        super(MayaBaseLoader, self).__init__(context)
+
     def file_path(self, representation):
         file_name = representation["data"]["entryFileName"]
         entry_path = os.path.join(self.package_path, file_name)
