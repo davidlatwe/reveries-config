@@ -4,6 +4,7 @@ from maya import cmds
 from collections import OrderedDict
 
 import pyblish.api
+from avalon import io, maya
 from reveries.plugins import context_process
 from reveries.maya import lib, utils
 
@@ -224,6 +225,23 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         renderable_cam = set(lib.ls_renderable_cameras(layer))
         render_cam = list(instance_cam.intersection(renderable_cam))
         instance.data["renderCam"] = render_cam
+
+        # Collect lookDev version when scene locked for dependency tracking
+        # (TODO) should collect for each renderlayer
+        if maya.is_locked():
+            instances = lib.lsAttrs({"id": "pyblish.avalon.instance",
+                                     "family": "reveries.look"})
+            subset_name = cmds.getAttr(instances[0] + ".subset")
+            asset_doc = instance.context.data["assetDoc"]
+            subset_doc = io.find_one({"type": "subset",
+                                      "parent": asset_doc["_id"],
+                                      "name": subset_name})
+            version = io.find_one({"type": "version",
+                                   "parent": subset_doc["_id"]},
+                                  {"name": True},
+                                  sort=(["name", -1]))
+
+            instance.data["futureDependencies"][subset_name] = version["_id"]
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)
