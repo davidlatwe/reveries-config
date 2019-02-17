@@ -11,7 +11,6 @@ class ValidateSingleCamera(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Single Camera"
     families = [
-        "reveries.imgseq",
         "reveries.camera",
     ]
 
