@@ -73,6 +73,13 @@ class Terminal(api.Action):
         env.update(app["environment"])
         executable = lib.which(app["executable"])
 
+        cwd = session["AVALON_PROJECTS"]
+
+        if not os.path.isdir(cwd):
+            self.log.error("The path of `cwd` is not a directory: "
+                           "{!r}".format(cwd))
+            return
+
         return lib.launch(executable=executable,
                           args=[],
                           environment=env,
