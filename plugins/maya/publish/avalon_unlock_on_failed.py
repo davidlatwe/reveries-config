@@ -17,7 +17,7 @@ class UnlockSceneOnFailed(pyblish.api.ContextPlugin):
             publish_on_lock = any(i.data.get("publishOnLock") for i in context)
 
             if publish_on_lock:
-                self.log.warning("Publish on lock failed, remain locked.")
+                self.log.info("Publish on lock failed, remain locked.")
                 return
 
             self.log.info("Publish failed, scene unlocked.")
