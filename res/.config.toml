@@ -5,19 +5,22 @@ name = "maya2018"
 label = "Maya 2018"
 
 [[tasks]]
-name = "model"
+name = "modeling"
 
 [[tasks]]
-name = "render"
-
-[[tasks]]
-name = "animate"
-
-[[tasks]]
-name = "rig"
+name = "rigging"
 
 [[tasks]]
 name = "lookdev"
+
+[[tasks]]
+name = "charFX"
+
+[[tasks]]
+name = "setdressing"
+
+[[tasks]]
+name = "animating"
 
 [[tasks]]
 name = "layout"
