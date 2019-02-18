@@ -23,7 +23,8 @@ def on_task_changed(_, *args):
     utils.init_app_workdir()
     maya.pipeline._on_task_changed()
 
-    set_scene_timeline()
+    if not cmds.file(query=True, sceneName=True):
+        set_scene_timeline()
 
 
 def on_init(_):
