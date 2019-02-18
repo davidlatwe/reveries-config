@@ -1,4 +1,13 @@
+"""For remote publish in contractor environment
 
+Currently used for publishing in Deadline machines.
+
+(NOTE) This script is located by avalon-config module relative path, so if
+module was loaded from local environment, the script path sent to Deadline
+will be local path which highly possible not be able to access by Deadline
+slaves.
+
+"""
 import copy
 import logging
 import pyblish.api
