@@ -24,7 +24,7 @@ class AvalonLockNodes(pyblish.api.ContextPlugin):
                 self.log.info("All nodes already locked.")
                 return
 
-            self.log.warning("Locking all nodes.")
+            self.log.info("Locking all nodes.")
             lock_edit()
 
         else:

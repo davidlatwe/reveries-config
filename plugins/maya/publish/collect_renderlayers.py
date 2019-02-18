@@ -168,9 +168,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             aov_names = utils_.get_arnold_aov_names(layer)
 
         else:
-            aov_names = []
-
-        aov_names.append("")
+            aov_names = [""]
 
         output_dir = instance.context.data["outputDir"]
 
@@ -205,14 +203,14 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         """
         self.log.debug("Renderlayer: " + layer)
 
-        lookdev = lib.lsAttrs({"id": "pyblish.avalon.instance",
-                               "family": "reveries.look",
-                               "renderlayer": layer})
+        lookdevs = lib.lsAttrs({"id": "pyblish.avalon.instance",
+                                "family": "reveries.look",
+                                "renderlayer": layer})
         lookdev_name = ""
         # There should be only one matched lookdev instance.
         # But let's not make this assumption here.
-        for instance in lookdev:
-            lookdev_name = cmds.getAttr(instance + ".subset")
+        for lookdev in lookdevs:
+            lookdev_name = cmds.getAttr(lookdev + ".subset")
             self.log.debug("Look: " + lookdev_name)
 
         # Update subset name with lookDev name
@@ -235,8 +233,14 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                                       "name": lookdev_name})
 
             if subset_doc is not None:  # Collector should never failed.
+                project_name = instance.context.data["projectDoc"]["name"]
+                source = instance.context.data["currentMaking"]
+                source = source.split(project_name, 1)[-1].replace("\\", "/")
+                source = {"$regex": "/*{}".format(source), "$options": "i"}
+
                 version = io.find_one({"type": "version",
-                                       "parent": subset_doc["_id"]},
+                                       "parent": subset_doc["_id"],
+                                       "data.source": source},
                                       {"name": True},
                                       sort=[("name", -1)])
 

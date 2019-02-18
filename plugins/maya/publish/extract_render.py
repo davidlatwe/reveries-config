@@ -35,14 +35,11 @@ class ExtractRender(DelegatablePackageExtractor):
 
         # Assume the rendering has been completed at this time being,
         # start to check and extract the rendering outputs
-        aov_name = ""
-
-        # Collect output path
-        output_path = self.data["outputPaths"][aov_name]
+        aov_name, aov_path = next(iter(self.data["outputPaths"].items()))
 
         # Check image sequence length to ensure that the extraction did
         # not interrupted.
-        seq_dir = os.path.dirname(output_path)
+        seq_dir = os.path.dirname(aov_path)
         self.add_sequence(seq_dir, aov_name, repr_dir)
 
     @skip_stage

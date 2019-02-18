@@ -449,9 +449,33 @@ def get_render_filename_prefix(layer=None):
                                         "fileNamePrefix",
                                         layer)
     else:
-        return lib.query_by_renderlayer("defaultRenderGlobals",
-                                        "imageFilePrefix",
-                                        layer)
+        prefix = lib.query_by_renderlayer("defaultRenderGlobals",
+                                          "imageFilePrefix",
+                                          layer)
+        if renderer == "arnold" and "<RenderPass>" not in prefix:
+            prefix = "/".join(["<RenderPass>", prefix])
+
+        return prefix
+
+
+def get_render_resolution(layer=None):
+    renderer = get_renderer_by_layer(layer)
+
+    if renderer == "vray":
+        width = lib.query_by_renderlayer("vraySettings",
+                                         "width",
+                                         layer)
+        height = lib.query_by_renderlayer("vraySettings",
+                                          "height",
+                                          layer)
+    else:
+        width = lib.query_by_renderlayer("defaultResolution",
+                                         "width",
+                                         layer)
+        height = lib.query_by_renderlayer("defaultResolution",
+                                          "height",
+                                          layer)
+    return width, height
 
 
 def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
