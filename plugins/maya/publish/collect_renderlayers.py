@@ -205,14 +205,14 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         """
         self.log.debug("Renderlayer: " + layer)
 
-        lookdev = lib.lsAttrs({"id": "pyblish.avalon.instance",
-                               "family": "reveries.look",
-                               "renderlayer": layer})
+        lookdevs = lib.lsAttrs({"id": "pyblish.avalon.instance",
+                                "family": "reveries.look",
+                                "renderlayer": layer})
         lookdev_name = ""
         # There should be only one matched lookdev instance.
         # But let's not make this assumption here.
-        for instance in lookdev:
-            lookdev_name = cmds.getAttr(instance + ".subset")
+        for lookdev in lookdevs:
+            lookdev_name = cmds.getAttr(lookdev + ".subset")
             self.log.debug("Look: " + lookdev_name)
 
         # Update subset name with lookDev name
