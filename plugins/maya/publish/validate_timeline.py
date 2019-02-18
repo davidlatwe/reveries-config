@@ -13,6 +13,12 @@ class RepairInvalid(RepairContextAction):
 
 class ValidateTimeline(pyblish.api.InstancePlugin):
     """Valides the frame ranges and fps.
+
+    * FPS must have same settings with the value defined in project document.
+
+    * Frame range will be fine as long as the timeline in scene is wider
+      than the range defined in project document.
+
     """
 
     label = "Validate Timeline"
@@ -35,22 +41,22 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
         asset_name = self.swap_to_turntable_if_there_is_one(context)
 
         project = context.data["projectDoc"]
-        start_frame, end_frame, fps = utils.compose_timeline_data(project,
-                                                                  asset_name)
+        proj_start, proj_end, fps = utils.compose_timeline_data(project,
+                                                                asset_name)
 
-        start = context.data.get("startFrame")
-        end = context.data.get("endFrame")
+        scene_start = context.data.get("startFrame")
+        scene_end = context.data.get("endFrame")
         scene_fps = context.data.get("fps")
 
         # Check if any of the values are present
-        if any(value is None for value in (start, end)):
+        if any(value is None for value in (scene_start, scene_end)):
             raise ValueError("No time values for this context. This is a bug."
                              "(Missing `startFrame` or `endFrame`)")
 
         is_invalid = False
-        # raise error if start/end frame are not consistent with the
-        # settings on database.
-        if start_frame != start or end_frame != end:
+        # Raise error if scene_start/scene_end are not enough to include the
+        # frame range settings in database.
+        if proj_start > scene_start or proj_end < scene_end:
             is_invalid = True
             self.log.error("Start/End frame not consistent with project "
                            "settings.")
@@ -71,9 +77,12 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
             if "reveries.imgseq.turntable" in families:
                 cls.log.info("Get timeline data from turntable.")
 
+                # (NOTE) The turntable asset name is hardcoded here,
+                #        better not to do this.
                 return "LookDevStage"
 
     @classmethod
     def fix(cls, context):
         asset_name = cls.swap_to_turntable_if_there_is_one(context)
-        set_scene_timeline(asset_name=asset_name)
+        strict = False if asset_name is None else True
+        set_scene_timeline(asset_name=asset_name, strict=strict)
