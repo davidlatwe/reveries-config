@@ -168,9 +168,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             aov_names = utils_.get_arnold_aov_names(layer)
 
         else:
-            aov_names = []
-
-        aov_names.append("")
+            aov_names = [""]
 
         output_dir = instance.context.data["outputDir"]
 

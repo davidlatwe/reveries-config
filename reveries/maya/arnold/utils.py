@@ -32,7 +32,13 @@ def get_arnold_aov_nodes(layer=None):
 def get_arnold_aov_names(layer=None):
     """
     """
+    create_options()
+    merge_aov = cmds.getAttr("defaultArnoldDriver.mergeAOVs")
+
     aov_names = [cmds.getAttr(aov + ".name")
-                 for aov in get_arnold_aov_nodes(layer)] + ["beauty"]
+                 for aov in get_arnold_aov_nodes(layer)]
+
+    if not merge_aov:
+        aov_names += ["beauty"]
 
     return aov_names
