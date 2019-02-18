@@ -233,8 +233,14 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                                       "name": lookdev_name})
 
             if subset_doc is not None:  # Collector should never failed.
+                project_name = instance.context.data["projectDoc"]["name"]
+                source = instance.context.data["currentMaking"]
+                source = source.split(project_name, 1)[-1].replace("\\", "/")
+                source = {"$regex": "/*{}".format(source), "$options": "i"}
+
                 version = io.find_one({"type": "version",
-                                       "parent": subset_doc["_id"]},
+                                       "parent": subset_doc["_id"],
+                                       "data.source": source},
                                       {"name": True},
                                       sort=[("name", -1)])
 
