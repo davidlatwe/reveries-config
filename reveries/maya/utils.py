@@ -454,6 +454,26 @@ def get_render_filename_prefix(layer=None):
                                         layer)
 
 
+def get_render_resolution(layer=None):
+    renderer = get_renderer_by_layer(layer)
+
+    if renderer == "vray":
+        width = lib.query_by_renderlayer("vraySettings",
+                                         "width",
+                                         layer)
+        height = lib.query_by_renderlayer("vraySettings",
+                                          "height",
+                                          layer)
+    else:
+        width = lib.query_by_renderlayer("defaultResolution",
+                                         "width",
+                                         layer)
+        height = lib.query_by_renderlayer("defaultResolution",
+                                          "height",
+                                          layer)
+    return width, height
+
+
 def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
     """
     """
