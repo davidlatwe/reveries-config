@@ -1,7 +1,7 @@
 
 import pyblish.api
 
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 from reveries.maya import lib
 
 
@@ -18,7 +18,7 @@ class ValidateTransformDisplay(pyblish.api.InstancePlugin):
     families = ["reveries.model"]
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidAction,
+        MayaSelectInvalidInstanceAction,
     ]
 
     @classmethod

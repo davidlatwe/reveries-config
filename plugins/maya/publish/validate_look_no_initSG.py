@@ -1,7 +1,7 @@
 
 import pyblish.api
 
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
 DEFAULT_SHADERS = (
@@ -26,7 +26,7 @@ class ValidateLookNoInitSG(pyblish.api.InstancePlugin):
 
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidAction,
+        MayaSelectInvalidInstanceAction,
     ]
 
     @classmethod

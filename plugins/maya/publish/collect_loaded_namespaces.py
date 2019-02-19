@@ -26,6 +26,9 @@ class CollectLoadedNamespaces(pyblish.api.InstancePlugin):
         all_containers.update(context.data["SubContainers"])
 
         for container in all_containers.values():
+            if container.get("loader") == "LookLoader":
+                # lookDev does not have `subsetGroup`
+                continue
 
             group = container["subsetGroup"]
             members = cmds.sets(container["objectName"], query=True)

@@ -2,10 +2,10 @@ from maya import cmds
 
 import pyblish.api
 from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
-class SelectInvalid(MayaSelectInvalidAction):
+class SelectInvalid(MayaSelectInvalidInstanceAction):
 
     label = "Select Locked"
 
@@ -58,7 +58,7 @@ class ValidateNormalsUnlocked(pyblish.api.Validator):
                              "locked normals: {0}".format(invalid))
 
     @classmethod
-    def fix(cls, instance):
+    def fix_invalid(cls, instance):
         """Unlocks all normals on the meshes in this instance."""
         invalid = cls.get_invalid(instance)
         for mesh in invalid:

@@ -794,7 +794,34 @@ def _get_errored_plugins_from_data(context):
     return plugins
 
 
-class RepairInstanceAction(pyblish.api.Action):
+class OnSymptomAction(pyblish.api.Action):
+    """Action baseclass that able to work with validation plugin via `symptom`
+
+    The action will try to find the corresponded class method in Plugin by the
+    `symptom` and `_prefix` attribute in Action class.
+
+    """
+    label = None
+    on = None
+    icon = None
+    _prefix = None
+    symptom = ""
+
+    def _get_action(self, plugin):
+        symptom = ("_" + self.symptom) if self.symptom else ""
+        action_name = self._prefix + symptom
+        if not hasattr(plugin, action_name):
+            raise RuntimeError("Plug-in does not have {!r} method."
+                               "".format(action_name))
+
+        return getattr(plugin, action_name)
+
+
+_FIX = "fix_invalid"
+_GET = "get_invalid"
+
+
+class RepairInstanceAction(OnSymptomAction):
     """Repair instances
 
     To process the repairing this requires a `fix(instance)` classmethod
@@ -802,13 +829,15 @@ class RepairInstanceAction(pyblish.api.Action):
 
     """
     label = "Repair"
-    on = "failed"  # This action is only available on a failed plug-in
-    icon = "wrench"  # Icon from Awesome Icon
+    on = "failed"
+    icon = "wrench"
+
+    _prefix = _FIX
+    symptom = ""
 
     def process(self, context, plugin):
 
-        if not hasattr(plugin, "fix"):
-            raise RuntimeError("Plug-in does not have fix method.")
+        action = self._get_action(plugin)
 
         # Get the errored instances
         self.log.info("Finding failed instances..")
@@ -817,10 +846,10 @@ class RepairInstanceAction(pyblish.api.Action):
         # Apply pyblish.logic to get the instances for the plug-in
         instances = pyblish.api.instances_by_plugin(errored_instances, plugin)
         for instance in instances:
-            plugin.fix(instance)
+            action(instance)
 
 
-class RepairContextAction(pyblish.api.Action):
+class RepairContextAction(OnSymptomAction):
     """Repair context
 
     To process the repairing this requires a `fix()` classmethod
@@ -828,13 +857,15 @@ class RepairContextAction(pyblish.api.Action):
 
     """
     label = "Repair Context"
-    on = "failed"  # This action is only available on a failed plug-in
-    icon = "wrench"  # Icon from Awesome Icon
+    on = "failed"
+    icon = "wrench"
+
+    _prefix = _FIX
+    symptom = ""
 
     def process(self, context, plugin):
 
-        if not hasattr(plugin, "fix"):
-            raise RuntimeError("Plug-in does not have fix method.")
+        action = self._get_action(plugin)
 
         # Get the errored instances
         self.log.info("Finding failed instances..")
@@ -843,10 +874,10 @@ class RepairContextAction(pyblish.api.Action):
         # Apply pyblish.logic to get the instances for the plug-in
         if plugin in errored_plugins:
             self.log.info("Attempting fix ...")
-            plugin.fix(context)
+            action(context)
 
 
-class SelectInvalidAction(pyblish.api.Action):
+class SelectInvalidInstanceAction(OnSymptomAction):
     """Select invalid nodes from instance
 
     To retrieve the invalid nodes this assumes a static `get_invalid()`
@@ -854,12 +885,15 @@ class SelectInvalidAction(pyblish.api.Action):
 
     """
     label = "Select invalid"
-    on = "failed"  # This action is only available on a failed plug-in
-    icon = "search"  # Icon from Awesome Icon
+    on = "failed"
+    icon = "search"
 
+    _prefix = _GET
     symptom = ""
 
     def process(self, context, plugin):
+
+        action = self._get_action(plugin)
 
         errored_instances = _get_errored_instances_from_context(
             context, include_warning=True)
@@ -867,34 +901,24 @@ class SelectInvalidAction(pyblish.api.Action):
         # Apply pyblish.logic to get the instances for the plug-in
         instances = pyblish.api.instances_by_plugin(errored_instances, plugin)
 
-        invalid_getter_name = "get_invalid"
-        if self.symptom:
-            invalid_getter_name = "get_invalid_" + self.symptom
-
-        if not hasattr(plugin, invalid_getter_name):
-            raise RuntimeError("Plug-in does not have {!r} method."
-                               "".format(invalid_getter_name))
-
-        invalid_getter = getattr(plugin, invalid_getter_name)
-
         # Get the invalid nodes for the plug-ins
         self.log.info("Finding invalid nodes..")
         invalid = list()
+
         for instance in instances:
-            invalid_nodes = invalid_getter(instance)
-            if invalid_nodes:
-                if isinstance(invalid_nodes, (list, tuple)):
-                    invalid.extend(invalid_nodes)
-                elif isinstance(invalid_nodes, dict):
-                    invalid.extend(invalid_nodes.keys())
+            invalid_ = action(instance)
+
+            if invalid_:
+                if isinstance(invalid_, (list, tuple)):
+                    invalid.extend(invalid_)
+                elif isinstance(invalid_, dict):
+                    invalid.extend(invalid_.keys())
                 else:
                     self.log.warning("Plug-in returned to be invalid, "
                                      "but has no selectable nodes.")
 
-        # Ensure unique (process each node only once)
-        invalid = list(set(invalid))
-
         if invalid:
+            invalid = list(set(invalid))
             self.log.info("Selecting invalid nodes: %s" % ", ".join(invalid))
             self.select(invalid)
         else:
@@ -908,29 +932,28 @@ class SelectInvalidAction(pyblish.api.Action):
         raise NotImplementedError
 
 
-class SelectInvalidContextAction(SelectInvalidAction):
+class SelectInvalidContextAction(OnSymptomAction):
     """Select invalid nodes from context
 
     To retrieve the invalid nodes this assumes a static `get_invalid()`
     method is available on the plugin.
 
     """
+    label = "Select invalid"
+    on = "failed"
+    icon = "search"
+
+    _prefix = _GET
+    symptom = ""
 
     def process(self, context, plugin):
-        invalid_getter_name = "get_invalid"
-        if self.symptom:
-            invalid_getter_name = "get_invalid_" + self.symptom
 
-        if not hasattr(plugin, invalid_getter_name):
-            raise RuntimeError("Plug-in does not have {!r} method."
-                               "".format(invalid_getter_name))
-
-        invalid_getter = getattr(plugin, invalid_getter_name)
+        action = self._get_action(plugin)
 
         # Get the invalid nodes for the plug-ins
         self.log.info("Finding invalid nodes..")
+        invalid = action(context)
 
-        invalid = invalid_getter(context)
         if invalid:
             if isinstance(invalid, (list, tuple)):
                 pass
@@ -946,3 +969,9 @@ class SelectInvalidContextAction(SelectInvalidAction):
         else:
             self.log.info("No invalid nodes found.")
             self.deselect()
+
+    def select(self, invalid):
+        raise NotImplementedError
+
+    def deselect(self):
+        raise NotImplementedError

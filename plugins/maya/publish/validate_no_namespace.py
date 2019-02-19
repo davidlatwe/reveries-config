@@ -2,7 +2,7 @@
 import pyblish.api
 
 from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
 class RepairInvalid(RepairInstanceAction):
@@ -23,7 +23,7 @@ class ValidateNoNamespace(pyblish.api.InstancePlugin):
     label = "No Namespaces"
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidAction,
+        MayaSelectInvalidInstanceAction,
         pyblish.api.Category("Fix It"),
         RepairInvalid,
     ]
@@ -51,7 +51,7 @@ class ValidateNoNamespace(pyblish.api.InstancePlugin):
         self.log.info("%s <No Namespaces> Passed." % instance)
 
     @classmethod
-    def fix(cls, instance):
+    def fix_invalid(cls, instance):
 
         import pymel.core as pm
 

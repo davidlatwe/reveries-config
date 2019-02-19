@@ -2,10 +2,10 @@
 import pyblish.api
 from avalon.pipeline import AVALON_CONTAINER_ID
 from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
-class SelectInvalid(MayaSelectInvalidAction):
+class SelectInvalid(MayaSelectInvalidInstanceAction):
 
     label = "Select Invalid Meshes"
 
@@ -61,7 +61,7 @@ class ValidateVersionedMeshes(pyblish.api.InstancePlugin):
             raise Exception("Meshes not versioned.")
 
     @classmethod
-    def fix(cls, instance):
+    def fix_invalid(cls, instance):
         from maya import cmds
         for node in cls.get_invalid(instance):
             if cmds.objExists(node):
