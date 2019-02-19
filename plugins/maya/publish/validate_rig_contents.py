@@ -62,7 +62,7 @@ class ValidateRigContents(pyblish.api.InstancePlugin):
     def get_invalid_contorl_member(cls, instance):
         invalid = list()
 
-        for node in cmds.sets("ControlSet", query=True):
+        for node in cmds.ls(cmds.sets("ControlSet", query=True), long=True):
             if not cmds.nodeType(node) == "transform":
                 invalid.append(node)
                 continue
@@ -80,7 +80,7 @@ class ValidateRigContents(pyblish.api.InstancePlugin):
     def get_invalid_out_member(cls, instance):
         invalid = list()
 
-        for node in cmds.sets("OutSet", query=True):
+        for node in cmds.ls(cmds.sets("OutSet", query=True), long=True):
             if not cmds.nodeType(node) == "transform":
                 invalid.append(node)
                 continue
