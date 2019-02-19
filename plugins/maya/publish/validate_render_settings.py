@@ -136,17 +136,17 @@ class ValidateRenderSettings(pyblish.api.InstancePlugin):
             raise Exception("Render settings validation failed.")
 
     @classmethod
-    def fix_range(cls, instance):
+    def fix_invalid_range(cls, instance):
         NotImplemented
 
     @classmethod
-    def fix_resolution(cls, instance):
+    def fix_invalid_resolution(cls, instance):
         NotImplemented
 
     @classmethod
-    def fix_fileprefix(cls, instance):
+    def fix_invalid_fileprefix(cls, instance):
         NotImplemented
 
     @classmethod
-    def fix_ext(cls, instance):
+    def fix_invalid_ext(cls, instance):
         NotImplemented

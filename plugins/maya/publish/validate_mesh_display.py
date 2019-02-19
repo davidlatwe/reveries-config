@@ -1,7 +1,7 @@
 
 import pyblish.api
 
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
 class ValidateShapeDisplay(pyblish.api.InstancePlugin):
@@ -17,7 +17,7 @@ class ValidateShapeDisplay(pyblish.api.InstancePlugin):
     label = "Hidden Shape"
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidAction,
+        MayaSelectInvalidInstanceAction,
     ]
 
     @classmethod

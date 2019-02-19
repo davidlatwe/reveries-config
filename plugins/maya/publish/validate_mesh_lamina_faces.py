@@ -1,7 +1,7 @@
 
 import pyblish.api
 
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
 class ValidateMeshLaminaFaces(pyblish.api.InstancePlugin):
@@ -17,7 +17,7 @@ class ValidateMeshLaminaFaces(pyblish.api.InstancePlugin):
     families = ["reveries.model"]
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidAction,
+        MayaSelectInvalidInstanceAction,
     ]
 
     @classmethod

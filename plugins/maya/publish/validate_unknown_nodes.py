@@ -51,7 +51,7 @@ class ValidateUnknownNodes(pyblish.api.InstancePlugin):
             raise Exception("Scene contain unknown nodes.")
 
     @classmethod
-    def fix(cls, context):
+    def fix_invalid(cls, context):
         """Delete unknown nodes"""
         from maya import cmds
         for item in cls.get_invalid(context):

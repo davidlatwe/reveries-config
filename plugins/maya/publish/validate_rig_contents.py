@@ -3,22 +3,22 @@ import pyblish.api
 
 from maya import cmds
 
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
-class SelectInvalidOutsiders(MayaSelectInvalidAction):
+class SelectInvalidOutsiders(MayaSelectInvalidInstanceAction):
 
     label = "Outsiders"
     symptom = "outsider"
 
 
-class SelectInvalidControls(MayaSelectInvalidAction):
+class SelectInvalidControls(MayaSelectInvalidInstanceAction):
 
     label = "Invalid Controls"
     symptom = "contorl_member"
 
 
-class SelectInvalidOutNodes(MayaSelectInvalidAction):
+class SelectInvalidOutNodes(MayaSelectInvalidInstanceAction):
 
     label = "Invalid Out Nodes"
     symptom = "out_member"

@@ -3,7 +3,7 @@ import pyblish.api
 import maya.cmds as cmds
 
 from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
 class RepairInvalid(RepairInstanceAction):
@@ -49,7 +49,7 @@ class ValidateNoNullTransforms(pyblish.api.InstancePlugin):
     families = ['reveries.model']
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidAction,
+        MayaSelectInvalidInstanceAction,
         pyblish.api.Category("Fix It"),
         RepairInvalid,
     ]
@@ -74,7 +74,7 @@ class ValidateNoNullTransforms(pyblish.api.InstancePlugin):
             raise ValueError("Empty transforms found: {0}".format(invalid))
 
     @classmethod
-    def fix(cls, instance):
+    def fix_invalid(cls, instance):
         """Delete all null transforms.
 
         Note: If the node is used elsewhere (eg. connection to attributes or

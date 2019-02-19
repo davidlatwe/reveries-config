@@ -2,10 +2,10 @@
 import pyblish.api
 
 from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
-class SelectInvalid(MayaSelectInvalidAction):
+class SelectInvalid(MayaSelectInvalidInstanceAction):
 
     label = "Select Bad Named"
 
@@ -95,7 +95,7 @@ class ValidateAttributeNiceName(pyblish.api.InstancePlugin):
                             % instance)
 
     @classmethod
-    def fix(cls, instance):
+    def fix_invalid(cls, instance):
         from maya import cmds
 
         invalid = cls.get_invalid(instance)

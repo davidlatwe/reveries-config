@@ -1,10 +1,10 @@
 
 import pyblish.api
 from avalon.pipeline import AVALON_CONTAINER_ID
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
-class SelectInvalid(MayaSelectInvalidAction):
+class SelectInvalid(MayaSelectInvalidInstanceAction):
 
     label = "Select Invalid Cameras"
 

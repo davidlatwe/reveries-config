@@ -1,9 +1,9 @@
 
 import pyblish.api
-from reveries.maya.plugins import MayaSelectInvalidAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
-class SelectInvalid(MayaSelectInvalidAction):
+class SelectInvalid(MayaSelectInvalidInstanceAction):
 
     label = "Select Invalid Instance"
 

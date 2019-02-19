@@ -16,7 +16,7 @@ from ..utils import get_representation_path_
 from ..plugins import (
     PackageLoader,
     message_box_error,
-    SelectInvalidAction,
+    SelectInvalidInstanceAction,
     SelectInvalidContextAction,
 )
 
@@ -643,7 +643,7 @@ class HierarchicalLoader(MayaBaseLoader):
         return True
 
 
-class MayaSelectInvalidAction(SelectInvalidAction):
+class MayaSelectInvalidInstanceAction(SelectInvalidInstanceAction):
 
     def select(self, invalid):
         from maya import cmds
@@ -655,5 +655,5 @@ class MayaSelectInvalidAction(SelectInvalidAction):
 
 
 class MayaSelectInvalidContextAction(SelectInvalidContextAction,
-                                     MayaSelectInvalidAction):
+                                     MayaSelectInvalidInstanceAction):
     """ Select invalid nodes in context"""

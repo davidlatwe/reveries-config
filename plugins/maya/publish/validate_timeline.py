@@ -82,7 +82,7 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
                 return "LookDevStage"
 
     @classmethod
-    def fix(cls, context):
+    def fix_invalid(cls, context):
         asset_name = cls.swap_to_turntable_if_there_is_one(context)
         strict = False if asset_name is None else True
         set_scene_timeline(asset_name=asset_name, strict=strict)
