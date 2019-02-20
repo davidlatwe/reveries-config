@@ -440,6 +440,24 @@ _uuid_required_node_types = {
         "light",
         "locator",
     },
+    "reveries.xgen": {
+        "transform",
+        # Listed from cmds.listNodeTypes("xgen/spline")
+        # "xgmCurveToSpline",
+        "xgmModifierClump",
+        "xgmModifierCollision",
+        "xgmModifierCut",
+        "xgmModifierDisplacement",
+        "xgmModifierGuide",
+        "xgmModifierLinearWire",
+        "xgmModifierNoise",
+        "xgmModifierScale",
+        "xgmModifierSculpt",
+        "xgmSeExpr",
+        "xgmSplineBase",
+        "xgmSplineCache",
+        "xgmSplineDescription",
+    },
 }
 
 

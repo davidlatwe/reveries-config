@@ -54,6 +54,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         "reveries.camera",
         "reveries.lightset",
         "reveries.mayashare",
+        "reveries.xgen",
     ]
     actions = [
         pyblish.api.Category("Select"),
