@@ -561,6 +561,34 @@ def export_xgen_IGS_preset(description, out_path):
     ascii_tmp = ascii_tmp.format(description)
 
     with capsule.maintained_selection():
+        # (NOTE) This is a note of complain.
+        #
+        #        Maya's preset export tool will not work properly if the
+        #        `exportSelected` UI options has been set to not to export
+        #        history in previous export action. By saying "not work
+        #        properly", it means the exported .xgip file only contains
+        #        an empty description.
+        #
+        #        Here's why...
+        #
+        #        The preset export tool requires to export selected description
+        #        as 'mayaAscii' file first, then read that file and parse the
+        #        related MEL commands and data into .xgip file.
+        #
+        #        So if the exported 'mayaAscii' description file does not
+        #        have the description history, will end up to export an empty
+        #        description.
+        #
+        #        Obviously, the preset export tool in the Interactive Groom
+        #        Editor did not specify to export history when exporting
+        #        selected description to mayaAscii file, but rely on optionVar.
+        #
+        #        Which is, unacceptable.
+        #
+        #        This UX bug trapped me hours, since it does not show any
+        #        message, and because it's based on optionVar, sometimes it
+        #        works and sometime doesn't. Really confusing.
+        #
         cmds.select(description, replace=True)
         cmds.file(ascii_tmp,
                   force=True,
