@@ -577,3 +577,32 @@ def export_xgen_IGS_preset(description, out_path):
                                                  out_path,
                                                  bounding_box,
                                                  removeOriginal=True)
+
+
+def import_xgen_IGS_preset(bound_meshes,
+                           file_path,
+                           mapping_type="uv",
+                           align_to_normal=False):
+    """Import and apply XGen IGS description preset to mesh
+
+    Args:
+        bound_meshes (list or str): A list or a string of bound meshe's
+            transform node name.
+        file_path (str): Preset file path (.xgip).
+        mapping_type (str): Description transfer method. "uv" or "position".
+            Default is "uv".
+        align_to_normal (bool): Orientation, align with new surface normals
+            or use the original in world space. Default `False`.
+
+    """
+    assert os.path.isfile(file_path), "File not exists: {}".format(file_path)
+
+    mapping_types = {"uv", "position"}
+    assert mapping_type in mapping_types, ("Unknown mapping type: {}"
+                                           "".format(mapping_type))
+
+    with capsule.maintained_selection():
+        cmds.select(bound_meshes, replace=True)
+        xgmSplinePreset.PresetUtil.applyPreset(file_path,
+                                               mapping_type,
+                                               align_to_normal)
