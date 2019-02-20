@@ -870,3 +870,18 @@ def restore_lock_state(lock_state):
                       lockName=lock_state["isLockName"].pop(0),
                       lockUnpublished=lock_state["isLockUnpublished"].pop(0),
                       ignoreComponents=True)
+
+
+def reference_node_by_namespace(namespace):
+    """Find reference node by a given namespace
+
+    Args:
+        namespace (str): Absolute namespace
+
+    Return:
+        (str or None): Reference node name or None if not found
+
+    """
+    return next((ref for ref in cmds.ls(type="reference")
+                 if cmds.referenceQuery(ref, namespace=True) == namespace),
+                None)
