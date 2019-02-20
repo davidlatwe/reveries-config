@@ -531,7 +531,7 @@ def export_xgen_IGS_preset(description, out_path):
 
     Args:
         description (str): description shape node name
-        out_path (str): preset output path
+        out_path (str): preset output path (.xgip)
 
     """
 
