@@ -26,6 +26,7 @@ class ValidateUnknownNodes(pyblish.api.InstancePlugin):
         "reveries.model",
         "reveries.rig",
         "reveries.look",
+        "reveries.xgen",
     ]
 
     actions = [
