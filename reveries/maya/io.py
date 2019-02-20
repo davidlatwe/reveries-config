@@ -1,11 +1,13 @@
 
 import os
 import json
+import tempfile
 import logging
 import contextlib
 from maya import cmds
+from xgenm.xmaya import xgmSplinePreset
 
-from . import capsule
+from . import capsule, lib
 from .vendor import capture
 
 
@@ -522,3 +524,56 @@ def capture_seq(camera,
         viewport2_options=None
     )
     return output
+
+
+def export_xgen_IGS_preset(description, out_path):
+    """Export XGen IGS description preset
+
+    Args:
+        description (str): description shape node name
+        out_path (str): preset output path
+
+    """
+
+    spline_base = lib.find_spline_base(description)
+    connections = cmds.listConnections(spline_base,
+                                       plugs=True,
+                                       source=True,
+                                       destination=False,
+                                       connections=True)
+
+    bounding_box = ""
+    for src, dst in zip(connections[::2], connections[1::2]):
+        if not src.startswith(spline_base + ".boundMesh["):
+            continue
+
+        bound_transform = cmds.listRelatives(cmds.ls(dst, objectsOnly=True),
+                                             parent=True)[0]
+
+        head = "." + src.split(".")[-1]
+        tail = ",".join([str(i) for i in cmds.xform(bound_transform,
+                                                    query=True,
+                                                    boundingBox=True)])
+        bounding_box += head + ":" + tail + ";"
+
+    # Export tmp mayaAscii file
+    ascii_tmp = tempfile.mkdtemp(prefix="__xgenIGS_export") + "/{}.ma"
+    ascii_tmp = ascii_tmp.format(description)
+
+    with capsule.maintained_selection():
+        cmds.select(description, replace=True)
+        cmds.file(ascii_tmp,
+                  force=True,
+                  typ="mayaAscii",
+                  exportSelected=True,
+                  preserveReferences=False,
+                  constructionHistory=True,
+                  channels=True,
+                  constraints=True,
+                  shader=True,
+                  expressions=True)
+
+    xgmSplinePreset.PresetUtil.convertMAToPreset(ascii_tmp,
+                                                 out_path,
+                                                 bounding_box,
+                                                 removeOriginal=True)
