@@ -1,9 +1,8 @@
 
 import pyblish.api
-from avalon.pipeline import AVALON_CONTAINER_ID
 from maya import cmds
 from reveries import plugins
-from reveries.maya import lib, pipeline
+from reveries.maya import pipeline
 
 
 def create_texture_subset_from_look(look_instance, textures):
@@ -34,8 +33,6 @@ class CollectLook(pyblish.api.InstancePlugin):
                          noIntermediate=True,
                          type="mesh")
 
-        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
-
         # Collect shading networks
         shaders = cmds.listConnections(meshes, type="shadingEngine")
         upstream_nodes = cmds.ls(cmds.listHistory(shaders), long=True)
@@ -50,6 +47,6 @@ class CollectLook(pyblish.api.InstancePlugin):
         instance.data["dagMembers"] = instance[:]
         instance[:] = upstream_nodes
 
-        stray = pipeline.find_stray_textures(instance, containers)
+        stray = pipeline.find_stray_textures(instance)
         if stray:
             create_texture_subset_from_look(instance, stray)

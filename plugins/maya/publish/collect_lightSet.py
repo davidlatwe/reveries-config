@@ -1,9 +1,8 @@
 
 import pyblish.api
 
-from avalon.pipeline import AVALON_CONTAINER_ID
 from reveries import plugins
-from reveries.maya import lib, pipeline
+from reveries.maya import pipeline
 
 
 def create_texture_subset_from_lightSet(instance, textures):
@@ -30,8 +29,6 @@ class CollectLightSet(pyblish.api.InstancePlugin):
     def process(self, instance):
         from maya import cmds
 
-        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
-
         lights = list()
         # Find all light node from shapes
         for node in cmds.ls(instance, type="shape", long=True):
@@ -57,6 +54,6 @@ class CollectLightSet(pyblish.api.InstancePlugin):
 
         instance[:] = list(set(upstream_nodes + instance.data["dagMembers"]))
 
-        stray = pipeline.find_stray_textures(instance, containers)
+        stray = pipeline.find_stray_textures(instance)
         if stray:
             create_texture_subset_from_lightSet(instance, stray)
