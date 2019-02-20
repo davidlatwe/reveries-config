@@ -634,3 +634,137 @@ def import_xgen_IGS_preset(bound_meshes,
         xgmSplinePreset.PresetUtil.applyPreset(file_path,
                                                mapping_type,
                                                align_to_normal)
+
+
+def reference_xgen_IGS_preset(bound_meshes,
+                              file_path,
+                              namespace,
+                              mapping_type="uv",
+                              align_to_normal=False):
+    """Reference and apply XGen IGS description preset to mesh
+
+    (NOTE) The preset file must named with ext `.ma`, or Maya will crash
+           on file saving. BTW, good job, Maya.
+
+    Args:
+        bound_meshes (list or str): A list or a string of bound meshe's
+            transform node name.
+        file_path (str): Preset file path (Must use the preset that was saved
+            as `.ma`).
+        namespace (str): Namespace for reference
+        mapping_type (str): Description transfer method. "uv" or "position".
+            Default is "uv".
+        align_to_normal (bool): Orientation, align with new surface normals
+            or use the original in world space. Default `False`.
+
+    """
+    transferModeGuard = xgmSplinePreset.transferModeGuard
+    ForwardCompatibilityError = xgmSplinePreset.ForwardCompatibilityError
+
+    class PresetRefUtil(xgmSplinePreset.PresetUtil):
+        """Preset referencing implemented"""
+        @classmethod
+        def referencePreset(cls,
+                            filePath,
+                            namespace,
+                            mappingType,
+                            alignToNormal):
+            """Reference Preset file to selected node"""
+
+            # Keep a record of currently selected node
+            selectedShapes = cls.getSelectedShapes()
+            selectedShape = selectedShapes[0] if selectedShapes else ""
+
+            # Import and collect grooming nodes
+            _ = cls.__referencePreset(filePath, namespace)
+            transferModeNodes, rootNodes, descNodes, bbInfo = _
+
+            # Bind selected node to grooming nodes, while in Transfer Mode
+            with transferModeGuard(transferModeNodes,
+                                   mappingType,
+                                   alignToNormal,
+                                   rootNodes,
+                                   bbInfo):
+                cls._PresetUtil__bindSelected(selectedShape,
+                                              rootNodes,
+                                              descNodes)
+
+        @classmethod
+        def __referencePreset(cls, filePath, namespace):
+            """Reference file, return collected nodes"""
+            transformModeNodeNames = []
+            rootNodeNames = []
+            descNodeNames = []
+            bbInfo = ""
+            fileVersion = None
+
+            if os.path.isfile(filePath):
+                with open(filePath, r"rb") as f:
+                    for line in f:
+                        line = line.rstrip()
+
+                        matchBBInfoPattern = cls.bbInfoPattern.search(line)
+                        if matchBBInfoPattern:
+                            # bbInfo appears only once
+                            bbInfo = matchBBInfoPattern.group(1)
+
+                        matchVersionPattern = cls.versionPattern.search(line)
+                        if matchVersionPattern:
+                            # version appears only once
+                            fileVersion = int(matchVersionPattern.group(1))
+
+                        if bbInfo and fileVersion is not None:
+                            break
+
+                if fileVersion and fileVersion > cls.buildVersion:
+                    # TODO: L10N
+                    raise ForwardCompatibilityError(
+                        "Current Preset build version: {0}. Cannot reference "
+                        "Preset of a higher verison: {1}."
+                        "".format(cls.buildVersion, fileVersion)
+                    )
+
+                nodesBeforeImport = set(cmds.ls())
+
+                try:
+                    # (NOTE) Changed to use reference.
+                    newNodes = cmds.file(
+                        filePath,
+                        namespace=namespace,
+                        reference=True,
+                        type=r"mayaAscii",
+                        ignoreVersion=True,
+                        preserveReferences=True,
+                        returnNewNodes=True
+                    )
+                except Exception:
+                    import traceback
+                    traceback.print_exc()
+                    # If exception occurs during importing, try to recover
+                    # newNodes by comparing scene nodes snapshots
+                    nodesAfterImport = set(cmds.ls())
+                    newNodes = list(nodesAfterImport - nodesBeforeImport)
+
+                for nodeName in newNodes:
+                    nodeType = cmds.nodeType(nodeName)
+                    if nodeType == cls.rootNodeType:
+                        rootNodeNames.append(nodeName)
+                    elif nodeType == cls.descNodeType:
+                        descNodeNames.append(nodeName)
+                    if nodeType in cls.transferModeNodeTypes:
+                        transformModeNodeNames.append(nodeName)
+
+            return transformModeNodeNames, rootNodeNames, descNodeNames, bbInfo
+
+    assert os.path.isfile(file_path), "File not exists: {}".format(file_path)
+
+    mapping_types = {"uv", "position"}
+    assert mapping_type in mapping_types, ("Unknown mapping type: {}"
+                                           "".format(mapping_type))
+
+    with capsule.maintained_selection():
+        cmds.select(bound_meshes, replace=True)
+        PresetRefUtil.referencePreset(file_path,
+                                      namespace,
+                                      mapping_type,
+                                      align_to_normal)
