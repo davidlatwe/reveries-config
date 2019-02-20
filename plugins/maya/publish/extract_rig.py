@@ -7,7 +7,7 @@ from maya import cmds
 from avalon import maya
 
 from reveries.plugins import PackageExtractor
-from reveries.maya import capsule
+from reveries.maya import capsule, lib
 
 
 class ExtractRig(PackageExtractor):
@@ -48,8 +48,22 @@ class ExtractRig(PackageExtractor):
                 for namespace in reversed(sorted(list(loaded_namespaces))):
                     if not cmds.namespace(exists=namespace):
                         continue
-                    cmds.namespace(removeNamespace=namespace,
-                                   mergeNamespaceWithRoot=True)
+
+                    try:
+                        cmds.namespace(removeNamespace=namespace,
+                                       mergeNamespaceWithRoot=True)
+                    except Exception:
+                        # Reload reference and try again.
+                        # The namespace of the reference will be able to
+                        # removed after reload.
+                        # (TODO) This publish workflow might not be a good
+                        #        approach...
+                        ref_node = lib.reference_node_by_namespace(namespace)
+                        # There must be a reference node, since that's the
+                        # main reason why namespace can not be removed.
+                        cmds.file(loadReference=ref_node)
+                        cmds.namespace(removeNamespace=namespace,
+                                       mergeNamespaceWithRoot=True)
 
                 # - Remove loaded container member
                 #   If the mesh of the loaded model has been copied and edited

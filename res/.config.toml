@@ -51,6 +51,11 @@ label = "Model"
 icon = "cubes"
 
 [[families]]
+name = "reveries.xgen"
+label = "XGen"
+icon = "paw"
+
+[[families]]
 name = "reveries.rig"
 label = "Rig"
 icon = "sitemap"

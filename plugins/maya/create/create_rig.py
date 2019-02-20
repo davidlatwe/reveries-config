@@ -14,6 +14,8 @@ class RigCreator(avalon.maya.Creator):
 
     defaults = [
         "default",
+        "Low",
+        "Crowd",
         "XGen",
         "cloth",
     ]

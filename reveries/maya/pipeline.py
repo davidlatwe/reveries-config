@@ -231,6 +231,7 @@ def container_metadata(container):
 
     """
     interface = get_interface_from_container(container)
+    # (NOTE) subsetGroup could be None type if it's lookDev or animCurve
     subset_group = get_group_from_container(container)
     container_id = cmds.getAttr(interface + ".containerId")
     asset_id = cmds.getAttr(interface + ".assetId")

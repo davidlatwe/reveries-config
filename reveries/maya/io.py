@@ -1,11 +1,13 @@
 
 import os
 import json
+import tempfile
 import logging
 import contextlib
 from maya import cmds
+from xgenm.xmaya import xgmSplinePreset
 
-from . import capsule
+from . import capsule, lib
 from .vendor import capture
 
 
@@ -522,3 +524,113 @@ def capture_seq(camera,
         viewport2_options=None
     )
     return output
+
+
+def export_xgen_IGS_preset(description, out_path):
+    """Export XGen IGS description preset
+
+    Args:
+        description (str): description shape node name
+        out_path (str): preset output path (.xgip)
+
+    """
+
+    spline_base = lib.find_spline_base(description)
+    connections = cmds.listConnections(spline_base,
+                                       plugs=True,
+                                       source=True,
+                                       destination=False,
+                                       connections=True)
+
+    bounding_box = ""
+    for src, dst in zip(connections[::2], connections[1::2]):
+        if not src.startswith(spline_base + ".boundMesh["):
+            continue
+
+        bound_transform = cmds.listRelatives(cmds.ls(dst, objectsOnly=True),
+                                             parent=True)[0]
+
+        head = "." + src.split(".")[-1]
+        tail = ",".join([str(i) for i in cmds.xform(bound_transform,
+                                                    query=True,
+                                                    boundingBox=True)])
+        bounding_box += head + ":" + tail + ";"
+
+    # Export tmp mayaAscii file
+    ascii_tmp = tempfile.mkdtemp(prefix="__xgenIGS_export") + "/{}.ma"
+    ascii_tmp = ascii_tmp.format(description)
+
+    with capsule.maintained_selection():
+        # (NOTE) This is a note of complain.
+        #
+        #        Maya's preset export tool will not work properly if the
+        #        `exportSelected` UI options has been set to not to export
+        #        history in previous export action. By saying "not work
+        #        properly", it means the exported .xgip file only contains
+        #        an empty description.
+        #
+        #        Here's why...
+        #
+        #        The preset export tool requires to export selected description
+        #        as 'mayaAscii' file first, then read that file and parse the
+        #        related MEL commands and data into .xgip file.
+        #
+        #        So if the exported 'mayaAscii' description file does not
+        #        have the description history, will end up to export an empty
+        #        description.
+        #
+        #        Obviously, the preset export tool in the Interactive Groom
+        #        Editor did not specify to export history when exporting
+        #        selected description to mayaAscii file, but rely on optionVar.
+        #
+        #        Which is, unacceptable.
+        #
+        #        This UX bug trapped me hours, since it does not show any
+        #        message, and because it's based on optionVar, sometimes it
+        #        works and sometime doesn't. Really confusing.
+        #
+        cmds.select(description, replace=True)
+        cmds.file(ascii_tmp,
+                  force=True,
+                  typ="mayaAscii",
+                  exportSelected=True,
+                  preserveReferences=False,
+                  constructionHistory=True,
+                  channels=True,
+                  constraints=True,
+                  shader=True,
+                  expressions=True)
+
+    xgmSplinePreset.PresetUtil.convertMAToPreset(ascii_tmp,
+                                                 out_path,
+                                                 bounding_box,
+                                                 removeOriginal=True)
+
+
+def import_xgen_IGS_preset(bound_meshes,
+                           file_path,
+                           mapping_type="uv",
+                           align_to_normal=False):
+    """Import and apply XGen IGS description preset to mesh
+
+    Args:
+        bound_meshes (list or str): A list or a string of bound meshe's
+            transform node name.
+        file_path (str): Preset file path (.xgip).
+        mapping_type (str): Description transfer method. "uv" or "position".
+            Default is "uv".
+        align_to_normal (bool): Orientation, align with new surface normals
+            or use the original in world space. Default `False`.
+
+    """
+    assert os.path.isfile(file_path), "File not exists: {}".format(file_path)
+
+    mapping_types = {"uv", "position"}
+    assert mapping_type in mapping_types, ("Unknown mapping type: {}"
+                                           "".format(mapping_type))
+
+    with capsule.maintained_selection():
+        cmds.select(bound_meshes, replace=True)
+        xgmSplinePreset.PresetUtil.applyPreset(file_path,
+                                               mapping_type,
+                                               align_to_normal)
