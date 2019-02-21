@@ -561,7 +561,7 @@ def export_xgen_IGS_preset(description, out_path):
 
     # Export tmp mayaAscii file
     ascii_tmp = tempfile.mkdtemp(prefix="__xgenIGS_export") + "/{}.ma"
-    ascii_tmp = ascii_tmp.format(description)
+    ascii_tmp = ascii_tmp.format(description.replace("|", "_"))
 
     with capsule.maintained_selection():
         # (NOTE) This is a note of complain.
