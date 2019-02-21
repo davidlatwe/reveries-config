@@ -610,164 +610,239 @@ def export_xgen_IGS_preset(description, out_path):
                                                  removeOriginal=True)
 
 
-def import_xgen_IGS_preset(bound_meshes,
-                           file_path,
-                           mapping_type="uv",
-                           align_to_normal=False):
-    """Import and apply XGen IGS description preset to mesh
+class SplinePresetUtil(xgmSplinePreset.PresetUtil):
+    """Enhanced XGen interactive groom preset util class
 
-    Args:
-        bound_meshes (list or str): A list or a string of bound meshe's
-            transform node name.
-        file_path (str): Preset file path (.xgip).
-        mapping_type (str): Description transfer method. "uv" or "position".
-            Default is "uv".
-        align_to_normal (bool): Orientation, align with new surface normals
-            or use the original in world space. Default `False`.
+    This util has implemented preset referencing and multi-mesh bounding,
+    and used by a few of XGen IGS input functions:
+
+        `io.import_xgen_IGS_preset`
+        `io.reference_xgen_IGS_preset`
+        `io.attach_xgen_IGS_preset`
+
+    Mainly used for save and load preset on same meshes, not for transfer
+    in between different meshes.
 
     """
-    assert os.path.isfile(file_path), "File not exists: {}".format(file_path)
+    @staticmethod
+    def __bindMeshes(meshShapes, rootNodes, descNodes):
+        """Bound to multiple or single mesh"""
+        for rootNode in rootNodes:
+            for i, mesh in enumerate(meshShapes):
+                fromAttr = r"%s.worldMesh" % mesh
+                toAttr = r"%s.boundMesh[%d]" % (rootNode, i)
+                cmds.connectAttr(fromAttr, toAttr)
 
-    mapping_types = {"uv", "position"}
-    assert mapping_type in mapping_types, ("Unknown mapping type: {}"
-                                           "".format(mapping_type))
+        for descNode in descNodes:
+            # Force grooming DG eval
+            # This must be done once before Transfer Mode turned off
+            descAttr = r"%s.outSplineData" % descNode
+            cmds.dgeval(descAttr)
 
-    with capsule.maintained_selection():
-        cmds.select(bound_meshes, replace=True)
-        xgmSplinePreset.PresetUtil.applyPreset(file_path,
-                                               mapping_type,
-                                               align_to_normal)
+    @classmethod
+    def attachPreset(cls, newNodes, meshShapes):
+        """Apply preset to meshes
 
+        Args:
+            newNodes (list): A list of loaded nodes
+            meshShapes (list): A list of bound meshes
 
-def reference_xgen_IGS_preset(bound_meshes,
-                              file_path,
-                              namespace,
-                              mapping_type="uv",
-                              align_to_normal=False):
-    """Reference and apply XGen IGS description preset to mesh
+        """
+        rootNodes = []
+        descNodes = []
 
-    (NOTE) The preset file must named with ext `.ma`, or Maya will crash
-           on file saving. BTW, good job, Maya.
+        for nodeName in newNodes:
+            nodeType = cmds.nodeType(nodeName)
+            if nodeType == cls.rootNodeType:
+                rootNodes.append(nodeName)
+            elif nodeType == cls.descNodeType:
+                descNodes.append(nodeName)
 
-    Args:
-        bound_meshes (list or str): A list or a string of bound meshe's
-            transform node name.
-        file_path (str): Preset file path (Must use the preset that was saved
-            as `.ma`).
-        namespace (str): Namespace for reference
-        mapping_type (str): Description transfer method. "uv" or "position".
-            Default is "uv".
-        align_to_normal (bool): Orientation, align with new surface normals
-            or use the original in world space. Default `False`.
+        # (NOTE) Removed the `transferModeGuard` context. It seems that
+        #        entering *transfer mode* will end up not able to apply
+        #        back to multiple meshes.
+        #        Since we are not meant to do any *transfer*, just want
+        #        to bound back to original mesh or meshes, should be safe
+        #        to bypass that context.
+        cls.__bindMeshes(meshShapes, rootNodes, descNodes)
 
-    """
-    transferModeGuard = xgmSplinePreset.transferModeGuard
-    ForwardCompatibilityError = xgmSplinePreset.ForwardCompatibilityError
+    @classmethod
+    def loadPreset(cls, filePath, namespace, reference):
+        """Reference or import preset file, return loaded nodes
 
-    class PresetRefUtil(xgmSplinePreset.PresetUtil):
-        """Preset referencing implemented"""
-        @classmethod
-        def referencePreset(cls,
-                            filePath,
-                            namespace,
-                            mappingType,
-                            alignToNormal):
-            """Reference Preset file to selected node"""
+        Args:
+            filePath (str): Preset file path.
+            namespace (str): Namespace to apply to.
+            reference (bool): Load preset by reference or import.
 
-            # Keep a record of currently selected node
-            selectedShapes = cls.getSelectedShapes()
-            selectedShape = selectedShapes[0] if selectedShapes else ""
+        Returns:
+            list: A list of loaded nodes
 
-            # Import and collect grooming nodes
-            _ = cls.__referencePreset(filePath, namespace)
-            transferModeNodes, rootNodes, descNodes, bbInfo = _
+        """
+        newNodes = []
+        fileVersion = None
 
-            # Bind selected node to grooming nodes, while in Transfer Mode
-            with transferModeGuard(transferModeNodes,
-                                   mappingType,
-                                   alignToNormal,
-                                   rootNodes,
-                                   bbInfo):
-                cls._PresetUtil__bindSelected(selectedShape,
-                                              rootNodes,
-                                              descNodes)
+        if os.path.isfile(filePath):
+            with open(filePath, r"rb") as f:
+                for line in f:
+                    line = line.rstrip()
 
-        @classmethod
-        def __referencePreset(cls, filePath, namespace):
-            """Reference file, return collected nodes"""
-            transformModeNodeNames = []
-            rootNodeNames = []
-            descNodeNames = []
-            bbInfo = ""
-            fileVersion = None
+                    matchVersionPattern = cls.versionPattern.search(line)
+                    if matchVersionPattern:
+                        # version appears only once
+                        fileVersion = int(matchVersionPattern.group(1))
 
-            if os.path.isfile(filePath):
-                with open(filePath, r"rb") as f:
-                    for line in f:
-                        line = line.rstrip()
+                    if fileVersion is not None:
+                        break
 
-                        matchBBInfoPattern = cls.bbInfoPattern.search(line)
-                        if matchBBInfoPattern:
-                            # bbInfo appears only once
-                            bbInfo = matchBBInfoPattern.group(1)
+            if fileVersion and fileVersion > cls.buildVersion:
+                # TODO: L10N
+                raise xgmSplinePreset.ForwardCompatibilityError(
+                    "Current Preset build version: {0}. Cannot reference "
+                    "Preset of a higher verison: {1}."
+                    "".format(cls.buildVersion, fileVersion)
+                )
 
-                        matchVersionPattern = cls.versionPattern.search(line)
-                        if matchVersionPattern:
-                            # version appears only once
-                            fileVersion = int(matchVersionPattern.group(1))
+            nodesBeforeImport = set(cmds.ls())
 
-                        if bbInfo and fileVersion is not None:
-                            break
-
-                if fileVersion and fileVersion > cls.buildVersion:
-                    # TODO: L10N
-                    raise ForwardCompatibilityError(
-                        "Current Preset build version: {0}. Cannot reference "
-                        "Preset of a higher verison: {1}."
-                        "".format(cls.buildVersion, fileVersion)
-                    )
-
-                nodesBeforeImport = set(cmds.ls())
-
-                try:
-                    # (NOTE) Changed to use reference.
+            try:
+                if reference:
                     newNodes = cmds.file(
                         filePath,
                         namespace=namespace,
                         reference=True,
                         type=r"mayaAscii",
                         ignoreVersion=True,
+                        mergeNamespacesOnClash=True,
                         preserveReferences=True,
                         returnNewNodes=True
                     )
-                except Exception:
-                    import traceback
-                    traceback.print_exc()
-                    # If exception occurs during importing, try to recover
-                    # newNodes by comparing scene nodes snapshots
-                    nodesAfterImport = set(cmds.ls())
-                    newNodes = list(nodesAfterImport - nodesBeforeImport)
+                else:
+                    newNodes = cmds.file(
+                        filePath,
+                        namespace=namespace,
+                        i=True,
+                        type=r"mayaAscii",
+                        ignoreVersion=True,
+                        renameAll=True,
+                        mergeNamespacesOnClash=True,
+                        preserveReferences=True,
+                        returnNewNodes=True
+                    )
+            except Exception:
+                import traceback
+                traceback.print_exc()
+                # If exception occurs during importing, try to recover
+                # newNodes by comparing scene nodes snapshots
+                nodesAfterImport = set(cmds.ls())
+                newNodes = list(nodesAfterImport - nodesBeforeImport)
 
-                for nodeName in newNodes:
-                    nodeType = cmds.nodeType(nodeName)
-                    if nodeType == cls.rootNodeType:
-                        rootNodeNames.append(nodeName)
-                    elif nodeType == cls.descNodeType:
-                        descNodeNames.append(nodeName)
-                    if nodeType in cls.transferModeNodeTypes:
-                        transformModeNodeNames.append(nodeName)
+        return newNodes
 
-            return transformModeNodeNames, rootNodeNames, descNodeNames, bbInfo
 
+def import_xgen_IGS_preset(file_path, namespace=":", bound_meshes=None):
+    """Import and apply XGen IGS description preset to mesh
+
+    Args:
+        file_path (str): Preset file path (.xgip).
+
+        namespace (str, optional): Namespace for import, default root ":"
+
+        bound_meshes (list or str, optional): A list or a string of bound
+            meshe's transform node name. If `bound_meshes` not provided, will
+            do nothing after preset been imported.
+
+    Return:
+        newNodes (list or None): A list of loaded new nodes, if `bound_meshes`
+            provided.
+
+    """
     assert os.path.isfile(file_path), "File not exists: {}".format(file_path)
 
-    mapping_types = {"uv", "position"}
-    assert mapping_type in mapping_types, ("Unknown mapping type: {}"
-                                           "".format(mapping_type))
+    newNodes = SplinePresetUtil.loadPreset(file_path, namespace, False)
+    if bound_meshes:
+        SplinePresetUtil.attachPreset(bound_meshes, newNodes)
+    else:
+        return newNodes
 
-    with capsule.maintained_selection():
-        cmds.select(bound_meshes, replace=True)
-        PresetRefUtil.referencePreset(file_path,
-                                      namespace,
-                                      mapping_type,
-                                      align_to_normal)
+
+def reference_xgen_IGS_preset(file_path, namespace=":", bound_meshes=None):
+    """Reference and apply XGen IGS description preset to mesh
+
+    (NOTE) The preset file must be named with ext `.ma`, or Maya will crash
+           on file saving.
+
+    Args:
+        file_path (str): Preset file path (Must use the preset that was saved
+            as `.ma`).
+
+        namespace (str, optional): Namespace for reference, default root ":"
+
+        bound_meshes (list or str, optional): A list or a string of bound
+            meshe's transform node name. If `bound_meshes` not provided, will
+            do nothing after preset been referenced.
+
+    Return:
+        newNodes (list or None): A list of loaded new nodes, if `bound_meshes`
+            provided.
+
+    """
+    assert os.path.isfile(file_path), "File not exists: {}".format(file_path)
+
+    newNodes = SplinePresetUtil.loadPreset(file_path, namespace, True)
+    if bound_meshes:
+        SplinePresetUtil.attachPreset(bound_meshes, newNodes)
+    else:
+        return newNodes
+
+
+def attach_xgen_IGS_preset(preset_nodes, bound_meshes):
+    """Bound loaded XGen IGS preset nodes to meshes
+
+    Args:
+        preset_nodes (list): A list of nodes loaded from one preset
+        bound_meshes (list): A list of mesh shape nodes the preset
+            bounded to. The order of meshes matters !
+
+    """
+    SplinePresetUtil.attachPreset(preset_nodes, bound_meshes)
+
+
+def wrap_xgen_IGS_preset(wrapper_path, preset_files):
+    """Wrapping XGen IGS preset(.ma) files into a MayaAscii file
+
+    (NOTE) Set environment var "__XGEN_IGS_NAMESPACE__" to change the
+           namespace if file.
+
+    (NOTE) The file path of `preset_files` should be a relative path, relative
+        to `wrapper_path`.
+
+        For example:
+            ```python
+
+            wrapper_path = ".../publish/xgen/v001/XGenInteractive/xgen.ma"
+            preset_files = ["Peter_01/xgen.ma", ...]
+
+            ```
+
+    Args:
+        wrapper_path (str): MayaAscii file output path
+        preset_files (list): A list of description .ma file path
+
+    """
+    MayaAscii_template = """//Maya ASCII scene
+requires maya "2017";
+// Inject namespace
+$ns = `getenv "__XGEN_IGS_NAMESPACE__"`;
+if ($ns == ""){$ns = ":";}
+"""
+    preset_template = """
+file -r -ns $ns -op "v=0;" -typ "mayaAscii" "{filePath}";
+"""
+    preset_script = ""
+    for preset_path in preset_files:
+        preset_path = preset_path.replace("\\", "/")
+        preset_script += preset_template.format(filePath=preset_path)
+
+    with open(wrapper_path, "w") as maya_file:
+        maya_file.write(MayaAscii_template + preset_script)
