@@ -494,6 +494,22 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
                 cmds.sets(meshes, forceElement=shader)
 
 
+def list_all_parents(nodes):
+    """List all parents of dag nodes
+
+    Args:
+        nodes (list or str): A list of node or one node name
+
+    Returns:
+        (list): A list of all parent nodes
+
+    """
+    parents = cmds.listRelatives(nodes, parent=True, fullPath=True) or []
+    if parents:
+        parents += list_all_parents(parents)
+    return list(set(parents))
+
+
 def hasAttr(node, attr):
     """Convenience function for determining if an object has an attribute
 
