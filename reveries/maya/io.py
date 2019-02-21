@@ -376,7 +376,7 @@ def wrap_gpu(wrapper_path, gpu_files):
         For example:
             ```python
 
-            wrapper_path = ".../publish/pointcache/v001/Alembic/pointcache.ma"
+            wrapper_path = ".../publish/pointcache/v001/GPUCache/pointcache.ma"
             gpu_files = [("Peter_01/pointcache.abc", "Peter_01"), ...]
 
             ```
@@ -409,14 +409,14 @@ createNode gpuCache -n "{nodeName}Shape" -p "{nodeName}";
 def wrap_abc(wrapper_path, abc_files):
     """Wrapping Alembic caches into a MayaAscii file
 
-    (NOTE) The file path of `gpu_files` should be a relative path, relative to
+    (NOTE) The file path of `abc_files` should be a relative path, relative to
         `wrapper_path`.
 
         For example:
             ```python
 
             wrapper_path = ".../publish/pointcache/v001/Alembic/pointcache.ma"
-            gpu_files = [("Peter_01/pointcache.abc", "Peter_01"), ...]
+            abc_files = [("Peter_01/pointcache.abc", "Peter_01"), ...]
 
             ```
 
@@ -449,14 +449,14 @@ AbcImport -reparent "|{groupName}" -mode import $cachefile;
 def wrap_fbx(wrapper_path, fbx_files):
     """Wrapping FBX caches into a MayaAscii file
 
-    (NOTE) The file path of `gpu_files` should be a relative path, relative to
+    (NOTE) The file path of `fbx_files` should be a relative path, relative to
         `wrapper_path`.
 
         For example:
             ```python
 
-            wrapper_path = ".../publish/pointcache/v001/Alembic/pointcache.ma"
-            gpu_files = [("Peter_01/pointcache.fbx", "Peter_01"), ...]
+            wrapper_path = ".../publish/pointcache/v001/FBXCache/pointcache.ma"
+            fbx_files = [("Peter_01/pointcache.fbx", "Peter_01"), ...]
 
             ```
 
