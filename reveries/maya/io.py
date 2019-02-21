@@ -399,6 +399,7 @@ createNode gpuCache -n "{nodeName}Shape" -p "{nodeName}";
 """
     gpu_script = ""
     for gpu_path, node_name in gpu_files:
+        gpu_path = gpu_path.replace("\\", "/")
         gpu_script += gpu_node_template.format(nodeName=node_name,
                                                filePath=gpu_path)
 
@@ -439,6 +440,7 @@ AbcImport -reparent "|{groupName}" -mode import $cachefile;
 """
     abc_script = ""
     for abc_path, group_name in abc_files:
+        abc_path = abc_path.replace("\\", "/")
         abc_script += abc_node_template.format(groupName=group_name,
                                                filePath=abc_path)
 
@@ -477,6 +479,7 @@ file -import -type "FBX" -groupReference -groupName "{groupName}" $cachefile";
 """
     fbx_script = ""
     for fbx_path, group_name in fbx_files:
+        fbx_path = fbx_path.replace("\\", "/")
         fbx_script += fbx_node_template.format(groupName=group_name,
                                                filePath=fbx_path)
 
