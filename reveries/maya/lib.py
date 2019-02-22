@@ -936,21 +936,17 @@ def list_lead_descriptions(nodes):
     return lead_descriptions
 
 
-def list_bound_meshes(descriptions):
-    """Return bounded meshes of the XGen IGS description nodes
+def list_bound_meshes(description):
+    """Return bounded meshes of the XGen IGS description node
 
     Args:
-        descriptions (list): A list of XGen IGS description nodes
+        description (str): XGen IGS description shape node
 
     Return:
         (list): A list of bounded mesh name
 
     """
-    bound_meshes = set()
-    for node in descriptions:
-        bound_meshes.update(cmds.xgmSplineQuery(node, listBoundMeshes=True))
-
-    return list(bound_meshes)
+    return cmds.xgmSplineQuery(description, listBoundMeshes=True)
 
 
 def find_spline_base(description):

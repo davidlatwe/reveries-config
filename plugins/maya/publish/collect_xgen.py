@@ -67,8 +67,10 @@ class CollectXGen(pyblish.api.InstancePlugin):
         descriptions = lib.list_lead_descriptions(instance[:])
         instance.data["igsDescriptions"] = descriptions
 
-        bound_meshes = lib.list_bound_meshes(descriptions)
-        instance.data["igsBoundMeshes"] = bound_meshes
+        bound_meshes = set()
+        for desc in descriptions:
+            bound_meshes.update(lib.list_bound_meshes(desc))
+        instance.data["igsBoundMeshes"] = list(bound_meshes)
 
         # Create model subset for bounding meshes
         create_model_subset_from_xgen(instance)
