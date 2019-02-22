@@ -805,6 +805,12 @@ def attach_xgen_IGS_preset(preset_nodes, bound_meshes):
             bounded to. The order of meshes matters !
 
     """
+    if not all(cmds.objExists(m) for m in bound_meshes):
+        for m in bound_meshes:
+            if not cmds.objExists(m):
+                log.error("Missing: {}".format(m))
+        raise Exception("Missing bound mesh.")
+
     SplinePresetUtil.attachPreset(preset_nodes, bound_meshes)
 
 
