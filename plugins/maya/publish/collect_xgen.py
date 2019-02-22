@@ -9,24 +9,31 @@ def create_model_subset_from_xgen(instance):
     family = "reveries.model"
     subset = "modelXGenBoundMesh"
     member = cmds.listRelatives(instance.data["igsBoundMeshes"],
-                                parent=True,
+                                allParents=True,
                                 fullPath=True) or []
-    plugins.create_dependency_instance(instance,
-                                       subset,
-                                       family,
-                                       member,
-                                       category="XGen Bound Mesh")
+    member += lib.list_all_parents(member)
+    model = plugins.create_dependency_instance(instance,
+                                               subset,
+                                               family,
+                                               member,
+                                               category="XGen Bound Mesh")
+    # Only need to extract model `mayaBinary` representation
+    model.data["extractType"] = "mayaBinary"
 
 
 def create_look_subset_from_xgen(instance):
     family = "reveries.look"
     subset = "lookXGenHair"
     member = instance.data["igsDescriptions"]
-    plugins.create_dependency_instance(instance,
-                                       subset,
-                                       family,
-                                       member,
-                                       category="XGen LookDev")
+    look = plugins.create_dependency_instance(instance,
+                                              subset,
+                                              family,
+                                              member,
+                                              category="XGen LookDev")
+    # Add renderlayer data which was set from Creator
+    renderlayer = cmds.editRenderLayerGlobals(query=True,
+                                              currentRenderLayer=True)
+    look.data["renderlayer"] = renderlayer
 
 
 def create_texture_subset_from_look(instance, textures):
@@ -49,7 +56,7 @@ class CollectXGen(pyblish.api.InstancePlugin):
     families = ["reveries.xgen"]
 
     def process(self, instance):
-        getattr(self, instance.data["XGenType"])(instance)
+        getattr(self, "get_" + instance.data["XGenType"])(instance)
 
     def get_interactive(self, instance):
         """Interactive Groom Spline"""

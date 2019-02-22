@@ -29,12 +29,12 @@ class CollectLook(pyblish.api.InstancePlugin):
     families = ["reveries.look"]
 
     def process(self, instance):
-        meshes = cmds.ls(instance,
-                         noIntermediate=True,
-                         type="mesh")
+        surfaces = cmds.ls(instance,
+                           noIntermediate=True,
+                           type="surfaceShape")
 
         # Collect shading networks
-        shaders = cmds.listConnections(meshes, type="shadingEngine")
+        shaders = cmds.listConnections(surfaces, type="shadingEngine")
         upstream_nodes = cmds.ls(cmds.listHistory(shaders), long=True)
         # (NOTE): The flag `pruneDagObjects` will also filter out
         # `place3dTexture` type node.
