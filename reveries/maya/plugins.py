@@ -210,9 +210,11 @@ class ReferenceLoader(MayaBaseLoader):
         load_plugin(representation["name"])
 
         file_type = representation["name"]
+
+        # (TODO) This file type remapping thing should be improved
         if file_type == "FBXCache":
             file_type = "FBX"
-        elif file_type in ("GPUCache", "LookDev"):
+        elif file_type in ("GPUCache", "LookDev", "XGenInteractive"):
             file_type = "MayaAscii"
 
         parents = avalon.io.parenthood(representation)
