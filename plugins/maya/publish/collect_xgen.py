@@ -24,7 +24,10 @@ def create_model_subset_from_xgen(instance):
 def create_look_subset_from_xgen(instance):
     family = "reveries.look"
     subset = "lookXGenHair"
-    member = instance.data["igsDescriptions"]
+    member = instance.data["igsDescriptions"][:]
+    member += cmds.listRelatives(member,
+                                 allParents=True,
+                                 fullPath=True) or []
     look = plugins.create_dependency_instance(instance,
                                               subset,
                                               family,
