@@ -234,6 +234,8 @@ def create_dependency_instance(dependent,
     instance.data["dependencies"] = dict()
     instance.data["futureDependencies"] = dict()
 
+    instance.data["objectName"] = dependent.data["objectName"]
+
     # Move to front, because dependency instance should be integrated before
     # dependent instance
     context.pop()

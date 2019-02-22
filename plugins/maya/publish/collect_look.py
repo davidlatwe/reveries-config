@@ -1,9 +1,8 @@
 
 import pyblish.api
-from avalon.pipeline import AVALON_CONTAINER_ID
 from maya import cmds
 from reveries import plugins
-from reveries.maya import lib, pipeline
+from reveries.maya import pipeline
 
 
 def create_texture_subset_from_look(look_instance, textures):
@@ -30,26 +29,24 @@ class CollectLook(pyblish.api.InstancePlugin):
     families = ["reveries.look"]
 
     def process(self, instance):
-        meshes = cmds.ls(instance,
-                         noIntermediate=True,
-                         type="mesh")
-
-        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
+        surfaces = cmds.ls(instance,
+                           noIntermediate=True,
+                           type="surfaceShape")
 
         # Collect shading networks
-        shaders = cmds.listConnections(meshes, type="shadingEngine")
+        shaders = cmds.listConnections(surfaces, type="shadingEngine")
         upstream_nodes = cmds.ls(cmds.listHistory(shaders), long=True)
         # (NOTE): The flag `pruneDagObjects` will also filter out
         # `place3dTexture` type node.
 
         # Remove unwanted types
-        unwanted_types = ("groupId", "groupParts", "mesh")
+        unwanted_types = ("groupId", "groupParts", "surfaceShape")
         unwanted = set(cmds.ls(upstream_nodes, type=unwanted_types, long=True))
         upstream_nodes = list(set(upstream_nodes) - unwanted)
 
         instance.data["dagMembers"] = instance[:]
         instance[:] = upstream_nodes
 
-        stray = pipeline.find_stray_textures(instance, containers)
+        stray = pipeline.find_stray_textures(instance)
         if stray:
             create_texture_subset_from_look(instance, stray)

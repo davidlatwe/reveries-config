@@ -494,6 +494,22 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
                 cmds.sets(meshes, forceElement=shader)
 
 
+def list_all_parents(nodes):
+    """List all parents of dag nodes
+
+    Args:
+        nodes (list or str): A list of node or one node name
+
+    Returns:
+        (list): A list of all parent nodes
+
+    """
+    parents = cmds.listRelatives(nodes, parent=True, fullPath=True) or []
+    if parents:
+        parents += list_all_parents(parents)
+    return list(set(parents))
+
+
 def hasAttr(node, attr):
     """Convenience function for determining if an object has an attribute
 
@@ -920,21 +936,17 @@ def list_lead_descriptions(nodes):
     return lead_descriptions
 
 
-def list_bound_meshes(descriptions):
-    """Return bounded meshes of the XGen IGS description nodes
+def list_bound_meshes(description):
+    """Return bounded meshes of the XGen IGS description node
 
     Args:
-        descriptions (list): A list of XGen IGS description nodes
+        description (str): XGen IGS description shape node
 
     Return:
         (list): A list of bounded mesh name
 
     """
-    bound_meshes = set()
-    for node in descriptions:
-        bound_meshes.update(cmds.xgmSplineQuery(node, listBoundMeshes=True))
-
-    return list(bound_meshes)
+    return cmds.xgmSplineQuery(description, listBoundMeshes=True)
 
 
 def find_spline_base(description):

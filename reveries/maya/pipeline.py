@@ -400,10 +400,11 @@ def put_instance_icon(instance):
     return instance
 
 
-def find_stray_textures(instance, containers):
+def find_stray_textures(instance):
     """Find file nodes that were not containerized
     """
     stray = list()
+    containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
 
     for file_node in cmds.ls(instance, type="file"):
         sets = cmds.listSets(object=file_node) or []
@@ -438,6 +439,24 @@ _uuid_required_node_types = {
         "transform",
         "light",
         "locator",
+    },
+    "reveries.xgen": {
+        "transform",
+        # Listed from cmds.listNodeTypes("xgen/spline")
+        # "xgmCurveToSpline",
+        "xgmModifierClump",
+        "xgmModifierCollision",
+        "xgmModifierCut",
+        "xgmModifierDisplacement",
+        "xgmModifierGuide",
+        "xgmModifierLinearWire",
+        "xgmModifierNoise",
+        "xgmModifierScale",
+        "xgmModifierSculpt",
+        "xgmSeExpr",
+        "xgmSplineBase",
+        "xgmSplineCache",
+        "xgmSplineDescription",
     },
 }
 
