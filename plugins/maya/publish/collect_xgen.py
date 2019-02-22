@@ -2,7 +2,7 @@
 import pyblish.api
 from maya import cmds
 from reveries import plugins
-from reveries.maya import lib, pipeline
+from reveries.maya import lib, xgen, pipeline
 
 
 def create_model_subset_from_xgen(instance):
@@ -67,12 +67,12 @@ class CollectXGen(pyblish.api.InstancePlugin):
         # Inject shadow family
         instance.data["families"] = ["reveries.xgen.interactive"]
 
-        descriptions = lib.list_lead_descriptions(instance[:])
+        descriptions = xgen.interactive.list_lead_descriptions(instance[:])
         instance.data["igsDescriptions"] = descriptions
 
         bound_meshes = set()
         for desc in descriptions:
-            bound_meshes.update(lib.list_bound_meshes(desc))
+            bound_meshes.update(xgen.interactive.list_bound_meshes(desc))
         instance.data["igsBoundMeshes"] = list(bound_meshes)
 
         # Create model subset for bounding meshes

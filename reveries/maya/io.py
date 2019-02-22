@@ -7,7 +7,7 @@ import contextlib
 from maya import cmds
 from xgenm.xmaya import xgmSplinePreset
 
-from . import capsule, lib
+from . import capsule, xgen
 from .vendor import capture
 
 
@@ -538,7 +538,7 @@ def export_xgen_IGS_preset(description, out_path):
 
     """
 
-    spline_base = lib.find_spline_base(description)
+    spline_base = xgen.interactive.find_spline_base(description)
     connections = cmds.listConnections(spline_base,
                                        plugs=True,
                                        source=True,
