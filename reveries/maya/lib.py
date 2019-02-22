@@ -370,16 +370,16 @@ def serialise_shaders(nodes):
         type="transform"
     )
 
-    meshes_by_id = {}
+    surfaces_by_id = {}
     for transform in valid_nodes:
         shapes = cmds.listRelatives(transform,
                                     shapes=True,
                                     fullPath=True,
-                                    type="mesh") or list()
+                                    type="surfaceShape") or list()
         shapes = cmds.ls(shapes, noIntermediate=True)
 
         try:
-            mesh = shapes[0]
+            surface = shapes[0]
         except IndexError:
             continue
 
@@ -388,15 +388,15 @@ def serialise_shaders(nodes):
         except ValueError:
             continue
         else:
-            if id_ not in meshes_by_id:
-                meshes_by_id[id_] = list()
+            if id_ not in surfaces_by_id:
+                surfaces_by_id[id_] = list()
 
-            meshes_by_id[id_].append(mesh)
+            surfaces_by_id[id_].append(surface)
 
-    meshes_by_shader = {}
-    for id_, meshes in meshes_by_id.items():
+    surfaces_by_shader = {}
+    for id_, surfaces in surfaces_by_id.items():
 
-        for shader in cmds.listConnections(meshes,
+        for shader in cmds.listConnections(surfaces,
                                            type="shadingEngine",
                                            source=False,
                                            destination=True) or list():
@@ -407,22 +407,22 @@ def serialise_shaders(nodes):
             if shader == "initialShadingGroup":
                 continue
 
-            if shader not in meshes_by_shader:
-                meshes_by_shader[shader] = list()
+            if shader not in surfaces_by_shader:
+                surfaces_by_shader[shader] = list()
 
             shaded = cmds.ls(cmds.sets(shader, query=True), long=True)
-            meshes_by_shader[shader].extend(shaded)
+            surfaces_by_shader[shader].extend(shaded)
 
     shader_by_id = {}
-    for shader, shaded in meshes_by_shader.items():
+    for shader, shaded in surfaces_by_shader.items():
 
-        for mesh in shaded:
+        for surface in shaded:
 
-            # Enable shader assignment to faces.
-            name = mesh.split(".f[")[0]
+            # Enable shader assignment to mesh faces.
+            name = surface.split(".f[")[0]
 
             transform = name
-            if cmds.objectType(transform) == "mesh":
+            if cmds.objectType(transform, isAType="surfaceShape"):
                 transform = cmds.listRelatives(name,
                                                parent=True,
                                                fullPath=True)[0]
@@ -439,7 +439,7 @@ def serialise_shaders(nodes):
                 if shader not in shader_by_id:
                     shader_by_id[shader] = list()
 
-                shader_by_id[shader].append(mesh.replace(name, id_))
+                shader_by_id[shader].append(surface.replace(name, id_))
 
         # Remove duplicates
         shader_by_id[shader] = list(set(shader_by_id[shader]))
@@ -448,11 +448,11 @@ def serialise_shaders(nodes):
 
 
 def apply_shaders(relationships, namespace=None, target_namespaces=None):
-    """Given a dictionary of `relationships`, apply shaders to meshes
+    """Given a dictionary of `relationships`, apply shaders to surfaces
 
     Arguments:
         relationships (avalon-core:shaders-1.0): A dictionary of
-            shaders and how they relate to meshes.
+            shaders and how they relate to surfaces.
         namespace (str, optional): namespace that need to apply to shaders
         target_namespaces (list, optional): model namespaces
 
@@ -477,21 +477,21 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
             continue
 
         for id_ in ids:
-            mesh, faces = (id_.rsplit(".", 1) + [""])[:2]
+            surface, faces = (id_.rsplit(".", 1) + [""])[:2]
 
             for target_namespace in target_namespaces:
-                # Find all meshes matching this particular ID
-                # Convert IDs to mesh + id, e.g. "nameOfNode.f[1:100]"
-                meshes = list(".".join([m, faces])
-                              for m in lsAttr(AVALON_ID_ATTR_LONG,
-                                              value=mesh,
-                                              namespace=target_namespace))
+                # Find all surfaces matching this particular ID
+                # Convert IDs to surface + id, e.g. "nameOfNode.f[1:100]"
+                surfaces = list(".".join([m, faces])
+                                for m in lsAttr(AVALON_ID_ATTR_LONG,
+                                                value=surface,
+                                                namespace=target_namespace))
 
-                if not meshes:
+                if not surfaces:
                     continue
 
-                print("Assigning '%s' to '%s'" % (shader, ", ".join(meshes)))
-                cmds.sets(meshes, forceElement=shader)
+                print("Assigning '%s' to '%s'" % (shader, ", ".join(surfaces)))
+                cmds.sets(surfaces, forceElement=shader)
 
 
 def list_all_parents(nodes):

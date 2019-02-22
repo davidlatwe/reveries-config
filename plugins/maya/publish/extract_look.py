@@ -100,15 +100,15 @@ class ExtractLook(PackageExtractor):
                                                         source=False,
                                                         plugs=True)
 
-        meshes = cmds.ls(self.data["dagMembers"],
-                         noIntermediate=True,
-                         type="mesh")
+        surfaces = cmds.ls(self.data["dagMembers"],
+                           noIntermediate=True,
+                           type="surfaceShape")
 
         # CreaseSet
         crease_sets = dict()
         creases = list()
 
-        for node in meshes:
+        for node in surfaces:
             creases += cmds.ls(cmds.listSets(object=node), type="creaseSet")
 
         creases = list(set(creases))
@@ -127,7 +127,7 @@ class ExtractLook(PackageExtractor):
         except RuntimeError as e:
             self.log.debug(e)
         else:
-            for node in meshes:
+            for node in surfaces:
                 # - shape
                 values = vray.attributes_gather(node)
                 if values:
