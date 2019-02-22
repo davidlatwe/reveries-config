@@ -65,7 +65,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     ]
 
     @classmethod
-    def get_missing(cls, instance, uuids=None):
+    def get_invalid_missing(cls, instance, uuids=None):
 
         if uuids is None:
             uuids = cls._get_avalon_uuid(instance)
@@ -75,7 +75,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         return invalid
 
     @classmethod
-    def get_duplicated(cls, instance, uuids=None):
+    def get_invalid_duplicated(cls, instance, uuids=None):
 
         if uuids is None:
             uuids = cls._get_avalon_uuid(instance)
@@ -91,7 +91,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
         is_invalid = False
 
-        invalid = self.get_missing(instance, uuids_dict)
+        invalid = self.get_invalid_missing(instance, uuids_dict)
         if invalid:
             is_invalid = True
             self.log.error(
@@ -101,7 +101,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                         "'" + member + "'" for member in invalid))
             )
 
-        invalid = self.get_duplicated(instance, uuids_dict)
+        invalid = self.get_invalid_duplicated(instance, uuids_dict)
         if invalid:
             is_invalid = True
             self.log.error(
@@ -116,8 +116,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid(cls, instance):
-        invalid = (cls.get_missing(instance) +
-                   cls.get_duplicated(instance))
+        invalid = (cls.get_invalid_missing(instance) +
+                   cls.get_invalid_duplicated(instance))
         for node in invalid:
             set_avalon_uuid(node)
 
