@@ -59,7 +59,7 @@ class ExtractXGenInteractive(PackageExtractor):
 
                 io.export_xgen_IGS_preset(description, out_path)
 
-                preset_files.append((relative, desc_transform))
+                preset_files.append(relative)
 
         # Wrap preset files to one mayaAscii file
         entry_file = self.file_name("ma")
