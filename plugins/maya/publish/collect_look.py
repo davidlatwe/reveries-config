@@ -40,7 +40,7 @@ class CollectLook(pyblish.api.InstancePlugin):
         # `place3dTexture` type node.
 
         # Remove unwanted types
-        unwanted_types = ("groupId", "groupParts", "mesh")
+        unwanted_types = ("groupId", "groupParts", "surfaceShape")
         unwanted = set(cmds.ls(upstream_nodes, type=unwanted_types, long=True))
         upstream_nodes = list(set(upstream_nodes) - unwanted)
 
