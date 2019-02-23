@@ -8,9 +8,14 @@ from reveries.maya import lib, xgen, pipeline
 def create_model_subset_from_xgen(instance):
     family = "reveries.model"
     subset = "modelXGenBoundMesh"
-    member = cmds.listRelatives(instance.data["igsBoundMeshes"],
-                                allParents=True,
-                                fullPath=True) or []
+
+    if "igsBoundMeshes" in instance.data:
+        member = cmds.listRelatives(instance.data["igsBoundMeshes"],
+                                    allParents=True,
+                                    fullPath=True) or []
+    if "xgenBoundGeos" in instance.data:
+        member = instance.data["xgenBoundGeos"]
+
     member += lib.list_all_parents(member)
     model = plugins.create_dependency_instance(instance,
                                                subset,
@@ -24,10 +29,19 @@ def create_model_subset_from_xgen(instance):
 def create_look_subset_from_xgen(instance):
     family = "reveries.look"
     subset = "lookXGenHair"
-    member = instance.data["igsDescriptions"][:]
-    member += cmds.listRelatives(member,
-                                 allParents=True,
-                                 fullPath=True) or []
+
+    if "igsDescriptions" in instance.data:
+        member = instance.data["igsDescriptions"][:]
+        member += cmds.listRelatives(member,
+                                     parent=True,
+                                     fullPath=True) or []
+
+    if "xgenDescriptions" in instance.data:
+        member = instance.data["xgenDescriptions"][:]
+        member += cmds.listRelatives(member,
+                                     shapes=True,
+                                     fullPath=True) or []
+
     look = plugins.create_dependency_instance(instance,
                                               subset,
                                               family,
@@ -92,12 +106,22 @@ class CollectXGen(pyblish.api.InstancePlugin):
         # Inject shadow family
         instance.data["families"] = ["reveries.xgen.legacy"]
 
-        palette = cmds.ls(instance, type="xgmPalette", long=True)
-        if not palette:
-            return
+        palettes = cmds.ls(instance, type="xgmPalette")
+        instance.data["xgenPalettes"] = palettes
 
-        descriptions = cmds.ls(instance, type="xgmDescription", long=True)
-        if not descriptions:
-            return
+        descriptions = list()
+        for palette in palettes:
+            descriptions += xgen.legacy.list_descriptions(palette)
 
-        # Not finished
+        instance.data["xgenDescriptions"] = descriptions
+
+        bound_meshes = set()
+        for desc in descriptions:
+            bound_meshes.update(xgen.legacy.list_bound_geometry(desc))
+        instance.data["xgenBoundGeos"] = list(bound_meshes)
+
+        # Create model subset for bounding meshes
+        create_model_subset_from_xgen(instance)
+
+        # Create lookDev subset for hair
+        create_look_subset_from_xgen(instance)
