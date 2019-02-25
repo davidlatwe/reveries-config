@@ -3,7 +3,7 @@ import os
 import json
 import pyblish.api
 from reveries.plugins import PackageExtractor
-from reveries.maya import io, lib, utils, capsule
+from reveries.maya import io, xgen, utils, capsule
 
 
 class ExtractXGenInteractive(PackageExtractor):
@@ -38,7 +38,7 @@ class ExtractXGenInteractive(PackageExtractor):
 
                 # Get bounded meshes
                 bound_map[desc_id] = list()
-                for mesh in lib.list_bound_meshes(description):
+                for mesh in xgen.interactive.list_bound_meshes(description):
                     transform = cmds.listRelatives(mesh, parent=True)
                     id = utils.get_id(transform[0])
                     bound_map[desc_id].append(id)

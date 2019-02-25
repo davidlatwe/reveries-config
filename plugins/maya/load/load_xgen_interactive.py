@@ -2,7 +2,7 @@
 import os
 import avalon.api
 from reveries.maya.plugins import ReferenceLoader
-from reveries.maya.lib import list_lead_descriptions
+from reveries.maya.xgen.interactive import list_lead_descriptions
 
 
 class XGenInteractiveLoader(ReferenceLoader, avalon.api.Loader):

@@ -52,14 +52,21 @@ class ExtractLook(PackageExtractor):
                 # Change texture path to published location
                 for file_node in cmds.ls(self.member, type="file"):
                     attr_name = file_node + ".fileTextureName"
+                    color_attr = file_node + ".colorSpace"
                     final_path = file_node_path[file_node]
+
+                    # Unlock colorspace
+                    color_space = cmds.getAttr(color_attr)
+                    cmds.setAttr(color_attr, lock=False)
 
                     # Set texture file path to publish location
                     cmds.setAttr(attr_name, final_path, type="string")
 
                     # Lock colorspace
-                    attr_name = file_node + ".colorSpace"
-                    cmds.setAttr(attr_name, lock=True)
+                    cmds.setAttr(color_attr,
+                                 color_space,
+                                 lock=True,
+                                 type="string")
 
             # Select full shading network
             # If only select shadingGroups, and if there are any node
@@ -100,15 +107,15 @@ class ExtractLook(PackageExtractor):
                                                         source=False,
                                                         plugs=True)
 
-        meshes = cmds.ls(self.data["dagMembers"],
-                         noIntermediate=True,
-                         type="mesh")
+        surfaces = cmds.ls(self.data["dagMembers"],
+                           noIntermediate=True,
+                           type="surfaceShape")
 
         # CreaseSet
         crease_sets = dict()
         creases = list()
 
-        for node in meshes:
+        for node in surfaces:
             creases += cmds.ls(cmds.listSets(object=node), type="creaseSet")
 
         creases = list(set(creases))
@@ -127,7 +134,7 @@ class ExtractLook(PackageExtractor):
         except RuntimeError as e:
             self.log.debug(e)
         else:
-            for node in meshes:
+            for node in surfaces:
                 # - shape
                 values = vray.attributes_gather(node)
                 if values:

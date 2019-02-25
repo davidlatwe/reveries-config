@@ -17,16 +17,26 @@ class ValidateTextureFilesExists(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
         from maya import cmds
+        from maya.app.general.fileTexturePathResolver import (
+            getFilePatternString,
+            findAllFilesForPattern,
+        )
 
         invalid = list()
 
         for file_node in instance:
             attr_name = file_node + ".fileTextureName"
+            tiling_mode = cmds.getAttr(file_node + ".uvTilingMode")
+            is_sequence = cmds.getAttr(file_node + ".useFrameExtension")
             img_path = cmds.getAttr(attr_name,
                                     expandEnvironmentVariables=True)
 
-            if not os.path.isfile(img_path):
-                invalid.append(file_node)
+            pattern = getFilePatternString(img_path, is_sequence, tiling_mode)
+
+            for file in findAllFilesForPattern(pattern, None):
+                if not os.path.isfile(file):
+                    invalid.append(file_node)
+                    break
 
         return invalid
 
