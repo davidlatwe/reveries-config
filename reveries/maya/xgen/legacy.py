@@ -14,24 +14,36 @@ def _getMapExprStrings():
 
     The attribute value of mapped texture has format like:
 
-        $a=map('${DESC}/paintmaps/length');
-        $b=map('${DESC}/paintmaps/regionMask/myMap.ptx');#3dpaint,5.0
-        $c=map('${DESC}/paintmaps/seq/mask_${PAL,mySeq}.ptx');#3dpaint,5.0
+        $x=map('${DESC}/paintmaps/mask');
+        $a=map('${DESC}/${HAHA}/mask');#3dpaint,5.0
+        $b=map('${DESC}/paintmaps/regionMask/pSphere2.ptx');#3dpaint,5.0aa
+        $c=map('${DESC}/paintmaps/mask_${PAL,mySeq}.ptx');#file
+        $d=map('${DESC}/noise.%d.map.ptx', 10);#3dpaint,5.0
+        $e=map('${DESC}/fenceColor-%04d.ptx', 12);
+        $f=map('${DESC}/map_%d', $objectId);#3dpaint,5.0
+        $g=map('${DESC}/map-%d.ptx', cycle($objectId, 10, 20));
+        $h=map('${DESC}/map-%d.ptx', pick($objectId, 10, 20));#3dpaint,5.0
 
     The format of $b and $c was not supported in Maya, the pattenrs returned
     from this function does.
 
     """
-    exprString0 = ('\\$(\\w+)\\s*=\\s*map\\([\"\']'
-                   '([\\w${}\\-\\\\/.${,}]+)[\"\']\\);'
-                   '\\s*#3dpaint,(-?[\\d.]*)')
-    exprString1 = ('\\$(\\w+)\\s*=\\s*map\\([\"\']'
-                   '([\\w${}\\-\\\\/.${,}]+)[\"\']\\);'
-                   '\\s*#file')
-    exprString2 = ('\\$(\\w+)\\s*=\\s*vmap\\([\"\']'
-                   '([\\w${}\\-\\\\/.${,}]+)[\"\']\\);'
-                   '\\s*#vpaint')
-    exprStrings = [exprString0, exprString1, exprString2]
+    exprStr0 = ('\\$(\\w+)\\s*=\\s*map\\([\"\']([\\w${}\\-\\\\/%.${,}]+)'
+                '[\"\'][,.$()a-zA-Z0-9 ]*\\);\\s*#3dpaint,(-?[\\d.]*)')
+
+    exprStr1 = ('\\$(\\w+)\\s*=\\s*map\\([\"\']([\\w${}\\-\\\\/%.${,}]+)'
+                '[\"\'][,.$()a-zA-Z0-9 ]*\\);\\s*#file')
+
+    exprStr2 = ('\\$(\\w+)\\s*=\\s*vmap\\([\"\']([\\w${}\\-\\\\/%.${,}]+)'
+                '[\"\'][,.$()a-zA-Z0-9 ]*\\);\\s*#vpaint')
+
+    exprStr3 = ('\\$(\\w+)\\s*=\\s*map\\([\"\']([\\w${}\\-\\\\/%.${,}]+)'
+                '[\"\'][,.$()a-zA-Z0-9 ]*\\);')
+
+    exprStr4 = ('\\$(\\w+)\\s*=\\s*vmap\\([\"\']([\\w${}\\-\\\\/%.${,}]+)'
+                '[\"\'][,.$()a-zA-Z0-9 ]*\\);')
+
+    exprStrings = [exprStr0, exprStr1, exprStr2, exprStr3, exprStr4]
 
     return exprStrings
 
@@ -49,8 +61,11 @@ def _parseMapString(exprText):
         [mapExprStrings[0], "3dpaint"],
         [mapExprStrings[1], "file"],
         [mapExprStrings[2], "vpaint"],
+        [mapExprStrings[3], ""],  # map() without comment
+        [mapExprStrings[4], ""],  # vmap() without comment
     ]
 
+    poses = []
     retMaps = []
     for s in exprStrings:
         re = QtCore.QRegExp(s[0])
@@ -60,7 +75,15 @@ def _parseMapString(exprText):
             pos = re.indexIn(exprText, offset)
             if (pos < 0):
                 break
+
             offset = pos + 1
+
+            if pos in poses:
+                # Possible already matched via previous regex if current
+                # regex does no matching comment string.
+                continue
+            poses.append(pos)
+
             item.name = re.cap(1)
             item.file = re.cap(2)
             item.mode = s[1]
@@ -113,7 +136,7 @@ def _parseMapString_override(self, exprText):
     filtered = list()
     # Here we use our own parser
     for item in _parseMapString(exprText):
-        if item.file.endswith(".ptx"):
+        if item.file.endswith(".ptx") or "%" in item.file:
             # Block the explicit map path from GUI
             continue
         filtered.append(item)
@@ -374,7 +397,10 @@ def parse_map_path(map_attr):
     """
     palette, description, obj, attr, index = parse_objects(map_attr)
 
+    print(palette, description, obj, attr, index)
+
     expr_maps = parse_expr_maps(attr, palette, description, obj)
+    print(len(expr_maps))
     if not expr_maps:
         # Not expression type
         path = xg.getAttr(attr, palette, description, obj)

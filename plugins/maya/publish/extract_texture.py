@@ -125,6 +125,13 @@ class ExtractTexture(PackageExtractor):
                 try:
 
                     published_file = latest_hashes[hash_value]
+                    _expand = os.path.expandvars(published_file)
+                    if not os.path.isfile(_expand):
+                        self.log.warning("Published file not exists, "
+                                         "copy new one. ({})"
+                                         "".format(_expand))
+                        # Jump to add file
+                        raise KeyError("Published file not exists.")
 
                 except KeyError:
 

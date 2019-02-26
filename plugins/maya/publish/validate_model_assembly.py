@@ -23,7 +23,10 @@ class ValidateModelAssembly(pyblish.api.InstancePlugin):
     label = "Model Assembly"
     order = pyblish.api.ValidatorOrder + 0
     hosts = ["maya"]
-    families = ["reveries.model"]
+    families = [
+        "reveries.model",
+        "reveries.look",
+    ]
 
     def process(self, instance):
 
