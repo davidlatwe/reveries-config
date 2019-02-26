@@ -1,4 +1,5 @@
 
+import os
 import contextlib
 import maya.cmds as cmds
 import xgenm as xg
@@ -242,9 +243,19 @@ def xgen_preview_all(palette):
 
 @contextlib.contextmanager
 def switch_data_path(palette, data_path):
+    """Switch xgDataPath context
 
     Args:
+        palette (str): XGen Legacy palette name
+        data_path (str): xgDataPath
 
+    """
+    origin = xg.getAttr("xgDataPath", palette)
+    try:
+        xg.setAttr("xgDataPath", data_path, palette)
+        yield
+    finally:
+        xg.setAttr("xgDataPath", origin, palette)
 
 
 def parse_expr_maps(attr, palette, description, object):
@@ -344,3 +355,170 @@ def parse_objects(map_attr):
                 return palette, description, module, attr, attr_indx
 
         raise Exception("Object not found, this is a bug: {}".format(map_attr))
+
+
+def parse_map_path(map_attr):
+    """Parse attribute returned from `filePathEditor` into file path
+
+    (NOTE) Remember to refresh filePathEditor by calling
+           `cmds.filePathEditor(refresh=True)`, or the
+           fxmodule index might not return correctly.
+
+    Args:
+        map_attr (str): An attribute path returned from `cmds.filePathEditor`
+
+    Returns:
+        str: File path
+        tuple: Name of the attribute and it's parent objects
+
+    """
+    palette, description, obj, attr, index = parse_objects(map_attr)
+
+    expr_maps = parse_expr_maps(attr, palette, description, obj)
+    if not expr_maps:
+        # Not expression type
+        path = xg.getAttr(attr, palette, description, obj)
+    else:
+        path = expr_maps[index].file
+
+    parents = (palette, description, obj, attr, index)
+
+    return path, parents
+
+
+def parse_description_maps(description):
+    """Get all path of maps and attributes which used them by description
+
+    Args:
+        description (str): XGen Legacy description name
+
+    Returns:
+        list: A list of tuple of file path and attribute objects
+
+    """
+    cmds.filePathEditor(refresh=True)
+    resloved = (cmds.filePathEditor(query=True,
+                                    listFiles="",
+                                    withAttribute=True,
+                                    byType="xgmDescription",
+                                    unresolved=False) or [])
+
+    collected_paths = list()
+
+    for map_attr, fname in zip(resloved[1::2], resloved[0::2]):
+        desc_ = cmds.listRelatives(map_attr.split(".", 1)[0], parent=True)[0]
+        if not description == desc_:
+            continue
+
+        path, parents = parse_map_path(map_attr)
+
+        if not path.endswith(".ptx"):
+            sep = "" if path.endswith("/") else "/"
+            path += sep + fname
+
+        collected_paths.append((path, parents))
+
+    return collected_paths
+
+
+def maps_to_transfer(description):
+    """Get all expanded map file/dir path from description for transfer
+
+    Args:
+        description (str): XGen Legacy description name
+
+    Returns:
+        dict: {
+            "files": A list of .ptx expanded file paths
+            "folders": A list of expanded folder paths that contain .ptx
+                files mapped via expression variables.
+        }
+
+    Raise:
+        RuntimeError if collected path not exists.
+
+    """
+    transfer = {"files": set(), "folders": set()}
+
+    for path, parents in parse_description_maps(description):
+        file_path = xg.expandFilepath(path, description)
+
+        dir_path = os.path.dirname(file_path)
+        if not os.path.isdir(dir_path):
+            raise RuntimeError("{0}: Map dir not exists: {1}"
+                               "".format(parents, dir_path))
+
+        if os.path.isfile(file_path):
+            # Copy file
+            transfer["files"].add(file_path)
+
+        else:
+            # Possible contain variables in file name, copy folder
+            transfer["folders"].add(dir_path)
+
+    return transfer
+
+
+def bake_description(palette, description, rebake=False):
+    """Bake a description and it's modifiers which data needs to be baked
+
+    Args:
+        palette (str): XGen Legacy palette name
+        description (str): XGen Legacy description name
+        rebake (bool): Remove previous bake groom modifier if set to True,
+            default False.
+
+    Raise:
+        RuntimeError if there are bake groom modifier existed and `rebake`
+            is False.
+
+    """
+    fxmod_typ = (lambda fxm: xg.fxModuleType(palette, description, fxm))
+
+    fx_modules = xg.fxModules(palette, description)
+
+    for fxm in fx_modules:
+        if not fxmod_typ(fxm) == "BakedGroomManagerFXModule":
+            continue
+        if not rebake:
+            raise RuntimeError("This description has been baked.")
+        # Remove bake module
+        xg.removeFXModule(palette, description, fxm)
+
+    previous_clump = None
+
+    # (NOTE) fxModules iterate from bottom to top
+    for fxm in fx_modules:
+
+        if fxmod_typ(fxm) == "ClumpingFXModule":
+            # set the top clumpingMod cvAttr to True, for AnimModifiers
+            # which needs clump
+            if previous_clump:
+                xg.setAttr("cvAttr",
+                           "false",
+                           palette,
+                           description,
+                           previous_clump)
+
+            xg.setAttr("cvAttr", "true", palette, description, fxm)
+            previous_clump = fxm
+
+        if fxmod_typ(fxm) in ("NoiseFXModule", "MeshCutFXModule"):
+            # temporarily turn off lod so we dont bake it in
+            lod = xg.getAttr("lodFlag", palette, description)
+            xg.setAttr("lodFlag", "false", palette, description)
+            # change mode for bake
+            xg.setAttr("mode", "2", palette, description, fxm)
+            # bake the noise
+            cmds.xgmNullRender(description, progress=True)
+            # restore
+            xg.setAttr("lodFlag", lod, palette, description)
+            # change mode to baked
+            xg.setAttr("mode", "1", palette, description, fxm)
+
+    # bake groom modifiers
+    fxm = xg.addFXModule(palette, description, "BakedGroomManagerFXModule")
+    xg.setAttr("active", "true", palette, description, fxm)
+    xg.bakedGroomManagerBake(palette, description)
+    # set Generator to XPD
+    xg.setActive(palette, description, "FileGenerator")
