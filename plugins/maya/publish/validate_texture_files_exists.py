@@ -1,6 +1,15 @@
 
-import os
 import pyblish.api
+
+
+class OpenFilePathEditor(pyblish.api.Action):
+
+    label = "File Path Editor"
+    on = "failed"
+
+    def process(self, context, plugin):
+        from maya import mel
+        mel.eval("FilePathEditor;")
 
 
 class ValidateTextureFilesExists(pyblish.api.InstancePlugin):
@@ -13,30 +22,28 @@ class ValidateTextureFilesExists(pyblish.api.InstancePlugin):
     families = [
         "reveries.texture",
     ]
+    actions = [
+        pyblish.api.Category("Helper"),
+        OpenFilePathEditor,
+    ]
 
     @classmethod
     def get_invalid(cls, instance):
         from maya import cmds
-        from maya.app.general.fileTexturePathResolver import (
-            getFilePatternString,
-            findAllFilesForPattern,
-        )
 
         invalid = list()
 
-        for file_node in instance:
-            attr_name = file_node + ".fileTextureName"
-            tiling_mode = cmds.getAttr(file_node + ".uvTilingMode")
-            is_sequence = cmds.getAttr(file_node + ".useFrameExtension")
-            img_path = cmds.getAttr(attr_name,
-                                    expandEnvironmentVariables=True)
+        cmds.filePathEditor(refresh=True)
+        unresloved = (cmds.filePathEditor(query=True,
+                                          listFiles="",
+                                          withAttribute=True,
+                                          byType="file",
+                                          unresolved=True) or [])
 
-            pattern = getFilePatternString(img_path, is_sequence, tiling_mode)
-
-            for file in findAllFilesForPattern(pattern, None):
-                if not os.path.isfile(file):
-                    invalid.append(file_node)
-                    break
+        for map_attr in unresloved[1::2]:
+            file_node = map_attr.split(".", 1)[0]
+            if file_node in instance:
+                invalid.append(file_node)
 
         return invalid
 

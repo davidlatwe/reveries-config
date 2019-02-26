@@ -656,6 +656,12 @@ class MayaSelectInvalidInstanceAction(SelectInvalidInstanceAction):
         cmds.select(deselect=True)
 
 
-class MayaSelectInvalidContextAction(SelectInvalidContextAction,
-                                     MayaSelectInvalidInstanceAction):
+class MayaSelectInvalidContextAction(SelectInvalidContextAction):
     """ Select invalid nodes in context"""
+    def select(self, invalid):
+        from maya import cmds
+        cmds.select(invalid, replace=True, noExpand=True)
+
+    def deselect(self):
+        from maya import cmds
+        cmds.select(deselect=True)

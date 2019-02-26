@@ -7,7 +7,7 @@ import avalon.io
 
 from reveries.plugins import PackageExtractor, skip_stage
 from reveries.maya.plugins import env_embedded_path
-from reveries.utils import AssetHasher
+from reveries.utils import hash_file
 
 
 class ExtractTexture(PackageExtractor):
@@ -58,7 +58,7 @@ class ExtractTexture(PackageExtractor):
             representation = avalon.io.find_one({"_id": representation})
             latest_hashes = representation["data"]["hashes"]
 
-        processed = dict()
+        processed_pattern = dict()
 
         # Hash file to check which to copy and which to remain old link
         for file_node in self.member:
@@ -69,17 +69,21 @@ class ExtractTexture(PackageExtractor):
                                     expandEnvironmentVariables=True)
 
             pattern = getFilePatternString(img_path, is_sequence, tiling_mode)
+            img_name = os.path.basename(img_path)
 
-            if pattern in processed:
-                final_pattern_path = processed[pattern]
+            if pattern in processed_pattern:
+
+                final_pattern = processed_pattern[pattern]
+
+                dir_name = os.path.dirname(final_pattern)
+                final_path = os.path.join(dir_name, img_name)
                 SKIP = True
 
             else:
 
-                img_name = os.path.basename(pattern)
                 paths = [package_path]
                 paths += file_node.split(":")  # Namespace as fsys hierarchy
-                paths.append(img_name)  # image name
+                paths.append(os.path.basename(pattern))  # image pattern name
                 #
                 # Include node name as part of the path should prevent
                 # file name collision which may introduce by two or
@@ -90,50 +94,48 @@ class ExtractTexture(PackageExtractor):
                 #   File_A.fileTextureName = "asset/a/texture.png"
                 #   File_B.fileTextureName = "asset/b/texture.png"
                 #
-                final_pattern_path = os.path.join(*paths)
+                final_pattern = os.path.join(*paths)
+                processed_pattern[pattern] = final_pattern
 
-                processed[pattern] = final_pattern_path
+                paths.pop()  # Change to file path from fileNode
+                paths.append(img_name)
+                final_path = os.path.join(*paths)
                 SKIP = False
 
-            self.context.data["fileNodePath"][file_node] = final_pattern_path
-            self.log.debug("FileNode: {!r}".format(file_node))
-            self.log.debug("Texture Path: {!r}".format(final_pattern_path))
+            self.context.data["fileNodePath"][file_node] = final_path
+            self.log.info("FileNode: {!r}".format(file_node))
+            self.log.info("Texture Path: {!r}".format(final_pattern))
 
             if SKIP:
+                self.log.info("Skipped.")
                 continue
 
             # Files to be transfered
             curreent_files = findAllFilesForPattern(pattern, None)
+            self.log.debug("File count: {}".format(len(curreent_files)))
 
-            hasher = AssetHasher()
             for file in curreent_files:
-                hasher.add_file(file)
-            hash_value = hasher.digest()
+                hash_value = hash_file(file)
 
-            try:
+                img_name = os.path.basename(file)
+                paths.pop()  # Change to resloved file path
+                paths.append(img_name)
+                final_path = os.path.join(*paths)
 
-                previous_pattern = latest_hashes[hash_value]
+                try:
 
-            except KeyError:
-                latest_hashes[hash_value] = final_pattern_path
+                    published_file = latest_hashes[hash_value]
 
-                for file in curreent_files:
-                    img_name = os.path.basename(file)
-                    paths.pop()
-                    paths.append(img_name)
-                    final_path = os.path.join(*paths)
+                except KeyError:
 
+                    latest_hashes[hash_value] = final_path
                     self.add_file(file, final_path)
+                    self.log.debug("File added: {0} -> {1}"
+                                   "".format(file, final_path))
 
-            else:
-                previous_files = findAllFilesForPattern(previous_pattern, None)
-
-                for file in previous_files:
-                    img_name = os.path.basename(file)
-                    paths.pop()
-                    paths.append(img_name)
-                    final_path = os.path.join(*paths)
-
-                    self.add_hardlink(file, final_path)
+                else:
+                    self.add_hardlink(published_file, final_path)
+                    self.log.debug("Hardlink added: {0} -> {1}"
+                                   "".format(file, final_path))
 
         self.add_data({"hashes": latest_hashes})

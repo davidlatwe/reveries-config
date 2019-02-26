@@ -1,7 +1,5 @@
 
 import pyblish.api
-import maya.cmds as cmds
-import xgenm as xg
 import reveries.maya.xgen.legacy as xgen
 
 
@@ -25,31 +23,12 @@ class ValidateXGenMapsInDESC(pyblish.api.InstancePlugin):
 
         invalid = list()
 
-        cmds.filePathEditor(refresh=True)
-        resloved = (cmds.filePathEditor(query=True,
-                                        listFiles="",
-                                        withAttribute=True,
-                                        byType="xgmDescription",
-                                        unresolved=False) or [])[1::2]
+        for desc in instance.data["xgenDescriptions"]:
+            for path, parents in xgen.parse_description_maps(desc):
+                if not path.startswith("${DESC}"):
+                    invalid.append((parents, path))
 
-        for map_attr in resloved:
-
-            attr, palette, description, obj = xgen.parse_objects(map_attr)
-
-            if description not in instance.data["xgenDescriptions"]:
-                continue
-
-            expr_maps = xgen.parse_expr_maps(attr, palette, description, obj)
-            if not expr_maps:
-                # Not expression type
-                files = [xg.getAttr(attr, palette, description, obj)]
-            else:
-                files = [m["file"] for m in expr_maps]
-
-            if any(not path.startswith("${DESC}") for path in files):
-                invalid.append((palette, description, obj, attr))
-
-        return list(set(invalid))
+        return invalid
 
     def process(self, instance):
         invalid = self.get_invalid(instance)
