@@ -87,6 +87,40 @@ def find_spline_base(description):
     return bases[0]
 
 
+def compose_bbox_data(description):
+    """Compute bounded meshes' bounding box data for preset
+
+    Args:
+        description (str): description shape node name
+
+    Return:
+        (str): Bounded meshes' bounding box data
+
+    """
+    spline_base = find_spline_base(description)
+    connections = cmds.listConnections(spline_base,
+                                       plugs=True,
+                                       source=True,
+                                       destination=False,
+                                       connections=True)
+
+    bounding_box = ""
+    for src, dst in zip(connections[::2], connections[1::2]):
+        if not src.startswith(spline_base + ".boundMesh["):
+            continue
+
+        bound_transform = cmds.listRelatives(cmds.ls(dst, objectsOnly=True),
+                                             parent=True)[0]
+
+        head = "." + src.split(".")[-1]
+        tail = ",".join([str(i) for i in cmds.xform(bound_transform,
+                                                    query=True,
+                                                    boundingBox=True)])
+        bounding_box += head + ":" + tail + ";"
+
+    return bounding_box
+
+
 class SplinePresetUtil(xgmSplinePreset.PresetUtil):
     """Enhanced XGen interactive groom preset util class
 
