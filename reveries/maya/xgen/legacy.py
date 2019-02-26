@@ -8,6 +8,118 @@ from xgenm.ui.widgets.xgExpressionUI import ExpressionUI
 from avalon.vendor.Qt import QtCore
 
 
+def _getMapExprStrings():
+    """Return patterns for parsing map file paths from expression
+
+    The attribute value of mapped texture has format like:
+
+        $a=map('${DESC}/paintmaps/length');
+        $b=map('${DESC}/paintmaps/regionMask/myMap.ptx');#3dpaint,5.0
+        $c=map('${DESC}/paintmaps/seq/mask_${PAL,mySeq}.ptx');#3dpaint,5.0
+
+    The format of $b and $c was not supported in Maya, the pattenrs returned
+    from this function does.
+
+    """
+    exprString0 = ('\\$(\\w+)\\s*=\\s*map\\([\"\']'
+                   '([\\w${}\\-\\\\/.${,}]+)[\"\']\\);'
+                   '\\s*#3dpaint,(-?[\\d.]*)')
+    exprString1 = ('\\$(\\w+)\\s*=\\s*map\\([\"\']'
+                   '([\\w${}\\-\\\\/.${,}]+)[\"\']\\);'
+                   '\\s*#file')
+    exprString2 = ('\\$(\\w+)\\s*=\\s*vmap\\([\"\']'
+                   '([\\w${}\\-\\\\/.${,}]+)[\"\']\\);'
+                   '\\s*#vpaint')
+    exprStrings = [exprString0, exprString1, exprString2]
+
+    return exprStrings
+
+
+def _parseMapString(exprText):
+    """Return a list of map file item from expression in an object attribute
+
+    This function was modified from `ExpressionUI.parseMapString`.
+
+    """
+    # vmap and map expressions
+    mapExprStrings = _getMapExprStrings()
+
+    exprStrings = [
+        [mapExprStrings[0], "3dpaint"],
+        [mapExprStrings[1], "file"],
+        [mapExprStrings[2], "vpaint"],
+    ]
+
+    retMaps = []
+    for s in exprStrings:
+        re = QtCore.QRegExp(s[0])
+        offset = 0
+        while True:
+            item = ExpressionUI.MapItem()
+            pos = re.indexIn(exprText, offset)
+            if (pos < 0):
+                break
+            offset = pos + 1
+            item.name = re.cap(1)
+            item.file = re.cap(2)
+            item.mode = s[1]
+            if s[1] == "3dpaint":
+                item.mode = item.mode + "," + re.cap(3)
+
+            item.pos = pos
+
+            retMaps.append(item)
+
+    return retMaps
+
+
+def _parseMapString_override(self, exprText):
+    """This is used for overriding `ExpressionUI.parseMapString` in Maya
+
+    (NOTE) Why we need to override ?
+    In order to support explicit .ptx file path in expression.
+    Here's the detail...
+
+    XGen allowed explicity pointing a .ptx file in expression, like:
+    ```
+    $a=map('${DESC}/paintmaps/length');#3dpaint,5.0
+    $b=map('${DESC}/paintmaps/variate/tweak.ptx');#3dpaint,5.0
+    $a = $a * $b;
+    $a
+
+    ```
+    But this would expose the enitre expression as plain string value in
+    attribute GUI input field, not like the default format that has paint
+    and save button next to the text field with only map dir path shown.
+
+    To fix this, we need to modify the matching pattern for catching paths
+    like these:
+        map('${DESC}/paintmaps/regionMask/myMap.ptx')
+        map('${DESC}/paintmaps/seq/mask_${PAL,mySeq}.ptx')
+
+    Then the path would show up correctly in GUI, but there comes the next
+    problem.
+
+    Maya paint tool only use bounding geometry name as the file name to bake
+    .ptx file, so those path with explicit custom name wont work with paint
+    tool. So instead of exposing unusable widget, we filter out those paths
+    from being shown on GUI.
+
+    Finally, we could now pointing explicit .ptx file path in expression,
+    without breaking the GUI.
+
+    """
+    filtered = list()
+    # Here we use our own parser
+    for item in _parseMapString(exprText):
+        if item.file.endswith(".ptx"):
+            # Block the explicit map path from GUI
+            continue
+        filtered.append(item)
+
+    return filtered
+
+
 def list_palettes():
     """Return all palettes in scene"""
     return list(xg.palettes())
@@ -128,10 +240,15 @@ def xgen_preview_all(palette):
                        "GLRenderer")
 
 
-def parse_expr_maps(attr, palette, description, object):
-    """Return a list of map file data from expression attribute in object
+@contextlib.contextmanager
+def switch_data_path(palette, data_path):
 
-    This function was modified from `ExpressionUI.parseMapString`.
+    Args:
+
+
+
+def parse_expr_maps(attr, palette, description, object):
+    """Return a list of map file data from expression in an object attribute
 
     Args:
         attr (str): Modifier attribute name
@@ -140,51 +257,20 @@ def parse_expr_maps(attr, palette, description, object):
         object (str): Name of an XGen object
 
     Returns:
-        (list): A list of `dict` object.
-            Object Entry:
-                {
-                    "name": Expression var name,
-                    "file": Map file path,
-                    "mode": Map file mode,
-                    "pos": Expression var in line position,
-                }
+        (list): A list of `ExpressionUI.MapItem` object.
+            Object attribute:
+                name: Expression var name
+                file: Map file path
+                mode: Map file mode
+                pos: Expression var in line position
 
     """
     expr = xg.getAttr(attr, palette, description, object)
-
-    mapExprStrings = xg.ui.xgSetMapAttr.getMapExprStrings()
-    exprStrings = [[mapExprStrings[0], "3dpaint"], [
-        mapExprStrings[1], "file"], [mapExprStrings[2], "vpaint"]]
-
-    retMaps = []
-    for s in exprStrings:
-        re = QtCore.QRegExp(s[0])
-        offset = 0
-        while True:
-            item = ExpressionUI.MapItem()
-            pos = re.indexIn(expr, offset)
-            if (pos < 0):
-                break
-            offset = pos + 1
-            item.name = re.cap(1)
-            item.file = re.cap(2)
-            item.mode = s[1]
-            if s[1] == "3dpaint":
-                item.mode = item.mode + "," + re.cap(3)
-
-            item.pos = pos
-
-            retMaps.append({
-                "name": item.name,
-                "file": item.file,
-                "mode": item.mode,
-                "pos": item.pos,
-            })
-
-    return retMaps
+    return _parseMapString(expr)
 
 
 _ATTR_ALIAS = {
+    "region": "regionMap",
     "HeadBak": "bakeDir",
     "HeadPoint": "pointDir",
     "inputMap": "mapDir",
@@ -192,24 +278,36 @@ _ATTR_ALIAS = {
 }
 
 
+def _parse_attribute(attr):
+    if attr.endswith(")"):
+        attr, attr_indx = attr[:-1].split("(")
+        attr_indx = int(attr_indx)
+    else:
+        attr_indx = 0
+
+    attr = str(_ATTR_ALIAS.get(attr, attr))
+
+    return attr, attr_indx
+
+
 def parse_objects(map_attr):
     """Parse attribute returned from `filePathEditor` into XGen object names
 
     (NOTE) Remember to refresh filePathEditor by calling
-           `cmds.filePathEditor(refresh=True)`
-           or the fxmodule index might not return correctly
+           `cmds.filePathEditor(refresh=True)`, or the
+           fxmodule index might not return correctly.
 
     >>> cmds.filePathEditor(refresh=True)
     >>> maps = cmds.filePathEditor(q=1, listFiles="", withAttribute=1)
     ["descriptionShape.primitive.ClumpingFXModule(1).HeadPoint", ...]
     >>> parse_objects(maps[0])
-    ('pointDir', 'CY_Mon_Hair', 'description', 'Clumping2')
+    ('CY_Mon_Hair', 'description', 'Clumping2', 'pointDir', 0)
 
     Args:
         map_attr (str): An attribute path returned from `cmds.filePathEditor`
 
     Returns:
-        tuple: Names of attribute, palette, description, object
+        tuple: Names of palette, description, object, attr, attr-index
 
     """
     address = map_attr.split(".")
@@ -219,26 +317,30 @@ def parse_objects(map_attr):
     subtype = xg.getActive(palette, description, str(address[1].capitalize()))
 
     if len(address) < 4:
-        attr = address[2].split("(")[0]
-        attr = str(_ATTR_ALIAS.get(attr, attr))
+        # Example: descriptionShape.generator.mask
 
-        return attr, palette, description, subtype
+        attr = address[2]
+        attr, attr_indx = _parse_attribute(attr)
+
+        return palette, description, subtype, attr, attr_indx
 
     else:
-        attr = address[3].split("(")[0]
-        attr = str(_ATTR_ALIAS.get(attr, attr))
+        # Example: descriptionShape.primitive.ClumpingFXModule(1).HeadPoint
 
-        modifier_cls, index = address[2][:-1].split("(")
-        index = int(index)
+        modifier_cls, mod_indx = address[2][:-1].split("(")
+        mod_indx = int(mod_indx)
+
+        attr = address[3]
+        attr, attr_indx = _parse_attribute(attr)
 
         try:
-            module = xg.fxModules(palette, description)[index]
+            module = xg.fxModules(palette, description)[mod_indx]
         except IndexError:
             raise IndexError("Object not found, possible `filePathEditor` "
                              "not refreshed: {}".format(map_attr))
         else:
             if xg.fxModuleType(palette, description, module) == modifier_cls:
 
-                return attr, palette, description, module
+                return palette, description, module, attr, attr_indx
 
         raise Exception("Object not found, this is a bug: {}".format(map_attr))

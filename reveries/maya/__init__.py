@@ -3,7 +3,7 @@ import sys
 import logging
 
 try:
-    from maya import mel
+    from maya import mel, cmds
 except ImportError:
     raise ImportError("Module 'reveries.maya' require Autodesk Maya.")
 
@@ -44,6 +44,16 @@ def _override():
     commands.reset_frame_range = set_scene_timeline
 
 
+def _override_deferred():
+    from xgenm.ui.widgets.xgExpressionUI import ExpressionUI
+    from .xgen import legacy
+
+    # Override Maya XGen expression map string parser
+    log.info("Overriding <xgenm.ui.widgets.xgExpressionUI.ExpressionUI."
+             "ExpressionUI.parseMapString>")
+    ExpressionUI.parseMapString = legacy._parseMapString_override
+
+
 def install():  # pragma: no cover
     from . import menu, callbacks
 
@@ -73,6 +83,9 @@ def install():  # pragma: no cover
              "workaround init.")
 
     _override()
+
+    cmds.evalDeferred("import reveries.maya;"
+                      "reveries.maya._override_deferred()")
 
     self.installed = True
 

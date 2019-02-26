@@ -31,10 +31,11 @@ class ValidateXGenNoMissingMap(pyblish.api.InstancePlugin):
                                        unresolved=True) or [])[1::2]
 
         for map_attr in missing:
-            attr, palette, description, obj = xgen.parse_objects(map_attr)
+            parents = xgen.parse_objects(map_attr)
+            palette, description, obj, attr, index = parents
 
             if description in instance.data["xgenDescriptions"]:
-                invalid.append((palette, description, obj, attr))
+                invalid.append(parents)
 
         return invalid
 
