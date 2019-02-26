@@ -1,7 +1,7 @@
 
 import os
 
-from maya import cmds
+from maya import cmds, mel
 from xgenm.xmaya import xgmSplinePreset
 
 
@@ -135,6 +135,9 @@ class SplinePresetUtil(xgmSplinePreset.PresetUtil):
     in between different meshes.
 
     """
+
+    HEADER = None
+
     @staticmethod
     def __bindMeshes(meshShapes, rootNodes, descNodes):
         """Bound to multiple or single mesh"""
@@ -149,6 +152,55 @@ class SplinePresetUtil(xgmSplinePreset.PresetUtil):
             # This must be done once before Transfer Mode turned off
             descAttr = r"%s.outSplineData" % descNode
             cmds.dgeval(descAttr)
+
+    @classmethod
+    def __convertMAToPreset(cls, inFile, outFile, boundingBoxInfo):
+        with open(inFile, r'rb') as f:
+            maBuff = f.read()
+        melBuff = cls.__convertMAToPresetBuffer(maBuff, boundingBoxInfo)
+        with open(outFile, r'wb') as f:
+            f.write(melBuff)
+
+    @classmethod
+    def __convertMAToPresetBuffer(cls, fileBuff, boundingBoxInfo):
+        extraNodeTypes = cls._PresetUtil__getExtendedExtraNodeTypes(fileBuff)
+        cont = cls._PresetUtil__getMAToPresetBuffer(fileBuff, extraNodeTypes)
+        cont = cls._PresetUtil__filterUnusedTransform(cont)
+        cont = cls._PresetUtil__addMetaData(cont, boundingBoxInfo)
+        cont = cls.__addHeader(cont)
+        content = cont
+        return content
+
+    @classmethod
+    def __addHeader(cls, content):
+        contentList = [
+            cls.HEADER,
+            r"//",
+            r"// Author:       %s" % mel.eval(r'getenv("USER")'),
+            r"// Date:         %s" % cmds.date(),
+            r"//",
+            r"//XGIP:VERSION: %s" % cls.buildVersion,
+        ]
+        contentList.append(content)
+        return '\n'.join(contentList)
+
+    @classmethod
+    def convertMAToPreset(cls, inFile, outFile,
+                          boundingBoxInfo, removeOriginal=True):
+        '''Convert MA to Preset file'''
+        cls.HEADER = r"// XGen Interactive Grooming Preset"
+        cls.__convertMAToPreset(inFile, outFile, boundingBoxInfo)
+        if removeOriginal:
+            cls._PresetUtil__removeFile(inFile)
+
+    @classmethod
+    def convertMAToMA(cls, inFile, outFile,
+                      boundingBoxInfo, removeOriginal=True):
+        '''Convert MA to MA file'''
+        cls.HEADER = r"//Maya ASCII scene"
+        cls.__convertMAToPreset(inFile, outFile, boundingBoxInfo)
+        if removeOriginal:
+            cls._PresetUtil__removeFile(inFile)
 
     @classmethod
     def attachPreset(cls, newNodes, meshShapes):

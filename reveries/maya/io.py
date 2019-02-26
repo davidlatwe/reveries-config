@@ -561,6 +561,36 @@ def export_xgen_IGS_preset(description, out_path):
                                                         removeOriginal=True)
 
 
+def export_xgen_IGS_presets(descriptions, out_path):
+    """Export multiple XGen IGS descriptions into MayaAscii file
+
+    Args:
+        descriptions (list): A list of description shape node names
+        out_path (str): preset output path (.ma)
+
+    """
+    # Export tmp mayaAscii file
+    ascii_tmp = tempfile.mkdtemp(prefix="__xgenIGS_export") + "/descs.ma"
+
+    with capsule.maintained_selection():
+        cmds.select(descriptions, replace=True)
+        cmds.file(ascii_tmp,
+                  force=True,
+                  typ="mayaAscii",
+                  exportSelected=True,
+                  preserveReferences=False,
+                  constructionHistory=True,
+                  channels=True,
+                  constraints=True,
+                  shader=True,
+                  expressions=True)
+
+    xgen.interactive.SplinePresetUtil.convertMAToMA(ascii_tmp,
+                                                    out_path,
+                                                    "",  # Not for preset
+                                                    removeOriginal=True)
+
+
 def import_xgen_IGS_preset(file_path, namespace=":", bound_meshes=None):
     """Import and apply XGen IGS description preset to mesh
 
@@ -637,43 +667,3 @@ def attach_xgen_IGS_preset(preset_nodes, bound_meshes):
         raise Exception("Missing bound mesh.")
 
     xgen.interactive.SplinePresetUtil.attachPreset(preset_nodes, bound_meshes)
-
-
-def wrap_xgen_IGS_preset(wrapper_path, preset_files):
-    """Wrapping XGen IGS preset(.ma) files into a MayaAscii file
-
-    (NOTE) Set environment var "__XGEN_IGS_NAMESPACE__" to change the
-           namespace if file.
-
-    (NOTE) The file path of `preset_files` should be a relative path, relative
-        to `wrapper_path`.
-
-        For example:
-            ```python
-
-            wrapper_path = ".../publish/xgen/v001/XGenInteractive/xgen.ma"
-            preset_files = ["Peter_01/xgen.ma", ...]
-
-            ```
-
-    Args:
-        wrapper_path (str): MayaAscii file output path
-        preset_files (list): A list of description .ma file path
-
-    """
-    MayaAscii_template = """//Maya ASCII scene
-requires maya "2017";
-// Inject namespace
-$ns = `getenv "__XGEN_IGS_NAMESPACE__"`;
-if ($ns == ""){$ns = ":";}
-"""
-    preset_template = """
-file -r -ns $ns -op "v=0;" -typ "mayaAscii" "{filePath}";
-"""
-    preset_script = ""
-    for preset_path in preset_files:
-        preset_path = preset_path.replace("\\", "/")
-        preset_script += preset_template.format(filePath=preset_path)
-
-    with open(wrapper_path, "w") as maya_file:
-        maya_file.write(MayaAscii_template + preset_script)
