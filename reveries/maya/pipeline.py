@@ -1,5 +1,6 @@
 
 import os
+import logging
 import avalon.maya
 import avalon.io
 
@@ -21,6 +22,9 @@ AVALON_INTERFACE_ID = "pyblish.avalon.interface"
 
 AVALON_GROUP_ATTR = "subsetGroup"
 AVALON_CONTAINER_ATTR = "container"
+
+
+log = logging.getLogger(__name__)
 
 
 _node_lock_state = {"_": None}
@@ -274,7 +278,10 @@ def update_container(container, asset, subset, version, representation):
         representation (dict): representation document
 
     """
+    log.info("Updating container...")
+
     container_node = container["objectName"]
+    interface_node = container["interface"]
 
     asset_changed = False
     subset_changed = False
@@ -315,12 +322,29 @@ def update_container(container, asset, subset, version, representation):
         # Update data
         cmds.setAttr(container_node + ".name", name, type="string")
 
+    # Update interface data: representation id
+    cmds.setAttr(container_node + ".representation",
+                 str(representation["_id"]),
+                 type="string")
+    # Update interface data: version id
+    cmds.setAttr(interface_node + ".versionId",
+                 str(version["_id"]),
+                 type="string")
+
     if any((asset_changed, subset_changed)):
+        # Update interface data: subset id
+        cmds.setAttr(interface_node + ".subsetId",
+                     str(subset["_id"]),
+                     type="string")
+        # Update interface data: asset id
+        cmds.setAttr(interface_node + ".assetId",
+                     str(asset["_id"]),
+                     type="string")
         # Rename container
         container_node = cmds.rename(
             container_node, container_naming(namespace, name, "CON"))
         # Rename interface
-        cmds.rename(container["interface"],
+        cmds.rename(interface_node,
                     container_naming(namespace, name, "PORT"))
         # Rename reference node
         reference_node = next((n for n in cmds.sets(container_node, query=True)
@@ -329,11 +353,6 @@ def update_container(container, asset, subset, version, representation):
             # Unlock reference node
             with nodes_locker(reference_node, False, False, False):
                 cmds.rename(reference_node, namespace + "RN")
-
-    # Update representation id
-    cmds.setAttr(container_node + ".representation",
-                 str(representation["_id"]),
-                 type="string")
 
 
 def subset_containerising(name,
