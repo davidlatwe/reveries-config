@@ -136,7 +136,7 @@ def _parseMapString_override(self, exprText):
     filtered = list()
     # Here we use our own parser
     for item in _parseMapString(exprText):
-        if item.file.endswith(".ptx"):
+        if item.file.endswith(".ptx") or "%" in item.file:
             # Block the explicit map path from GUI
             continue
         filtered.append(item)
