@@ -256,17 +256,9 @@ class ReferenceLoader(MayaBaseLoader):
 
         node = container["objectName"]
 
-        # Assume asset has been referenced
-        reference_node = next((node for node in cmds.sets(node, query=True)
-                               if cmds.nodeType(node) == "reference"), None)
-
-        if not reference_node:
-            title = "Remove Abort"
-            message = ("Imported container not supported; container must be "
-                       "referenced.")
-            self.log.error(message)
-            message_box_error(title, message)
-            return
+        # Get reference node from container members
+        members = cmds.sets(node, query=True, nodesOnly=True)
+        reference_node = self._get_reference_node(members)
 
         self.log.info("Removing '%s' from Maya.." % container["name"])
 
