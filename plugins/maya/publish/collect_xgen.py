@@ -38,14 +38,28 @@ def create_look_subset_from_xgen(instance):
 
     if "xgenDescriptions" in instance.data:
         member = instance.data["xgenDescriptions"][:]
-        member += cmds.listRelatives(member,
-                                     shapes=True,
-                                     fullPath=True) or []
+
+        member_long = []
+        for desc in member:
+            for node in cmds.ls(desc, long=True):
+                shapes = cmds.listRelatives(node,
+                                            shapes=True,
+                                            fullPath=True) or []
+                if not shapes:
+                    continue
+
+                for shape in shapes:
+                    if cmds.nodeType(shape) == "xgmDescription":
+                        member_long.append(node)
+
+        member_long += cmds.listRelatives(member_long,
+                                          shapes=True,
+                                          fullPath=True) or []
 
     look = plugins.create_dependency_instance(instance,
                                               subset,
                                               family,
-                                              member,
+                                              member_long,
                                               category="XGen LookDev")
     # Add renderlayer data which was set from Creator
     renderlayer = cmds.editRenderLayerGlobals(query=True,
@@ -106,7 +120,12 @@ class CollectXGen(pyblish.api.InstancePlugin):
         # Inject shadow family
         instance.data["families"] = ["reveries.xgen.legacy"]
 
-        palettes = cmds.ls(instance, type="xgmPalette")
+        palettes = []
+        palette_nodes = cmds.ls(instance, type="xgmPalette", long=True)
+        for palette in xgen.legacy.list_palettes():
+            if any(n in palette_nodes for n in cmds.ls(palette, long=True)):
+                palettes.append(palette)
+
         instance.data["xgenPalettes"] = palettes
 
         descriptions = list()

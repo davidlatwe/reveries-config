@@ -1,5 +1,4 @@
 
-import os
 import avalon.api
 from reveries.maya.plugins import ReferenceLoader
 from reveries.maya.xgen.interactive import list_lead_descriptions
@@ -31,9 +30,6 @@ class XGenInteractiveLoader(ReferenceLoader, avalon.api.Loader):
 
         entry_path = self.file_path(representation)
 
-        # This is used to inject the namespace into preset file
-        os.environ["__XGEN_IGS_NAMESPACE__"] = namespace
-
         with maya.maintained_selection():
             nodes = cmds.file(entry_path,
                               namespace=namespace,
@@ -43,8 +39,6 @@ class XGenInteractiveLoader(ReferenceLoader, avalon.api.Loader):
                               groupReference=True,
                               groupName=group)
         self[:] = nodes
-        # Clear
-        os.environ.pop("__XGEN_IGS_NAMESPACE__")
 
         transforms = cmds.ls(nodes, type="transform", long=True)
         root = get_highest_in_hierarchy(transforms)

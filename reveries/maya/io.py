@@ -536,61 +536,13 @@ def export_xgen_IGS_preset(description, out_path):
         out_path (str): preset output path (.xgip)
 
     """
-
-    spline_base = xgen.interactive.find_spline_base(description)
-    connections = cmds.listConnections(spline_base,
-                                       plugs=True,
-                                       source=True,
-                                       destination=False,
-                                       connections=True)
-
-    bounding_box = ""
-    for src, dst in zip(connections[::2], connections[1::2]):
-        if not src.startswith(spline_base + ".boundMesh["):
-            continue
-
-        bound_transform = cmds.listRelatives(cmds.ls(dst, objectsOnly=True),
-                                             parent=True)[0]
-
-        head = "." + src.split(".")[-1]
-        tail = ",".join([str(i) for i in cmds.xform(bound_transform,
-                                                    query=True,
-                                                    boundingBox=True)])
-        bounding_box += head + ":" + tail + ";"
+    bounding_box = xgen.interactive.compose_bbox_data(description)
 
     # Export tmp mayaAscii file
     ascii_tmp = tempfile.mkdtemp(prefix="__xgenIGS_export") + "/{}.ma"
     ascii_tmp = ascii_tmp.format(description.replace("|", "_"))
 
     with capsule.maintained_selection():
-        # (NOTE) This is a note of complain.
-        #
-        #        Maya's preset export tool will not work properly if the
-        #        `exportSelected` UI options has been set to not to export
-        #        history in previous export action. By saying "not work
-        #        properly", it means the exported .xgip file only contains
-        #        an empty description.
-        #
-        #        Here's why...
-        #
-        #        The preset export tool requires to export selected description
-        #        as 'mayaAscii' file first, then read that file and parse the
-        #        related MEL commands and data into .xgip file.
-        #
-        #        So if the exported 'mayaAscii' description file does not
-        #        have the description history, will end up to export an empty
-        #        description.
-        #
-        #        Obviously, the preset export tool in the Interactive Groom
-        #        Editor did not specify to export history when exporting
-        #        selected description to mayaAscii file, but rely on optionVar.
-        #
-        #        Which is, unacceptable.
-        #
-        #        This UX bug trapped me hours, since it does not show any
-        #        message, and because it's based on optionVar, sometimes it
-        #        works and sometime doesn't. Really confusing.
-        #
         cmds.select(description, replace=True)
         cmds.file(ascii_tmp,
                   force=True,
@@ -607,6 +559,36 @@ def export_xgen_IGS_preset(description, out_path):
                                                         out_path,
                                                         bounding_box,
                                                         removeOriginal=True)
+
+
+def export_xgen_IGS_presets(descriptions, out_path):
+    """Export multiple XGen IGS descriptions into MayaAscii file
+
+    Args:
+        descriptions (list): A list of description shape node names
+        out_path (str): preset output path (.ma)
+
+    """
+    # Export tmp mayaAscii file
+    ascii_tmp = tempfile.mkdtemp(prefix="__xgenIGS_export") + "/descs.ma"
+
+    with capsule.maintained_selection():
+        cmds.select(descriptions, replace=True)
+        cmds.file(ascii_tmp,
+                  force=True,
+                  typ="mayaAscii",
+                  exportSelected=True,
+                  preserveReferences=False,
+                  constructionHistory=True,
+                  channels=True,
+                  constraints=True,
+                  shader=True,
+                  expressions=True)
+
+    xgen.interactive.SplinePresetUtil.convertMAToMA(ascii_tmp,
+                                                    out_path,
+                                                    "",  # Not for preset
+                                                    removeOriginal=True)
 
 
 def import_xgen_IGS_preset(file_path, namespace=":", bound_meshes=None):
@@ -687,41 +669,51 @@ def attach_xgen_IGS_preset(preset_nodes, bound_meshes):
     xgen.interactive.SplinePresetUtil.attachPreset(preset_nodes, bound_meshes)
 
 
-def wrap_xgen_IGS_preset(wrapper_path, preset_files):
-    """Wrapping XGen IGS preset(.ma) files into a MayaAscii file
+def export_xgen_LGC_palette(palette, out_path):
+    xgen.legacy.export_palette(palette, out_path)
 
-    (NOTE) Set environment var "__XGEN_IGS_NAMESPACE__" to change the
-           namespace if file.
 
-    (NOTE) The file path of `preset_files` should be a relative path, relative
-        to `wrapper_path`.
+def import_xgen_LGC_palette(file_path, namespace="", wrapPatches=True):
+    xgen.legacy.import_palette(file_path,
+                               namespace=namespace,
+                               wrapPatches=wrapPatches)
 
-        For example:
-            ```python
 
-            wrapper_path = ".../publish/xgen/v001/XGenInteractive/xgen.ma"
-            preset_files = ["Peter_01/xgen.ma", ...]
-
-            ```
-
-    Args:
-        wrapper_path (str): MayaAscii file output path
-        preset_files (list): A list of description .ma file path
-
+def export_xgen_LGC_guides(guides, out_path):
     """
-    MayaAscii_template = """//Maya ASCII scene
-requires maya "2017";
-// Inject namespace
-$ns = `getenv "__XGEN_IGS_NAMESPACE__"`;
-if ($ns == ""){$ns = ":";}
-"""
-    preset_template = """
-file -r -ns $ns -op "v=0;" -typ "mayaAscii" "{filePath}";
-"""
-    preset_script = ""
-    for preset_path in preset_files:
-        preset_path = preset_path.replace("\\", "/")
-        preset_script += preset_template.format(filePath=preset_path)
+    """
+    with contextlib.nested(
+        capsule.maintained_selection(),
+        capsule.no_undo(),
+    ):
+        # guides to curves
+        curves = xgen.legacy.guides_to_curves(guides)
+        curves += cmds.listRelatives(curves, shapes=True)
+        cmds.select(curves, replace=True)
 
-    with open(wrapper_path, "w") as maya_file:
-        maya_file.write(MayaAscii_template + preset_script)
+        export_alembic(out_path,
+                       selection=True,
+                       renderableOnly=False,
+                       stripNamespaces=True,
+                       dataFormat="ogawa",
+                       verbose=False)
+
+        cmds.delete(curves)
+
+
+def import_xgen_LGC_guides(description, file_path):
+    # Ensure alembic importer is loaded
+    cmds.loadPlugin("AbcImport", quiet=True)
+
+    with contextlib.nested(
+        capsule.maintained_selection(),
+        capsule.no_undo(),
+    ):
+
+        nodes = cmds.file(file_path,
+                          i=True,
+                          namespace="",
+                          ignoreVersion=True,
+                          returnNewNodes=True)
+
+        xgen.legacy.curves_to_guides(description, nodes)

@@ -476,6 +476,8 @@ _uuid_required_node_types = {
         "xgmSplineBase",
         "xgmSplineCache",
         "xgmSplineDescription",
+        "xgmPalette",
+        "xgmDescription",
     },
 }
 
