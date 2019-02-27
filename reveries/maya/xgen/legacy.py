@@ -24,6 +24,10 @@ def _getMapExprStrings():
         $g=map('${DESC}/map-%d.ptx', cycle($objectId, 10, 20));
         $h=map('${DESC}/map-%d.ptx', pick($objectId, 10, 20));#3dpaint,5.0
 
+        or this kind... plain map()
+
+        map('${DESC}/groom/orient/',0)
+
     The format of $b and $c was not supported in Maya, the pattenrs returned
     from this function does.
 
@@ -43,7 +47,14 @@ def _getMapExprStrings():
     exprStr4 = ('\\$(\\w+)\\s*=\\s*vmap\\([\"\']([\\w${}\\-\\\\/%.${,}]+)'
                 '[\"\'][,.$()a-zA-Z0-9 ]*\\);')
 
-    exprStrings = [exprStr0, exprStr1, exprStr2, exprStr3, exprStr4]
+    exprStr5 = ('map\\([\"\']([\\w${}\\-\\\\/%.${,}]+)'
+                '[\"\'][,.$()a-zA-Z0-9 ]*\\)')
+
+    exprStr6 = ('vmap\\([\"\']([\\w${}\\-\\\\/%.${,}]+)'
+                '[\"\'][,.$()a-zA-Z0-9 ]*\\)')
+
+    exprStrings = [exprStr0, exprStr1, exprStr2, exprStr3,
+                   exprStr4, exprStr5, exprStr6]
 
     return exprStrings
 
@@ -63,6 +74,8 @@ def _parseMapString(exprText):
         [mapExprStrings[2], "vpaint"],
         [mapExprStrings[3], ""],  # map() without comment
         [mapExprStrings[4], ""],  # vmap() without comment
+        [mapExprStrings[5], "_plain"],  # plain map(), no comment
+        [mapExprStrings[6], "_plain"],  # plain vmap(), no comment
     ]
 
     poses = []
@@ -84,9 +97,15 @@ def _parseMapString(exprText):
                 continue
             poses.append(pos)
 
-            item.name = re.cap(1)
-            item.file = re.cap(2)
-            item.mode = s[1]
+            if s[1] == "_plain":
+                item.name = ""
+                item.file = re.cap(1)
+                item.mode = ""
+            else:
+                item.name = re.cap(1)
+                item.file = re.cap(2)
+                item.mode = s[1]
+
             if s[1] == "3dpaint":
                 item.mode = item.mode + "," + re.cap(3)
 
