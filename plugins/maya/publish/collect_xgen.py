@@ -37,10 +37,8 @@ def create_look_subset_from_xgen(instance):
                                      fullPath=True) or []
 
     if "xgenDescriptions" in instance.data:
-        member = instance.data["xgenDescriptions"][:]
-
-        member_long = []
-        for desc in member:
+        member = []
+        for desc in instance.data["xgenDescriptions"][:]:
             for node in cmds.ls(desc, long=True):
                 shapes = cmds.listRelatives(node,
                                             shapes=True,
@@ -50,16 +48,16 @@ def create_look_subset_from_xgen(instance):
 
                 for shape in shapes:
                     if cmds.nodeType(shape) == "xgmDescription":
-                        member_long.append(node)
+                        member.append(node)
 
-        member_long += cmds.listRelatives(member_long,
-                                          shapes=True,
-                                          fullPath=True) or []
+        member += cmds.listRelatives(member,
+                                     shapes=True,
+                                     fullPath=True) or []
 
     look = plugins.create_dependency_instance(instance,
                                               subset,
                                               family,
-                                              member_long,
+                                              member,
                                               category="XGen LookDev")
     # Add renderlayer data which was set from Creator
     renderlayer = cmds.editRenderLayerGlobals(query=True,
