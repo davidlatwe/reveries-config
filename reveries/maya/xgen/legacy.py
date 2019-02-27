@@ -341,8 +341,6 @@ def parse_expr_maps(attr, palette, description, object):
 
 _ATTR_ALIAS = {
     "region": "regionMap",
-    "HeadBak": "bakeDir",
-    "HeadPoint": "pointDir",
     "inputMap": "mapDir",
     "controlMap": "controlMapDir",
     "tiltU": "offU",
@@ -359,7 +357,17 @@ def _parse_attribute(attr):
     else:
         attr_indx = 0
 
-    attr = str(_ATTR_ALIAS.get(attr, attr))
+    try:
+        attr = _ATTR_ALIAS[attr]
+    except KeyError:
+        # (TODO) It seems these attributes will prefixed
+        #        with description name.
+        if attr.endswith("Bak"):
+            attr = "bakeDir"
+        elif attr.endswith("Point"):
+            attr = "pointDir"
+    finally:
+        attr = str(attr)
 
     return attr, attr_indx
 
