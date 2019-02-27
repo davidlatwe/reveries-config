@@ -667,3 +667,53 @@ def attach_xgen_IGS_preset(preset_nodes, bound_meshes):
         raise Exception("Missing bound mesh.")
 
     xgen.interactive.SplinePresetUtil.attachPreset(preset_nodes, bound_meshes)
+
+
+def export_xgen_LGC_palette(palette, out_path):
+    xgen.legacy.export_palette(palette, out_path)
+
+
+def import_xgen_LGC_palette(file_path, namespace="", wrapPatches=True):
+    xgen.legacy.import_palette(file_path,
+                               namespace=namespace,
+                               wrapPatches=wrapPatches)
+
+
+def export_xgen_LGC_guides(guides, out_path):
+    """
+    """
+    with contextlib.nested(
+        capsule.maintained_selection(),
+        capsule.no_undo(),
+    ):
+        # guides to curves
+        curves = xgen.legacy.guides_to_curves(guides)
+        curves += cmds.listRelatives(curves, shapes=True)
+        cmds.select(curves, replace=True)
+
+        export_alembic(out_path,
+                       selection=True,
+                       renderableOnly=False,
+                       stripNamespaces=True,
+                       dataFormat="ogawa",
+                       verbose=False)
+
+        cmds.delete(curves)
+
+
+def import_xgen_LGC_guides(description, file_path):
+    # Ensure alembic importer is loaded
+    cmds.loadPlugin("AbcImport", quiet=True)
+
+    with contextlib.nested(
+        capsule.maintained_selection(),
+        capsule.no_undo(),
+    ):
+
+        nodes = cmds.file(file_path,
+                          i=True,
+                          namespace="",
+                          ignoreVersion=True,
+                          returnNewNodes=True)
+
+        xgen.legacy.curves_to_guides(description, nodes)

@@ -1,10 +1,10 @@
 
 import os
 import contextlib
-import maya.cmds as cmds
 import xgenm as xg
 import xgenm.xgGlobal as xgg
 
+from maya import cmds, mel
 from xgenm.ui.widgets.xgExpressionUI import ExpressionUI
 from avalon.vendor.Qt import QtCore
 
@@ -214,6 +214,10 @@ def list_bound_geometry(description):
     return list(xg.boundGeometry(palette, description))
 
 
+def list_guides(description):
+    return xg.descriptionGuides(description)
+
+
 def preview_auto_update(auto):
     """XGen auto Update preview on/off
 
@@ -283,6 +287,13 @@ def xgen_preview_all(palette):
                        "GLRenderer")
 
 
+def current_data_path(palette, expand=False):
+    path = xg.getAttr("xgDataPath", palette)
+    if expand:
+        return xg.expandFilepath(str(path), "")
+    return path
+
+
 @contextlib.contextmanager
 def switch_data_path(palette, data_path):
     """Switch xgDataPath context
@@ -293,11 +304,17 @@ def switch_data_path(palette, data_path):
 
     """
     origin = xg.getAttr("xgDataPath", palette)
+    data_path = data_path.replace("\\", "/")
     try:
         xg.setAttr("xgDataPath", data_path, palette)
         yield
     finally:
         xg.setAttr("xgDataPath", origin, palette)
+
+
+def set_data_path(palette, data_path):
+    data_path = data_path.replace("\\", "/")
+    xg.setAttr("xgDataPath", str(data_path), str(palette))
 
 
 def parse_expr_maps(attr, palette, description, object):
@@ -328,6 +345,10 @@ _ATTR_ALIAS = {
     "HeadPoint": "pointDir",
     "inputMap": "mapDir",
     "controlMap": "controlMapDir",
+    "tiltU": "offU",
+    "tiltV": "offV",
+    "tiltN": "offN",
+    "aroundN": "aboutN",
 }
 
 
@@ -367,7 +388,14 @@ def parse_objects(map_attr):
 
     description = str(cmds.listRelatives(address[0], parent=True)[0])
     palette = get_palette_by_description(description)
-    subtype = xg.getActive(palette, description, str(address[1].capitalize()))
+
+    if address[1] == "glRenderer":
+        subtype = "GLRenderer"
+    else:
+        # primitive, generator
+        subtype = xg.getActive(palette,
+                               description,
+                               str(address[1].capitalize()))
 
     if len(address) < 4:
         # Example: descriptionShape.generator.mask
@@ -416,10 +444,8 @@ def parse_map_path(map_attr):
     """
     palette, description, obj, attr, index = parse_objects(map_attr)
 
-    print(palette, description, obj, attr, index)
-
     expr_maps = parse_expr_maps(attr, palette, description, obj)
-    print(len(expr_maps))
+
     if not expr_maps:
         # Not expression type
         path = xg.getAttr(attr, palette, description, obj)
@@ -451,6 +477,7 @@ def parse_description_maps(description):
     collected_paths = list()
 
     for map_attr, fname in zip(resloved[1::2], resloved[0::2]):
+        # (TODO) More than one object match name
         desc_ = cmds.listRelatives(map_attr.split(".", 1)[0], parent=True)[0]
         if not description == desc_:
             continue
@@ -473,35 +500,37 @@ def maps_to_transfer(description):
         description (str): XGen Legacy description name
 
     Returns:
-        dict: {
-            "files": A list of .ptx expanded file paths
-            "folders": A list of expanded folder paths that contain .ptx
-                files mapped via expression variables.
-        }
+        list: A list of collected map files
 
     Raise:
         RuntimeError if collected path not exists.
 
     """
-    transfer = {"files": set(), "folders": set()}
+    transfer = set()
 
     for path, parents in parse_description_maps(description):
-        file_path = xg.expandFilepath(path, description)
+        dir_path = os.path.dirname(path)
+        dir_path = xg.expandFilepath(str(dir_path), str(description))
 
-        dir_path = os.path.dirname(file_path)
         if not os.path.isdir(dir_path):
             raise RuntimeError("{0}: Map dir not exists: {1}"
                                "".format(parents, dir_path))
 
+        file_name = os.path.basename(path)
+        file_path = os.path.join(dir_path, file_name)
+
         if os.path.isfile(file_path):
             # Copy file
-            transfer["files"].add(file_path)
+            transfer.add(file_path.replace("\\", "/"))
 
         else:
             # Possible contain variables in file name, copy folder
-            transfer["folders"].add(dir_path)
+            for file in os.listdir(dir_path):
+                path = os.path.join(dir_path, file)
+                if os.path.isfile(path):
+                    transfer.add(path.replace("\\", "/"))
 
-    return transfer
+    return sorted(list(transfer))
 
 
 def bake_description(palette, description, rebake=False):
@@ -567,3 +596,37 @@ def bake_description(palette, description, rebake=False):
     xg.bakedGroomManagerBake(palette, description)
     # set Generator to XPD
     xg.setActive(palette, description, "FileGenerator")
+
+
+def guides_to_curves(guides):
+    cmds.select(guides, replace=True)
+    return mel.eval("xgmCreateCurvesFromGuides(0, true)")
+
+
+def curves_to_guides(description, curves):
+    cmds.select(curves, replace=True)
+    return mel.eval("xgmCurveToGuide -tipSnapPower 1.0 -tipSnapAmount 1.0 "
+                    "-deleteCurve -description {}".format(description))
+
+
+def export_palette(palette, out_path):
+    out_path = out_path.replace("\\", "/")
+    xg.exportPalette(str(palette), str(out_path))
+
+
+def import_palette(xgen_path, deltas=None, namespace="", wrapPatches=True):
+    xgen_path = xgen_path.replace("\\", "/")
+    deltas = deltas or []
+    return xg.importPalette(str(xgen_path),
+                            deltas,
+                            str(namespace),
+                            bool(wrapPatches))
+
+
+def modify_binding(palette, description, mode="Append"):
+    """
+    Append
+    Replace
+    Remove
+    """
+    xg.modifyFaceBinding(palette, description, mode=mode)
