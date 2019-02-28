@@ -372,6 +372,49 @@ def _parse_attribute(attr):
     return attr, attr_indx
 
 
+def get_palette_long_name(palette):
+    """Return palette long name from short name
+
+    This is useful if there are other nodes using same name
+
+    Args:
+        palette (str): XGen Legacy palette name
+
+    Returns:
+        str: XGen Legacy palette long name
+
+    """
+    for node in cmds.ls(palette, long=True):
+        if cmds.nodeType(node) == "xgmPalette":
+            return node
+
+
+def get_description_long_name(description, shape=False):
+    """Return palette long name from short name
+
+    This is useful if there are other nodes using same name
+
+    Args:
+        description (str): XGen Legacy description name
+        shape (bool, optional): Decide to return shape node or transform
+            node name. Default `False` (return transform)
+
+    Returns:
+        str: XGen Legacy description long name
+
+    """
+    for node in cmds.ls(description, long=True):
+        shapes = cmds.listRelatives(node,
+                                    shapes=True,
+                                    fullPath=True) or []
+        if not shapes:
+            continue
+
+        for shape_node in shapes:
+            if cmds.nodeType(shape_node) == "xgmDescription":
+                return shape_node if shape else node
+
+
 def parse_objects(map_attr):
     """Parse attribute returned from `filePathEditor` into XGen object names
 
@@ -394,7 +437,12 @@ def parse_objects(map_attr):
     """
     address = map_attr.split(".")
 
-    description = str(cmds.listRelatives(address[0], parent=True)[0])
+    # The description shape name in `map_attr` string is a short name,
+    # and since we only need the description transform short name, it
+    # doesn't matter which shape node we get from `cmds.ls`.
+    desc_shape = cmds.ls(address[0])[0]
+    description = str(cmds.listRelatives(desc_shape,
+                                         parent=True)[0])  # get short name
     palette = get_palette_by_description(description)
 
     if address[1] == "glRenderer":
@@ -484,10 +532,13 @@ def parse_description_maps(description):
 
     collected_paths = list()
 
+    desc_shape_long = get_description_long_name(description, shape=True)
+
     for map_attr, fname in zip(resloved[1::2], resloved[0::2]):
-        # (TODO) More than one object match name
-        desc_ = cmds.listRelatives(map_attr.split(".", 1)[0], parent=True)[0]
-        if not description == desc_:
+        desc_shape = map_attr.split(".", 1)[0]
+        if desc_shape_long not in cmds.ls(desc_shape,
+                                          type="xgmDescription",
+                                          long=True):
             continue
 
         path, parents = parse_map_path(map_attr)
@@ -517,6 +568,8 @@ def maps_to_transfer(description):
     transfer = set()
 
     for path, parents in parse_description_maps(description):
+        if "${FXMODULE}" in path:
+            path = path.replace("${FXMODULE}", parents[2])
         dir_path = os.path.dirname(path)
         dir_path = xg.expandFilepath(str(dir_path), str(description))
 
