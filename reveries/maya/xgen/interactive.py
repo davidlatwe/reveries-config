@@ -216,9 +216,9 @@ class SplinePresetUtil(xgmSplinePreset.PresetUtil):
 
         for nodeName in newNodes:
             nodeType = cmds.nodeType(nodeName)
-            if nodeType == cls.rootNodeType:
+            if nodeType == cls.rootNodeType:  # xgmSplineBase
                 rootNodes.append(nodeName)
-            elif nodeType == cls.descNodeType:
+            elif nodeType == cls.descNodeType:  # xgmSplineDescription
                 descNodes.append(nodeName)
 
         # (NOTE) Removed the `transferModeGuard` context. It seems that
