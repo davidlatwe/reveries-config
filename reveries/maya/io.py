@@ -699,7 +699,11 @@ def export_xgen_LGC_guides(guides, out_path):
         curves += cmds.listRelatives(curves, shapes=True)
         cmds.select(curves, replace=True)
 
+        frame = cmds.currentTime(query=True)
+
         export_alembic(out_path,
+                       startFrame=frame,
+                       endFrame=frame,
                        selection=True,
                        renderableOnly=False,
                        stripNamespaces=True,
