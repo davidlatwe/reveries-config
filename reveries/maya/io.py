@@ -651,11 +651,11 @@ def reference_xgen_IGS_preset(file_path, namespace=":", bound_meshes=None):
         return newNodes
 
 
-def attach_xgen_IGS_preset(preset_nodes, bound_meshes):
+def attach_xgen_IGS_preset(description, bound_meshes):
     """Bound loaded XGen IGS preset nodes to meshes
 
     Args:
-        preset_nodes (list): A list of nodes loaded from one preset
+        description (str): description shape node name
         bound_meshes (list): A list of mesh shape nodes the preset
             bounded to. The order of meshes matters !
 
@@ -666,6 +666,14 @@ def attach_xgen_IGS_preset(preset_nodes, bound_meshes):
                 log.error("Missing: {}".format(m))
         raise Exception("Missing bound mesh.")
 
+    bases = cmds.ls(cmds.listHistory(description),
+                    type="xgmSplineBase",
+                    long=True)
+    descs = cmds.ls(cmds.listHistory(description),
+                    type="xgmSplineDescription",
+                    long=True)
+
+    preset_nodes = bases + descs
     xgen.interactive.SplinePresetUtil.attachPreset(preset_nodes, bound_meshes)
 
 
