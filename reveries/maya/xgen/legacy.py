@@ -517,6 +517,8 @@ def maps_to_transfer(description):
     transfer = set()
 
     for path, parents in parse_description_maps(description):
+        if "${FXMODULE}" in path:
+            path = path.replace("${FXMODULE}", parents[2])
         dir_path = os.path.dirname(path)
         dir_path = xg.expandFilepath(str(dir_path), str(description))
 
