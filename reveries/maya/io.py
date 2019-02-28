@@ -717,3 +717,19 @@ def import_xgen_LGC_guides(description, file_path):
                           returnNewNodes=True)
 
         xgen.legacy.curves_to_guides(description, nodes)
+
+
+def bind_xgen_LGC_description(description, meshes, guide_path=None):
+    """Bind XGen legacy description to meshes
+
+    Args:
+        description (str): XGen Legacy description name
+        meshes (list): A list of meshes (transform node names) to bind with
+        guide_path (str, optional): File path of exported Alembic guide curves
+
+    """
+    # Bind
+    xgen.legacy.modify_binding(description, meshes)
+    # Import guides
+    if guide_path:
+        import_xgen_LGC_guides(description, guide_path)

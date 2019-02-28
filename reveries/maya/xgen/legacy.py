@@ -7,6 +7,7 @@ import xgenm.xgGlobal as xgg
 from maya import cmds, mel
 from xgenm.ui.widgets.xgExpressionUI import ExpressionUI
 from avalon.vendor.Qt import QtCore
+from .. import capsule
 
 
 def _getMapExprStrings():
@@ -684,10 +685,13 @@ def import_palette(xgen_path, deltas=None, namespace="", wrapPatches=True):
                             bool(wrapPatches))
 
 
-def modify_binding(palette, description, mode="Append"):
+def modify_binding(description, meshes, mode="Append"):
     """
     Append
     Replace
     Remove
     """
-    xg.modifyFaceBinding(palette, description, mode=mode)
+    palette = get_palette_by_description(description)
+    with capsule.maintained_selection():
+        cmds.select(meshes, replace=True)
+        xg.modifyFaceBinding(palette, description, mode=mode)
