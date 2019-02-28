@@ -678,17 +678,39 @@ def attach_xgen_IGS_preset(description, bound_meshes):
 
 
 def export_xgen_LGC_palette(palette, out_path):
+    """Export XGen legacy palette to .xgen file
+
+    Args:
+        palette (str): XGen Legacy palette name
+        out_path (str): Path string of .xgen file
+
+    """
     xgen.legacy.export_palette(palette, out_path)
 
 
-def import_xgen_LGC_palette(file_path, namespace="", wrapPatches=True):
+def import_xgen_LGC_palette(file_path, namespace="", wrap_patches=True):
+    """Import XGen legacy palette from .xgen file
+
+    Args:
+        file_path (str): Path string of .xgen file
+        namespace (str, optional): The namespace to apply to palette,
+            default "".
+        wrap_patches (bool, optional): If `True`, bind palette to selected
+            meshes. Default `True`.
+
+    """
     xgen.legacy.import_palette(file_path,
                                namespace=namespace,
-                               wrapPatches=wrapPatches)
+                               wrapPatches=wrap_patches)
 
 
 def export_xgen_LGC_guides(guides, out_path):
-    """
+    """Export XGen guide curves to Alembic file
+
+    Args:
+        guides (list): A list of guide transform nodes
+        out_path (str): Alembic file path
+
     """
     with contextlib.nested(
         capsule.maintained_selection(),
@@ -714,6 +736,13 @@ def export_xgen_LGC_guides(guides, out_path):
 
 
 def import_xgen_LGC_guides(description, file_path):
+    """Import XGen guide curves from Alembic file
+
+    Args:
+        description (str): XGen Legacy description name
+        file_path (str): File path of exported Alembic guide curves
+
+    """
     # Ensure alembic importer is loaded
     cmds.loadPlugin("AbcImport", quiet=True)
 
