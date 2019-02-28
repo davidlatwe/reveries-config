@@ -5,7 +5,7 @@ from reveries.maya.xgen.interactive import list_lead_descriptions
 
 
 class XGenInteractiveLoader(ReferenceLoader, avalon.api.Loader):
-    """Specific loader for lookdev"""
+    """Specific loader for XGen Interactive"""
 
     label = "Reference XGen"
     order = -10
