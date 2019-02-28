@@ -66,7 +66,7 @@ def assign_shader(meshes, shadingEngine):
     """
     meshes_by_shader = dict()
 
-    for mesh in meshes:
+    for mesh in cmds.ls(meshes, long=True, noIntermediate=True):
         for shader in cmds.listConnections(mesh,
                                            type="shadingEngine",
                                            source=False,
@@ -75,20 +75,23 @@ def assign_shader(meshes, shadingEngine):
                 continue
 
             if shader not in meshes_by_shader:
-                meshes_by_shader[shader] = []
+                meshes_by_shader[shader] = set()
 
-            shaded = cmds.sets(shader, query=True) or []
-            meshes_by_shader[shader] += shaded
+            shaded = set()
+            for assigned in cmds.sets(shader, query=True) or []:
+                if mesh == cmds.ls(assigned, objectsOnly=True, long=True)[0]:
+                    shaded.add(assigned)
+            meshes_by_shader[shader].update(shaded)
 
     try:
         for shaded in meshes_by_shader.values():
-            cmds.sets(shaded, edit=True, forceElement=shadingEngine)
+            cmds.sets(list(shaded), edit=True, forceElement=shadingEngine)
 
         yield
 
     finally:
         for shader, shaded in meshes_by_shader.items():
-            cmds.sets(shaded, forceElement=shader)
+            cmds.sets(list(shaded), forceElement=shader)
 
 
 @contextlib.contextmanager
