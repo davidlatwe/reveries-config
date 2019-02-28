@@ -1,5 +1,12 @@
 
 import pyblish.api
+from reveries.maya.xgen import legacy as xgen
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+
+
+class SelectDuplicated(MayaSelectInvalidInstanceAction):
+
+    label = "Select Duplicated"
 
 
 class ValidateXGenUniqueNames(pyblish.api.InstancePlugin):
@@ -15,6 +22,10 @@ class ValidateXGenUniqueNames(pyblish.api.InstancePlugin):
     families = [
         "reveries.xgen.legacy",
     ]
+    actions = [
+        pyblish.api.Category("Select"),
+        SelectDuplicated,
+    ]
 
     @classmethod
     def get_invalid(cls, instance):
@@ -23,21 +34,14 @@ class ValidateXGenUniqueNames(pyblish.api.InstancePlugin):
         invalid = list()
 
         for palette in instance.data["xgenPalettes"]:
-            for node in cmds.ls(palette, long=True):
-                if not cmds.nodeType(node) == "xgmPalette":
-                    invalid.append(node)
+            nodes = cmds.ls(palette, long=True)
+            nodes.remove(xgen.get_palette_long_name(palette))
+            invalid += nodes
 
         for desc in instance.data["xgenDescriptions"]:
-            for node in cmds.ls(desc, long=True):
-                shapes = cmds.listRelatives(node,
-                                            shapes=True,
-                                            fullPath=True) or []
-                if not shapes:
-                    invalid.append(node)
-
-                for shape in shapes:
-                    if not cmds.nodeType(shape) == "xgmDescription":
-                        invalid.append(node)
+            nodes = cmds.ls(desc, long=True)
+            nodes.remove(xgen.get_description_long_name(desc))
+            invalid += nodes
 
         return invalid
 
