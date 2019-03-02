@@ -452,7 +452,7 @@ def get_render_filename_prefix(layer=None):
         prefix = lib.query_by_renderlayer("defaultRenderGlobals",
                                           "imageFilePrefix",
                                           layer)
-        if renderer == "arnold" and "<RenderPass>" not in prefix:
+        if prefix and renderer == "arnold" and "<RenderPass>" not in prefix:
             prefix = "/".join(["<RenderPass>", prefix])
 
         return prefix
