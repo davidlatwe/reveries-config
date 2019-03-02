@@ -14,7 +14,7 @@ from maya import cmds
 from . import lib
 from .vendor import sticker
 from .capsule import namespaced, nodes_locker
-from .. import REVERIES_ICONS
+from .. import REVERIES_ICONS, utils
 
 
 AVALON_PORTS = ":AVALON_PORTS"
@@ -511,3 +511,60 @@ def uuid_required_node_types(family):
             raise
 
     return list(types)
+
+
+def has_turntable():
+    """Return turntable asset name if scene has loaded one
+
+    Returns:
+        str: "LookDevStage" if scene has truntable asset loaded, else `None`
+
+    """
+    if get_container_from_namespace(":LookDevStage_*"):
+        return "LookDevStage"
+
+
+def set_scene_timeline(project=None, asset_name=None, strict=True):
+    """Set timeline to correct frame range for the asset
+
+    Args:
+        project (dict, optional): Project document, query from database if
+            not provided.
+        asset_name (str, optional): Asset name, get from `avalon.Session` if
+            not provided.
+        strict (bool, optional): Whether or not to set the exactly frame range
+            that pre-defined for asset, or leave the scene start/end untouched
+            as long as the start/end frame could cover the pre-defined range.
+            Default `True`.
+
+
+    """
+    log.info("Timeline setting...")
+
+    start_frame, end_frame, fps = utils.compose_timeline_data(project,
+                                                              asset_name)
+    fps = lib.FPS_MAP.get(fps)
+
+    if fps is None:
+        raise ValueError("Unsupported FPS value: {}".format(fps))
+
+    cmds.currentUnit(time=fps)
+
+    if not strict:
+        scene_start = cmds.playbackOptions(query=True, minTime=True)
+        if start_frame < scene_start:
+            cmds.playbackOptions(animationStartTime=start_frame)
+            cmds.playbackOptions(minTime=start_frame)
+
+        scene_end = cmds.playbackOptions(query=True, maxTime=True)
+        if end_frame > scene_end:
+            cmds.playbackOptions(animationEndTime=end_frame)
+            cmds.playbackOptions(maxTime=end_frame)
+
+    else:
+        cmds.playbackOptions(animationStartTime=start_frame)
+        cmds.playbackOptions(minTime=start_frame)
+        cmds.playbackOptions(animationEndTime=end_frame)
+        cmds.playbackOptions(maxTime=end_frame)
+
+        cmds.currentTime(start_frame)

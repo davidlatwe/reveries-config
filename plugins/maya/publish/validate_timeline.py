@@ -2,8 +2,11 @@
 import pyblish.api
 
 from reveries import utils
-from reveries.maya.lib import set_scene_timeline
 from reveries.plugins import RepairContextAction, context_process
+from reveries.maya.pipeline import (
+    set_scene_timeline,
+    has_turntable,
+)
 
 
 class RepairInvalid(RepairContextAction):
@@ -38,7 +41,7 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
     @context_process
     def process(self, context):
 
-        asset_name = self.swap_to_turntable_if_there_is_one(context)
+        asset_name = has_turntable()
 
         project = context.data["projectDoc"]
         proj_start, proj_end, fps = utils.compose_timeline_data(project,
@@ -70,19 +73,7 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
             raise ValueError("Timeline does not match with project settings.")
 
     @classmethod
-    def swap_to_turntable_if_there_is_one(cls, context):
-        for instance in context:
-            families = instance.data.get("families", [])
-
-            if "reveries.imgseq.turntable" in families:
-                cls.log.info("Get timeline data from turntable.")
-
-                # (NOTE) The turntable asset name is hardcoded here,
-                #        better not to do this.
-                return "LookDevStage"
-
-    @classmethod
     def fix_invalid(cls, context):
-        asset_name = cls.swap_to_turntable_if_there_is_one(context)
+        asset_name = has_turntable()
         strict = False if asset_name is None else True
         set_scene_timeline(asset_name=asset_name, strict=strict)
