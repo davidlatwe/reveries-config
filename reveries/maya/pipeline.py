@@ -215,6 +215,9 @@ def get_container_from_namespace(namespace):
     """
     nodes = lib.lsAttrs({"id": AVALON_CONTAINER_ID}, namespace=namespace)
 
+    if "*" in namespace:
+        return nodes
+
     if not len(nodes) == 1:
         raise RuntimeError("Has none or more then one container, "
                            "this is a bug.")
