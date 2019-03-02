@@ -1,7 +1,7 @@
 
 import os
-import shutil
-import errno
+from distutils.dir_util import copy_tree
+
 import avalon.api
 from maya import cmds
 from reveries.maya.plugins import MayaBaseLoader, unique_root_namespace
@@ -42,16 +42,9 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         for palette in os.listdir(map_dir):
             palette_dir = os.path.join(map_dir, palette)
             local_palette_dir = os.path.join(local_map_dir, palette)
-            # Remove old maps if exists
-            shutil.rmtree(local_palette_dir, ignore_errors=True)
+
             # Copy
-            try:
-                shutil.copytree(palette_dir, local_palette_dir)
-            except OSError as e:
-                if e.errno == errno.EEXIST:
-                    print("Representation dir existed.")
-                else:
-                    raise OSError("An unexpected error occurred.")
+            copy_tree(palette_dir, local_palette_dir)
 
         # Import palette (No bind)
         palette_nodes = list()
