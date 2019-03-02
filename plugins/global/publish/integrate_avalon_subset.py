@@ -343,6 +343,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             "author": context.data["user"],
             "task": api.Session.get("AVALON_TASK"),
             "source": source,
+            "workDir": api.Session.get("AVALON_WORKDIR"),
             "hash": hash_val,
             "comment": context.data.get("comment"),
             "dependencies": instance.data.get("dependencies", dict()),
