@@ -5,7 +5,6 @@ import xgenm as xg
 import xgenm.xgGlobal as xgg
 
 from maya import cmds, mel
-from xgenm.ui.widgets.xgExpressionUI import ExpressionUI
 from avalon.vendor.Qt import QtCore
 from .. import capsule
 
@@ -66,6 +65,8 @@ def _parseMapString(exprText):
     This function was modified from `ExpressionUI.parseMapString`.
 
     """
+    from xgenm.ui.widgets.xgExpressionUI import ExpressionUI
+
     # vmap and map expressions
     mapExprStrings = _getMapExprStrings()
 
