@@ -199,10 +199,24 @@ def get_container_from_interface(interface):
 
     """
     namespace = cmds.getAttr(interface + ".namespace")
+    return get_container_from_namespace(namespace)
+
+
+def get_container_from_namespace(namespace):
+    """Return container node from namespace
+
+    Raise `RuntimeError` if getting none or more then one container.
+
+    Arguments:
+        namespace (str): Namespace string
+
+    Returns a str
+
+    """
     nodes = lib.lsAttrs({"id": AVALON_CONTAINER_ID}, namespace=namespace)
 
     if not len(nodes) == 1:
-        raise RuntimeError("Interface has none or more then one container, "
+        raise RuntimeError("Has none or more then one container, "
                            "this is a bug.")
     return nodes[0]
 
