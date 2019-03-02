@@ -76,6 +76,7 @@ class OpenMayaSource(object):
 
         work_dir = version_data.get("workDir")
         if work_dir:
+            work_dir = work_dir.format(root=avalon.api.registered_root())
             avalon.api.Session["AVALON_WORKDIR"] = work_dir
             avalon.maya.pipeline._set_project()
 
