@@ -1,10 +1,21 @@
 
+import os
+import json
+import logging
 from maya import cmds
 
 from avalon import api, io
 
 from .vendor import capture
-from . import lib, pipeline
+from . import lib, pipeline, xgen, utils
+from .io import (
+    bind_xgen_LGC_description,
+    attach_xgen_IGS_preset,
+)
+from ..utils import get_representation_path_
+
+
+log = logging.getLogger(__name__)
 
 
 def active_view_snapshot(*args):
@@ -99,3 +110,213 @@ def swap_to_published_model(*args):
 
     # Hide unpublished model
     cmds.setAttr(root + ".visibility", False)
+
+
+def __ensure_nodes_in_same_namespace(nodes, err_msg):
+    namespaces = set()
+    for node in nodes:
+        parts = node.rsplit("|", 1)[-1].rsplit(":", 1)
+        namespaces.add((":" + parts[0]) if len(parts) > 1 else ":")
+
+    if not len(namespaces) == 1:
+        raise Exception(err_msg)
+
+    return namespaces.pop()
+
+
+def __get_representation(namespace):
+    container_node = pipeline.get_container_from_namespace(namespace)
+    _id = io.ObjectId(cmds.getAttr(container_node + ".representation"))
+    return io.find_one({"_id": _id})
+
+
+def __get_package_path(representation):
+    parents = io.parenthood(representation)
+    return get_representation_path_(representation, parents)
+
+
+def __load_bounding_data(representation, package_path):
+    file_path = os.path.join(package_path, representation["data"]["linkFname"])
+    # Load map
+    bound_map = None
+    try:
+        with open(file_path) as f:
+            bound_map = json.load(f)
+    except IOError:
+        log.warning("Asset has no bounding data.\n"
+                    "{!r} not found".format(file_path))
+
+    return bound_map
+
+
+def bind_xgen_interactive_by_selection(*args):
+    """Bind XGen interactive groom via selecting XGen and Model subset
+
+    Select loaded XGen IGS subset group and bound mesh subset group
+
+    """
+    selection = cmds.ls(sl=True)
+    selection += cmds.listRelatives(selection, allDescendents=True) or []
+
+    descriptions = xgen.interactive.list_lead_descriptions(selection)
+    meshes = cmds.ls(selection, long=True, type="mesh")
+
+    # Get descriptions' container by namespace
+    err_msg = ("Can only process on one set of XGen Descriptions.")
+    desc_namespace = __ensure_nodes_in_same_namespace(descriptions, err_msg)
+
+    # Ensure selected meshes are under same namespace
+    err_msg = ("Can only process on one set of XGen Bound Mesh.")
+    mesh_namespace = __ensure_nodes_in_same_namespace(meshes, err_msg)
+
+    # Get representation from database and retrive link map
+    representation = __get_representation(desc_namespace)
+    if representation is None:
+        return
+
+    package_path = __get_package_path(representation)
+    bound_map = __load_bounding_data(representation, package_path)
+    if bound_map is None:
+        return
+
+    # Collect and check
+    _bound = dict()
+    for desc in descriptions:
+        desc_id = utils.get_id(desc)
+
+        if desc_id is None:
+            raise Exception("Description {!r} has no ID, this is a bug."
+                            "".format(desc))
+
+        bound_meshes = []
+        for id in bound_map[desc_id]:
+            models = lib.lsAttr(lib.AVALON_ID_ATTR_LONG,
+                                value=id,
+                                namespace=mesh_namespace + ":")
+            _meshes = cmds.listRelatives(models,
+                                         shapes=True,
+                                         noIntermediate=True,
+                                         fullPath=True) or []
+            if not _meshes:
+                raise Exception("Bound mesh {!r} has no ID.".format(desc))
+
+            # Only bound to selected model
+            bound_meshes += [m for m in _meshes if m in meshes]
+
+        _bound[desc] = bound_meshes
+
+    # Bind !
+    for d, bm in _bound.items():
+        attach_xgen_IGS_preset(d, bm)
+
+
+def __duplicate_mesh_to_xgen_subset(bound_mesh, from_namespace, to_namespace):
+    new_name = to_namespace + ":" + bound_mesh.rsplit(":", 1)[-1]
+    new_mesh = cmds.duplicate(bound_mesh,
+                              name=new_name,
+                              inputConnections=True)[0]
+    new_nodes = cmds.listRelatives(new_mesh, shapes=True)
+    new_nodes.append(new_mesh)
+
+    from_container = pipeline.get_container_from_namespace(from_namespace)
+    to_container = pipeline.get_container_from_namespace(to_namespace)
+
+    cmds.sets(new_nodes, forceElement=to_container)
+    cmds.sets(new_nodes, remove=from_container)
+
+    cmds.parent(new_mesh, world=True)
+
+    return new_mesh
+
+
+def bind_xgen_legacy_by_selection(*args):
+    """Bind XGen legacy via selecting XGen and Model subset
+
+    Select loaded XGen Legacy palette nodes and bound mesh subset group
+
+    (NOTE) This will duplicate bound meshes into XGen subset's namespace
+           and parent to world. Because XGen Legacy require them exists
+           under same namespace.
+
+    """
+    selection = cmds.ls(sl=True)
+    selection += cmds.listRelatives(selection, allDescendents=True) or []
+
+    palettes = cmds.ls(selection, type="xgmPalette")
+    meshes = cmds.ls(selection, long=True, type="mesh")
+
+    # Get palettes' container by namespace
+    err_msg = ("Can only process on one set of XGen Palettes.")
+    pal_namespace = __ensure_nodes_in_same_namespace(palettes, err_msg)
+
+    # Ensure selected meshes are under same namespace
+    err_msg = ("Can only process on one set of XGen Bound Mesh.")
+    mesh_namespace = __ensure_nodes_in_same_namespace(meshes, err_msg)
+
+    # Get representation from database and retrive link map
+    representation = __get_representation(pal_namespace)
+    if representation is None:
+        return
+
+    package_path = __get_package_path(representation)
+    bound_map = __load_bounding_data(representation, package_path)
+    if bound_map is None:
+        return
+
+    # Collect and check
+    _bound = dict()
+    for palette in palettes:
+        descriptions = xgen.legacy.list_descriptions(palette)
+        for desc in descriptions:
+            desc_id = utils.get_id(desc)
+
+            if desc_id is None:
+                raise Exception("Description {!r} has no ID, this is a bug."
+                                "".format(desc))
+
+            bound_meshes = []
+            for id in bound_map[desc_id]:
+                models = lib.lsAttr(lib.AVALON_ID_ATTR_LONG,
+                                    value=id,
+                                    namespace=mesh_namespace + ":")
+                _meshes = cmds.listRelatives(models,
+                                             shapes=True,
+                                             noIntermediate=True,
+                                             fullPath=True) or []
+                if not _meshes:
+                    raise Exception("Bound mesh {!r} has no ID.".format(desc))
+
+                # Only bound to selected model
+                bound_meshes += [cmds.listRelatives(m, parent=True)[0]
+                                 for m in _meshes if m in meshes]
+
+            # Get guides
+            guide_path = None
+            if xgen.legacy.description_ctrl_method(desc) == "Guides":
+                guide_path = os.path.join(package_path,
+                                          "guides",
+                                          palette.rsplit(":", 1)[-1],
+                                          desc.rsplit(":", 1)[-1] + ".abc")
+
+                if not os.path.isfile(guide_path):
+                    raise Exception("Guides alembic file not exists, "
+                                    "this is a bug. {}".format(guide_path))
+
+            _bound[desc] = (bound_meshes, guide_path)
+
+    # Bind !
+    duplicated = dict()
+    for d, (bm, guide) in _bound.items():
+        _bm = []
+        for mesh in bm:
+            try:
+                _mesh = duplicated[mesh]
+            except KeyError:
+                _mesh = __duplicate_mesh_to_xgen_subset(mesh,
+                                                        mesh_namespace,
+                                                        pal_namespace)
+                duplicated[mesh] = _mesh
+
+            _bm.append(_mesh)
+
+        bind_xgen_LGC_description(d, _bm, guide)
