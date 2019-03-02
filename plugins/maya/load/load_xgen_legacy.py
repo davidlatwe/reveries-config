@@ -4,9 +4,9 @@ from distutils.dir_util import copy_tree
 
 import avalon.api
 from maya import cmds
+from reveries.maya import utils
 from reveries.maya.plugins import MayaBaseLoader, unique_root_namespace
 from reveries.maya.xgen import legacy as xgen
-from reveries.maya.utils import generate_container_id
 from reveries.maya.pipeline import subset_containerising
 
 
@@ -49,6 +49,7 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         # Import palette (No bind)
         palette_nodes = list()
         palettes = context["representation"]["data"]["palettes"]
+        desc_ids = context["representation"]["data"]["descriptionIds"]
         for file in palettes:
             xgen_path = os.path.join(self.package_path, file)
             xgen_path = xgen_path.replace("\\", "/")
@@ -61,6 +62,12 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
             palette = os.path.splitext(file)[0]
             data_path = os.path.join(local_map_dir, palette).replace("\\", "/")
             xgen.set_data_path(palette_node, data_path)
+
+            # Apply ID
+            for desc in xgen.list_descriptions(palette_node):
+                _desc = desc.rsplit(":", 1)[-1]
+                id = desc_ids[_desc]
+                utils.set_id(desc, id)
 
         group_name = self.group_name(namespace, name)
         # Cannot be grouped
@@ -77,7 +84,8 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
                                     allDescendents=True,
                                     fullPath=True)
 
-        container_id = options.get("containerId", generate_container_id())
+        container_id = options.get("containerId",
+                                   utils.generate_container_id())
         container = subset_containerising(name=name,
                                           namespace=namespace,
                                           container_id=container_id,
@@ -87,3 +95,9 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
                                           cls_name=self.__class__.__name__,
                                           group_name=group_name)
         return container
+
+    def update(self, container, representation):
+        pass
+
+    def remove(self, container):
+        pass
