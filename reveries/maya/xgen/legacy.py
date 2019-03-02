@@ -696,3 +696,23 @@ def modify_binding(description, meshes, mode="Append"):
     with capsule.maintained_selection():
         cmds.select(meshes, replace=True)
         xg.modifyFaceBinding(palette, description, mode=mode)
+
+
+def description_ctrl_method(description):
+    """
+    Find out what instance method used by description to control primitives,
+    and return type name:
+        'Guides'
+        'Attribute'
+        'Groom'
+    """
+    palette = get_palette_by_description(description)
+    primitive = xg.getActive(palette, description, "Primitive")
+
+    if xg.getAttr("iMethod", palette, description, primitive):
+        return "Guides"
+    else:
+        if xg.getAttr("groom", palette, description):
+            return "Groom"
+        else:
+            return "Attribute"
