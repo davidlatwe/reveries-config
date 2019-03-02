@@ -420,6 +420,12 @@ def set_transform_id():
         _identifier.manage(node, status)
 
 
+def set_id(node, id):
+    _add_attr(node, lib.AVALON_ID_ATTR_LONG)
+    _set_attr(node, lib.AVALON_ID_ATTR_LONG, str(id))
+    _identifier.on_duplicate(node)
+
+
 def update_id_on_import(nodes):
     _identifier.update_verifiers(nodes)
 
