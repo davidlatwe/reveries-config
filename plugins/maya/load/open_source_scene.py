@@ -54,9 +54,6 @@ class OpenMayaSource(object):
             elif result == _stop:
                 return
 
-        # Switch context before load
-        avalon.api.update_current_task(task=context["version"]["data"]["task"],
-                                       asset=context["asset"]["name"])
         cmds.file(modified=False)
 
         self.open_source_from_context(context)
@@ -64,12 +61,29 @@ class OpenMayaSource(object):
     def open_source_from_context(self, context):
         from maya import cmds
 
-        source = context["version"]["data"]["source"]
+        version_data = context["version"]["data"]
+
+        source = version_data["source"]
         file_path = source.format(root=avalon.api.registered_root())
+
+        # Switch context before load
+        current_user = avalon.api.Session.get("AVALON_USER", "")
+
+        author = version_data["author"]
+        avalon.api.Session["AVALON_USER"] = author
+        avalon.api.update_current_task(task=version_data["task"],
+                                       asset=context["asset"]["name"])
+
+        work_dir = version_data.get("workDir")
+        if work_dir:
+            avalon.api.Session["AVALON_WORKDIR"] = work_dir
+            avalon.maya.pipeline._set_project()
 
         self.log.info("Opening file from: %s", file_path)
 
         cmds.file(file_path, o=True, prompt=True)
+
+        avalon.api.Session["AVALON_USER"] = current_user
 
 
 # Manually define which representation's source file can be accessed
@@ -109,3 +123,9 @@ class OpenSourceSetDress(OpenMayaSource, avalon.api.Loader):
 
     families = ["reveries.setdress"]
     representations = ["setPackage"]
+
+
+class OpenSourceXGen(OpenMayaSource, avalon.api.Loader):
+
+    families = ["reveries.xgen"]
+    representations = ["XGenLegacy", "XGenInteractive"]
