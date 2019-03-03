@@ -63,6 +63,8 @@ class ValidateRenderSettings(pyblish.api.InstancePlugin):
         prefix = instance.data["fileNamePrefix"] or ""
         cls.log.debug("Collected file name prefix: %s" % prefix)
 
+        is_vray = instance.data["renderer"] == "vray"
+
         has_invalid = False
 
         if not prefix:
@@ -75,7 +77,7 @@ class ValidateRenderSettings(pyblish.api.InstancePlugin):
 
         has_renderlayer = instance.context.data["hasRenderLayers"]
         if has_renderlayer:
-            tags = (["<Layer>", "<layer>", "%l"] if "vray" else
+            tags = (["<Layer>", "<layer>", "%l"] if is_vray else
                     ["<RenderLayer>", "<Layer>", "%l"])
 
             if not any(t in prefix for t in tags):

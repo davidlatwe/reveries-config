@@ -88,7 +88,7 @@ def lock_edit_on_open():
                         is_active(node_attr))
                        for node_attr in cmds.ls("*.family")]
 
-    if is_locked() and imgseq_instances and other_instances:
+    if is_locked() and any(imgseq_instances) and any(other_instances):
         lock_edit()
 
 
