@@ -130,7 +130,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
             else:
                 msg = response.text
                 self.log.error(msg)
-                raise Exception(msg)
+                raise Exception("Submission failed...")
 
         self.log.info("Completed.")
 
@@ -166,4 +166,4 @@ class ContractorDeadlineMayaRender(BaseContractor):
         else:
             msg = response.text
             self.log.error(msg)
-            raise Exception(msg)
+            raise Exception("Submission failed...")
