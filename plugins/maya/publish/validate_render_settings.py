@@ -20,8 +20,8 @@ class ValidateRenderSettings(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder + 0.1
     hosts = ["maya"]
     families = [
-        "reveries.imgseq.batchrender",
-        "reveries.imgseq.turntable",
+        "reveries.imgseq.render",
+        "reveries.imgseq.lookdev",
     ]
 
     extensions = ("exr", "png")

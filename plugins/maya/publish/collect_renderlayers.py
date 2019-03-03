@@ -198,7 +198,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.script"
 
-    def process_turntable(self, instance, layer):
+    def process_lookdev(self, instance, layer):
         """
         """
         self.log.debug("Renderlayer: " + layer)
@@ -217,8 +217,8 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         instance.data["subset"] += "." + lookdev_name
 
         # Inject shadow family
-        instance.data["families"] = ["reveries.imgseq.turntable"]
-        instance.data["category"] = "Turntable: " + instance.data["renderer"]
+        instance.data["families"] = ["reveries.imgseq.lookdev"]
+        instance.data["category"] = "lookdev: " + instance.data["renderer"]
 
         # Assign contractor
         if instance.data["deadlineEnable"]:
@@ -246,21 +246,21 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
                 if version is not None:  # Collector should never failed.
                     _id = version["_id"]
-                    # (NOTE) turntable's `futureDependencies` should be
+                    # (NOTE) lookdev's `futureDependencies` should be
                     #        validated later.
                     instance.data["futureDependencies"][lookdev_name] = _id
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)
 
-    def process_batchrender(self, instance, layer):
+    def process_render(self, instance, layer):
         """
         """
         # Update subset name with layername
         instance.data["subset"] += "." + instance.name
 
         # Inject shadow family
-        instance.data["families"] = ["reveries.imgseq.batchrender"]
+        instance.data["families"] = ["reveries.imgseq.render"]
         instance.data["category"] = "Render: " + instance.data["renderer"]
 
         # Assign contractor

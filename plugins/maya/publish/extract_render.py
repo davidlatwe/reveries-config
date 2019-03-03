@@ -15,8 +15,8 @@ class ExtractRender(DelegatablePackageExtractor):
     hosts = ["maya"]
 
     families = [
-        "reveries.imgseq.batchrender",
-        "reveries.imgseq.turntable",
+        "reveries.imgseq.render",
+        "reveries.imgseq.lookdev",
     ]
 
     representations = [

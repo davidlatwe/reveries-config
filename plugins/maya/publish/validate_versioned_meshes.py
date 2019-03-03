@@ -23,8 +23,8 @@ class ValidateVersionedMeshes(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "All Meshes Has Versioned"
     families = [
-        "reveries.imgseq.playblast",
-        "reveries.imgseq.turntable",
+        "reveries.imgseq.render",
+        "reveries.imgseq.lookdev",
     ]
 
     actions = [

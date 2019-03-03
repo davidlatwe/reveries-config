@@ -31,8 +31,8 @@ class RenderCreator(avalon.maya.Creator):
     icon = "film"
 
     defaults = [
-        "batchrender",
-        "turntable",
+        "render",
+        "lookdev",
         "playblast",
     ]
 
@@ -74,7 +74,7 @@ class RenderCreator(avalon.maya.Creator):
         self.data["deadlineGroup"] = deadline["group"]
 
         self.data["renderType"] = variant
-        self.data["publishOnLock"] = not variant == "batchrender"
+        self.data["publishOnLock"] = not variant == "render"
         self.data["publishOrder"] = 999
 
         instance = super(RenderCreator, self).process()
