@@ -133,23 +133,13 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             variate(instance, layer)
 
             # Collect renderlayer members
+            layer_members = cmds.editRenderLayerMembers(layer, query=True)
+            members = cmds.ls(layer_members, long=True)
+            members += cmds.listRelatives(members,
+                                          allDescendents=True,
+                                          fullPath=True) or []
 
-            members = cmds.editRenderLayerMembers(layer, query=True) or []
-            members = cmds.ls(members, long=True)
-
-            instance.data["renderLayerMember"] = members
-            descendent = cmds.listRelatives(members, allDescendents=True) or []
-            members += descendent
-
-            # Collect all meshes, for building dependency connections
-            # (TODO) Append only mesh type objects to build dependency
-            # connections is for avoiding potential non-acyclic dependency
-            # relationships.
-            meshes = cmds.ls(members,
-                             type="mesh", noIntermediate=True, long=True)
-            transforms = cmds.listRelatives(meshes,
-                                            parent=True, fullPath=True) or []
-            instance += transforms
+            instance += list(set(members))
 
     def collect_output_paths(self, instance):
         renderer = instance.data["renderer"]
