@@ -59,6 +59,8 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
         assert self.instance_node is not None, "This is a bug."
 
+        HAS_OTHER_NON_IMGSEQ_INSTANCES = bool(len(context))
+
         # Get all valid renderlayers
         # This is how Maya populates the renderlayer display
         rlm_attribute = "renderLayerManager.renderLayerId"
@@ -122,6 +124,10 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance = context.create_instance(layername)
             # (NOTE) The instance is empty
             instance.data.update(data)
+
+            # (NOTE) If there are other non-imgseq instances need to be
+            #        published, wait for them.
+            instance.data["publishOnLock"] = HAS_OTHER_NON_IMGSEQ_INSTANCES
 
             # For dependency tracking
             instance.data["dependencies"] = dict()
