@@ -3,7 +3,7 @@ import os
 import json
 import pyblish.api
 from reveries.plugins import PackageExtractor, skip_stage
-from reveries.maya import io
+from reveries.maya import io, utils
 from reveries.maya.xgen import legacy as xgen
 
 
@@ -28,11 +28,16 @@ class ExtractXGenLegacy(PackageExtractor):
         package_dir = self.create_package()
 
         xgen_files = list()
+        description_ids = dict()
         bound_map = dict()
 
         for desc in self.data["xgenDescriptions"]:
             # Save bounding
-            bound_map[desc] = xgen.list_bound_geometry(desc)
+
+            desc_id = utils.get_id(desc)
+            description_ids[desc] = desc_id
+            bound_map[desc_id] = [utils.get_id(geo) for geo in
+                                  xgen.list_bound_geometry(desc)]
 
             # Transfer maps
             maps = xgen.maps_to_transfer(desc)
@@ -68,6 +73,8 @@ class ExtractXGenLegacy(PackageExtractor):
             json.dump(bound_map, fp, ensure_ascii=False)
 
         self.add_data({
-            "entryFileName": link_file,
+            "entryFileName": None,  # Yes, no entry file for XGen Legacy.
+            "linkFname": link_file,
+            "descriptionIds": description_ids,
             "palettes": xgen_files,
         })

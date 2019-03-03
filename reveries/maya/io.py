@@ -651,11 +651,11 @@ def reference_xgen_IGS_preset(file_path, namespace=":", bound_meshes=None):
         return newNodes
 
 
-def attach_xgen_IGS_preset(preset_nodes, bound_meshes):
+def attach_xgen_IGS_preset(description, bound_meshes):
     """Bound loaded XGen IGS preset nodes to meshes
 
     Args:
-        preset_nodes (list): A list of nodes loaded from one preset
+        description (str): description shape node name
         bound_meshes (list): A list of mesh shape nodes the preset
             bounded to. The order of meshes matters !
 
@@ -666,21 +666,51 @@ def attach_xgen_IGS_preset(preset_nodes, bound_meshes):
                 log.error("Missing: {}".format(m))
         raise Exception("Missing bound mesh.")
 
+    bases = cmds.ls(cmds.listHistory(description),
+                    type="xgmSplineBase",
+                    long=True)
+    descs = cmds.ls(cmds.listHistory(description),
+                    type="xgmSplineDescription",
+                    long=True)
+
+    preset_nodes = bases + descs
     xgen.interactive.SplinePresetUtil.attachPreset(preset_nodes, bound_meshes)
 
 
 def export_xgen_LGC_palette(palette, out_path):
+    """Export XGen legacy palette to .xgen file
+
+    Args:
+        palette (str): XGen Legacy palette name
+        out_path (str): Path string of .xgen file
+
+    """
     xgen.legacy.export_palette(palette, out_path)
 
 
-def import_xgen_LGC_palette(file_path, namespace="", wrapPatches=True):
+def import_xgen_LGC_palette(file_path, namespace="", wrap_patches=True):
+    """Import XGen legacy palette from .xgen file
+
+    Args:
+        file_path (str): Path string of .xgen file
+        namespace (str, optional): The namespace to apply to palette,
+            default "".
+        wrap_patches (bool, optional): If `True`, bind palette to selected
+            meshes. Default `True`.
+
+    """
     xgen.legacy.import_palette(file_path,
                                namespace=namespace,
-                               wrapPatches=wrapPatches)
+                               wrapPatches=wrap_patches)
 
 
 def export_xgen_LGC_guides(guides, out_path):
-    """
+    """Export XGen guide curves to Alembic file
+
+    Args:
+        guides (list): A list of guide transform nodes
+        out_path (str): Alembic file path
+
     """
     with contextlib.nested(
         capsule.maintained_selection(),
@@ -691,7 +721,11 @@ def export_xgen_LGC_guides(guides, out_path):
         curves += cmds.listRelatives(curves, shapes=True)
         cmds.select(curves, replace=True)
 
+        frame = cmds.currentTime(query=True)
+
         export_alembic(out_path,
+                       startFrame=frame,
+                       endFrame=frame,
                        selection=True,
                        renderableOnly=False,
                        stripNamespaces=True,
@@ -702,6 +736,13 @@ def export_xgen_LGC_guides(guides, out_path):
 
 
 def import_xgen_LGC_guides(description, file_path):
+    """Import XGen guide curves from Alembic file
+
+    Args:
+        description (str): XGen Legacy description name
+        file_path (str): File path of exported Alembic guide curves
+
+    """
     # Ensure alembic importer is loaded
     cmds.loadPlugin("AbcImport", quiet=True)
 
@@ -717,3 +758,19 @@ def import_xgen_LGC_guides(description, file_path):
                           returnNewNodes=True)
 
         xgen.legacy.curves_to_guides(description, nodes)
+
+
+def bind_xgen_LGC_description(description, meshes, guide_path=None):
+    """Bind XGen legacy description to meshes
+
+    Args:
+        description (str): XGen Legacy description name
+        meshes (list): A list of meshes (transform node names) to bind with
+        guide_path (str, optional): File path of exported Alembic guide curves
+
+    """
+    # Bind
+    xgen.legacy.modify_binding(description, meshes)
+    # Import guides
+    if guide_path:
+        import_xgen_LGC_guides(description, guide_path)

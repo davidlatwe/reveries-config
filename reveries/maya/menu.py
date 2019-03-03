@@ -21,7 +21,8 @@ def install():
 
         cmds.menuItem("Snap!", command=interactive.active_view_snapshot)
 
-        cmds.menuItem("LookDev",
+        # LookDev tools
+        cmds.menuItem("Menu_LookDev",
                       label="LookDev",
                       tearOff=True,
                       subMenu=True,
@@ -31,13 +32,32 @@ def install():
 # import reveries.maya.tools
 # reveries.maya.tools.show('vray_attrs_setter')
 # """)
-        cmds.menuItem("Look Assigner", parent="LookDev", command="""
+        cmds.menuItem("Look Assigner", parent="Menu_LookDev", command="""
 import reveries.maya.tools
 reveries.maya.tools.show('mayalookassigner')
 """)
 
-        cmds.menuItem("Swap Modle", parent="LookDev",
+        cmds.menuItem("Swap Modle", parent="Menu_LookDev",
                       command=interactive.swap_to_published_model)
+
+        # XGen tools
+        cmds.menuItem("Menu_XGen",
+                      label="XGen",
+                      tearOff=True,
+                      subMenu=True,
+                      parent=self._menu)
+
+        cmds.menuItem(divider=True, dividerLabel="XGen Legacy")
+
+        cmds.menuItem("Bind Legacy",
+                      parent="Menu_XGen",
+                      command=interactive.bind_xgen_legacy_by_selection)
+
+        cmds.menuItem(divider=True, dividerLabel="XGen Interactive Groom")
+
+        cmds.menuItem("Bind Interactive Groom",
+                      parent="Menu_XGen",
+                      command=interactive.bind_xgen_interactive_by_selection)
 
         # System
         cmds.menuItem("Load PyMel", parent="System", command="""

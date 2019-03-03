@@ -4,7 +4,7 @@ import logging
 from maya import cmds
 from maya.api import OpenMaya as om
 
-from .. import utils, lib
+from .. import lib
 from ..vendor.six import string_types
 from .vendor import capture
 
@@ -167,52 +167,6 @@ def bake_hierarchy_visibility(nodes, start_frame, end_frame, step=1):
     # Connect baked result curve
     for node, curve in curve_map.items():
         cmds.connectAttr(curve + ".output", node + ".visibility", force=True)
-
-
-def set_scene_timeline(project=None, asset_name=None, strict=True):
-    """Set timeline to correct frame range for the asset
-
-    Args:
-        project (dict, optional): Project document, query from database if
-            not provided.
-        asset_name (str, optional): Asset name, get from `avalon.Session` if
-            not provided.
-        strict (bool, optional): Whether or not to set the exactly frame range
-            that pre-defined for asset, or leave the scene start/end untouched
-            as long as the start/end frame could cover the pre-defined range.
-            Default `True`.
-
-
-    """
-    log.info("Timeline setting...")
-
-    start_frame, end_frame, fps = utils.compose_timeline_data(project,
-                                                              asset_name)
-    fps = FPS_MAP.get(fps)
-
-    if fps is None:
-        raise ValueError("Unsupported FPS value: {}".format(fps))
-
-    cmds.currentUnit(time=fps)
-
-    if not strict:
-        scene_start = cmds.playbackOptions(query=True, minTime=True)
-        if start_frame < scene_start:
-            cmds.playbackOptions(animationStartTime=start_frame)
-            cmds.playbackOptions(minTime=start_frame)
-
-        scene_end = cmds.playbackOptions(query=True, maxTime=True)
-        if end_frame > scene_end:
-            cmds.playbackOptions(animationEndTime=end_frame)
-            cmds.playbackOptions(maxTime=end_frame)
-
-    else:
-        cmds.playbackOptions(animationStartTime=start_frame)
-        cmds.playbackOptions(minTime=start_frame)
-        cmds.playbackOptions(animationEndTime=end_frame)
-        cmds.playbackOptions(maxTime=end_frame)
-
-        cmds.currentTime(start_frame)
 
 
 def node_type_check(node, node_type):

@@ -335,6 +335,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         source = context.data["currentMaking"]
         source = source.replace(api.registered_root(), "{root}")
         source = source.replace("\\", "/")
+
+        work_dir = api.Session.get("AVALON_WORKDIR")
+        work_dir = work_dir.replace(api.registered_root(), "{root}")
+        work_dir = work_dir.replace("\\", "/")
+
         hash_val = context.data["sourceFingerprint"]["currentHash"]
 
         version_data = {
@@ -343,6 +348,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             "author": context.data["user"],
             "task": api.Session.get("AVALON_TASK"),
             "source": source,
+            "workDir": work_dir,
             "hash": hash_val,
             "comment": context.data.get("comment"),
             "dependencies": instance.data.get("dependencies", dict()),

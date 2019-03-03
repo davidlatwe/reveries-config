@@ -5,12 +5,12 @@ from maya import cmds, OpenMaya
 from avalon import maya, api as avalon
 
 from .. import utils
-from .lib import set_scene_timeline
 from .pipeline import (
     is_editable,
     unlock_edit,
     reset_edit_lock,
     lock_edit_on_open,
+    set_scene_timeline,
 )
 from .vendor import sticker
 
