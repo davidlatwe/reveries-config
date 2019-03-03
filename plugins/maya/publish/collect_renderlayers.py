@@ -7,6 +7,7 @@ import pyblish.api
 from avalon import io, maya
 from reveries.plugins import context_process
 from reveries.maya import lib, utils
+from reveries.utils import get_versions_from_sourcefile
 
 
 def set_extraction_type(instance):
@@ -177,6 +178,11 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
         instance.data["outputPaths"] = paths
 
+    def previous_published(self, instance):
+        project = instance.context.data["projectDoc"]["name"]
+        source = instance.context.data["currentMaking"]
+        return get_versions_from_sourcefile(source, project)
+
     def process_playblast(self, instance, layer):
         """
         """
@@ -191,6 +197,12 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.script"
+
+        if instance.data["publishOnLock"] and maya.is_locked():
+            # Collect previous published for dependency tracking
+            for v in self.previous_published(instance):
+                subset = io.find_one({"_id": v["parent"]}, {"name": True})
+                instance.data["futureDependencies"][subset["name"]] = v["_id"]
 
     def process_lookdev(self, instance, layer):
         """
@@ -219,30 +231,15 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.render"
 
-        # Collect lookDev version when scene locked for dependency tracking
-        if maya.is_locked():
-            asset_doc = instance.context.data["assetDoc"]
-            subset_doc = io.find_one({"type": "subset",
-                                      "parent": asset_doc["_id"],
-                                      "name": lookdev_name})
-
-            if subset_doc is not None:  # Collector should never failed.
-                project_name = instance.context.data["projectDoc"]["name"]
-                source = instance.context.data["currentMaking"]
-                source = source.split(project_name, 1)[-1].replace("\\", "/")
-                source = {"$regex": "/*{}".format(source), "$options": "i"}
-
-                version = io.find_one({"type": "version",
-                                       "parent": subset_doc["_id"],
-                                       "data.source": source},
-                                      {"name": True},
-                                      sort=[("name", -1)])
-
-                if version is not None:  # Collector should never failed.
-                    _id = version["_id"]
-                    # (NOTE) lookdev's `futureDependencies` should be
-                    #        validated later.
-                    instance.data["futureDependencies"][lookdev_name] = _id
+        if instance.data["publishOnLock"] and maya.is_locked():
+            # Collect previous published for dependency tracking
+            for v in self.previous_published(instance):
+                subset = io.find_one({"_id": v["parent"]}, {"name": True})
+                if ("reveries.look" in v["families"] and
+                        not subset["name"] == lookdev_name):
+                    # Filter out not related `look`
+                    continue
+                instance.data["futureDependencies"][subset["name"]] = v["_id"]
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)
@@ -261,6 +258,12 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.render"
+
+        if instance.data["publishOnLock"] and maya.is_locked():
+            # Collect previous published for dependency tracking
+            for v in self.previous_published(instance):
+                subset = io.find_one({"_id": v["parent"]}, {"name": True})
+                instance.data["futureDependencies"][subset["name"]] = v["_id"]
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)
