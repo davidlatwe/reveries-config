@@ -6,8 +6,9 @@ import codecs
 import shutil
 import weakref
 import getpass
-import errno
 import pymongo
+
+from distutils.dir_util import copy_tree
 
 from avalon import io, Session
 
@@ -487,13 +488,7 @@ class AssetGraber(object):
 
     def _copy_dir(self, src, dst):
         """ Copy given source to destination"""
-        try:
-            shutil.copytree(src, dst)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                print("Representation dir existed.")
-            else:
-                raise OSError("An unexpected error occurred.")
+        copy_tree(src, dst)
 
 
 def get_versions_from_sourcefile(source, project):
