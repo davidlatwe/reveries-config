@@ -36,6 +36,6 @@ group = [
 ]
 [deadline.maya.priorities]
 pointcache = 95
-batchrender = 70
-turntable = 80
+render = 70
+lookdev = 80
 playblast = 95
