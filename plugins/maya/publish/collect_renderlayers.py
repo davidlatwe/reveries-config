@@ -50,13 +50,11 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
     def process(self, context):
 
         self.instance_node = None
-        dummy_members = list()
 
         # Remove all dummy `imgseq` instances
         for instance in list(context):
             if instance.data["family"] in self.families:
                 self.instance_node = instance.data.get("objectName")
-                dummy_members = instance[:]
                 context.remove(instance)
 
         assert self.instance_node is not None, "This is a bug."
@@ -122,7 +120,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             data.update(self.get_pipeline_attr(layer))
 
             instance = context.create_instance(layername)
-            instance[:] = dummy_members
+            # (NOTE) The instance is empty
             instance.data.update(data)
 
             # For dependency tracking
