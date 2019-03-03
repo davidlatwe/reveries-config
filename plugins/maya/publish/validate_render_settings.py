@@ -1,15 +1,8 @@
 
 import pyblish.api
 from reveries.maya import utils as maya_utils
+from reveries.maya import pipeline
 from reveries import utils
-
-
-def swap_to_turntable(instance):
-    families = instance.data.get("families", [])
-    if "reveries.imgseq.turntable" in families:
-        # (NOTE) The turntable asset name is hardcoded here,
-        #        better not to do this.
-        return "LookDevStage"
 
 
 class ValidateRenderSettings(pyblish.api.InstancePlugin):
@@ -37,7 +30,7 @@ class ValidateRenderSettings(pyblish.api.InstancePlugin):
     def get_invalid_range(cls, instance):
         """Rendering range should be the same as pre-defined range"""
         project = instance.context.data["projectDoc"]
-        asset_name = swap_to_turntable(instance)
+        asset_name = pipeline.has_turntable()
         proj_start, proj_end, _ = utils.compose_timeline_data(project,
                                                               asset_name)
         render_start = instance.data["startFrame"]
