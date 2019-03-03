@@ -24,6 +24,9 @@ class RenderCreator(avalon.maya.Creator):
     pick one into objectSet, just set one camera to be renderabled for
     each renderlayer.
 
+    The instance of this family can be empty, and wont have any affect
+    if it's not.
+
     """
 
     label = "Render"

@@ -56,7 +56,9 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
 
             # verify objectSet has members to collect
             members = cmds.sets(objset, query=True)
-            if members is None:
+            if (members is None and
+                    "reveries.imgseq" not in cmds.getAttr(objset + ".family")):
+                # family `reveries.imgseq` can be empty
                 self.log.warning("Skipped empty Set: \"%s\" " % objset)
                 continue
 
