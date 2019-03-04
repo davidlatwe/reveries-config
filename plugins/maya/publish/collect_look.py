@@ -44,6 +44,11 @@ class CollectLook(pyblish.api.InstancePlugin):
         unwanted = set(cmds.ls(upstream_nodes, type=unwanted_types, long=True))
         upstream_nodes = list(set(upstream_nodes) - unwanted)
 
+        # Require Avalon UUID
+        instance.data["requireAvalonUUID"] = cmds.listRelatives(surfaces,
+                                                                parent=True,
+                                                                fullPath=True)
+
         instance.data["dagMembers"] = instance[:]
         instance[:] = upstream_nodes
 
