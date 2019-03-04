@@ -6,8 +6,9 @@ import codecs
 import shutil
 import weakref
 import getpass
-import errno
 import pymongo
+
+from distutils.dir_util import copy_tree
 
 from avalon import io, Session
 
@@ -487,10 +488,36 @@ class AssetGraber(object):
 
     def _copy_dir(self, src, dst):
         """ Copy given source to destination"""
-        try:
-            shutil.copytree(src, dst)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                print("Representation dir existed.")
-            else:
-                raise OSError("An unexpected error occurred.")
+        copy_tree(src, dst)
+
+
+def get_versions_from_sourcefile(source, project):
+    """Get version documents by the source path
+
+    By matching the path with field `version.data.source` to query latest
+    versions.
+
+    Args:
+        source (str): A path string where subsets been published from
+        project (str): Project name
+
+    """
+    source = source.split(project, 1)[-1].replace("\\", "/")
+    source = {"$regex": "/*{}".format(source), "$options": "i"}
+
+    cursor = io.find({"type": "version",
+                      "data.source": source},
+                     sort=[("name", -1)])
+    # (NOTE) Each version usually coming from different source file, but
+    #        let's not making this assumtion.
+    #        So here we filter out other versions that belongs to the same
+    #        subset.
+    subsets = set()
+    for version in cursor:
+        if version["parent"] not in subsets:
+            subsets.add(version["parent"])
+
+            yield version
+
+        else:
+            continue

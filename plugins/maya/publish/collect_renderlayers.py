@@ -7,6 +7,7 @@ import pyblish.api
 from avalon import io, maya
 from reveries.plugins import context_process
 from reveries.maya import lib, utils
+from reveries.utils import get_versions_from_sourcefile
 
 
 def set_extraction_type(instance):
@@ -39,7 +40,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             "deadlinePool",
             "deadlineGroup",
             "deadlinePriority",
-            "publishOnLock",
         ]
         return {k: lib.query_by_renderlayer(self.instance_node,
                                             k,
@@ -50,16 +50,16 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
     def process(self, context):
 
         self.instance_node = None
-        dummy_members = list()
 
         # Remove all dummy `imgseq` instances
         for instance in list(context):
             if instance.data["family"] in self.families:
                 self.instance_node = instance.data.get("objectName")
-                dummy_members = instance[:]
                 context.remove(instance)
 
         assert self.instance_node is not None, "This is a bug."
+
+        HAS_OTHER_NON_IMGSEQ_INSTANCES = bool(len(context))
 
         # Get all valid renderlayers
         # This is how Maya populates the renderlayer display
@@ -122,8 +122,12 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             data.update(self.get_pipeline_attr(layer))
 
             instance = context.create_instance(layername)
-            instance[:] = dummy_members
+            # (NOTE) The instance is empty
             instance.data.update(data)
+
+            # (NOTE) If there are other non-imgseq instances need to be
+            #        published, wait for them.
+            instance.data["publishOnLock"] = HAS_OTHER_NON_IMGSEQ_INSTANCES
 
             # For dependency tracking
             instance.data["dependencies"] = dict()
@@ -135,23 +139,13 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             variate(instance, layer)
 
             # Collect renderlayer members
+            layer_members = cmds.editRenderLayerMembers(layer, query=True)
+            members = cmds.ls(layer_members, long=True)
+            members += cmds.listRelatives(members,
+                                          allDescendents=True,
+                                          fullPath=True) or []
 
-            members = cmds.editRenderLayerMembers(layer, query=True) or []
-            members = cmds.ls(members, long=True)
-
-            instance.data["renderLayerMember"] = members
-            descendent = cmds.listRelatives(members, allDescendents=True) or []
-            members += descendent
-
-            # Collect all meshes, for building dependency connections
-            # (TODO) Append only mesh type objects to build dependency
-            # connections is for avoiding potential non-acyclic dependency
-            # relationships.
-            meshes = cmds.ls(members,
-                             type="mesh", noIntermediate=True, long=True)
-            transforms = cmds.listRelatives(meshes,
-                                            parent=True, fullPath=True) or []
-            instance += transforms
+            instance += list(set(members))
 
     def collect_output_paths(self, instance):
         renderer = instance.data["renderer"]
@@ -183,6 +177,11 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
         instance.data["outputPaths"] = paths
 
+    def previous_published(self, instance):
+        project = instance.context.data["projectDoc"]["name"]
+        source = instance.context.data["currentMaking"]
+        return get_versions_from_sourcefile(source, project)
+
     def process_playblast(self, instance, layer):
         """
         """
@@ -198,7 +197,13 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.script"
 
-    def process_turntable(self, instance, layer):
+        if instance.data["publishOnLock"] and maya.is_locked():
+            # Collect previous published for dependency tracking
+            for v in self.previous_published(instance):
+                subset = io.find_one({"_id": v["parent"]}, {"name": True})
+                instance.data["futureDependencies"][subset["name"]] = v["_id"]
+
+    def process_lookdev(self, instance, layer):
         """
         """
         self.log.debug("Renderlayer: " + layer)
@@ -217,56 +222,47 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         instance.data["subset"] += "." + lookdev_name
 
         # Inject shadow family
-        instance.data["families"] = ["reveries.imgseq.turntable"]
-        instance.data["category"] = "Turntable: " + instance.data["renderer"]
+        instance.data["families"] = ["reveries.imgseq.lookdev"]
+        instance.data["category"] = "lookdev: " + instance.data["renderer"]
 
         # Assign contractor
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.render"
 
-        # Collect lookDev version when scene locked for dependency tracking
-        if maya.is_locked():
-            asset_doc = instance.context.data["assetDoc"]
-            subset_doc = io.find_one({"type": "subset",
-                                      "parent": asset_doc["_id"],
-                                      "name": lookdev_name})
-
-            if subset_doc is not None:  # Collector should never failed.
-                project_name = instance.context.data["projectDoc"]["name"]
-                source = instance.context.data["currentMaking"]
-                source = source.split(project_name, 1)[-1].replace("\\", "/")
-                source = {"$regex": "/*{}".format(source), "$options": "i"}
-
-                version = io.find_one({"type": "version",
-                                       "parent": subset_doc["_id"],
-                                       "data.source": source},
-                                      {"name": True},
-                                      sort=[("name", -1)])
-
-                if version is not None:  # Collector should never failed.
-                    _id = version["_id"]
-                    # (NOTE) turntable's `futureDependencies` should be
-                    #        validated later.
-                    instance.data["futureDependencies"][lookdev_name] = _id
+        if instance.data["publishOnLock"] and maya.is_locked():
+            # Collect previous published for dependency tracking
+            for v in self.previous_published(instance):
+                subset = io.find_one({"_id": v["parent"]}, {"name": True})
+                if ("reveries.look" in v["families"] and
+                        not subset["name"] == lookdev_name):
+                    # Filter out not related `look`
+                    continue
+                instance.data["futureDependencies"][subset["name"]] = v["_id"]
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)
 
-    def process_batchrender(self, instance, layer):
+    def process_render(self, instance, layer):
         """
         """
         # Update subset name with layername
         instance.data["subset"] += "." + instance.name
 
         # Inject shadow family
-        instance.data["families"] = ["reveries.imgseq.batchrender"]
+        instance.data["families"] = ["reveries.imgseq.render"]
         instance.data["category"] = "Render: " + instance.data["renderer"]
 
         # Assign contractor
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.render"
+
+        if instance.data["publishOnLock"] and maya.is_locked():
+            # Collect previous published for dependency tracking
+            for v in self.previous_published(instance):
+                subset = io.find_one({"_id": v["parent"]}, {"name": True})
+                instance.data["futureDependencies"][subset["name"]] = v["_id"]
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)

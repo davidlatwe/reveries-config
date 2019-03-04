@@ -6,11 +6,11 @@ from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 class SelectInvalid(MayaSelectInvalidInstanceAction):
 
-    label = "Select Invalid Cameras"
+    label = "Select Not Versioned"
 
 
 class ValidateVersionedCameras(pyblish.api.InstancePlugin):
-    """Camera must be containerized
+    """Camera must be versioned or being published
     """
 
     order = pyblish.api.ValidatorOrder
@@ -32,14 +32,27 @@ class ValidateVersionedCameras(pyblish.api.InstancePlugin):
 
         containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
 
-        has_versioned = set()
         cameras = set(instance.data["renderCam"])
 
+        has_versioned = set()
+        # Is camera being containerized ?
         for cam in cameras:
             transform = cmds.listRelatives(cam, parent=True, fullPath=True)[0]
             for set_ in cmds.listSets(object=transform) or []:
                 if set_ in containers:
                     has_versioned.add(cam)
+                    break
+
+        not_containerized = cameras - has_versioned
+        other_instances = [i for i in instance.context
+                           if (not i.data["family"] == "reveries.imgseq" and
+                               i.data.get("publish", True))]
+        # Is camera being publish ?
+        for cam in not_containerized:
+            for inst in other_instances:
+                if cam in inst:
+                    has_versioned.add(cam)
+                    break
 
         return list(cameras - has_versioned)
 

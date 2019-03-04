@@ -24,6 +24,9 @@ class RenderCreator(avalon.maya.Creator):
     pick one into objectSet, just set one camera to be renderabled for
     each renderlayer.
 
+    The instance of this family can be empty, and wont have any affect
+    if it's not.
+
     """
 
     label = "Render"
@@ -31,8 +34,8 @@ class RenderCreator(avalon.maya.Creator):
     icon = "film"
 
     defaults = [
-        "batchrender",
-        "turntable",
+        "render",
+        "lookdev",
         "playblast",
     ]
 
@@ -74,7 +77,6 @@ class RenderCreator(avalon.maya.Creator):
         self.data["deadlineGroup"] = deadline["group"]
 
         self.data["renderType"] = variant
-        self.data["publishOnLock"] = not variant == "batchrender"
         self.data["publishOrder"] = 999
 
         instance = super(RenderCreator, self).process()
@@ -82,7 +84,5 @@ class RenderCreator(avalon.maya.Creator):
         # (TODO) Currently, force using Deadline to render
         if not variant == "playblast":
             cmds.setAttr(instance + ".deadlineEnable", lock=True)
-
-        cmds.setAttr(instance + ".publishOnLock", lock=True)
 
         return put_instance_icon(instance)
