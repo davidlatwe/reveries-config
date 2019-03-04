@@ -65,6 +65,12 @@ class ExtractXGenLegacy(PackageExtractor):
             io.export_xgen_LGC_palette(palette, xgen_path)
             xgen_files.append(xgen_file)
 
+            # Culled
+            xgd_file = palette + "_culled.xgd"
+            xgd_path = os.path.join(package_dir, "deltas", palette, xgd_file)
+            if xgen.save_culled_as_delta(palette, xgd_path):
+                self.log.info("Culled primitives saved.")
+
         # Extract bounding map
         link_file = self.file_name("json")
         link_path = os.path.join(package_dir, link_file)

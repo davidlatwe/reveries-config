@@ -686,16 +686,22 @@ def import_palette(xgen_path, deltas=None, namespace="", wrapPatches=True):
                             bool(wrapPatches))
 
 
-def modify_binding(description, meshes, mode="Append"):
-    """
-    Append
-    Replace
-    Remove
+def bind(description, meshes):
+    """Bind description to meshes
+
+    Args:
+        description (str): XGen Legacy description name
+        meshes (list): A list of meshes (transform node names) to bind with
+
     """
     palette = get_palette_by_description(description)
     with capsule.maintained_selection():
         cmds.select(meshes, replace=True)
-        xg.modifyFaceBinding(palette, description, mode=mode)
+        xg.modifyFaceBinding(palette,
+                             description,
+                             mode="Append",
+                             placeGuidesWithUVBasedMethod=True,
+                             rotateGuide=False)
 
 
 def description_ctrl_method(description):
@@ -716,3 +722,92 @@ def description_ctrl_method(description):
             return "Groom"
         else:
             return "Attribute"
+
+
+def save_culled_as_delta(palette, out_path):
+    """Save culled primitives info as XGen delta
+
+    Args:
+        palette (str): XGen Legacy palette name
+        out_path (str): .xgd file output path
+
+    """
+    header = ("# XGen Delta File (Culled Primitives)\n"
+              "#\n"
+              "# Version:  {version}\n"
+              "# Author:   {user}\n"
+              "# Date:     {date}\n")
+
+    lines = []
+    line = "Patch   culledPrims {patch}    {description}  {face} {len} {ids}"
+    for description in list_descriptions(palette):
+        for patch in xg.culledPrimPatches(palette, description):
+            for face in xg.culledPrimFaces(palette, description, patch):
+                ids = xg.culledPrims(palette, description, patch, face)
+                lines.append(line.format(patch=patch,
+                                         description=description,
+                                         face=face,
+                                         len=len(ids),
+                                         ids=" ".join(str(i) for i in ids)))
+            lines.append("\n")
+
+    if not lines:
+        return False
+
+    delta = header.format(version=cmds.getAttr(palette + ".xgVersion"),
+                          user=os.environ.get("USER", ""),
+                          date=cmds.about(ctime=True))
+    delta += "\n".join(lines)
+
+    out_dir = os.path.dirname(out_path)
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir)
+
+    with open(out_path, "w") as xgd:
+        xgd.write(delta)
+
+    return True
+
+
+def apply_deltas(palette, delta_paths):
+    """Apply deltas to palette
+
+    Args:
+        palette (str): XGen Legacy palette name
+        delta_paths (list): A list of .xgd file path
+
+    """
+    for path in delta_paths:
+        xg.applyDelta(str(palette), str(path))
+
+
+def disable_tube_shade(palette):
+    """
+    Args:
+        palette (str): XGen Legacy palette name
+    """
+    palette = str(palette)
+    for description in list_descriptions(palette):
+        prim = xg.getActive(palette, description, "Primitive")
+        if xg.attrExists("tubeShade", palette, description, prim):
+            xg.setAttr("tubeShade", "false", palette, description, prim)
+
+
+def disable_in_camera_only(palette):
+    """
+    Args:
+        palette (str): XGen Legacy palette name
+    """
+    palette = str(palette)
+    for description in list_descriptions(palette):
+        prev = xg.getActive(palette, description, "Previewer")
+        if xg.attrExists("inCameraOnly", palette, description, prev):
+            xg.setAttr("inCameraOnly", "false", palette, description, prev)
+
+
+def delete_palette(palette):
+    """
+    Args:
+        palette (str): XGen Legacy palette name
+    """
+    xg.deletePalette(str(palette))
