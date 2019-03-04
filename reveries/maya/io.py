@@ -770,7 +770,7 @@ def bind_xgen_LGC_description(description, meshes, guide_path=None):
 
     """
     # Bind
-    xgen.legacy.modify_binding(description, meshes)
+    xgen.legacy.bind(description, meshes)
     # Import guides
     if guide_path:
         import_xgen_LGC_guides(description, guide_path)

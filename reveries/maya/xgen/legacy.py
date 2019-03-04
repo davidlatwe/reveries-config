@@ -686,16 +686,22 @@ def import_palette(xgen_path, deltas=None, namespace="", wrapPatches=True):
                             bool(wrapPatches))
 
 
-def modify_binding(description, meshes, mode="Append"):
-    """
-    Append
-    Replace
-    Remove
+def bind(description, meshes):
+    """Bind description to meshes
+
+    Args:
+        description (str): XGen Legacy description name
+        meshes (list): A list of meshes (transform node names) to bind with
+
     """
     palette = get_palette_by_description(description)
     with capsule.maintained_selection():
         cmds.select(meshes, replace=True)
-        xg.modifyFaceBinding(palette, description, mode=mode)
+        xg.modifyFaceBinding(palette,
+                             description,
+                             mode="Append",
+                             placeGuidesWithUVBasedMethod=True,
+                             rotateGuide=False)
 
 
 def description_ctrl_method(description):
