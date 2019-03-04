@@ -28,12 +28,19 @@ class ExtractRig(PackageExtractor):
         package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
+        mesh_nodes = cmds.ls(self.member,
+                             type="surfaceShape",
+                             noIntermediate=True,
+                             long=True)
+        clay_shader = "initialShadingGroup"
+
         # Perform extraction
         self.log.info("Performing extraction..")
         with contextlib.nested(
             capsule.no_undo(),
             capsule.no_display_layers(self.member),
             maya.maintained_selection(),
+            capsule.assign_shader(mesh_nodes, shadingEngine=clay_shader),
         ):
             cmds.select(self.member, noExpand=True)
 

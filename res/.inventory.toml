@@ -16,6 +16,7 @@ admin = [
 
 [pipeline]
 [pipeline.maya]
+turntable = "LookDevStage"
 pointcache = [
     "Alembic",
     "GPUCache",

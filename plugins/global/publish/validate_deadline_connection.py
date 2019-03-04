@@ -26,6 +26,8 @@ class ValidateDeadlineConnection(pyblish.api.InstancePlugin):
 
         assert AVALON_DEADLINE is not None, "Requires AVALON_DEADLINE"
 
+        self.log.info("Testing connection: {}".format(AVALON_DEADLINE))
+
         # Check response
         response = requests.get(AVALON_DEADLINE)
         assert response.ok, "Response must be ok"

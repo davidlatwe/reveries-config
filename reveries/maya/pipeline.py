@@ -531,11 +531,16 @@ def has_turntable():
     """Return turntable asset name if scene has loaded one
 
     Returns:
-        str: "LookDevStage" if scene has truntable asset loaded, else `None`
+        str: turntable asset name, if scene has truntable asset loaded,
+             else `None`
 
     """
-    if get_container_from_namespace(":LookDevStage_*"):
-        return "LookDevStage"
+    project = avalon.io.find_one({"type": "project"},
+                                 {"data.pipeline.maya": True})
+    turntable = project["data"]["pipeline"]["maya"]["turntable"]
+
+    if get_container_from_namespace(":{}_*".format(turntable)):
+        return turntable
 
 
 def set_scene_timeline(project=None, asset_name=None, strict=True):
@@ -582,3 +587,9 @@ def set_scene_timeline(project=None, asset_name=None, strict=True):
         cmds.playbackOptions(maxTime=end_frame)
 
         cmds.currentTime(start_frame)
+
+
+def set_resolution(project=None, asset_name=None):
+    width, height = utils.get_resolution_data(project, asset_name)
+    cmds.setAttr("defaultResolution.width", width)
+    cmds.setAttr("defaultResolution.height", height)
