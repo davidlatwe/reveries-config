@@ -756,8 +756,8 @@ def import_xgen_LGC_guides(description, file_path):
                           namespace="",
                           ignoreVersion=True,
                           returnNewNodes=True)
-
-        xgen.legacy.curves_to_guides(description, nodes)
+        curves = cmds.ls(nodes, type="nurbsCurve", long=True)
+        xgen.legacy.curves_to_guides(description, curves)
 
 
 def bind_xgen_LGC_description(description, meshes, guide_path=None):
