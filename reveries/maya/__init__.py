@@ -33,7 +33,7 @@ def _override():
     import avalon.maya.pipeline as pipeline
     import avalon.maya.lib as lib
 
-    from .pipeline import has_turntable, set_scene_timeline
+    from .pipeline import has_turntable, set_scene_timeline, set_resolution
 
     # Override avalon.maya container node lister
     log.info("Overriding <avalon.maya.pipeline._ls>")
@@ -43,6 +43,9 @@ def _override():
     log.info("Overriding <avalon.maya.commands.reset_frame_range>")
     _set_time = (lambda: set_scene_timeline(asset_name=has_turntable()))
     commands.reset_frame_range = _set_time
+    log.info("Overriding <avalon.maya.commands.reset_resolution>")
+    _set_res = (lambda: set_resolution(asset_name=has_turntable()))
+    commands.reset_resolution = _set_res
 
 
 def _override_deferred():

@@ -46,8 +46,9 @@ class ValidateRenderSettings(pyblish.api.InstancePlugin):
     def get_invalid_resolution(cls, instance):
         """Rendering resolution should be the same as project settings"""
         project = instance.context.data["projectDoc"]
-        proj_width, proj_height = utils.get_resolution_data(project)
-
+        asset_name = pipeline.has_turntable()
+        proj_width, proj_height = utils.get_resolution_data(project,
+                                                            asset_name)
         layer = instance.data["renderlayer"]
         scene_width, scene_height = maya_utils.get_render_resolution(layer)
 

@@ -119,14 +119,15 @@ def compose_timeline_data(project=None, asset_name=None):
     return start_frame, end_frame, fps
 
 
-def get_resolution_data(project=None):
-    """Get resolution data from project
+def get_resolution_data(project=None, asset_name=None):
+    """Get resolution data from asset/project settings
 
-    If resolution data is not defined in project settings, return Full HD res
-    (1920, 1080).
+    If resolution data is not defined in asset, query from project.
 
     Arguments:
         project (dict, optional): Project document, query from database if
+            not provided.
+        asset_name (str, optional): Asset name, get from `avalon.Session` if
             not provided.
 
     Returns:
@@ -136,8 +137,18 @@ def get_resolution_data(project=None):
     """
     if project is None:
         project = avalon.io.find_one({"type": "project"})
-    resolution_width = project["data"].get("resolution_width", 1920)
-    resolution_height = project["data"].get("resolution_height", 1080)
+    asset_name = asset_name or avalon.Session["AVALON_ASSET"]
+    asset = avalon.io.find_one({"name": asset_name, "type": "asset"})
+
+    assert asset is not None, ("Asset {!r} not found, this is a bug."
+                               "".format(asset_name))
+
+    def get(key):
+        return asset["data"].get(key, project["data"][key])
+
+    resolution_width = get("resolution_width")
+    resolution_height = get("resolution_height")
+
     return resolution_width, resolution_height
 
 

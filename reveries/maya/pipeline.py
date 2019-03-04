@@ -582,3 +582,9 @@ def set_scene_timeline(project=None, asset_name=None, strict=True):
         cmds.playbackOptions(maxTime=end_frame)
 
         cmds.currentTime(start_frame)
+
+
+def set_resolution(project=None, asset_name=None):
+    width, height = utils.get_resolution_data(project, asset_name)
+    cmds.setAttr("defaultResolution.width", width)
+    cmds.setAttr("defaultResolution.height", height)
