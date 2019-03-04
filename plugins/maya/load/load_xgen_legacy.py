@@ -100,4 +100,24 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         pass
 
     def remove(self, container):
-        pass
+        namespace = container["namespace"]
+        container_name = container["objectName"]
+        container_content = cmds.sets(container_name, query=True)
+        nodes = cmds.ls(container_content, long=True)
+
+        nodes.append(container_name)
+
+        self.log.info("Removing '%s' from Maya.." % container["name"])
+
+        palettes = cmds.ls(nodes, type="xgmPalette")
+        for palette in palettes:
+            xgen.delete_palette(palette)
+
+        try:
+            cmds.delete(nodes)
+        except ValueError:
+            pass
+
+        cmds.namespace(removeNamespace=namespace, deleteNamespaceContent=True)
+
+        return True

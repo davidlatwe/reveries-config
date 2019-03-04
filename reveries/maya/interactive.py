@@ -320,3 +320,21 @@ def bind_xgen_legacy_by_selection(*args):
             _bm.append(_mesh)
 
         bind_xgen_LGC_description(d, _bm, guide)
+
+    # Apply deltas
+    for palette in palettes:
+        deltas = os.path.join(package_path,
+                              "deltas",
+                              palette.rsplit(":", 1)[-1])
+
+        if not os.path.isdir(deltas):
+            continue
+
+        xgen.legacy.apply_deltas(palette,
+                                 [os.path.join(deltas, f).replace("\\", "/")
+                                  for f in os.listdir(deltas)])
+
+    # Disable tubeshade and inCamOnly
+    for palette in palettes:
+        xgen.legacy.disable_tube_shade(palette)
+        xgen.legacy.disable_in_camera_only(palette)
