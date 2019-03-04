@@ -84,7 +84,10 @@ class OpenMayaSource(object):
 
         cmds.file(file_path, o=True, prompt=True)
 
-        avalon.api.Session["AVALON_USER"] = current_user
+        if current_user:
+            avalon.api.Session["AVALON_USER"] = current_user
+        else:
+            avalon.api.Session.pop("AVALON_USER")
 
 
 # Manually define which representation's source file can be accessed
