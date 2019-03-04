@@ -11,6 +11,11 @@ class LookCreator(avalon.maya.Creator):
     family = "reveries.look"
     icon = "paint-brush"
 
+    defaults = [
+        "default",
+        "RigLow",
+    ]
+
     def process(self):
         from maya import cmds
 
