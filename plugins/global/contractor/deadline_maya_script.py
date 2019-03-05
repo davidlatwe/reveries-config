@@ -34,8 +34,10 @@ class ContractorDeadlineMayaScript(BaseContractor):
         fname = os.path.basename(fpath)
         name, ext = os.path.splitext(fname)
         comment = context.data.get("comment", "")
+        user = context.data["user"]
 
-        batch_name = "avalon.script: " + fname
+        batch_name = "avalon.script: {user} {filename}"
+        batch_name = batch_name.format(user=user, filename=fname)
 
         script_file = os.path.join(os.path.dirname(__file__),
                                    "scripts",

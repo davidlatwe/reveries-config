@@ -202,6 +202,7 @@ class ReferenceLoader(MayaBaseLoader):
         from maya import cmds
 
         node = container["objectName"]
+        interface = container["interface"]
 
         # Get reference node from container members
         members = cmds.sets(node, query=True, nodesOnly=True)
@@ -235,10 +236,10 @@ class ReferenceLoader(MayaBaseLoader):
         # are remaining from nodes being removed from the referenced file.
         # (NOTE) This ensures the reference update correctly when node name
         #   changed (e.g. shadingEngine) in different version.
-        members = cmds.sets(node, query=True)
-        invalid = [x for x in members if ".placeHolderList" in x]
-        if invalid:
-            cmds.sets(invalid, remove=node)
+        holders = (lambda N: [x for x in cmds.sets(N, query=True)
+                              if ".placeHolderList" in x])
+        cmds.sets(holders(node), remove=node)
+        cmds.sets(holders(interface), remove=interface)
 
         # Update container
         version, subset, asset, _ = parents
