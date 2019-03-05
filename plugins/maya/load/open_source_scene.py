@@ -46,6 +46,8 @@ class OpenMayaSource(object):
                 cmds.SaveScene()
                 if cmds.file(query=True, modified=True):
                     # Possible pressed the Cancel button in SaveAs Dialog
+                    self.log.error("Modification unsaved, abort opening "
+                                   "work scene.")
                     return
 
             elif result == _keep:
@@ -82,7 +84,7 @@ class OpenMayaSource(object):
 
         self.log.info("Opening file from: %s", file_path)
 
-        cmds.file(file_path, o=True, prompt=True)
+        cmds.file(file_path, o=True, force=True)
 
         if current_user:
             avalon.api.Session["AVALON_USER"] = current_user

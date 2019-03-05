@@ -319,7 +319,12 @@ def bind_xgen_legacy_by_selection(*args):
 
             _bm.append(_mesh)
 
+        before_nodes = set(cmds.ls(long=True))
         bind_xgen_LGC_description(d, _bm, guide)
+        after_nodes = set(cmds.ls(long=True))
+        # Push new nodes into container
+        container = pipeline.get_container_from_namespace(pal_namespace)
+        cmds.sets(list(after_nodes - before_nodes), forceElement=container)
 
     # Apply deltas
     for palette in palettes:
