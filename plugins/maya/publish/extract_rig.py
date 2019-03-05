@@ -80,7 +80,7 @@ class ExtractRig(PackageExtractor):
                 #   exported as well, and we don't want that happens.
                 #   So we just remove them all for good.
                 for container in self.context.data["RootContainers"]:
-                    cmds.sets(clear=container)
+                    cmds.delete(container)
 
                 cmds.file(entry_path,
                           force=True,
