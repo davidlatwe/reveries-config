@@ -42,10 +42,12 @@ class ContractorDeadlineMayaRender(BaseContractor):
         fname = os.path.basename(fpath)
         name, ext = os.path.splitext(fname)
         comment = context.data.get("comment", "")
+        user = context.data["user"]
 
         output_dir = context.data["outputDir"].replace("\\", "/")
 
-        batch_name = "avalon: " + fname
+        batch_name = "avalon: {user} {filename}"
+        batch_name = batch_name.format(user=user, filename=fname)
 
         has_renderlayer = context.data["hasRenderLayers"]
         use_rendersetup = context.data["usingRenderSetup"]
