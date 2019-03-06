@@ -236,7 +236,7 @@ class ReferenceLoader(MayaBaseLoader):
         # are remaining from nodes being removed from the referenced file.
         # (NOTE) This ensures the reference update correctly when node name
         #   changed (e.g. shadingEngine) in different version.
-        holders = (lambda N: [x for x in cmds.sets(N, query=True)
+        holders = (lambda N: [x for x in cmds.sets(N, query=True) or []
                               if ".placeHolderList" in x])
         cmds.sets(holders(node), remove=node)
         cmds.sets(holders(interface), remove=interface)
