@@ -42,12 +42,13 @@ class ContractorDeadlineMayaRender(BaseContractor):
         fname = os.path.basename(fpath)
         name, ext = os.path.splitext(fname)
         comment = context.data.get("comment", "")
-        user = context.data["user"]
+
+        asset = context.data["assetDoc"]["name"]
 
         output_dir = context.data["outputDir"].replace("\\", "/")
 
-        batch_name = "avalon: {user} {filename}"
-        batch_name = batch_name.format(user=user, filename=fname)
+        batch_name = "avalon: [{asset}] {filename}"
+        batch_name = batch_name.format(asset=asset, filename=fname)
 
         has_renderlayer = context.data["hasRenderLayers"]
         use_rendersetup = context.data["usingRenderSetup"]
@@ -68,12 +69,16 @@ class ContractorDeadlineMayaRender(BaseContractor):
 
         for instance in context:
 
+            job_name = "{subset} v{version:0>3}".format(
+                subset=instance.data["subset"],
+                version=instance.data["versionNext"],
+            )
+
             payload = {
                 "JobInfo": {
                     "Plugin": "MayaBatch",
                     "BatchName": batch_name,  # Top-level group name
-                    "Name": "%s - %s" % (batch_name,
-                                         instance.data["renderlayer"]),
+                    "Name": job_name,
                     "UserName": getpass.getuser(),
                     "MachineName": platform.node(),
                     "Comment": comment,

@@ -34,12 +34,13 @@ class ContractorDeadlineMayaScript(BaseContractor):
         fname = os.path.basename(fpath)
         name, ext = os.path.splitext(fname)
         comment = context.data.get("comment", "")
-        user = context.data["user"]
+
+        asset = context.data["assetDoc"]["name"]
 
         project = context.data["projectDoc"]
 
-        batch_name = "avalon.script: {user} {filename}"
-        batch_name = batch_name.format(user=user, filename=fname)
+        batch_name = "avalon.script: [{asset}] {filename}"
+        batch_name = batch_name.format(asset=asset, filename=fname)
 
         script_file = os.path.join(os.path.dirname(__file__),
                                    "scripts",
@@ -80,6 +81,15 @@ class ContractorDeadlineMayaScript(BaseContractor):
 
             self.log.info("Grouping: %s" % settings)
 
+            if len(group) == 1:
+                instance = group[0]
+                job_name = "{subset} v{version:0>3}".format(
+                    subset=instance.data["subset"],
+                    version=instance.data["versionNext"],
+                )
+            else:
+                job_name = "queued %d subsets" % len(group)
+
             environment = dict()
             for instance in group:
                 self.log.info("Adding instance: %s" % instance.data["subset"])
@@ -89,7 +99,7 @@ class ContractorDeadlineMayaScript(BaseContractor):
                 "JobInfo": {
                     "Plugin": "MayaBatch",
                     "BatchName": batch_name,  # Top-level group name
-                    "Name": "%s - %s" % (batch_name, instance.data["subset"]),
+                    "Name": job_name,
                     "UserName": getpass.getuser(),
                     "MachineName": platform.node(),
                     "Comment": comment,
