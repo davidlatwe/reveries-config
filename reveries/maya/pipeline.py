@@ -238,6 +238,34 @@ def get_container_from_namespace(namespace):
     return nodes[0]
 
 
+def get_container_from_group(group):
+    """Return container node from subset group
+
+    If the `group` is not a subset group node, return `None`.
+
+    Args:
+        group (str): Subset group node name
+
+    Return:
+        str or None
+
+    """
+    group = group.rsplit("|", 1)[-1]
+    nodes = lib.lsAttrs({"id": AVALON_INTERFACE_ID,
+                         "subsetGroup": group})
+    if not nodes:
+        return None
+
+    assert len(nodes) == 1, ("Group node has more then one interface, "
+                             "this is a bug.")
+
+    source = cmds.listConnections(nodes[0] + ".container",
+                                  source=True,
+                                  destination=False,
+                                  plugs=False)
+    return source[0]
+
+
 def get_group_from_container(container):
     """Get top group node name from container node
 

@@ -542,6 +542,9 @@ def lsAttrs(attrs, namespace=None):
         * `bool`
         * `str`
 
+    If the attribute is connected with a source node, the value
+    will be compared with the source node name.
+
     """
     namespace = namespace or ""
 
@@ -578,9 +581,16 @@ def lsAttrs(attrs, namespace=None):
         for attr, value in attrs.items():
             try:
                 plug = fn_node.findPlug(attr, True)
-                value_getter = getattr(plug, _mplug_type_map(value))
-                if value_getter() != value:
-                    break
+                if plug.isDestination:
+                    # The plug is being connected, retrive source node name
+                    source_plug = plug.connectedTo(True, False)[0]
+                    source_node = source_plug.name().split(".")[0]
+                    if source_node != value:
+                        break
+                else:
+                    value_getter = getattr(plug, _mplug_type_map(value))
+                    if value_getter() != value:
+                        break
             except RuntimeError:
                 break
         else:
@@ -855,3 +865,41 @@ def reference_node_by_namespace(namespace):
     return next((ref for ref in cmds.ls(type="reference")
                  if cmds.referenceQuery(ref, namespace=True) == namespace),
                 None)
+
+
+def get_ns(node):
+    """Get Absolute namespace from node name string
+
+    Args:
+        node (str): Node name
+
+    Returns:
+        str: Absolute namespace
+
+    """
+    parts = node.rsplit("|", 1)[-1].rsplit(":", 1)
+    return (":" + parts[0]) if len(parts) > 1 else ":"
+
+
+def pick_cacheable(nodes):
+    """Filter out cacheable (deformable) nodes
+
+    Args:
+        nodes (list): A list of node names
+
+    Returns:
+        list: A list of cacheable node names
+
+    """
+    nodes = cmds.listRelatives(nodes, allDescendents=True, fullPath=True) or []
+    shapes = cmds.ls(nodes,
+                     type="deformableShape",
+                     noIntermediate=True,
+                     long=True)
+    cacheables = set()
+    for node in shapes:
+        parent = cmds.listRelatives(node, parent=True, fullPath=True)
+        transforms = cmds.ls(parent, long=True)
+        cacheables.update(transforms)
+
+    return list(cacheables)

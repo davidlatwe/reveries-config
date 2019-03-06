@@ -9,9 +9,9 @@ from avalon import io, api
 from avalon.maya.pipeline import AVALON_CONTAINER_ID
 from avalon.vendor import six
 
-from reveries.utils import get_representation_path_
-from reveries.maya import lib
-from reveries.maya.pipeline import (
+from ....utils import get_representation_path_
+from ....maya import lib
+from ...pipeline import (
     AVALON_INTERFACE_ID,
     get_interface_from_container,
     parse_container,
@@ -32,20 +32,6 @@ def get_workfolder():
 
 def select(nodes):
     cmds.select(nodes)
-
-
-def get_namespace_from_node(node):
-    """Get the namespace from the given node
-
-    Args:
-        node (str): name of the node
-
-    Returns:
-        namespace (str)
-
-    """
-    parts = node.rsplit("|", 1)[-1].rsplit(":", 1)
-    return parts[0] if len(parts) > 1 else u":"
 
 
 def get_interface_from_namespace(namespaces):
@@ -221,7 +207,7 @@ def create_items_from_nodes(nodes):
         # Collect namespaces the asset is found in
         namespaces = set()
         for node in id_nodes:
-            namespace = get_namespace_from_node(node)
+            namespace = lib.get_ns(node)
             namespaces.add(namespace)
 
         asset_view_items.append({"label": asset["name"],
