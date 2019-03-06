@@ -542,6 +542,9 @@ def lsAttrs(attrs, namespace=None):
         * `bool`
         * `str`
 
+    If the attribute is connected with a source node, the value
+    will be compared with the source node name.
+
     """
     namespace = namespace or ""
 
@@ -578,9 +581,16 @@ def lsAttrs(attrs, namespace=None):
         for attr, value in attrs.items():
             try:
                 plug = fn_node.findPlug(attr, True)
-                value_getter = getattr(plug, _mplug_type_map(value))
-                if value_getter() != value:
-                    break
+                if plug.isDestination:
+                    # The plug is being connected, retrive source node name
+                    source_plug = plug.connectedTo(True, False)[0]
+                    source_node = source_plug.name().split(".")[0]
+                    if source_node != value:
+                        break
+                else:
+                    value_getter = getattr(plug, _mplug_type_map(value))
+                    if value_getter() != value:
+                        break
             except RuntimeError:
                 break
         else:
