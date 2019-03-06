@@ -33,7 +33,13 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
 
             # Collect nodes which related to instnace's member
             hierarchy = set(instance)
-            _history = cmds.listHistory(instance, leaf=False)
+
+            try:
+                _history = cmds.listHistory(instance, leaf=False)
+            except RuntimeError:
+                # Found no items to list the history for.
+                _history = []
+
             history = set(cmds.ls(_history, long=True))
             instance_nodes = hierarchy.union(history)
 
