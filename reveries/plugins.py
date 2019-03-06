@@ -26,7 +26,12 @@ class BaseContractor(object):
         self.log = logging.getLogger(self.name)
         self.__cached_context = None
 
-    def fulfill(self):
+    def fulfill(self, context, instances):
+        """
+        Args:
+            context (pyblish.api.Context): context object
+            instances (list): A list of delegated instances
+        """
         raise NotImplementedError
 
     def _parse_context(self, context):

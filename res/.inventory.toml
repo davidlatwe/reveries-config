@@ -24,6 +24,8 @@ pointcache = [
 ]  # This also determined the preferable cache format by order.
 
 [deadline]
+publishGroup = "avalon_slaves"
+
 [deadline.maya]
 pool = [
 	"1---less_than_15minutes",
@@ -35,6 +37,7 @@ group = [
 	"maya2017vray36",
 	"maya2018_2",
 ]
+
 [deadline.maya.priorities]
 pointcache = 95
 render = 70

@@ -29,7 +29,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
 
     name = "deadline.maya.render"
 
-    def fulfill(self, context):
+    def fulfill(self, context, instances):
 
         assert "AVALON_DEADLINE" in avalon.api.Session, (
             "Environment variable missing: 'AVALON_DEADLINE'"
@@ -42,12 +42,13 @@ class ContractorDeadlineMayaRender(BaseContractor):
         fname = os.path.basename(fpath)
         name, ext = os.path.splitext(fname)
         comment = context.data.get("comment", "")
-        user = context.data["user"]
+
+        asset = context.data["assetDoc"]["name"]
 
         output_dir = context.data["outputDir"].replace("\\", "/")
 
-        batch_name = "avalon: {user} {filename}"
-        batch_name = batch_name.format(user=user, filename=fname)
+        batch_name = "avalon: [{asset}] {filename}"
+        batch_name = batch_name.format(asset=asset, filename=fname)
 
         has_renderlayer = context.data["hasRenderLayers"]
         use_rendersetup = context.data["usingRenderSetup"]
@@ -66,14 +67,18 @@ class ContractorDeadlineMayaRender(BaseContractor):
 
         auth = os.environ["AVALON_DEADLINE_AUTH"].split(":")
 
-        for instance in context:
+        for instance in instances:
+
+            job_name = "{subset} v{version:0>3}".format(
+                subset=instance.data["subset"],
+                version=instance.data["versionNext"],
+            )
 
             payload = {
                 "JobInfo": {
                     "Plugin": "MayaBatch",
                     "BatchName": batch_name,  # Top-level group name
-                    "Name": "%s - %s" % (batch_name,
-                                         instance.data["renderlayer"]),
+                    "Name": job_name,
                     "UserName": getpass.getuser(),
                     "MachineName": platform.node(),
                     "Comment": comment,
@@ -85,6 +90,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
                         end=int(instance.data["endFrame"]),
                         step=int(instance.data["byFrameStep"]),
                     ),
+                    "ChunkSize": instance.data["deadlineFramesPerTask"],
                 },
                 "PluginInfo": {
                     # Input
@@ -128,7 +134,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
             if response.ok:
                 jobid = eval(response.text)["_id"]
                 self.log.info("Success. JobID: %s" % jobid)
-                self.submit_publish_script(payload, jobid, url, auth)
+                self.submit_publish_script(instance, payload, jobid, url, auth)
             else:
                 msg = response.text
                 self.log.error(msg)
@@ -136,7 +142,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
 
         self.log.info("Completed.")
 
-    def submit_publish_script(self, payload, jobid, url, auth):
+    def submit_publish_script(self, instance, payload, jobid, url, auth):
         # Clean up
         for key in list(payload["JobInfo"].keys()):
             if (key.startswith("OutputDirectory") or
@@ -147,9 +153,12 @@ class ContractorDeadlineMayaRender(BaseContractor):
         payload["PluginInfo"].pop("OutputFilePath")
         payload["PluginInfo"].pop("OutputFilePrefix")
 
+        project = instance.context.data["projectDoc"]
+
         # Update
         payload["JobInfo"].update({
             "Name": "_intergrate " + payload["JobInfo"]["Name"],
+            "Group": project["data"]["deadline"]["publishGroup"],
             "Priority": 99,
             "JobDependencies": jobid,
         })

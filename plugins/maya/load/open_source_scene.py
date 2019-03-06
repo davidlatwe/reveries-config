@@ -135,3 +135,15 @@ class OpenSourceXGen(OpenMayaSource, avalon.api.Loader):
 
     families = ["reveries.xgen"]
     representations = ["XGenLegacy", "XGenInteractive"]
+
+
+class OpenSourceShared(OpenMayaSource, avalon.api.Loader):
+
+    families = ["reveries.mayashare"]
+    representations = ["mayaAscii"]
+
+
+class OpenSourceImgseq(OpenMayaSource, avalon.api.Loader):
+
+    families = ["reveries.imgseq"]
+    representations = ["imageSequence", "imageSequenceSet"]

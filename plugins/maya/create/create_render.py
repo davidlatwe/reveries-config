@@ -71,10 +71,16 @@ class RenderCreator(avalon.maya.Creator):
             cmds.rename(instance[0], self.data["subset"])
             return
 
-        self.data["deadlineEnable"] = not variant == "playblast"
+        self.data["deadlineEnable"] = True
         self.data["deadlinePriority"] = priority
         self.data["deadlinePool"] = ["none"] + deadline["pool"]
         self.data["deadlineGroup"] = deadline["group"]
+        self.data["deadlineFramesPerTask"] = 1
+
+        if variant == "playblast":
+            # playblast is deadline script job
+            self.data["deadlineEnable"] = False
+            self.data["deadlineGroup"] = []
 
         self.data["renderType"] = variant
         self.data["publishOrder"] = 999

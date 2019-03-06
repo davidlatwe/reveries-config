@@ -342,3 +342,15 @@ def bind_xgen_legacy_by_selection(*args):
     for palette in palettes:
         xgen.legacy.disable_tube_shade(palette)
         xgen.legacy.disable_in_camera_only(palette)
+
+
+def bake_all_xgen_legacy_descriptions(*args):
+    for palette in xgen.legacy.list_palettes():
+        for description in xgen.legacy.list_descriptions(palette):
+            xgen.legacy.bake_description(palette, description, rebake=True)
+
+
+def bake_all_xgen_legacy_modifiers(*args):
+    for palette in xgen.legacy.list_palettes():
+        for description in xgen.legacy.list_descriptions(palette):
+            xgen.legacy.bake_modules(palette, description)
