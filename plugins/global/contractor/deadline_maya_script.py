@@ -21,7 +21,7 @@ class ContractorDeadlineMayaScript(BaseContractor):
 
     name = "deadline.maya.script"
 
-    def fulfill(self, context):
+    def fulfill(self, context, instances):
 
         assert "AVALON_DEADLINE" in avalon.api.Session, (
             "Environment variable missing: 'AVALON_DEADLINE'"
@@ -65,7 +65,7 @@ class ContractorDeadlineMayaScript(BaseContractor):
         dl_group = project["data"]["deadline"]["publishGroup"]
 
         instance_group = dict()
-        for instance in context:
+        for instance in instances:
             dl_pool = instance.data["deadlinePool"]
             dl_priority = instance.data["deadlinePriority"]
 

@@ -29,7 +29,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
 
     name = "deadline.maya.render"
 
-    def fulfill(self, context):
+    def fulfill(self, context, instances):
 
         assert "AVALON_DEADLINE" in avalon.api.Session, (
             "Environment variable missing: 'AVALON_DEADLINE'"
@@ -67,7 +67,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
 
         auth = os.environ["AVALON_DEADLINE_AUTH"].split(":")
 
-        for instance in context:
+        for instance in instances:
 
             job_name = "{subset} v{version:0>3}".format(
                 subset=instance.data["subset"],
