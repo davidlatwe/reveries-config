@@ -879,3 +879,27 @@ def get_ns(node):
     """
     parts = node.rsplit("|", 1)[-1].rsplit(":", 1)
     return (":" + parts[0]) if len(parts) > 1 else ":"
+
+
+def pick_cacheable(nodes):
+    """Filter out cacheable (deformable) nodes
+
+    Args:
+        nodes (list): A list of node names
+
+    Returns:
+        list: A list of cacheable node names
+
+    """
+    nodes = cmds.listRelatives(nodes, allDescendents=True, fullPath=True) or []
+    shapes = cmds.ls(nodes,
+                     type="deformableShape",
+                     noIntermediate=True,
+                     long=True)
+    cacheables = set()
+    for node in shapes:
+        parent = cmds.listRelatives(node, parent=True, fullPath=True)
+        transforms = cmds.ls(parent, long=True)
+        cacheables.update(transforms)
+
+    return list(cacheables)
