@@ -39,6 +39,8 @@ def get_arnold_aov_names(layer=None):
                  for aov in get_arnold_aov_nodes(layer)]
 
     if not merge_aov:
+        # (NOTE) 'RGBA' is 'beauty'.
+        #        'beauty' will always present even no AOV named 'RGBA'.
         if "RGBA" in aov_names:
             aov_names.remove("RGBA")
         aov_names += ["beauty"]
