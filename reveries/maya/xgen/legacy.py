@@ -597,7 +597,7 @@ def maps_to_transfer(description):
 
 
 def bake_description(palette, description, rebake=False):
-    """Bake a description and it's modifiers which data needs to be baked
+    """Bake description with BakedGroomManagerFXModule
 
     Args:
         palette (str): XGen Legacy palette name
@@ -621,6 +621,29 @@ def bake_description(palette, description, rebake=False):
             raise RuntimeError("This description has been baked.")
         # Remove bake module
         xg.removeFXModule(palette, description, fxm)
+
+    # bake groom modifiers
+    fxm = xg.addFXModule(palette, description, "BakedGroomManagerFXModule")
+    xg.setAttr("active", "true", palette, description, fxm)
+    xg.bakedGroomManagerBake(palette, description)
+    # set Generator to XPD
+    xg.setActive(palette, description, "FileGenerator")
+
+
+def bake_modules(palette, description):
+    """Bake description's modifiers which data needs to be baked
+
+    This bakes NoiseFXModule and MeshCutFXModule, also set ClumpingFXModule
+    attribute 'cvAttr' to True for AnimModifiers.
+
+    Args:
+        palette (str): XGen Legacy palette name
+        description (str): XGen Legacy description name
+
+    """
+    fxmod_typ = (lambda fxm: xg.fxModuleType(palette, description, fxm))
+
+    fx_modules = xg.fxModules(palette, description)
 
     previous_clump = None
 
@@ -652,13 +675,6 @@ def bake_description(palette, description, rebake=False):
             xg.setAttr("lodFlag", lod, palette, description)
             # change mode to baked
             xg.setAttr("mode", "1", palette, description, fxm)
-
-    # bake groom modifiers
-    fxm = xg.addFXModule(palette, description, "BakedGroomManagerFXModule")
-    xg.setAttr("active", "true", palette, description, fxm)
-    xg.bakedGroomManagerBake(palette, description)
-    # set Generator to XPD
-    xg.setActive(palette, description, "FileGenerator")
 
 
 def guides_to_curves(guides):
