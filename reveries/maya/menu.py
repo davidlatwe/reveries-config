@@ -52,6 +52,12 @@ reveries.maya.tools.show('mayalookassigner')
         cmds.menuItem("Bind Legacy",
                       parent="Menu_XGen",
                       command=interactive.bind_xgen_legacy_by_selection)
+        cmds.menuItem("Bake All Descriptions",
+                      parent="Menu_XGen",
+                      command=interactive.bake_all_xgen_legacy_descriptions)
+        cmds.menuItem("Bake All Modifiers",
+                      parent="Menu_XGen",
+                      command=interactive.bake_all_xgen_legacy_modifiers)
 
         cmds.menuItem(divider=True, dividerLabel="XGen Interactive Groom")
 
