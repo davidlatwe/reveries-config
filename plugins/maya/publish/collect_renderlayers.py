@@ -40,6 +40,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             "deadlinePool",
             "deadlineGroup",
             "deadlinePriority",
+            "deadlineFramesPerTask",
         ]
         return {k: lib.query_by_renderlayer(self.instance_node,
                                             k,

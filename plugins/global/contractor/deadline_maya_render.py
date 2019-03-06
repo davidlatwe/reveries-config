@@ -90,6 +90,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
                         end=int(instance.data["endFrame"]),
                         step=int(instance.data["byFrameStep"]),
                     ),
+                    "ChunkSize": instance.data["deadlineFramesPerTask"],
                 },
                 "PluginInfo": {
                     # Input

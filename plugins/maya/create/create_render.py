@@ -75,6 +75,7 @@ class RenderCreator(avalon.maya.Creator):
         self.data["deadlinePriority"] = priority
         self.data["deadlinePool"] = ["none"] + deadline["pool"]
         self.data["deadlineGroup"] = deadline["group"]
+        self.data["deadlineFramesPerTask"] = 1
 
         if variant == "playblast":
             # playblast is deadline script job
