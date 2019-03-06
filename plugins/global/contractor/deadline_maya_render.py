@@ -128,7 +128,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
             if response.ok:
                 jobid = eval(response.text)["_id"]
                 self.log.info("Success. JobID: %s" % jobid)
-                self.submit_publish_script(payload, jobid, url, auth)
+                self.submit_publish_script(instance, payload, jobid, url, auth)
             else:
                 msg = response.text
                 self.log.error(msg)
@@ -136,7 +136,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
 
         self.log.info("Completed.")
 
-    def submit_publish_script(self, payload, jobid, url, auth):
+    def submit_publish_script(self, instance, payload, jobid, url, auth):
         # Clean up
         for key in list(payload["JobInfo"].keys()):
             if (key.startswith("OutputDirectory") or
@@ -147,9 +147,12 @@ class ContractorDeadlineMayaRender(BaseContractor):
         payload["PluginInfo"].pop("OutputFilePath")
         payload["PluginInfo"].pop("OutputFilePrefix")
 
+        project = instance.context.data["projectDoc"]
+
         # Update
         payload["JobInfo"].update({
             "Name": "_intergrate " + payload["JobInfo"]["Name"],
+            "Group": project["data"]["deadline"]["publishGroup"],
             "Priority": 99,
             "JobDependencies": jobid,
         })
