@@ -10,7 +10,7 @@ class ValidateContextHasInstance(pyblish.api.ContextPlugin):
 
     """
 
-    label = "Has Instance"
+    label = "Need Something To Publish"
     order = pyblish.api.ValidatorOrder - 0.49
 
     def process(self, context):
