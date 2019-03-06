@@ -69,6 +69,7 @@ class OpenImageSequence(PackageLoader, avalon.api.Loader):
 
     representations = [
         "imageSequence",
+        "imageSequenceSet",
     ]
 
     def load(self, context, name, namespace, data):
