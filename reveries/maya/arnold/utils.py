@@ -23,7 +23,7 @@ def get_arnold_aov_nodes(layer=None):
     if aov_mode and not merge_aov:
         for aov in cmds.ls(type="aiAOV"):
             enabled = lib.query_by_renderlayer(aov, "enabled", layer)
-            if enabled:
+            if enabled and cmds.listConnections(aov, type="renderLayer"):
                 aov_nodes.append(aov)
 
     return aov_nodes
@@ -39,6 +39,8 @@ def get_arnold_aov_names(layer=None):
                  for aov in get_arnold_aov_nodes(layer)]
 
     if not merge_aov:
+        if "RGBA" in aov_names:
+            aov_names.remove("RGBA")
         aov_names += ["beauty"]
 
     return aov_names
