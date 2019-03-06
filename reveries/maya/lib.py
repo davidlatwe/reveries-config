@@ -855,3 +855,17 @@ def reference_node_by_namespace(namespace):
     return next((ref for ref in cmds.ls(type="reference")
                  if cmds.referenceQuery(ref, namespace=True) == namespace),
                 None)
+
+
+def get_ns(node):
+    """Get Absolute namespace from node name string
+
+    Args:
+        node (str): Node name
+
+    Returns:
+        str: Absolute namespace
+
+    """
+    parts = node.rsplit("|", 1)[-1].rsplit(":", 1)
+    return (":" + parts[0]) if len(parts) > 1 else ":"

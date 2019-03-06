@@ -115,8 +115,7 @@ def swap_to_published_model(*args):
 def __ensure_nodes_in_same_namespace(nodes, err_msg):
     namespaces = set()
     for node in nodes:
-        parts = node.rsplit("|", 1)[-1].rsplit(":", 1)
-        namespaces.add((":" + parts[0]) if len(parts) > 1 else ":")
+        namespaces.add(lib.get_ns(node))
 
     if not len(namespaces) == 1:
         raise Exception(err_msg)
