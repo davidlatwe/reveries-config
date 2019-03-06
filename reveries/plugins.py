@@ -528,6 +528,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         version_dir_template = os.path.dirname(self._publish_dir_template)
 
         def format_version_dir(version_number):
+            """Return a version dir path"""
             self._publish_dir_key["version"] = version_number
             version_dir = version_dir_template.format(**self._publish_dir_key)
             # Clean the path
@@ -535,14 +536,18 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
             return version_dir
 
-        def is_version_matched(version_dir):
+        def is_version_matched(version_dir, strict):
             """Does the fingerprint in this version match with workfile ?"""
             metadata_path = os.path.join(version_dir, self.metadata)
             # Load fingerprint from version dir
             with open(metadata_path, "r") as fp:
                 metadata = json.load(fp)
 
-            return metadata == self.context.data["sourceFingerprint"]
+            if strict:
+                return metadata == self.context.data["sourceFingerprint"]
+
+            return (metadata["currentMaking"] ==
+                    self.context.data["sourceFingerprint"]["currentMaking"])
 
         def create_version_dir(version_dir):
             """Create a version named dir and dump workfile fingerprint"""
@@ -585,7 +590,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             self.log.debug("Version Dir: {}".format(version_dir))
 
             if os.path.isdir(version_dir):
-                if is_version_matched(version_dir):
+                if is_version_matched(version_dir, version_locked):
                     # This version dir match the current workfile, remove
                     # previous extracted stuff.
                     self.log.debug("Cleaning version dir.")
