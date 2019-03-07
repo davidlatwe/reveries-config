@@ -1,7 +1,7 @@
 
 import logging
 
-from maya import cmds
+from maya import cmds, mel
 from maya.api import OpenMaya as om
 
 from .. import lib
@@ -40,6 +40,12 @@ FPS_MAP = {
 def query_by_renderlayer(node, attr, layer):
     """Query attribute without switching renderLayer when layer overridden
 
+    (NOTE) The value that has been overridden may return in different type,
+           e.g. `int` value may return as `long`.
+
+           The `time` type of value will be multiplied with frame rate if it
+           has layeroverride.
+
     Arguments:
         node (str): node name
         attr (str): node attribute name
@@ -57,12 +63,17 @@ def query_by_renderlayer(node, attr, layer):
     if layer == current:
         return cmds.getAttr(node_attr, asString=True)
 
+    val_type = cmds.getAttr(node_attr, type=True)
+    is_time = False
     try:
         # For type correct, because bool value may return as float
         # from renderlayer.adjustments
-        type_ = eval(cmds.getAttr(node_attr, type=True))
+        type_ = eval(val_type)
     except NameError:
         type_ = (lambda _: _)
+
+        if val_type == "time":
+            is_time = True
 
     def get_value(conn):
         return type_(cmds.getAttr(conn.rsplit(".", 1)[0] + ".value",
@@ -79,10 +90,14 @@ def query_by_renderlayer(node, attr, layer):
         if not conn.startswith("%s.adjustments" % layer):
             continue
         # layer.adjustments[*].plug -> layer.adjustments[*].value
+        if is_time:
+            return get_value(conn) * mel.eval('currentTimeUnitToFPS()')
         return get_value(conn)
 
     if origin_value is not None:
         # Override in other layer
+        if is_time:
+            return origin_value * mel.eval('currentTimeUnitToFPS()')
         return origin_value
 
     # No override
