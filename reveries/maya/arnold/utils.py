@@ -48,6 +48,9 @@ def get_arnold_aov_names(layer=None):
     return aov_names
 
 
+def update_full_scene():
+    cmds.arnoldRenderView(option=["Update Full Scene", "1"])
+
 
 def get_smooth_sets():
     subdiv_iter = set(cmds.ls("*.aiSubdivIterations",
