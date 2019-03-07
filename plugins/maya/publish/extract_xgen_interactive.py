@@ -3,7 +3,7 @@ import os
 import json
 import pyblish.api
 from reveries.plugins import PackageExtractor
-from reveries.maya import io, xgen, utils, capsule
+from reveries.maya import xgen, utils, capsule
 
 
 class ExtractXGenInteractive(PackageExtractor):
@@ -50,7 +50,27 @@ class ExtractXGenInteractive(PackageExtractor):
             entry_file = self.file_name("ma")
             entry_path = os.path.join(package_dir, entry_file)
 
-            io.export_xgen_IGS_presets(descriptions, entry_path)
+            # (NOTE) Separating grooms and bounding meshes seems not able to
+            #        preserve sculpt layer data entirely correct.
+            #        For example, sculpting long hair strands to really short,
+            #        may ends up noisy shaped after import back.
+            #
+            #        So now we export the grooms with bound meshes...
+            #
+            # io.export_xgen_IGS_presets(descriptions, entry_path)
+
+            with capsule.maintained_selection():
+                cmds.select(descriptions)
+
+                cmds.file(entry_path,
+                          force=True,
+                          typ="mayaAscii",
+                          exportSelected=True,
+                          preserveReferences=False,
+                          channels=True,
+                          constraints=True,
+                          expressions=True,
+                          constructionHistory=True)
 
         # Parse preset bounding map
         link_file = self.file_name("json")

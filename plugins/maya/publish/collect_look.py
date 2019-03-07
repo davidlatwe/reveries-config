@@ -35,7 +35,11 @@ class CollectLook(pyblish.api.InstancePlugin):
 
         # Collect shading networks
         shaders = cmds.listConnections(surfaces, type="shadingEngine")
-        upstream_nodes = cmds.ls(cmds.listHistory(shaders), long=True)
+        try:
+            _history = cmds.listHistory(shaders)
+        except RuntimeError:
+            _history = []  # Found no items to list the history for.
+        upstream_nodes = cmds.ls(_history, long=True)
         # (NOTE): The flag `pruneDagObjects` will also filter out
         # `place3dTexture` type node.
 

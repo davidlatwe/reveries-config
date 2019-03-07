@@ -12,6 +12,15 @@ self._menu = api.Session.get("AVALON_LABEL", "Avalon") + "menu"
 log = logging.getLogger(__name__)
 
 
+def _arnold_update_full_scene(*args):
+    try:
+        from . import arnold
+    except RuntimeError:
+        return
+
+    arnold.utils.update_full_scene()
+
+
 def install():
     from . import interactive
 
@@ -20,6 +29,21 @@ def install():
         cmds.menuItem(divider=True)
 
         cmds.menuItem("Snap!", command=interactive.active_view_snapshot)
+
+        # Rendering tools
+        cmds.menuItem("Menu_Render",
+                      label="Render",
+                      tearOff=True,
+                      subMenu=True,
+                      parent=self._menu)
+
+        cmds.menuItem(divider=True, dividerLabel="Arnold")
+
+        cmds.menuItem("ArnoldUpdateFullScene",
+                      label="Update Full Scene",
+                      parent="Menu_Render",
+                      image="playbackLoopingContinuous.png",
+                      command=_arnold_update_full_scene)
 
         # LookDev tools
         cmds.menuItem("Menu_LookDev",

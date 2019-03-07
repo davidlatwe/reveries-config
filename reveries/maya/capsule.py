@@ -79,8 +79,15 @@ def assign_shader(meshes, shadingEngine):
 
             shaded = set()
             for assigned in cmds.sets(shader, query=True) or []:
-                if mesh == cmds.ls(assigned, objectsOnly=True, long=True)[0]:
+                # possible facets member
+                node = cmds.ls(assigned, objectsOnly=True, long=True)
+                if not node:
+                    # Ensure the facets' node exists
+                    continue
+
+                if mesh == node[0]:
                     shaded.add(assigned)
+
             meshes_by_shader[shader].update(shaded)
 
     try:

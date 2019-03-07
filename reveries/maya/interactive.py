@@ -8,10 +8,7 @@ from avalon import api, io
 
 from .vendor import capture
 from . import lib, pipeline, xgen, utils
-from .io import (
-    bind_xgen_LGC_description,
-    attach_xgen_IGS_preset,
-)
+from .io import bind_xgen_LGC_description
 from ..utils import get_representation_path_
 
 
@@ -205,8 +202,9 @@ def bind_xgen_interactive_by_selection(*args):
         _bound[desc] = bound_meshes
 
     # Bind !
+    cmds.evalDeferred("from reveries.maya.io import attach_xgen_IGS_preset")
     for d, bm in _bound.items():
-        attach_xgen_IGS_preset(d, bm)
+        cmds.evalDeferred("attach_xgen_IGS_preset({0!r}, {1})".format(d, bm))
 
 
 def __duplicate_mesh_to_xgen_subset(bound_mesh, from_namespace, to_namespace):

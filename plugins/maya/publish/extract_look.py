@@ -6,6 +6,7 @@ import contextlib
 import pyblish.api
 
 from reveries.plugins import PackageExtractor
+from reveries.maya import utils
 
 
 class ExtractLook(PackageExtractor):
@@ -121,10 +122,39 @@ class ExtractLook(PackageExtractor):
         creases = list(set(creases))
 
         for cres in creases:
-            level = cmds.getAttr("creaseLevel")
+            # Grouping crease set members with crease level value.
+            level = cmds.getAttr(cres + ".creaseLevel")
             if level not in crease_sets:
                 crease_sets[level] = list()
-            crease_sets[level] += cmds.sets(cres, query=True)
+
+            for member in cmds.ls(cmds.sets(cres, query=True), long=True):
+                node, edges = member.split(".")
+                if node not in self.data["dagMembers"]:
+                    continue
+                # We have validated Avalon UUID, so there must be a valid ID.
+                id = utils.get_id(node)
+                crease_sets[level].append(id + "." + edges)
+
+        # Arnold smooth sets
+        al_smooth_sets = dict()
+
+        try:
+            from reveries.maya import arnold
+        except RuntimeError as e:
+            self.log.debug(e)
+        else:
+            for smos in arnold.utils.get_smooth_sets():
+                level = cmds.getAttr(smos + ".aiSubdivIterations")
+                subtp = cmds.getAttr(smos + ".aiSubdivType")
+
+                key = (level, subtp)
+
+                for node in cmds.ls(cmds.sets(smos, query=True), long=True):
+                    if node not in self.data["dagMembers"]:
+                        continue
+                    # There must be a valid ID
+                    id = utils.get_id(node)
+                    al_smooth_sets[key].append(id)
 
         # VRay Attributes
         vray_attrs = dict()
@@ -151,6 +181,7 @@ class ExtractLook(PackageExtractor):
             "shaderById": shader_by_id,
             "animatable": animatable,
             "creaseSets": crease_sets,
+            "alSmoothSets": al_smooth_sets,
             "vrayAttrs": vray_attrs,
         }
 

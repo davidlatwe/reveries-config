@@ -30,6 +30,8 @@ class ValidateRenderRange(pyblish.api.InstancePlugin):
         render_end = instance.data["endFrame"]
 
         if proj_start != render_start or proj_end != render_end:
+            cls.log.error("Invalid frame range: {0} - {1}"
+                          "".format(render_start, render_end))
             cls.log.error("start and end frame should be {0} - {1}."
                           "".format(proj_start, proj_end))
             return True

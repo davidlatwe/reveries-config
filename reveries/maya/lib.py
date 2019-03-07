@@ -1,7 +1,7 @@
 
 import logging
 
-from maya import cmds
+from maya import cmds, mel
 from maya.api import OpenMaya as om
 
 from .. import lib
@@ -40,6 +40,12 @@ FPS_MAP = {
 def query_by_renderlayer(node, attr, layer):
     """Query attribute without switching renderLayer when layer overridden
 
+    (NOTE) The value that has been overridden may return in different type,
+           e.g. `int` value may return as `long`.
+
+           The `time` type of value will be multiplied with frame rate if it
+           has layeroverride.
+
     Arguments:
         node (str): node name
         attr (str): node attribute name
@@ -57,12 +63,17 @@ def query_by_renderlayer(node, attr, layer):
     if layer == current:
         return cmds.getAttr(node_attr, asString=True)
 
+    val_type = cmds.getAttr(node_attr, type=True)
+    is_time = False
     try:
         # For type correct, because bool value may return as float
         # from renderlayer.adjustments
-        type_ = eval(cmds.getAttr(node_attr, type=True))
+        type_ = eval(val_type)
     except NameError:
         type_ = (lambda _: _)
+
+        if val_type == "time":
+            is_time = True
 
     def get_value(conn):
         return type_(cmds.getAttr(conn.rsplit(".", 1)[0] + ".value",
@@ -79,10 +90,14 @@ def query_by_renderlayer(node, attr, layer):
         if not conn.startswith("%s.adjustments" % layer):
             continue
         # layer.adjustments[*].plug -> layer.adjustments[*].value
+        if is_time:
+            return get_value(conn) * mel.eval('currentTimeUnitToFPS()')
         return get_value(conn)
 
     if origin_value is not None:
         # Override in other layer
+        if is_time:
+            return origin_value * mel.eval('currentTimeUnitToFPS()')
         return origin_value
 
     # No override
@@ -446,6 +461,54 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
 
                 print("Assigning '%s' to '%s'" % (shader, ", ".join(surfaces)))
                 cmds.sets(surfaces, forceElement=shader)
+
+
+def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
+    """Given a dictionary of `relationships`, apply crease value to edges
+
+    Arguments:
+        relationships (avalon-core:shaders-1.0): A dictionary of
+            shaders and how they relate to surface edges.
+        namespace (str, optional): namespace that need to apply to creaseSet
+        target_namespaces (list, optional): model namespaces
+
+    Returns:
+        list: A list of created or used crease sets
+
+    """
+    namespace = namespace or ""
+    crease_sets = list()
+
+    for level, members in relationships.items():
+        level = float(level)
+
+        node = lsAttr("creaseLevel", level, namespace=namespace)
+        if not node:
+            crease_name = namespace + ":creaseSet1"
+            crease_set = cmds.createNode("creaseSet", name=crease_name)
+            cmds.setAttr(crease_set + ".creaseLevel", level)
+        else:
+            crease_set = node[0]
+
+        crease_sets.append(crease_set)
+
+        for member in members:
+            id, edge_ids = member.split(".")
+
+            for target_namespace in target_namespaces:
+                # Find all surfaces matching this particular ID
+                # Convert IDs to surface + id, e.g. "nameOfNode.f[1:100]"
+                edges = list(".".join([m, edge_ids])
+                             for m in lsAttr(AVALON_ID_ATTR_LONG,
+                                             value=id,
+                                             namespace=target_namespace))
+                if not edges:
+                    continue
+
+                print("Applying '%s' to '%s'" % (crease_set, ", ".join(edges)))
+                cmds.sets(edges, forceElement=crease_set)
+
+    return crease_sets
 
 
 def list_all_parents(nodes):
