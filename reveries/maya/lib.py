@@ -463,6 +463,54 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
                 cmds.sets(surfaces, forceElement=shader)
 
 
+def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
+    """Given a dictionary of `relationships`, apply crease value to edges
+
+    Arguments:
+        relationships (avalon-core:shaders-1.0): A dictionary of
+            shaders and how they relate to surface edges.
+        namespace (str, optional): namespace that need to apply to creaseSet
+        target_namespaces (list, optional): model namespaces
+
+    Returns:
+        list: A list of created or used crease sets
+
+    """
+    namespace = namespace or ""
+    crease_sets = list()
+
+    for level, members in relationships.items():
+        level = float(level)
+
+        node = lsAttr("creaseLevel", level, namespace=namespace)
+        if not node:
+            crease_name = namespace + ":creaseSet1"
+            crease_set = cmds.createNode("creaseSet", name=crease_name)
+            cmds.setAttr(crease_set + ".creaseLevel", level)
+        else:
+            crease_set = node[0]
+
+        crease_sets.append(crease_set)
+
+        for member in members:
+            id, edge_ids = member.split(".")
+
+            for target_namespace in target_namespaces:
+                # Find all surfaces matching this particular ID
+                # Convert IDs to surface + id, e.g. "nameOfNode.f[1:100]"
+                edges = list(".".join([m, edge_ids])
+                             for m in lsAttr(AVALON_ID_ATTR_LONG,
+                                             value=id,
+                                             namespace=target_namespace))
+                if not edges:
+                    continue
+
+                print("Applying '%s' to '%s'" % (crease_set, ", ".join(edges)))
+                cmds.sets(edges, forceElement=crease_set)
+
+    return crease_sets
+
+
 def list_all_parents(nodes):
     """List all parents of dag nodes
 

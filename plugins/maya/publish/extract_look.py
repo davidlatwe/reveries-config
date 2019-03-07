@@ -6,6 +6,7 @@ import contextlib
 import pyblish.api
 
 from reveries.plugins import PackageExtractor
+from reveries.maya import utils
 
 
 class ExtractLook(PackageExtractor):
@@ -121,10 +122,18 @@ class ExtractLook(PackageExtractor):
         creases = list(set(creases))
 
         for cres in creases:
-            level = cmds.getAttr("creaseLevel")
+            # Grouping crease set members with crease level value.
+            level = cmds.getAttr(cres + ".creaseLevel")
             if level not in crease_sets:
                 crease_sets[level] = list()
-            crease_sets[level] += cmds.sets(cres, query=True)
+
+            for member in cmds.ls(cmds.sets(cres, query=True), long=True):
+                node, edges = member.split(".")
+                if node not in self.data["dagMembers"]:
+                    continue
+                # We have validated Avalon UUID, so there must be a valid ID.
+                id = utils.get_id(node)
+                crease_sets[level].append(id + "." + edges)
 
         # VRay Attributes
         vray_attrs = dict()

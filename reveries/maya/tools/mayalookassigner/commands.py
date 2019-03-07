@@ -296,6 +296,7 @@ def assign_look(namespaces, look):
         relationships = json.load(f)
 
     namespace = look["namespace"][1:]
+    look_container = look["objectName"]
 
     # Apply shader to target subset by namespace
     if isinstance(namespaces, six.string_types):
@@ -305,3 +306,8 @@ def assign_look(namespaces, look):
     lib.apply_shaders(relationships["shaderById"],
                       namespace,
                       target_namespaces)
+
+    crease_sets = lib.apply_crease_edges(relationships["creaseSets"],
+                                         namespace,
+                                         target_namespaces)
+    cmds.sets(crease_sets, forceElement=look_container)
