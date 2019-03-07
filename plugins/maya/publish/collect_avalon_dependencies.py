@@ -20,7 +20,7 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
         # Collect root containers' members
 
         for container in root_containers:
-            members = cmds.sets(container, query=True) or []
+            members = cmds.sets(container, query=True, nodesOnly=True) or []
             shapes = cmds.listRelatives(members, shapes=True) or []
             members = cmds.ls(members + shapes, long=True)
             container_members[container] = set(members)
