@@ -311,3 +311,16 @@ def assign_look(namespaces, look):
                                          namespace,
                                          target_namespaces)
     cmds.sets(crease_sets, forceElement=look_container)
+
+    if relationships.get("alSmoothSets"):
+        try:
+            from ....maya import arnold
+        except RuntimeError:
+            pass
+        else:
+            al_smooth_sets = arnold.utils.apply_smooth_sets(
+                relationships["alSmoothSets"],
+                namespace,
+                target_namespaces
+            )
+            cmds.sets(al_smooth_sets, forceElement=look_container)

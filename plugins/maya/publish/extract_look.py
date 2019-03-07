@@ -135,6 +135,27 @@ class ExtractLook(PackageExtractor):
                 id = utils.get_id(node)
                 crease_sets[level].append(id + "." + edges)
 
+        # Arnold smooth sets
+        al_smooth_sets = dict()
+
+        try:
+            from reveries.maya import arnold
+        except RuntimeError as e:
+            self.log.debug(e)
+        else:
+            for smos in arnold.utils.get_smooth_sets():
+                level = cmds.getAttr(smos + ".aiSubdivIterations")
+                subtp = cmds.getAttr(smos + ".aiSubdivType")
+
+                key = (level, subtp)
+
+                for node in cmds.ls(cmds.sets(smos, query=True), long=True):
+                    if node not in self.data["dagMembers"]:
+                        continue
+                    # There must be a valid ID
+                    id = utils.get_id(node)
+                    al_smooth_sets[key].append(id)
+
         # VRay Attributes
         vray_attrs = dict()
 
@@ -160,6 +181,7 @@ class ExtractLook(PackageExtractor):
             "shaderById": shader_by_id,
             "animatable": animatable,
             "creaseSets": crease_sets,
+            "alSmoothSets": al_smooth_sets,
             "vrayAttrs": vray_attrs,
         }
 
