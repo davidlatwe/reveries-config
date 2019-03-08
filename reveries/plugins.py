@@ -361,30 +361,6 @@ class PackageExtractor(pyblish.api.InstancePlugin):
           "mayaAscii" in representations list, then the subclass MUST have
           a method called `extract_mayaAscii`.
 
-    * This extractor will lock version by the context data entry
-      `"sourceFingerprint"`.
-
-        - The data `"sourceFingerprint"` is a workfile hashing or any other
-          feature data that able to identify the workfile change. This should
-          be collected via other collector plugin.
-
-        - Before extraction process started, this extractor will create a
-          version dir in publish space, and bind that version dir with current
-          workfile's fingerprint.
-
-        - This normally won't happen in production, but if the version dir
-          exists, and the fingerprint does not matched, version will bumped
-          and create a new version dir to retry (only retry 3 times).
-          This will happen if multiple artist publishing same subset with long
-          extraction time, or bugs that cause publish fail during extraction.
-
-        - If the version dir exists, and the fingerprint matched, the pre-
-          existed content in that version dir will be removed.
-
-        - This ensures the version number of the subset will get, after this
-          publish session been completed, no matter what happened during
-          long extraction time.
-
     Example usage:
 
         ```python
@@ -419,8 +395,6 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
     families = []
     representations = []
-
-    metadata = ".fingerprint.json"
 
     def extract(self):
         """Multi-representation extraction process
@@ -462,7 +436,6 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
         """
         self._process(instance)
-        self._acquire_version_dir()
         self.extract()
 
     def _process(self, instance):
@@ -510,130 +483,6 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             self.data["files"] = list()
         if "hardlinks" not in self.data:
             self.data["hardlinks"] = list()
-
-    def _get_next_version(self):
-        """Get current subset instance's next version number"""
-        version = None
-        version_number = 1  # assume there is no version yet, we start at `1`
-        if self._subset_doc is not None:
-            version = avalon.io.find_one({"type": "version",
-                                          "parent": self._subset_doc["_id"]},
-                                         {"name": True},
-                                         sort=[("name", -1)])
-
-        # if there is a subset there ought to be version
-        if version is not None:
-            version_number += version["name"]
-
-        return version_number
-
-    def _acquire_version_dir(self, version_locked=False):
-        """Get a version dir which binded to current workfile
-        """
-        version_dir_template = os.path.dirname(self._publish_dir_template)
-
-        def format_version_dir(version_number):
-            """Return a version dir path"""
-            self._publish_dir_key["version"] = version_number
-            version_dir = version_dir_template.format(**self._publish_dir_key)
-            # Clean the path
-            version_dir = os.path.abspath(os.path.normpath(version_dir))
-
-            return version_dir
-
-        def is_version_matched(version_dir, strict):
-            """Does the fingerprint in this version match with workfile ?"""
-            metadata_path = os.path.join(version_dir, self.metadata)
-            # Load fingerprint from version dir
-            with open(metadata_path, "r") as fp:
-                metadata = json.load(fp)
-
-            if strict:
-                return metadata == self.context.data["sourceFingerprint"]
-
-            return (metadata["currentMaking"] ==
-                    self.context.data["sourceFingerprint"]["currentMaking"])
-
-        def create_version_dir(version_dir):
-            """Create a version named dir and dump workfile fingerprint"""
-            os.makedirs(version_dir)
-            metadata_path = os.path.join(version_dir, self.metadata)
-            # Save workfile fingerprint to version dir
-            with open(metadata_path, "w") as fp:
-                json.dump(self.context.data["sourceFingerprint"], fp, indent=4)
-
-        def clean_version_dir(version_dir):
-            """Remove all content from the version dir, except fingerprint"""
-            dir_content = os.listdir(version_dir)
-            dir_content.remove(self.metadata)
-
-            for item in dir_content:
-                item_path = os.path.join(version_dir, item)
-                if os.path.isdir(item_path):
-                    shutil.rmtree(item_path)
-                elif os.path.isfile(item_path):
-                    os.remove(item_path)
-
-        # Check
-        max_retry_time = 3
-        retry_time = 0
-        version = self._get_next_version()
-
-        while True:
-            if retry_time > max_retry_time:
-                msg = "Critical Error: Version Dir retry times exceeded."
-                self.log.critical(msg)
-                raise Exception(msg)
-
-            elif retry_time:
-                self.log.debug("Retry Time: {}".format(retry_time))
-
-            # Bump version
-            version_number = version + retry_time
-            self.log.debug("Trying Version: {}".format(version_number))
-            version_dir = format_version_dir(version_number)
-            self.log.debug("Version Dir: {}".format(version_dir))
-
-            if os.path.isdir(version_dir):
-                if is_version_matched(version_dir, version_locked):
-                    # This version dir match the current workfile, remove
-                    # previous extracted stuff.
-                    self.log.debug("Cleaning version dir.")
-                    clean_version_dir(version_dir)
-                    break
-
-                elif version_locked:
-                    # This should not happend.
-                    # If the version is locked, the workfile should never
-                    # changed.
-                    msg = ("Critical Error: Version locked but version dir is "
-                           "not available ('sourceFingerprint' not match), "
-                           "this is a bug.")
-                    self.log.critical(msg)
-                    raise Exception(msg)
-
-                else:
-                    # Version dir has been created, but the `sourceFingerprint`
-                    # not matched because the workfile has changed.
-                    # Try next version.
-                    pass
-
-            else:
-                self.log.debug("Creating version dir.")
-                create_version_dir(version_dir)
-                break
-
-            retry_time += 1
-
-        self.data["versionNext"] = version_number
-        self.data["versionDir"] = version_dir
-        self.data["publishDirElem"] = (self._publish_dir_key,
-                                       self._publish_dir_template)
-
-        self.log.debug("Next version: {}".format(version_number))
-        self.log.debug("Version dir: {}".format(version_dir))
-
-        return version_dir
 
     def file_name(self, extension, suffix=""):
         """Convenient method for composing file name with default format"""
@@ -740,29 +589,15 @@ class DelegatablePackageExtractor(PackageExtractor):
         on_delegate = use_contractor and not accepted
 
         # Skip extraction if the instance is going to be delegated
-
         if on_delegate:
             # The active representations of this instance will be delegated
             # to contractor for remote extraction.
             # Bind with a version dir and skip current extraction.
-            self._acquire_version_dir()
             for repr_ in self._active_representations:
                 self.log.info("Delegating representation {0} of {1}"
                               "".format(repr_, self.data["name"]))
         else:
-            version_locked = False
-            if accepted:
-                version_locked = True
-                self.log.debug("Version Locked.")
-            self._acquire_version_dir(version_locked)
             self.extract()
-
-    def _get_next_version(self):
-        if self.context.data.get("contractorAccepted"):
-            # version lock if publish process has been delegated.
-            return self.data["versionNext"]
-        else:
-            return super(DelegatablePackageExtractor, self)._get_next_version()
 
 
 def _get_errored_instances_from_context(context, include_warning=False):
