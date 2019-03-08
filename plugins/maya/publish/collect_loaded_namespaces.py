@@ -33,6 +33,16 @@ class CollectLoadedNamespaces(pyblish.api.InstancePlugin):
             group = container["subsetGroup"]
             members = cmds.sets(container["objectName"], query=True)
 
+            # Incase referenced member get removed from container by any
+            # reason.
+            references = cmds.ls(members, type="reference")
+            referenced_members = []
+            for reference in references:
+                referenced_members += cmds.referenceQuery(reference,
+                                                          nodes=True)
+
+            members = list(set(members + referenced_members))
+
             loaded_content.add(group)
             loaded_content.update(cmds.ls(members,
                                           long=True,
