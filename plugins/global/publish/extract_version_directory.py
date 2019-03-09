@@ -88,7 +88,11 @@ class ExtractVersionDirectory(pyblish.api.InstancePlugin):
             # Load fingerprint from version dir
             with open(metadata_path, "r") as fp:
                 metadata = json.load(fp)
-                success = metadata.pop("success")
+                try:
+                    success = metadata.pop("success")
+                except KeyError:
+                    # For backwards compatibility, assuming it succeed
+                    success = True
 
             fingerprint = context.data["sourceFingerprint"]
 
