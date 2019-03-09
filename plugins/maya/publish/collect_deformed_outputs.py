@@ -8,6 +8,9 @@ from reveries.maya import lib, pipeline
 class CollectDeformedOutputs(pyblish.api.InstancePlugin):
     """Collect out geometry data for instance.
 
+    If node's visibility is off, will not be cached, but hidden by
+    displayLayer will.
+
     If the subset variant is "default", collect deformable nodes from
     objectSets of the loaded subset, which name is or endswith "OutSet",
     and create instances from them. For "OutSet" that has prefix, will
@@ -55,6 +58,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 namespace = lib.get_ns(node)[1:]  # Remove root ":"
                 cacheables = lib.pick_cacheable(cmds.sets(node,
                                                           query=True) or [])
+                cacheables = self.cache_by_visibility(cacheables)
 
                 out_cache[namespace] = (name, cacheables)
 
@@ -79,12 +83,19 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
         else:
             # Collect cacheable nodes from instance member
             cacheables = lib.pick_cacheable(members)
+            cacheables = self.cache_by_visibility(cacheables)
 
             instance[:] = cacheables
             instance.data["outCache"] = cacheables
             instance.data["requireAvalonUUID"] = cacheables
 
             self.assign_contractor(instance)
+
+    def cache_by_visibility(self, cacheables):
+        for node in list(cacheables):
+            if not lib.is_visible(node, displayLayer=False):
+                cacheables.remove(node)
+        return cacheables
 
     def assign_contractor(self, instance):
         if instance.data["deadlineEnable"]:
