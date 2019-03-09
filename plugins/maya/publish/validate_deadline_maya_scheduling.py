@@ -28,6 +28,10 @@ class ValidateDeadlineMayaScheduling(pyblish.api.InstancePlugin):
         return [instance.data["objectName"]]
 
     def process(self, instance):
+
+        if not instance.data["deadlineEnable"]:
+            return
+
         priority = instance.data["deadlinePriority"]
         pool = instance.data["deadlinePool"]
 
