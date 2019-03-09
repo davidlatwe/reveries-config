@@ -2,35 +2,28 @@
 import pyblish.api
 import maya.cmds as cmds
 
-from reveries.maya import lib
-from avalon.maya.pipeline import AVALON_CONTAINER_ID
-
-
-def find_out_sets(nodes):
-    return [member for member in cmds.ls(nodes, type="objectSet")
-            if member.endswith("OutSet")]
-
-
-def pick_cacheable(nodes):
-    nodes = cmds.listRelatives(nodes, allDescendents=True, fullPath=True) or []
-    shapes = cmds.ls(nodes,
-                     type="deformableShape",
-                     noIntermediate=True,
-                     long=True)
-    cacheables = set()
-    for node in shapes:
-        parent = cmds.listRelatives(node, parent=True, fullPath=True)
-        transforms = cmds.ls(parent, long=True)
-        cacheables.update(transforms)
-
-    return list(cacheables)
+from reveries.maya import lib, pipeline
 
 
 class CollectDeformedOutputs(pyblish.api.InstancePlugin):
     """Collect out geometry data for instance.
+
+    If the subset variant is "default", collect deformable nodes from
+    objectSets of the loaded subset, which name is or endswith "OutSet",
+    and create instances from them. For "OutSet" that has prefix, will
+    use that prefix as variant of subset.
+
+    For example:
+             "OutSet" -> "pointcache.Boy_model_01_Default"
+          "SimOutSet" -> "pointcache.Boy_model_01_Sim"
+        "ClothOutSet" -> "pointcache.Boy_model_01_Cloth"
+
+    If the subset variant is Not "default", collect deformable node
+    from instance member (selection).
+
     """
 
-    order = pyblish.api.CollectorOrder + 0.2
+    order = pyblish.api.CollectorOrder - 0.2999
     label = "Collect Deformed Outputs"
     hosts = ["maya"]
     families = [
@@ -38,57 +31,62 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        out_cache = dict()
-        require_avalon_uuid = set()
 
-        def update_out_cache(out_set, namespace):
-            members = pick_cacheable(cmds.sets(out_set, query=True) or [])
-            out_name = namespace[1:]  # Remove leading ":"
-            if out_name not in out_cache:
-                out_cache[out_name] = list()
-            out_cache[out_name] += members
-            require_avalon_uuid.update(members)
+        variant = instance.data["subset"][len("pointcache"):].lower()
+        members = instance[:]
 
-            self.log.info("Cacheables from {0!r} collected: {1!r}"
-                          "".format(out_set, out_name))
+        if variant == "default":
+            # Collect cacheable nodes from OutSet of loaded subset
+            out_cache = dict()
+            out_sets = list()
 
-        containers = lib.lsAttrs({"id": AVALON_CONTAINER_ID})
-        out_sets = find_out_sets(instance)
+            for node in cmds.ls(members, type="transform", long=True):
+                container = pipeline.get_container_from_group(node)
+                if container is None:
+                    continue
 
-        if out_sets:
-            containers = {
-                container: set(cmds.ls(cmds.sets(container, query=True),
-                                       long=True))
-                for container in containers
-            }
-            for out_set in out_sets:
-                for container, content in containers.items():
-                    if out_set in content:
-                        namespace = cmds.getAttr(container + ".namespace")
-                        update_out_cache(out_set, namespace)
-                        break
+                sets = cmds.ls(cmds.sets(container, query=True),
+                               type="objectSet")
+                out_sets += [s for s in sets if s.endswith("OutSet")]
+
+            for node in out_sets:
+                name = node.rsplit(":", 1)[-1][:-len("OutSet")] or "Default"
+                self.log.info(name)
+                namespace = lib.get_ns(node)[1:]  # Remove root ":"
+                cacheables = lib.pick_cacheable(cmds.sets(node,
+                                                          query=True) or [])
+
+                out_cache[namespace] = (name, cacheables)
+
+            # Re-Create instances
+            context = instance.context
+            context.remove(instance)
+            source_data = instance.data
+
+            for namespace, (name, cacheables) in out_cache.items():
+                instance = context.create_instance(namespace or name)
+
+                instance.data.update(source_data)
+                instance.data["subset"] = ".".join(["pointcache",
+                                                    namespace,
+                                                    name])
+                instance[:] = cacheables
+                instance.data["outCache"] = cacheables
+                instance.data["requireAvalonUUID"] = cacheables
+
+                self.assign_contractor(instance)
 
         else:
-            self.log.debug("Looking for 'OutSet' nodes..")
-            collected = set(instance)
+            # Collect cacheable nodes from instance member
+            cacheables = lib.pick_cacheable(members)
 
-            for container in containers:
-                content = cmds.ls(cmds.sets(container, query=True), long=True)
+            instance[:] = cacheables
+            instance.data["outCache"] = cacheables
+            instance.data["requireAvalonUUID"] = cacheables
 
-                if set(content).intersection(collected):
-                    namespace = cmds.getAttr(container + ".namespace")
-                    for out_set in find_out_sets(content):
-                        update_out_cache(out_set, namespace)
+            self.assign_contractor(instance)
 
-        if not out_cache:
-            self.log.info("No 'OutSet' found, cache from instance member.")
-            out_cache[""] = pick_cacheable(instance)
-
-        # Store data in the instance for the validator
-        instance.data["outCache"] = out_cache
-        instance.data["requireAvalonUUID"] = require_avalon_uuid
-
-        # Assign contractor
+    def assign_contractor(self, instance):
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.script"
