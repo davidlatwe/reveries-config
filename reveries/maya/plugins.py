@@ -7,7 +7,7 @@ import avalon.io
 import avalon.maya
 
 from .utils import (
-    update_id_on_import,
+    update_id_verifiers,
     generate_container_id,
 )
 
@@ -312,8 +312,6 @@ class ImportLoader(MayaBaseLoader):
         if not nodes:
             return
 
-        update_id_on_import(nodes)
-
         container_id = options.get("containerId", generate_container_id())
 
         container = subset_containerising(name=name,
@@ -452,7 +450,7 @@ class HierarchicalLoader(MayaBaseLoader):
                               groupName=group_name,
                               typ="Alembic")
 
-        update_id_on_import(hierarchy)
+        update_id_verifiers(hierarchy)
 
         # Load sub-subsets
         sub_containers = []
@@ -521,7 +519,7 @@ class HierarchicalLoader(MayaBaseLoader):
                               returnNewNodes=True,
                               type="Alembic")
 
-        update_id_on_import(hierarchy)
+        update_id_verifiers(hierarchy)
 
         # Get current members data
         current_members = dict()
