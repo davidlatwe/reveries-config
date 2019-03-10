@@ -1,4 +1,5 @@
 
+import re
 import logging
 
 from maya import cmds, mel
@@ -52,12 +53,10 @@ def query_by_renderlayer(node, attr, layer):
         layer (str): renderLayer name
 
     """
-    if not cmds.ls(layer, type="renderLayer"):
-        raise ValueError("RenderLayer not exists: %s" % layer)
+    if cmds.mayaHasRenderSetup():
+        return query_by_setuplayer(node, attr, layer)
 
     node_attr = node + "." + attr
-    if not cmds.objExists(node_attr):
-        raise AttributeError("Attribute not exists: %s" % node_attr)
 
     current = cmds.editRenderLayerGlobals(query=True, currentRenderLayer=True)
     if layer == current:
@@ -102,6 +101,69 @@ def query_by_renderlayer(node, attr, layer):
 
     # No override
     return cmds.getAttr(node_attr, asString=True)
+
+
+def query_by_setuplayer(node, attr, layer):
+    """Query attribute without switching renderSetupLayer when layer overridden
+
+    Arguments:
+        node (str): node long name
+        attr (str): node attribute name
+        layer (str): renderLayer name
+
+    """
+    node_attr = node + "." + attr
+    current_layer = cmds.editRenderLayerGlobals(query=True,
+                                                currentRenderLayer=True)
+    if layer == current_layer:
+        return cmds.getAttr(node_attr)
+
+    enabled_overrides = cmds.ls(lib.lsAttrs({"attribute": attr,
+                                             "enabled": True}),
+                                type="override")
+
+    if enabled_overrides and layer == "defaultRenderLayer":
+        applyer = cmds.listConnections(node_attr,
+                                       type="applyOverride",
+                                       skipConversionNodes=True)
+        if applyer:
+            # Get original
+            return cmds.getAttr(applyer[0] + ".original")
+        else:
+            # No override
+            return cmds.getAttr(node_attr)
+
+    for override in enabled_overrides:
+        setup_layers = cmds.ls(cmds.listHistory(override),
+                               type="renderSetupLayer")
+        overrided_layer = cmds.ls(cmds.listHistory(setup_layers),
+                                  type="renderLayer")
+
+        if not overrided_layer[0] == layer:
+            continue
+
+        collections = cmds.ls(cmds.listHistory(override), type="collection")
+        collection = collections[0]
+
+        if not cmds.getAttr(collection + ".enabled"):
+            continue
+
+        # Does this node selected by this collection ?
+        # (NOTE) We can not relay on `cmds.editRenderLayerMembers` since
+        #        the member list will not get updated if artist toggling
+        #        the collection while the layer was not activated.
+        #        Also, renderSettings node isn't a member of a layer.
+        selector = cmds.listConnections(collection + ".selector")[0]
+        pattern = cmds.getAttr(selector + ".pattern")
+        selection = cmds.getAttr(selector + ".staticSelection")
+        if (node in selection.split() or
+                node in cmds.ls(re.split(";| ", pattern), long=True)):
+            # Has override
+            return cmds.getAttr(override + ".attrValue")
+
+    else:
+        # No override
+        return cmds.getAttr(node_attr)
 
 
 def is_visible(node,
