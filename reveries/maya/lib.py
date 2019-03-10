@@ -118,8 +118,8 @@ def query_by_setuplayer(node, attr, layer):
     if layer == current_layer:
         return cmds.getAttr(node_attr)
 
-    enabled_overrides = cmds.ls(lib.lsAttrs({"attribute": attr,
-                                             "enabled": True}),
+    enabled_overrides = cmds.ls(lsAttrs({"attribute": attr,
+                                         "enabled": True}),
                                 type="override")
 
     if enabled_overrides and layer == "defaultRenderLayer":
