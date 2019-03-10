@@ -101,6 +101,9 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
             if layer.endswith("defaultRenderLayer"):
                 layername = "masterLayer"
+            elif context.data["usingRenderSetup"]:
+                layername = cmds.ls(cmds.listHistory(layer, future=True),
+                                    type="renderSetupLayer")[0]
             else:
                 layername = layer
 
