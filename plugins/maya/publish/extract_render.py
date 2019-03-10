@@ -69,25 +69,12 @@ class ExtractRender(DelegatablePackageExtractor):
         # (NOTE) Did not consider frame step (byFrame)
         start_frame = self.data["startFrame"]
         end_frame = self.data["endFrame"]
-        length = int(end_frame) - int(start_frame) + 1
-        self.log.info("Start Frame: {}".format(start_frame))
-        self.log.info("End Frame: {}".format(end_frame))
-        self.log.info("Length: {}".format(length))
 
-        collections, _ = clique.assemble(files, minimum_items=length)
-        collection_count = len(collections)
+        collections, _ = clique.assemble(files)
 
-        assert collection_count == 1, ("Extraction failed, possible "
-                                       "insufficient sequence length. "
-                                       "Collected {} collections."
-                                       "".format(collection_count))
+        assert len(collections), "Extraction failed, no sequence found."
 
         sequence = collections[0]
-        sequence_len = len(sequence.indexes)
-
-        assert sequence_len == length, ("Sequence length not match, possible "
-                                        "sequence too long ? Collected"
-                                        " {} frames.".format(sequence_len))
 
         entry_fname = (sequence.head +
                        "%%0%dd" % sequence.padding +

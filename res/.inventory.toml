@@ -25,6 +25,7 @@ pointcache = [
 
 [deadline]
 publishGroup = "avalon_slaves"
+publishUser = "avalon"
 
 [deadline.maya]
 pool = [

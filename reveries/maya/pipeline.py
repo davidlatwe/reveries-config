@@ -565,7 +565,10 @@ def has_turntable():
     """
     project = avalon.io.find_one({"type": "project"},
                                  {"data.pipeline.maya": True})
-    turntable = project["data"]["pipeline"]["maya"]["turntable"]
+    turntable = project["data"]["pipeline"]["maya"].get("turntable")
+
+    if turntable is None:
+        return None
 
     if get_container_from_namespace(":{}_*".format(turntable)):
         return turntable

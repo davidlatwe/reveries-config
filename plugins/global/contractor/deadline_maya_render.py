@@ -158,6 +158,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
         # Update
         payload["JobInfo"].update({
             "Name": "_intergrate " + payload["JobInfo"]["Name"],
+            "UserName": project["data"]["deadline"]["publishUser"],
             "Group": project["data"]["deadline"]["publishGroup"],
             "Priority": 99,
             "JobDependencies": jobid,

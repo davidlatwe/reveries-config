@@ -8,7 +8,7 @@ from reveries.utils import AssetHasher
 class ExtractSourceFingerprint(pyblish.api.ContextPlugin):
 
     label = "Extract Fingerprint"
-    order = pyblish.api.ExtractorOrder - 0.4
+    order = pyblish.api.ExtractorOrder - 0.41
 
     def process(self, context):
 

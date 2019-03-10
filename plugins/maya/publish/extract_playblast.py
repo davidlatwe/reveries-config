@@ -56,17 +56,11 @@ class ExtractPlayblast(DelegatablePackageExtractor):
         # Check image sequence length to ensure that the extraction did
         # not interrupted.
         files = os.listdir(publish_dir)
-        # (NOTE) Did not consider frame step (byFrame)
-        length = end_frame - start_frame + 1
-        collections, _ = clique.assemble(files, minimum_items=length)
+        collections, _ = clique.assemble(files)
 
-        assert len(collections) == 1, ("Extraction failed, possible "
-                                       "insufficient sequence length.")
+        assert len(collections), "Extraction failed, no sequence found."
 
         sequence = collections[0]
-
-        assert len(sequence.indexes) == length, ("Sequence length not match, "
-                                                 "this is a bug.")
 
         entry_fname = (sequence.head +
                        "%%0%dd" % sequence.padding +

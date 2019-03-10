@@ -14,7 +14,7 @@ from .pipeline import (
 )
 from .vendor import sticker
 
-from . import PYMEL_MOCK_FLAG
+from . import PYMEL_MOCK_FLAG, utils as maya_utils
 
 
 def on_task_changed(_, *args):
@@ -36,6 +36,25 @@ def on_init(_):
     cmds.loadPlugin("AbcImport", quiet=True)
     cmds.loadPlugin("AbcExport", quiet=True)
     cmds.loadPlugin("fbxmaya", quiet=True)
+
+    avalon.logger.info("Installing callbacks on import..")
+
+    OpenMaya.MSceneMessage.addCallback(
+        OpenMaya.MSceneMessage.kAfterImport,
+        on_import
+    )
+    OpenMaya.MSceneMessage.addCallback(
+        OpenMaya.MSceneMessage.kBeforeImport,
+        before_import
+    )
+    OpenMaya.MSceneMessage.addCallback(
+        OpenMaya.MSceneMessage.kAfterImportReference,
+        on_import_reference
+    )
+    OpenMaya.MSceneMessage.addCallback(
+        OpenMaya.MSceneMessage.kBeforeImportReference,
+        before_import_reference
+    )
 
 
 def on_new(_):
@@ -71,3 +90,40 @@ def before_save(return_code, _):
     # Docs: http://download.autodesk.com/us/maya/2011help/api/
     # class_m_scene_message.html#a6bf4288015fa7dab2d2074c3a49f936
     OpenMaya.MScriptUtil.setBool(return_code, not maya.is_locked())
+
+
+_nodes = {"_": None}
+
+
+def before_import(_):
+    avalon.logger.info("Running callback before import..")
+    # Collect all nodes in scene
+    _nodes["_"] = set(cmds.ls())
+
+
+def on_import(_):
+    avalon.logger.info("Running callback on import..")
+
+    before_nodes = _nodes["_"]
+    after_nodes = set(cmds.ls())
+
+    imported_nodes = list(after_nodes - before_nodes)
+    maya_utils.update_id_verifiers(imported_nodes)
+    _nodes["_"] = None
+
+
+def before_import_reference(_):
+    avalon.logger.info("Running callback before import reference..")
+    # Collect all referenced nodes in scene
+    _nodes["_"] = set(cmds.ls(referencedNodes=True))
+
+
+def on_import_reference(_):
+    avalon.logger.info("Running callback on import reference..")
+
+    before_nodes = _nodes["_"]
+    after_nodes = set(cmds.ls(referencedNodes=True))
+
+    imported_nodes = list(before_nodes - after_nodes)
+    maya_utils.update_id_verifiers(imported_nodes)
+    _nodes["_"] = None

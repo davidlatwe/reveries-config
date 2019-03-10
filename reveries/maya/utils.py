@@ -426,7 +426,7 @@ def set_id(node, id):
     _identifier.on_duplicate(node)
 
 
-def update_id_on_import(nodes):
+def update_id_verifiers(nodes):
     _identifier.update_verifiers(nodes)
 
 

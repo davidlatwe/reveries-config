@@ -80,7 +80,7 @@ class RenderCreator(avalon.maya.Creator):
         if variant == "playblast":
             # playblast is deadline script job
             self.data["deadlineEnable"] = False
-            self.data["deadlineGroup"] = []
+            self.data["deadlineGroup"] = ["none"]
 
         self.data["renderType"] = variant
         self.data["publishOrder"] = 999
