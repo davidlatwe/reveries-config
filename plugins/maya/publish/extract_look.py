@@ -139,22 +139,37 @@ class ExtractLook(PackageExtractor):
         al_smooth_sets = dict()
 
         try:
+            # (TODO) This should be improved. see issue #65
             from reveries.maya import arnold
         except RuntimeError as e:
             self.log.debug(e)
         else:
-            for smos in arnold.utils.get_smooth_sets():
-                level = cmds.getAttr(smos + ".aiSubdivIterations")
-                subtp = cmds.getAttr(smos + ".aiSubdivType")
+            ai_sets = dict()
+            for objset in cmds.ls(type="objectSet"):
+                if any(attr.startswith("ai") for attr in
+                       cmds.listAttr(objset, userDefined=True) or []):
+                    ai_sets[objset] = cmds.ls(cmds.sets(objset, query=True),
+                                              long=True)
 
-                key = (level, subtp)
+            # (TODO) Validate only transform nodes in ai set
+            transforms = cmds.ls(cmds.listRelatives(surfaces, parent=True),
+                                 long=True)
+            for node in transforms:
+                # There must be a valid ID
+                id = utils.get_id(node)
 
-                for node in cmds.ls(cmds.sets(smos, query=True), long=True):
-                    if node not in self.data["dagMembers"]:
+                attrs = dict()
+                for ai_set, member in ai_sets.items():
+                    if node not in member:
                         continue
-                    # There must be a valid ID
-                    id = utils.get_id(node)
-                    al_smooth_sets[key].append(id)
+
+                    for attr in cmds.listAttr(ai_set, userDefined=True):
+                        if not attr.startswith("ai"):
+                            continue
+
+                        attrs[attr] = cmds.getAttr(ai_set + "." + attr)
+
+                al_smooth_sets[id] = attrs
 
         # VRay Attributes
         vray_attrs = dict()
