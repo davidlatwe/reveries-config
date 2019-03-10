@@ -109,7 +109,7 @@ def query_by_setuplayer(node, attr, layer):
     Arguments:
         node (str): node long name
         attr (str): node attribute name
-        layer (str): renderLayer name
+        layer (str): renderLayer name (NOT renderSetupLayer)
 
     """
     node_attr = node + "." + attr
