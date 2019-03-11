@@ -46,7 +46,10 @@ class ValidateLookNoInitSG(pyblish.api.InstancePlugin):
         for shape in cmds.ls(instance.data["dagMembers"],
                              type="surfaceShape",
                              noIntermediate=True):
-            shaders = cmds.listConnections(shape, type="shadingEngine") or []
+            shaders = cmds.listConnections(shape,
+                                           source=False,
+                                           destination=True,
+                                           type="shadingEngine") or []
             if any(shd in DEFAULT_SHADERS for shd in shaders):
                 invalid.append(shape)
 
