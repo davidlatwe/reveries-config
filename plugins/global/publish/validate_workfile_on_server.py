@@ -15,6 +15,11 @@ def is_in_workspace(path, workdir):
     if os.path.splitdrive(path)[0] != os.path.splitdrive(workdir)[0]:
         return False
 
+    # (TODO) If it's on the same drive, it's good for now.
+    #        Currently some artist may open others workfile and publish,
+    #        this should not be allowed in future.
+    return True
+
     # Get 'relative path' (can contain ../ which means going up)
     relative = os.path.relpath(path, workdir)
 
