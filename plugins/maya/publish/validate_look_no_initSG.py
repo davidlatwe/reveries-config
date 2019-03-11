@@ -75,17 +75,21 @@ class ValidateLookNoInitSG(pyblish.api.InstancePlugin):
         from maya import cmds
 
         invalid = cls.get_invalid(instance)
-        for shape in invalid:
-            connections = cmds.listConnections(shape,
-                                               type="shadingEngine",
-                                               source=True,
-                                               destination=True,
-                                               connections=True,
-                                               plugs=True) or []
 
-            for src, dst in zip(connections[0::2], connections[1::2]):
-                shader_name = dst.split(".", 1)[0]
-                if shader_name not in DEFAULT_SHADERS:
-                    continue
+        cmds.undoInfo(ock=True)
+        try:
+            for shape in invalid:
+                connections = cmds.listConnections(shape,
+                                                   type="shadingEngine",
+                                                   destination=True,
+                                                   connections=True,
+                                                   plugs=True) or []
 
-                cmds.disconnectAttr(src, dst)
+                for src, dst in zip(connections[0::2], connections[1::2]):
+                    shader_name = dst.split(".", 1)[0]
+                    if shader_name not in DEFAULT_SHADERS:
+                        continue
+
+                    cmds.disconnectAttr(src, dst)
+        finally:
+            cmds.undoInfo(cck=True)
