@@ -42,8 +42,6 @@ class ExtractRig(PackageExtractor):
             maya.maintained_selection(),
             capsule.assign_shader(mesh_nodes, shadingEngine=clay_shader),
         ):
-            cmds.select(self.member, noExpand=True)
-
             with capsule.undo_chunk_when_no_undo():
                 # (NOTE) Current workflow may keep model stay loaded and
                 #   referenced in scene, but need to take extra care while
@@ -81,6 +79,8 @@ class ExtractRig(PackageExtractor):
                 #   So we just remove them all for good.
                 for container in self.context.data["RootContainers"]:
                     cmds.delete(container)
+
+                cmds.select(cmds.ls(self.member), noExpand=True)
 
                 cmds.file(entry_path,
                           force=True,

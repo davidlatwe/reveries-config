@@ -104,7 +104,7 @@ def query_by_renderlayer(node, attr, layer):
 
 
 def query_by_setuplayer(node, attr, layer):
-    """Query attribute without switching renderSetupLayer when layer overridden
+    """Query attribute without switching renderSetupLayer
 
     Arguments:
         node (str): node long name
@@ -113,57 +113,187 @@ def query_by_setuplayer(node, attr, layer):
 
     """
     node_attr = node + "." + attr
+
+    def original_value(attr_=None):
+        attr_ = attr_ or attr
+        node_attr_ = node + "." + attr_
+        appliers = cmds.ls(cmds.listHistory(node_attr_, pruneDagObjects=True),
+                           type="applyOverride")
+        if appliers:
+            return cmds.getAttr(appliers[-1] + ".original")
+        else:
+            return cmds.getAttr(node + "." + attr_)
+
     current_layer = cmds.editRenderLayerGlobals(query=True,
                                                 currentRenderLayer=True)
     if layer == current_layer:
+        # At current layer, simple get
         return cmds.getAttr(node_attr)
 
-    enabled_overrides = cmds.ls(lsAttrs({"attribute": attr,
-                                         "enabled": True}),
-                                type="override")
+    if layer == "defaultRenderLayer":
+        # Querying masterLayer, get original value
+        return original_value()
 
-    if enabled_overrides and layer == "defaultRenderLayer":
-        applyer = cmds.listConnections(node_attr,
-                                       type="applyOverride",
-                                       skipConversionNodes=True)
-        if applyer:
-            # Get original
-            return cmds.getAttr(applyer[0] + ".original")
-        else:
-            # No override
-            return cmds.getAttr(node_attr)
+    # Handling compound attribute
+    parent_attr = cmds.attributeQuery(attr, node=node, listParent=True) or []
+    child_attrs = cmds.attributeQuery(attr, node=node, listChildren=True) or []
 
-    for override in enabled_overrides:
-        setup_layers = cmds.ls(cmds.listHistory(override),
-                               type="renderSetupLayer")
-        overrided_layer = cmds.ls(cmds.listHistory(setup_layers),
-                                  type="renderLayer")
+    attrs = set([attr])
+    attrs.update(parent_attr + child_attrs)
 
-        if not overrided_layer[0] == layer:
-            continue
+    enabled_overrides = set()
 
-        collections = cmds.ls(cmds.listHistory(override), type="collection")
-        collection = collections[0]
+    for at in attrs:
+        enabled = [n for n in cmds.ls(type="override") if
+                   cmds.getAttr(n + ".attribute") == at and
+                   cmds.getAttr(n + ".enabled")]
+        enabled_overrides.update(enabled)
 
-        if not cmds.getAttr(collection + ".enabled"):
-            continue
+    if not enabled_overrides:
+        # No Override enabled in every layer
+        return cmds.getAttr(node_attr)
 
-        # Does this node selected by this collection ?
-        # (NOTE) We can not relay on `cmds.editRenderLayerMembers` since
-        #        the member list will not get updated if artist toggling
-        #        the collection while the layer was not activated.
-        #        Also, renderSettings node isn't a member of a layer.
-        selector = cmds.listConnections(collection + ".selector")[0]
+    setup_layer = cmds.listConnections(layer + ".message",
+                                       type="renderSetupLayer")[0]
+    # (NOTE) We starting from the highest collection because if the node
+    #        being collected in multiple collections, only the overrides
+    #        in higher collection has effect.
+    #
+    highest_col = cmds.listConnections(setup_layer + ".collectionHighest")
+    if highest_col is None:
+        # Empty layer, get original value
+        return original_value()
+
+    # The hunt begins...
+
+    def is_selected_by(selector):
+        """Did the collection selector select this node ?"""
         pattern = cmds.getAttr(selector + ".pattern")
         selection = cmds.getAttr(selector + ".staticSelection")
         if (node in selection.split() or
                 node in cmds.ls(re.split(";| ", pattern), long=True)):
-            # Has override
-            return cmds.getAttr(override + ".attrValue")
+            return True
+        return False
+
+    def walk_siblings(item):
+        """Walk renderSetup nodes from highest(bottom) to lowest(top)"""
+        yield item
+        previous = cmds.listConnections(item + ".previous")
+        if previous is not None:
+            for sibling in walk_siblings(previous[0]):
+                yield sibling
+
+    def walk_hierarchy(item):
+        """Walk renderSetup nodes with depth prior"""
+        for sibling in walk_siblings(item):
+            yield sibling
+            try:
+                children = cmds.listConnections(sibling + ".listItems")
+                overrides = set(cmds.ls(children, type="override"))
+                no_others = len(children) == len(overrides)
+                if no_others and not enabled_overrides.intersection(overrides):
+                    continue
+                highest = cmds.listConnections(sibling + ".childHighest")[0]
+            except (ValueError, TypeError):
+                continue
+            else:
+                for child in walk_hierarchy(highest):
+                    yield child
+
+    # compound value filter
+    if parent_attr:
+        index = cmds.attributeQuery(parent_attr[0],
+                                    node=node,
+                                    listChildren=True).index(attr)
+        filter = (lambda compound, _: compound[0][index])
+
+    elif child_attrs:
+        default = cmds.attributeQuery(attr, node=node, listDefault=True)
+        filter = (lambda val, ind: [val if i == ind else v
+                                    for i, v in enumerate(default)])
+    else:
+        filter = None
+
+    def value_filter(value, attr_):
+        if attr_ in parent_attr:
+            return filter(value, None)
+        elif attr_ in child_attrs:
+            return filter(value, child_attrs.index(attr_))
+        else:
+            return value
+
+    # Locate leaf collection and get overrides from there
+
+    overrides = []
+
+    for item in walk_hierarchy(highest_col[0]):
+        try:
+            selector = cmds.listConnections(item + ".selector")[0]
+        except ValueError:
+            # Is an override
+            if item in enabled_overrides:
+                overrides.append(item)
+
+        else:
+            # Is a collection
+            if is_selected_by(selector):
+                if not cmds.getAttr(item + ".selfEnabled"):
+                    # Collection not enabled, not a member
+                    return original_value()
+
+                overrides = []
+
+    if not overrides:
+        return original_value()
+
+    # Collect values from overrides
+
+    root = None
+    relatives = []
+
+    for override in overrides:
+        attr_ = cmds.getAttr(override + ".attribute")
+
+        try:
+            # Absolute override
+            root = cmds.getAttr(override + ".attrValue")
+            root = value_filter(root, attr_)
+            if attr_ in child_attrs:
+                for i, ca in enumerate(child_attrs):
+                    if not ca == attr_:
+                        root[i] = original_value(ca)
+
+            if not len(relatives):
+                return root
+            else:
+                break
+
+        except ValueError:
+            # Relative override
+            multiply = cmds.getAttr(override + ".multiply")
+            multiply = value_filter(multiply, attr_)
+            offset = cmds.getAttr(override + ".offset")
+            offset = value_filter(offset, attr_)
+            relatives.insert(0, (multiply, offset))
 
     else:
-        # No override
-        return cmds.getAttr(node_attr)
+        root = original_value()
+
+    # Compute value
+
+    if child_attrs:
+        # compound value
+        for m, o in relatives:
+            for r_arr, m_arr, o_arr in zip(root, m, o):
+                new = list()
+                for R, M, O in zip(r_arr, m_arr, o_arr):
+                    new.append(R * M + O)
+                root = new
+        return root
+
+    for m, o in relatives:
+        root = root * m + o
+    return root
 
 
 def is_visible(node,

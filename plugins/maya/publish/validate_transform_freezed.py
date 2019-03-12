@@ -75,6 +75,13 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
 
         for transform in transforms:
 
+            if cmds.listConnections(transform,
+                                    source=True,
+                                    destination=False,
+                                    type="constraint"):
+                # Skip constrainted
+                continue
+
             matrix = cmds.xform(transform,
                                 query=True,
                                 matrix=True,

@@ -94,7 +94,7 @@ class ValidateRigContents(pyblish.api.InstancePlugin):
                 continue
 
             for chd in children:
-                if not cmds.nodeType(chd) == "mesh":
+                if not cmds.ls(chd, type=("mesh", "constraint")):
                     invalid.append(node)
                     break
 
