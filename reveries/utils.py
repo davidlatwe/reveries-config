@@ -8,6 +8,7 @@ import weakref
 import getpass
 import pymongo
 
+from datetime import datetime
 from distutils.dir_util import copy_tree
 
 from avalon import io, Session
@@ -532,3 +533,190 @@ def get_versions_from_sourcefile(source, project):
 
         else:
             continue
+
+
+def overlay_clipinfo_on_image(image_path,
+                              project,
+                              task,
+                              subset,
+                              version,
+                              representation_id,
+                              artist,
+                              shot_name,
+                              frame_num,
+                              edit_in,
+                              edit_out,
+                              handles,
+                              duration,
+                              focal_length,
+                              resolution,
+                              fps):
+    """Overlay clipinfo onto image for human reviewing
+
+    (NOTE): This function requires package `PIL` be installed in the
+            environment, or `ImportError` raised.
+
+    Args:
+        image_path (str): Image file path
+        project (str): Project name
+        task (str): Task name
+        subset (str): Subset name
+        version (int): Version number
+        representation_id (str): Representation ID string
+        artist (str): Artist name
+        shot_name (str): Shot asset name
+        frame_num (int): Frame number of this image
+        edit_in (int): In frame number of the shot
+        edit_out (int): Out frame number of the shot
+        handles (int): Handle range
+        duration (int): Image sequence length
+        focal_length (float): Camera focal length
+        resolution (tuple): Image resolution
+        fps (float): Shot frame rate
+
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    date = datetime.ctime(datetime.now())
+    width, height = resolution
+
+    # Templates
+
+    _TOP = "{project}".format(project=project)
+
+    _TOP_LEFT = """
+  Date: {date}
+Artist: {artist}
+  Task: {task}
+"""[1:-1].format(date=date, artist=artist, task=task)
+
+    _TOP_RIGHT = """
+    Subset: {subset_name}
+      RPID: {representation_id}
+Resolution: {width}px * {height}px
+"""[1:-1].format(subset_name=subset,
+                 representation_id=representation_id,
+                 width=width,
+                 height=height)
+
+    _BTM = "{frame_num:0>4}".format(frame_num=frame_num)
+
+    _BTM_LEFT = """
+ Frame: {frame_num:0>4}
+  Shot: {shot_name}  ver {version:0>3}
+FocalL: {focal_length} mm
+"""[1:-1].format(frame_num=frame_num,
+                 shot_name=shot_name,
+                 version=version,
+                 focal_length=focal_length)
+
+    _BTM_RIGHT = """
+   Range: {edit_in:0>4} - {edit_out:0>4}
+Duration: {duration:0>4}
+ Handles: {handles}  FPS: {fps}
+"""[1:-1].format(edit_in=edit_in,
+                 edit_out=edit_out,
+                 duration=duration,
+                 handles=handles,
+                 fps=fps)
+
+    # Compute font size and spacing base on image resolution
+
+    spacing = int(width / 320)    # 6 in Full HD
+    titlesize = int(width / 48)  # 40 in Full HD
+    datasize = int(width / 96)   # 20 in Full HD
+    border = datasize
+
+    # Get font
+
+    FONTDIR = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                           "res",
+                           "fonts").replace("\\", "/")
+
+    fontfile = FONTDIR + "/SourceCodePro/Sauce Code Powerline Regular.otf"
+    titlefont = ImageFont.truetype(fontfile, size=titlesize)
+    datafont = ImageFont.truetype(fontfile, size=datasize)
+
+    # Create new image
+
+    im = Image.new("RGBA", size=(width, height), color=(0, 0, 0, 255))
+    draw = ImageDraw.Draw(im)
+
+    def textsize(text, title=False):
+        font = titlefont if title else datafont
+        return draw.textsize(text, font=font, spacing=spacing)
+
+    def puttext(text, pos, title=False):
+        font = titlefont if title else datafont
+        align = "center" if title else "left"
+        draw.text(pos, text, fill=(200, 200, 200, 255),
+                  font=font, align=align, spacing=spacing)
+
+    # Start painting
+
+    # Top Center
+    size_top = textsize(_TOP, title=True)
+    x = (width - size_top[0]) / 2
+    y = border
+    pos_top = (x, y)
+    puttext(_TOP, pos_top, title=True)
+
+    # Bottom Center
+    size_btm = textsize(_BTM, title=True)
+    x = (width - size_btm[0]) / 2
+    y = height - border - size_btm[1]
+    pos_btm = (x, y)
+    puttext(_BTM, pos_btm, title=True)
+
+    # Top Left
+    size_top_left = textsize(_TOP_LEFT)
+    x = border
+    y = border
+    pos_top_left = (x, y)
+    puttext(_TOP_LEFT, pos_top_left)
+
+    # Top Right
+    size_top_right = textsize(_TOP_RIGHT)
+    x = width - size_top_right[0] - border
+    y = border
+    pos_top_right = (x, y)
+    puttext(_TOP_RIGHT, pos_top_right)
+
+    # Bottom Left
+    size_btm_left = textsize(_BTM_LEFT)
+    x = border
+    y = height - size_btm_left[1] - border
+    pos_btm_left = (x, y)
+    puttext(_BTM_LEFT, pos_btm_left)
+
+    # Bottom Right
+    size_btm_right = textsize(_BTM_RIGHT)
+    x = width - size_btm_right[0] - border
+    y = height - size_btm_right[1] - border
+    pos_btm_right = (x, y)
+    puttext(_BTM_RIGHT, pos_btm_right)
+
+    # Assemble
+
+    # Comput the size that the original image need to be scaled
+    # after the clipinfo applied on.
+    retract = (max(pos_top[1] + size_top[1],
+                   pos_top_left[1] + size_top_left[1],
+                   pos_top_right[1] + size_top_right[1]) +
+               max(height - pos_btm[1] + size_btm[1],
+                   height - pos_btm_left[1] + size_btm_left[1],
+                   height - pos_btm_right[1] + size_btm_right[1]))
+
+    scale = float(height) / (height + retract)
+    scaled_w = int(width * scale) - border
+    scaled_h = int(height * scale) - border
+    box = (int((width - scaled_w) / 2), int((height - scaled_h) / 2))
+
+    src = Image.open(image_path)
+    # Put resized original image into new image that has clipinfo
+    # overlaied
+    im.paste(src.resize((scaled_w, scaled_h),
+             resample=Image.BICUBIC),
+             box=box)
+    # save over to original image
+    im.save(image_path)
