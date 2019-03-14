@@ -51,15 +51,22 @@ class ExtractModel(PackageExtractor):
                              long=True)
         clay_shader = "initialShadingGroup"
 
-        # Hash model
+        # Hash model and collect Avalon UUID
+        geo_id_and_hash = dict()
         hasher = utils.MeshHasher()
         for mesh in mesh_nodes:
+            # Get ID
+            transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
+            id = utils.get_id(transform)
             hasher.set_mesh(mesh)
             hasher.update_points()
             hasher.update_normals()
             hasher.update_uvmap()
+            # It must be one mesh paring to one transform.
+            geo_id_and_hash[id] = hasher.digest()
+            hasher.clear()
 
-        self.add_data({"meshHash": hasher.digest()})
+        self.add_data({"modelProfile": geo_id_and_hash})
 
         # Perform extraction
         self.log.info("Extracting %s" % str(self.member))
