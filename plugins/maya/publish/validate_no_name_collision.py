@@ -31,7 +31,7 @@ class ValidateNoNameCollision(pyblish.api.InstancePlugin):
 
         invalid = list()
 
-        for node in context.data["loadedNamespaceContent"]:
+        for node in context.data["referencedNamespaceContent"]:
             # Compose the leaf node name without namespace and see if it
             # exists. This ensure that when the namespace been removed,
             # base name stays the same.
