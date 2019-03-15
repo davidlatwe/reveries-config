@@ -30,5 +30,8 @@ class AvalonLockScene(pyblish.api.ContextPlugin):
 
         maya.lock()
 
+        # Switch to masterLayer before save
+        cmds.editRenderLayerGlobals(currentRenderLayer="defaultRenderLayer")
+
         with maya.lock_ignored():
             cmds.file(save=True, force=True)
