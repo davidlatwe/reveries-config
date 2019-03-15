@@ -273,14 +273,12 @@ def get_group_from_container(container):
         container (str): Name of container node
 
     """
-    # Get all transform nodes from container node
-    transforms = cmds.ls(cmds.sets(container, query=True),
-                         type="transform",
-                         long=True)
-    if not transforms:
-        return None
-    # First member of sorted transform list is the top group node
-    return sorted(transforms)[0]
+    interface = get_interface_from_container(container)
+    group = cmds.listConnections(interface + ".subsetGroup",
+                                 source=True,
+                                 destination=False,
+                                 plugs=False)
+    return cmds.ls(group, long=True)[0]
 
 
 def container_metadata(container):
