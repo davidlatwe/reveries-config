@@ -22,9 +22,8 @@ class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ValidatorOrder
     hosts = ["maya"]
-    label = "Avalon UUID Provided"
+    label = "Upstream Has Avalon UUID"
     families = [
-        "reveries.look",
         "reveries.animation",
         "reveries.pointcache",
     ]
