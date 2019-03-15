@@ -80,8 +80,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         if uuids is None:
             uuids = cls._get_avalon_uuid(instance)
 
-        invalid = [node for node in uuids.get(Identifier.Duplicated, [])
-                   if ":" not in node]
+        invalid = uuids.get(Identifier.Duplicated, [])
 
         return invalid
 
