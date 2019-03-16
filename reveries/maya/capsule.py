@@ -367,3 +367,59 @@ def nodes_locker(nodes, lock=True, lockName=True, lockUnpublished=True):
     finally:
         # Restore lock states
         lib.restore_lock_state(lock_state)
+
+
+class delete_after(object):
+    """Context Manager that will delete collected nodes after exit.
+
+    This allows to ensure the nodes added to the context are deleted
+    afterwards. This is useful if you want to ensure nodes are deleted
+    even if an error is raised.
+
+    Examples:
+        with delete_after() as delete_bin:
+            cube = maya.cmds.polyCube()
+            delete_bin.extend(cube)
+            # cube exists
+        # cube deleted
+
+    """
+
+    def __init__(self, nodes=None):
+
+        self._nodes = list()
+
+        if nodes:
+            self.extend(nodes)
+
+    def append(self, node):
+        self._nodes.append(node)
+
+    def extend(self, nodes):
+        self._nodes.extend(nodes)
+
+    def __iter__(self):
+        return iter(self._nodes)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if self._nodes:
+            cmds.delete(self._nodes)
+
+
+@contextlib.contextmanager
+def keytangent_default(in_tangent_type='auto',
+                       out_tangent_type='auto'):
+    """Set the default keyTangent for new keys during this context"""
+
+    original_itt = cmds.keyTangent(query=True, g=True, itt=True)[0]
+    original_ott = cmds.keyTangent(query=True, g=True, ott=True)[0]
+    cmds.keyTangent(g=True, itt=in_tangent_type)
+    cmds.keyTangent(g=True, ott=out_tangent_type)
+    try:
+        yield
+    finally:
+        cmds.keyTangent(g=True, itt=original_itt)
+        cmds.keyTangent(g=True, ott=original_ott)

@@ -4,8 +4,6 @@ import sys
 import inspect
 import types
 import logging
-import json
-import shutil
 
 import pyblish.api
 import avalon.api

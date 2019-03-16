@@ -82,9 +82,12 @@ def install():  # pragma: no cover
 
     # Temporarily workaround
     # script node: uiConfigurationScriptNode
+    # (TODO): Should try to cleanup that script node if possible...
     mel.eval("global proc CgAbBlastPanelOptChangeCallback(string $pass){}")
     log.info("Unknown proc <CgAbBlastPanelOptChangeCallback> "
              "workaround init.")
+    mel.eval("global proc look(){}")
+    log.info("Unknown proc <look> workaround init.")
 
     _override()
 

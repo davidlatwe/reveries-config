@@ -35,13 +35,22 @@ class ExtractCamera(PackageExtractor):
         camera = cmds.ls(self.member, type="camera")[0]
 
         with contextlib.nested(
-            capsule.no_undo(),
             capsule.no_refresh(),
             capsule.evaluation("off"),
+            capsule.undo_chunk(),
         ):
             # bake to worldspace
-            lib.bake_camera(camera, self.start, self.end)
-            cmds.select(camera, replace=True, noExpand=True)
+            baked_camera = lib.bake_camera(camera, self.start, self.end)
+            # Lock baked camera
+            lib.lock_transform(baked_camera, additional=["focalLength",
+                                                         "cameraAperture",
+                                                         "lensSqueezeRatio",
+                                                         "shutterAngle",
+                                                         "centerOfInterest"])
+            cmds.select(baked_camera,
+                        hierarchy=True,  # With shape
+                        replace=True,
+                        noExpand=True)
 
             super(ExtractCamera, self).extract()
 

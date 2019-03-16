@@ -59,7 +59,10 @@ def on_init(_):
 
 def on_new(_):
     reset_edit_lock()
-    set_scene_timeline()
+    try:
+        set_scene_timeline()
+    except Exception as e:
+        cmds.warning(e.message)
 
 
 def on_open(_):

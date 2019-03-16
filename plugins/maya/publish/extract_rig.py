@@ -43,14 +43,14 @@ class ExtractRig(PackageExtractor):
             capsule.assign_shader(mesh_nodes, shadingEngine=clay_shader),
         ):
             with capsule.undo_chunk_when_no_undo():
-                # (NOTE) Current workflow may keep model stay loaded and
+                # (NOTE) Current workflow may keep model stay loaded as
                 #   referenced in scene, but need to take extra care while
                 #   extracting. (Will be undone)
 
-                # - Remove loaded subset's namespace before exporting
+                # - Remove referenced subset's namespace before exporting
                 #   (Not keeping model namespace)
-                loaded_namespaces = self.context.data["loadedNamespace"]
-                for namespace in reversed(sorted(list(loaded_namespaces))):
+                referenced_namespace = self.context.data["referencedNamespace"]
+                for namespace in reversed(sorted(list(referenced_namespace))):
                     if not cmds.namespace(exists=namespace):
                         continue
 

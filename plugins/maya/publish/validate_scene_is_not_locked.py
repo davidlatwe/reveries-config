@@ -9,6 +9,7 @@ class ValidateSceneNotLocked(pyblish.api.ContextPlugin):
 
     label = "Scene Is Not Locked"
     order = pyblish.api.ValidatorOrder - 0.4999
+    hosts = ["maya"]
 
     def process(self, context):
 

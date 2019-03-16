@@ -300,7 +300,8 @@ def is_visible(node,
                displayLayer=True,
                intermediateObject=True,
                parentHidden=True,
-               visibility=True):
+               visibility=True,
+               time=None):
     """Is `node` visible?
 
     Returns whether a node is hidden by one of the following methods:
@@ -310,6 +311,7 @@ def is_visible(node,
     - The node is set as intermediate Object.
     - The node is in a disabled displayLayer.
     - Whether any of its parent nodes is hidden.
+    - Whether it's visible at the given time.
 
     Roughly based on: http://ewertb.soundlinker.com/mel/mel.098.php
 
@@ -319,11 +321,14 @@ def is_visible(node,
         intermediateObject (bool): Check 'intermediateObject', Default True
         parentHidden (bool): Check parent node, Default True
         visibility (bool): Check atttribute 'visibility', Default True
+        time (int or float, optional): Evaluate the visible state at the given
+            time instead of the current time. Default current time.
 
     Returns:
         bool: Whether the node is visible in the scene
 
     """
+    time = cmds.currentTime(query=True) if time is None else time
 
     # Only existing objects can be visible
     if not cmds.objExists(node):
@@ -334,19 +339,20 @@ def is_visible(node,
         return False
 
     if visibility:
-        if not cmds.getAttr('{0}.visibility'.format(node)):
+        if not cmds.getAttr('{0}.visibility'.format(node), time=time):
             return False
 
     if intermediateObject and cmds.objectType(node, isAType='shape'):
-        if cmds.getAttr('{0}.intermediateObject'.format(node)):
+        if cmds.getAttr('{0}.intermediateObject'.format(node), time=time):
             return False
 
     if displayLayer:
         # Display layers set overrideEnabled and overrideVisibility on members
         if cmds.attributeQuery('overrideEnabled', node=node, exists=True):
-            override_enabled = cmds.getAttr('{}.overrideEnabled'.format(node))
+            override_enabled = cmds.getAttr('{}.overrideEnabled'.format(node),
+                                            time=time)
             override_visibility = cmds.getAttr(
-                '{}.overrideVisibility'.format(node))
+                '{}.overrideVisibility'.format(node), time=time)
             if override_enabled and not override_visibility:
                 return False
 
@@ -358,7 +364,8 @@ def is_visible(node,
                               displayLayer=displayLayer,
                               intermediateObject=False,
                               parentHidden=parentHidden,
-                              visibility=visibility):
+                              visibility=visibility,
+                              time=time):
                 return False
 
     return True
@@ -394,41 +401,205 @@ def node_type_check(node, node_type):
     return False
 
 
-def bake_to_worldspace(node, startFrame, endFrame, bake_shape=True):
-    """Bake transform to worldspace
+def bake(nodes,
+         frame_range=None,
+         step=1.0,
+         simulation=True,
+         preserve_outside_keys=False,
+         disable_implicit_control=True,
+         shape=True):
+    """Bake the given nodes over the time range.
+
+    This will bake all attributes of the node, including custom attributes.
+
+    Args:
+        nodes (list): Names of transform nodes, eg. camera, light.
+        frame_range (list): frame range with start and end frame.
+            or if None then takes timeSliderRange
+        simulation (bool): Whether to perform a full simulation of the
+            attributes over time.
+        preserve_outside_keys (bool): Keep keys that are outside of the baked
+            range.
+        disable_implicit_control (bool): When True will disable any
+            constraints to the object.
+        shape (bool): When True also bake attributes on the children shapes.
+        step (float): The step size to sample by.
+
+    Returns:
+        None
+
     """
-    if not cmds.objectType(node) == "transform":
-        raise TypeError("{} is not a transform node.".format(node))
+    from .capsule import keytangent_default  # Avoid circular import
 
-    has_parent = False
-    if cmds.listRelatives(node, parent=True):
-        name = node + "_bakeHelper"
-        new_node = cmds.duplicate(node,
-                                  name=name,
-                                  returnRootsOnly=True,
-                                  inputConnections=True)
+    # Parse inputs
+    if not nodes:
+        return
 
-        # delete doublicated children
-        children = cmds.listRelatives(new_node, children=True, path=True)
-        cmds.delete(children)
+    assert isinstance(nodes, (list, tuple)), "Nodes must be a list or tuple"
 
-        # unparent object, add constraints and append it to bake List
-        cmds.parent(node, world=True)
-        cmds.parentConstraint(new_node, node, maintainOffset=False)
-        cmds.scaleConstraint(new_node, node, maintainOffset=False)
-        has_parent = True
+    # If frame range is None fall back to time slider playback time range
+    if frame_range is None:
+        frame_range = [cmds.playbackOptions(query=True, minTime=True),
+                       cmds.playbackOptions(query=True, maxTime=True)]
 
-    # bake Animation and delete Constraints
-    cmds.bakeResults(node, time=(startFrame, endFrame),
-                     simulation=True,
-                     shape=bake_shape)
-    if has_parent:
-        constraints = cmds.listRelatives(node, type="constraint")
-        cmds.delete(constraints)
+    # If frame range is single frame bake one frame more,
+    # otherwise maya.cmds.bakeResults gets confused
+    if frame_range[1] == frame_range[0]:
+        frame_range[1] += 1
+
+    # Bake it
+    with keytangent_default(in_tangent_type='auto',
+                            out_tangent_type='auto'):
+        cmds.bakeResults(nodes,
+                         simulation=simulation,
+                         preserveOutsideKeys=preserve_outside_keys,
+                         disableImplicitControl=disable_implicit_control,
+                         shape=shape,
+                         sampleBy=step,
+                         time=(frame_range[0], frame_range[1]))
+
+
+def bake_to_world_space(nodes,
+                        frame_range=None,
+                        simulation=True,
+                        preserve_outside_keys=False,
+                        disable_implicit_control=True,
+                        shape=True,
+                        step=1.0):
+    """Bake the nodes to world space transformation (incl. other attributes)
+
+    Bakes the transforms to world space (while maintaining all its animated
+    attributes and settings) by duplicating the node. Then parents it to world
+    and constrains to the original.
+
+    Other attributes are also baked by connecting all attributes directly.
+    Baking is then done using Maya's bakeResults command.
+
+    See `bake` for the argument documentation.
+
+    Returns:
+         list: The newly created and baked node names.
+
+    """
+    from .capsule import delete_after  # Avoid circular import
+
+    def _get_attrs(node):
+        """Workaround for buggy shape attribute listing with listAttr"""
+        attrs = cmds.listAttr(node,
+                              write=True,
+                              scalar=True,
+                              settable=True,
+                              connectable=True,
+                              keyable=True,
+                              shortNames=True) or []
+        valid_attrs = []
+        for attr in attrs:
+            node_attr = '{0}.{1}'.format(node, attr)
+
+            # Sometimes Maya returns 'non-existent' attributes for shapes
+            # so we filter those out
+            if not cmds.attributeQuery(attr, node=node, exists=True):
+                continue
+
+            # We only need those that have a connection, just to be safe
+            # that it's actually keyable/connectable anyway.
+            if cmds.connectionInfo(node_attr,
+                                   isDestination=True):
+                valid_attrs.append(attr)
+
+        return valid_attrs
+
+    transform_attrs = set(["t", "r", "s",
+                           "tx", "ty", "tz",
+                           "rx", "ry", "rz",
+                           "sx", "sy", "sz"])
+
+    world_space_nodes = []
+    with delete_after() as delete_bin:
+
+        # Create the duplicate nodes that are in world-space connected to
+        # the originals
+        for node in nodes:
+
+            # Duplicate the node
+            short_name = node.rsplit("|", 1)[-1]
+            new_name = "{0}_baked".format(short_name)
+            new_node = cmds.duplicate(node,
+                                      name=new_name,
+                                      renameChildren=True)[0]
+
+            # Connect all attributes on the node except for transform
+            # attributes
+            attrs = _get_attrs(node)
+            attrs = set(attrs) - transform_attrs if attrs else []
+
+            for attr in attrs:
+                orig_node_attr = '{0}.{1}'.format(node, attr)
+                new_node_attr = '{0}.{1}'.format(new_node, attr)
+
+                # unlock to avoid connection errors
+                cmds.setAttr(new_node_attr, lock=False)
+
+                cmds.connectAttr(orig_node_attr,
+                                 new_node_attr,
+                                 force=True)
+
+            # If shapes are also baked then connect those keyable attributes
+            if shape:
+                children_shapes = cmds.listRelatives(new_node,
+                                                     children=True,
+                                                     fullPath=True,
+                                                     shapes=True)
+                if children_shapes:
+                    orig_children_shapes = cmds.listRelatives(node,
+                                                              children=True,
+                                                              fullPath=True,
+                                                              shapes=True)
+                    for orig_shape, new_shape in zip(orig_children_shapes,
+                                                     children_shapes):
+                        attrs = _get_attrs(orig_shape)
+                        for attr in attrs:
+                            orig_node_attr = '{0}.{1}'.format(orig_shape, attr)
+                            new_node_attr = '{0}.{1}'.format(new_shape, attr)
+
+                            # unlock to avoid connection errors
+                            cmds.setAttr(new_node_attr, lock=False)
+
+                            cmds.connectAttr(orig_node_attr,
+                                             new_node_attr,
+                                             force=True)
+
+            # Parent to world
+            if cmds.listRelatives(new_node, parent=True):
+                new_node = cmds.parent(new_node, world=True)[0]
+
+            # Unlock transform attributes so constraint can be created
+            for attr in transform_attrs:
+                cmds.setAttr('{0}.{1}'.format(new_node, attr), lock=False)
+
+            # Constraints
+            delete_bin.extend(cmds.parentConstraint(node, new_node, mo=False))
+            delete_bin.extend(cmds.scaleConstraint(node, new_node, mo=False))
+
+            world_space_nodes.append(new_node)
+
+        bake(world_space_nodes,
+             frame_range=frame_range,
+             step=step,
+             simulation=simulation,
+             preserve_outside_keys=preserve_outside_keys,
+             disable_implicit_control=disable_implicit_control,
+             shape=shape)
+
+    return world_space_nodes
 
 
 def bake_camera(camera, startFrame, endFrame):
     """Bake camera to worldspace
+
+    Returns:
+        str: A newly baked camera
+
     """
     shape = None
     if cmds.objectType(camera) == "transform":
@@ -448,7 +619,7 @@ def bake_camera(camera, startFrame, endFrame):
     for attr in CAMERA_SHAPE_KEYABLES:
         cmds.setAttr(shape + "." + attr, keyable=True, lock=False)
 
-    bake_to_worldspace(transform, startFrame, endFrame)
+    return bake_to_world_space([transform], (startFrame, endFrame))[0]
 
 
 def lock_transform(node, additional=None):

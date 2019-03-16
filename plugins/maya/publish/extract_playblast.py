@@ -33,6 +33,10 @@ class ExtractPlayblast(DelegatablePackageExtractor):
         from maya import cmds
         cmds.editRenderLayerGlobals(currentRenderLayer="defaultRenderLayer")
 
+        project = self.context.data["projectDoc"]
+        width, height = reveries.utils.get_resolution_data(project)
+        e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
+
         with capsule.renderlayer(self.data["renderlayer"]):
 
             start_frame = self.context.data["startFrame"]
@@ -41,9 +45,6 @@ class ExtractPlayblast(DelegatablePackageExtractor):
             entry_file = self.file_name(self.ext)
             publish_dir = self.create_package()
             entry_path = os.path.join(publish_dir, entry_file)
-
-            project = self.context.data["projectDoc"]
-            width, height = reveries.utils.get_resolution_data(project)
 
             camera = self.data["renderCam"][0]
             io.capture_seq(camera,
@@ -75,4 +76,10 @@ class ExtractPlayblast(DelegatablePackageExtractor):
             "endFrame": end_frame,
             "byFrameStep": 1,
             "renderlayer": self.data["renderlayer"],
+            "edit_in": e_in,
+            "edit_out": e_out,
+            "handles": handles,
+            "focalLength": cmds.getAttr(camera + ".focalLength"),
+            "resolution": (width, height),
+            "fps": self.context.data["fps"],
         })

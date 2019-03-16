@@ -81,6 +81,7 @@ class ValidateLookNoInitSG(pyblish.api.InstancePlugin):
             for shape in invalid:
                 connections = cmds.listConnections(shape,
                                                    type="shadingEngine",
+                                                   source=False,
                                                    destination=True,
                                                    connections=True,
                                                    plugs=True) or []

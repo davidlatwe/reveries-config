@@ -20,9 +20,9 @@ class ValidateRigAssembly(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        root = cmds.ls(instance, assemblies=True)
+        root = cmds.ls(instance, assemblies=True, long=True)
 
-        if not (len(root) == 1 and root[0] == "ROOT"):
+        if not (len(root) == 1 and root[0] == "|ROOT"):
             self.log.error(
                 "'%s' Must have a single root called 'ROOT'." % (instance)
             )
