@@ -300,7 +300,8 @@ def is_visible(node,
                displayLayer=True,
                intermediateObject=True,
                parentHidden=True,
-               visibility=True):
+               visibility=True,
+               time=None):
     """Is `node` visible?
 
     Returns whether a node is hidden by one of the following methods:
@@ -310,6 +311,7 @@ def is_visible(node,
     - The node is set as intermediate Object.
     - The node is in a disabled displayLayer.
     - Whether any of its parent nodes is hidden.
+    - Whether it's visible at the given time.
 
     Roughly based on: http://ewertb.soundlinker.com/mel/mel.098.php
 
@@ -319,11 +321,14 @@ def is_visible(node,
         intermediateObject (bool): Check 'intermediateObject', Default True
         parentHidden (bool): Check parent node, Default True
         visibility (bool): Check atttribute 'visibility', Default True
+        time (int or float, optional): Evaluate the visible state at the given
+            time instead of the current time. Default current time.
 
     Returns:
         bool: Whether the node is visible in the scene
 
     """
+    time = cmds.currentTime(query=True) if time is None else time
 
     # Only existing objects can be visible
     if not cmds.objExists(node):
@@ -334,19 +339,20 @@ def is_visible(node,
         return False
 
     if visibility:
-        if not cmds.getAttr('{0}.visibility'.format(node)):
+        if not cmds.getAttr('{0}.visibility'.format(node), time=time):
             return False
 
     if intermediateObject and cmds.objectType(node, isAType='shape'):
-        if cmds.getAttr('{0}.intermediateObject'.format(node)):
+        if cmds.getAttr('{0}.intermediateObject'.format(node), time=time):
             return False
 
     if displayLayer:
         # Display layers set overrideEnabled and overrideVisibility on members
         if cmds.attributeQuery('overrideEnabled', node=node, exists=True):
-            override_enabled = cmds.getAttr('{}.overrideEnabled'.format(node))
+            override_enabled = cmds.getAttr('{}.overrideEnabled'.format(node),
+                                            time=time)
             override_visibility = cmds.getAttr(
-                '{}.overrideVisibility'.format(node))
+                '{}.overrideVisibility'.format(node), time=time)
             if override_enabled and not override_visibility:
                 return False
 
@@ -358,7 +364,8 @@ def is_visible(node,
                               displayLayer=displayLayer,
                               intermediateObject=False,
                               parentHidden=parentHidden,
-                              visibility=visibility):
+                              visibility=visibility,
+                              time=time):
                 return False
 
     return True
