@@ -60,9 +60,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
         assert self.instance_node is not None, "This is a bug."
 
-        HAS_OTHER_NON_IMGSEQ_INSTANCES = bool(len(context))
-        CONTRACTOR_ACCEPTED = context.data.get("contractorAccepted")
-
         # Get all valid renderlayers
         # This is how Maya populates the renderlayer display
         rlm_attribute = "renderLayerManager.renderLayerId"
@@ -127,13 +124,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             data.update(self.get_pipeline_attr(layer))
 
             instance = context.create_instance(layername)
-            # (NOTE) The instance is empty
             instance.data.update(data)
-
-            # (NOTE) If there are other non-imgseq instances need to be
-            #        published, wait for them.
-            instance.data["publishOnLock"] = (HAS_OTHER_NON_IMGSEQ_INSTANCES or
-                                              CONTRACTOR_ACCEPTED)
 
             # For dependency tracking
             instance.data["dependencies"] = dict()
@@ -144,13 +135,14 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             variate = getattr(self, "process_" + instance.data["renderType"])
             variate(instance, layer)
 
-            # Collect renderlayer members
+            # Push renderlayer members into instance,
+            # for collecting dependencies
+
             layer_members = cmds.editRenderLayerMembers(layer, query=True)
             members = cmds.ls(layer_members, long=True)
             members += cmds.listRelatives(members,
                                           allDescendents=True,
                                           fullPath=True) or []
-
             instance += list(set(members))
 
     def collect_output_paths(self, instance):
@@ -183,11 +175,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
         instance.data["outputPaths"] = paths
 
-    def previous_published(self, instance):
-        project = instance.context.data["projectDoc"]["name"]
-        source = instance.context.data["currentMaking"]
-        return get_versions_from_sourcefile(source, project)
-
     def process_playblast(self, instance, layer):
         """
         """
@@ -202,12 +189,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.script"
-
-        if instance.data["publishOnLock"] and maya.is_locked():
-            # Collect previous published for dependency tracking
-            for v in self.previous_published(instance):
-                subset = io.find_one({"_id": v["parent"]}, {"name": True})
-                instance.data["futureDependencies"][subset["name"]] = v["_id"]
 
     def process_lookdev(self, instance, layer):
         """
@@ -236,16 +217,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.render"
 
-        if instance.data["publishOnLock"] and maya.is_locked():
-            # Collect previous published for dependency tracking
-            for v in self.previous_published(instance):
-                subset = io.find_one({"_id": v["parent"]}, {"name": True})
-                if ("reveries.look" in v["families"] and
-                        not subset["name"] == lookdev_name):
-                    # Filter out not related `look`
-                    continue
-                instance.data["futureDependencies"][subset["name"]] = v["_id"]
-
         self.collect_output_paths(instance)
         set_extraction_type(instance)
 
@@ -263,12 +234,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         if instance.data["deadlineEnable"]:
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.render"
-
-        if instance.data["publishOnLock"] and maya.is_locked():
-            # Collect previous published for dependency tracking
-            for v in self.previous_published(instance):
-                subset = io.find_one({"_id": v["parent"]}, {"name": True})
-                instance.data["futureDependencies"][subset["name"]] = v["_id"]
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)
