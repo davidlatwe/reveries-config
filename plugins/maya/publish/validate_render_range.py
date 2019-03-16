@@ -1,7 +1,21 @@
 
 import pyblish.api
 from reveries.maya import pipeline
+from reveries.plugins import RepairInstanceAction
 from reveries import utils
+
+
+class SetRenderRange(RepairInstanceAction):
+
+    label = "Set Render Range"
+
+
+def get_render_range(instance):
+    project = instance.context.data["projectDoc"]
+    asset_name = pipeline.has_turntable()
+    proj_start, proj_end, _ = utils.compose_timeline_data(project,
+                                                          asset_name)
+    return proj_start, proj_end
 
 
 class ValidateRenderRange(pyblish.api.InstancePlugin):
@@ -15,17 +29,17 @@ class ValidateRenderRange(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder + 0.2
     hosts = ["maya"]
     families = [
-        "reveries.imgseq.render",
-        "reveries.imgseq.lookdev",
+        "reveries.imgseq",
+    ]
+    actions = [
+        pyblish.api.Category("Fix It"),
+        SetRenderRange,
     ]
 
     @classmethod
     def get_invalid(cls, instance):
         """Rendering range should be the same as pre-defined range"""
-        project = instance.context.data["projectDoc"]
-        asset_name = pipeline.has_turntable()
-        proj_start, proj_end, _ = utils.compose_timeline_data(project,
-                                                              asset_name)
+        proj_start, proj_end = get_render_range(instance)
         render_start = instance.data["startFrame"]
         render_end = instance.data["endFrame"]
 
@@ -43,4 +57,8 @@ class ValidateRenderRange(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid(cls, instance):
-        NotImplemented
+        from maya import cmds
+
+        proj_start, proj_end = get_render_range(instance)
+        cmds.setAttr("defaultRenderGlobals.startFrame", proj_start)
+        cmds.setAttr("defaultRenderGlobals.endFrame", proj_end)
