@@ -41,6 +41,8 @@ class ExtractRig(PackageExtractor):
             # Get ID
             transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
             id = utils.get_id(transform)
+            assert id is not None, ("Some mesh has no Avalon UUID. "
+                                    "This should not happend.")
             hasher.set_mesh(mesh)
             hasher.update_points()
             hasher.update_normals()
