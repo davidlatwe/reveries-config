@@ -14,7 +14,9 @@ class ValidateMeshLaminaFaces(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder + 0.15
     label = "Mesh Lamina Faces"
     hosts = ["maya"]
-    families = ["reveries.model"]
+    families = [
+        "reveries.model",
+    ]
     actions = [
         pyblish.api.Category("Select"),
         MayaSelectInvalidInstanceAction,
@@ -24,7 +26,7 @@ class ValidateMeshLaminaFaces(pyblish.api.InstancePlugin):
     def get_invalid(cls, instance):
         from maya import cmds
 
-        meshes = cmds.ls(instance, type="mesh", long=True)
+        meshes = cmds.ls(instance, type="mesh", long=True, noIntermediate=True)
         invalid = [mesh for mesh in meshes if
                    cmds.polyInfo(mesh, laminaFaces=True)]
 
