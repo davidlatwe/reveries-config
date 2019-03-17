@@ -4,10 +4,8 @@ from maya import cmds
 from collections import OrderedDict
 
 import pyblish.api
-from avalon import io, maya
 from reveries.plugins import context_process
 from reveries.maya import lib, utils
-from reveries.utils import get_versions_from_sourcefile
 
 
 def set_extraction_type(instance):
