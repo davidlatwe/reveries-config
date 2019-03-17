@@ -8,6 +8,12 @@ from reveries.plugins import context_process
 from reveries.maya import lib, utils
 
 
+def get_render_attr(attr, layer):
+    return lib.query_by_renderlayer("defaultRenderGlobals",
+                                    attr,
+                                    layer)
+
+
 def set_extraction_type(instance):
     if len(instance.data["outputPaths"]) > 1:
         instance.data["extractType"] = "imageSequenceSet"
@@ -24,39 +30,18 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
     label = "Avalon Instances (Render)"
     families = ["reveries.imgseq"]
 
-    def get_render_attr(self, attr, layer):
-        return lib.query_by_renderlayer("defaultRenderGlobals",
-                                        attr,
-                                        layer)
-
-    def get_pipeline_attr(self, layer):
-        pipeline_attrs = [
-            "asset",
-            "subset",
-            "renderType",
-            "deadlineEnable",
-            "deadlinePool",
-            "deadlineGroup",
-            "deadlinePriority",
-            "deadlineFramesPerTask",
-        ]
-        return {k: lib.query_by_renderlayer(self.instance_node,
-                                            k,
-                                            layer)
-                for k in pipeline_attrs}
-
     @context_process
     def process(self, context):
 
-        self.instance_node = None
-
+        original = None
         # Remove all dummy `imgseq` instances
         for instance in list(context):
             if instance.data["family"] in self.families:
-                self.instance_node = instance.data.get("objectName")
-                context.remove(instance)
 
-        assert self.instance_node is not None, "This is a bug."
+                original = instance.data.get("objectName")
+
+                context.remove(instance)
+        assert original is not None, "This is a bug."
 
         # Get all valid renderlayers
         # This is how Maya populates the renderlayer display
@@ -65,27 +50,21 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         valid_layers = set(connected_layers)
 
         # Context data
-
         workspace = context.data["workspaceDir"]
         context.data["outputDir"] = os.path.join(workspace, "renders")
-
         # Are there other renderlayer than defaultRenderLayer ?
         context.data["hasRenderLayers"] = len(valid_layers) > 1
         # Using Render Setup system ?
-        if context.data["mayaVersion"] >= 2016.5:
-            context.data["usingRenderSetup"] = cmds.mayaHasRenderSetup()
-        else:
-            context.data["usingRenderSetup"] = False
+        context.data["usingRenderSetup"] = lib.is_using_renderSetup()
+
+        # Get all renderable renderlayers (not referenced)
+        renderlayers = sorted(lib.ls_renderable_layers(),
+                              key=lambda l:  # By renderlayer displayOrder
+                              cmds.getAttr("%s.displayOrder" % l))
 
         # Create instance by renderlayers
 
-        # Get all renderlayers and check their state
-        renderlayers = [i for i in cmds.ls(type="renderLayer") if
-                        cmds.getAttr("{}.renderable".format(i)) and not
-                        cmds.referenceQuery(i, isNodeReferenced=True)]
-        # By renderlayer displayOrder
-        for layer in sorted(renderlayers,
-                            key=lambda l: cmds.getAttr("%s.displayOrder" % l)):
+        for layer in renderlayers:
 
             self.log.debug("Creating instance for renderlayer: %s" % layer)
 
@@ -94,54 +73,60 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                 self.log.warning("%s is invalid, skipping" % layer)
                 continue
 
-            if layer.endswith("defaultRenderLayer"):
-                layername = "masterLayer"
-            elif context.data["usingRenderSetup"]:
-                layername = cmds.ls(cmds.listHistory(layer, future=True),
-                                    type="renderSetupLayer")[0]
-            else:
-                layername = layer
+            layer_members = cmds.editRenderLayerMembers(layer, query=True)
+            layer_members = cmds.ls(layer_members, long=True)
+            layer_members += cmds.listRelatives(layer_members,
+                                                allDescendents=True,
+                                                fullPath=True) or []
 
-            renderer = self.get_render_attr("currentRenderer", layer)
+            layername = lib.pretty_layer_name(layer)
+
+            renderer = get_render_attr("currentRenderer", layer)
             name_preview = utils.compose_render_filename(layer)
             ext = os.path.splitext(name_preview)[-1]
 
             # Get layer specific settings, might be overrides
             data = {
-                "objectName": self.instance_node,
+                "objectName": original,
                 "renderlayer": layer,
-                "startFrame": self.get_render_attr("startFrame", layer),
-                "endFrame": self.get_render_attr("endFrame", layer),
-                "byFrameStep": self.get_render_attr("byFrameStep", layer),
+                "startFrame": get_render_attr("startFrame", layer),
+                "endFrame": get_render_attr("endFrame", layer),
+                "byFrameStep": get_render_attr("byFrameStep", layer),
                 "renderer": renderer,
                 "fileNamePrefix": utils.get_render_filename_prefix(layer),
                 "fileExt": ext,
                 "renderCam": lib.ls_renderable_cameras(layer),
             }
 
-            data.update(self.get_pipeline_attr(layer))
+            by_layer = (lambda a: lib.query_by_renderlayer(original, a, layer))
+            data.update({k: by_layer(k) for k in [
+                "asset",
+                "subset",
+                "renderType",
+                "deadlineEnable",
+                "deadlinePool",
+                "deadlineGroup",
+                "deadlinePriority",
+                "deadlineFramesPerTask",
+            ]})
+
+            render_type = data["renderType"]
+            data["family"] = "reveries.imgseq"
+            data["families"] = ["reveries.imgseq." + render_type]
+
+            # For dependency tracking
+            data["dependencies"] = dict()
+            data["futureDependencies"] = dict()
 
             instance = context.create_instance(layername)
             instance.data.update(data)
 
-            # For dependency tracking
-            instance.data["dependencies"] = dict()
-            instance.data["futureDependencies"] = dict()
-
-            instance.data["family"] = "reveries.imgseq"
-            instance.data["families"] = list()
-            variate = getattr(self, "process_" + instance.data["renderType"])
-            variate(instance, layer)
-
             # Push renderlayer members into instance,
             # for collecting dependencies
+            instance += list(set(layer_members))
 
-            layer_members = cmds.editRenderLayerMembers(layer, query=True)
-            members = cmds.ls(layer_members, long=True)
-            members += cmds.listRelatives(members,
-                                          allDescendents=True,
-                                          fullPath=True) or []
-            instance += list(set(members))
+            variate = getattr(self, "process_" + render_type)
+            variate(instance, layer)
 
     def process_playblast(self, instance, layer):
         """
@@ -149,8 +134,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         # Update subset name with layername
         instance.data["subset"] += "." + instance.name
 
-        # Inject shadow family
-        instance.data["families"] = ["reveries.imgseq.playblast"]
         instance.data["category"] = "Playblast"
 
         # Assign contractor
@@ -194,8 +177,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         # Update subset name with layername
         instance.data["subset"] += "." + instance.name
 
-        # Inject shadow family
-        instance.data["families"] = ["reveries.imgseq.render"]
         instance.data["category"] = "Render: " + instance.data["renderer"]
 
         # Assign contractor

@@ -38,6 +38,54 @@ FPS_MAP = {
 }
 
 
+def is_using_renderSetup():
+    """Is Maya currently using renderSetup system ?"""
+    try:
+        return cmds.mayaHasRenderSetup()
+    except AttributeError:
+        return False
+
+
+def pretty_layer_name(layer):
+    """Get GUI renderlayer name
+
+    If using renderSetup, the return node name is renderSetupLayer name.
+
+    Args:
+        layer (str): Legacy renderlayer name
+
+    Returns:
+        str: GUI renderlayer name
+
+    """
+    if layer.endswith("defaultRenderLayer"):
+        return "masterLayer"
+    else:
+        layername = cmds.ls(cmds.listHistory(layer, future=True),
+                            type="renderSetupLayer")
+        if layername:
+            # has renderSetup
+            return layername[0]
+        else:
+            return layer
+
+
+def ls_renderable_layers():
+    """List out renderable renderlayers
+
+    This will ignore referenced renderlayer, and if using renderSetup,
+    the returned node name is legacy renderlayer node name, not renderSetup
+    nodes.
+
+    Returns:
+        list: A list of renderable renderlayer node names
+
+    """
+    return [i for i in cmds.ls(type="renderLayer") if
+            cmds.getAttr("{}.renderable".format(i)) and not
+            cmds.referenceQuery(i, isNodeReferenced=True)]
+
+
 def query_by_renderlayer(node, attr, layer):
     """Query attribute without switching renderLayer when layer overridden
 
@@ -53,7 +101,7 @@ def query_by_renderlayer(node, attr, layer):
         layer (str): renderLayer name
 
     """
-    if cmds.mayaHasRenderSetup():
+    if is_using_renderSetup():
         return query_by_setuplayer(node, attr, layer)
 
     node_attr = node + "." + attr
@@ -1233,6 +1281,15 @@ def ls_startup_cameras():
 
 
 def ls_renderable_cameras(layer=None):
+    """List out renderable camera in layer
+
+    Args:
+        layer (str, optional): renderLayer name, default current layer
+
+    Returns:
+        list: A list of cameraShape name
+
+    """
     layer = layer or cmds.editRenderLayerGlobals(query=True,
                                                  currentRenderLayer=True)
     return [
