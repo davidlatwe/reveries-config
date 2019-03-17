@@ -27,16 +27,18 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
     order = pyblish.api.CollectorOrder - 0.299
     hosts = ["maya"]
-    label = "Avalon Instances (Render)"
-    families = ["reveries.imgseq"]
+    label = "Collect Renderlayers"
+    families = [
+        "reveries.imgseq.render"
+    ]
 
     @context_process
     def process(self, context):
 
         original = None
-        # Remove all dummy `imgseq` instances
+        # Remove dummy `imgseq.render` instances
         for instance in list(context):
-            if instance.data["family"] in self.families:
+            if self.families[0] in instance.data.get("families", []):
 
                 original = instance.data.get("objectName")
 
@@ -110,9 +112,8 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                 "deadlineFramesPerTask",
             ]})
 
-            render_type = data["renderType"]
             data["family"] = "reveries.imgseq"
-            data["families"] = ["reveries.imgseq." + render_type]
+            data["families"] = self.families[:]
 
             # For dependency tracking
             data["dependencies"] = dict()
@@ -121,41 +122,20 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance = context.create_instance(layername)
             instance.data.update(data)
 
+            instance.data["subset"] += "." + layername
+            instance.data["category"] = "Render: " + instance.data["renderer"]
+
             # Push renderlayer members into instance,
             # for collecting dependencies
             instance += list(set(layer_members))
 
-            variate = getattr(self, "process_" + render_type)
-            variate(instance, layer)
+            # Assign contractor
+            if instance.data["deadlineEnable"]:
+                instance.data["useContractor"] = True
+                instance.data["publishContractor"] = "deadline.maya.render"
 
-    def process_playblast(self, instance, layer):
-        """
-        """
-        # Update subset name with layername
-        instance.data["subset"] += "." + instance.name
-
-        instance.data["category"] = "Playblast"
-
-        # Assign contractor
-        if instance.data["deadlineEnable"]:
-            instance.data["useContractor"] = True
-            instance.data["publishContractor"] = "deadline.maya.script"
-
-    def process_render(self, instance, layer):
-        """
-        """
-        # Update subset name with layername
-        instance.data["subset"] += "." + instance.name
-
-        instance.data["category"] = "Render: " + instance.data["renderer"]
-
-        # Assign contractor
-        if instance.data["deadlineEnable"]:
-            instance.data["useContractor"] = True
-            instance.data["publishContractor"] = "deadline.maya.render"
-
-        self.collect_output_paths(instance)
-        set_extraction_type(instance)
+            self.collect_output_paths(instance)
+            set_extraction_type(instance)
 
     def collect_output_paths(self, instance):
         renderer = instance.data["renderer"]
