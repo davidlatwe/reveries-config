@@ -7,7 +7,7 @@ from maya import cmds
 from avalon import maya
 
 from reveries.plugins import PackageExtractor
-from reveries.maya import capsule, lib
+from reveries.maya import capsule, lib, utils
 
 
 class ExtractRig(PackageExtractor):
@@ -33,6 +33,23 @@ class ExtractRig(PackageExtractor):
                              noIntermediate=True,
                              long=True)
         clay_shader = "initialShadingGroup"
+
+        # Hash model and collect Avalon UUID
+        geo_id_and_hash = dict()
+        hasher = utils.MeshHasher()
+        for mesh in mesh_nodes:
+            # Get ID
+            transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
+            id = utils.get_id(transform)
+            hasher.set_mesh(mesh)
+            hasher.update_points()
+            hasher.update_normals()
+            hasher.update_uvmap()
+            # It must be one mesh paring to one transform.
+            geo_id_and_hash[id] = hasher.digest()
+            hasher.clear()
+
+        self.add_data({"modelProfile": geo_id_and_hash})
 
         # Perform extraction
         self.log.info("Performing extraction..")
