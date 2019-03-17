@@ -143,36 +143,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                                           fullPath=True) or []
             instance += list(set(members))
 
-    def collect_output_paths(self, instance):
-        renderer = instance.data["renderer"]
-        layer = instance.data["renderlayer"]
-
-        paths = OrderedDict()
-
-        if renderer == "vray":
-            import reveries.maya.vray.utils as utils_
-            aov_names = utils_.get_vray_element_names(layer)
-
-        elif renderer == "arnold":
-            import reveries.maya.arnold.utils as utils_
-            aov_names = utils_.get_arnold_aov_names(layer)
-
-        else:
-            aov_names = [""]
-
-        output_dir = instance.context.data["outputDir"]
-
-        for aov in aov_names:
-            output_prefix = utils.compose_render_filename(layer, aov)
-            output_path = output_dir + "/" + output_prefix
-
-            paths[aov] = output_path.replace("\\", "/")
-
-            self.log.debug("Collecting AOV output path: %s" % aov)
-            self.log.debug("                      path: %s" % paths[aov])
-
-        instance.data["outputPaths"] = paths
-
     def process_playblast(self, instance, layer):
         """
         """
@@ -235,3 +205,33 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
         self.collect_output_paths(instance)
         set_extraction_type(instance)
+
+    def collect_output_paths(self, instance):
+        renderer = instance.data["renderer"]
+        layer = instance.data["renderlayer"]
+
+        paths = OrderedDict()
+
+        if renderer == "vray":
+            import reveries.maya.vray.utils as utils_
+            aov_names = utils_.get_vray_element_names(layer)
+
+        elif renderer == "arnold":
+            import reveries.maya.arnold.utils as utils_
+            aov_names = utils_.get_arnold_aov_names(layer)
+
+        else:
+            aov_names = [""]
+
+        output_dir = instance.context.data["outputDir"]
+
+        for aov in aov_names:
+            output_prefix = utils.compose_render_filename(layer, aov)
+            output_path = output_dir + "/" + output_prefix
+
+            paths[aov] = output_path.replace("\\", "/")
+
+            self.log.debug("Collecting AOV output path: %s" % aov)
+            self.log.debug("                      path: %s" % paths[aov])
+
+        instance.data["outputPaths"] = paths
