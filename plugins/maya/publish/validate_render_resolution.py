@@ -18,7 +18,6 @@ class ValidateRenderResolution(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     families = [
         "reveries.imgseq.render",
-        "reveries.imgseq.lookdev",
     ]
 
     @classmethod

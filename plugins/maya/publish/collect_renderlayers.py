@@ -141,36 +141,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             instance.data["useContractor"] = True
             instance.data["publishContractor"] = "deadline.maya.script"
 
-    def process_lookdev(self, instance, layer):
-        """
-        """
-        self.log.debug("Renderlayer: " + layer)
-
-        lookdevs = lib.lsAttrs({"id": "pyblish.avalon.instance",
-                                "family": "reveries.look",
-                                "renderlayer": layer})
-        lookdev_name = ""
-        # There should be only one matched lookdev instance.
-        # But let's not make this assumption here.
-        for lookdev in lookdevs:
-            lookdev_name = cmds.getAttr(lookdev + ".subset")
-            self.log.debug("Look: " + lookdev_name)
-
-        # Update subset name with lookDev name
-        instance.data["subset"] += "." + lookdev_name
-
-        # Inject shadow family
-        instance.data["families"] = ["reveries.imgseq.lookdev"]
-        instance.data["category"] = "lookdev: " + instance.data["renderer"]
-
-        # Assign contractor
-        if instance.data["deadlineEnable"]:
-            instance.data["useContractor"] = True
-            instance.data["publishContractor"] = "deadline.maya.render"
-
-        self.collect_output_paths(instance)
-        set_extraction_type(instance)
-
     def process_render(self, instance, layer):
         """
         """

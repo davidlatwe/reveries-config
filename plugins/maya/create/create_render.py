@@ -35,7 +35,6 @@ class RenderCreator(avalon.maya.Creator):
 
     defaults = [
         "render",
-        "lookdev",
         "playblast",
     ]
 

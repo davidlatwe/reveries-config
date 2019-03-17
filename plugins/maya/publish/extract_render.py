@@ -16,7 +16,6 @@ class ExtractRender(DelegatablePackageExtractor):
 
     families = [
         "reveries.imgseq.render",
-        "reveries.imgseq.lookdev",
     ]
 
     representations = [
