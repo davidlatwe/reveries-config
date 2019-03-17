@@ -1,6 +1,6 @@
 import contextlib
-import maya.cmds as cmds
 import avalon.maya
+from maya import cmds, mel
 from . import lib
 
 
@@ -423,3 +423,28 @@ def keytangent_default(in_tangent_type='auto',
     finally:
         cmds.keyTangent(g=True, itt=original_itt)
         cmds.keyTangent(g=True, ott=original_ott)
+
+
+@contextlib.contextmanager
+def reset_polySelectConstraint(reset=True):
+    """Context during which the given polyConstraint settings are disabled.
+
+    The original settings are restored after the context.
+
+    """
+
+    original = cmds.polySelectConstraint(query=True, stateString=True)
+
+    try:
+        if reset:
+            # Ensure command is available in mel
+            # This can happen when running standalone
+            if not mel.eval("exists resetPolySelectConstraint"):
+                mel.eval("source polygonConstraint")
+
+            # Reset all parameters
+            mel.eval("resetPolySelectConstraint;")
+        cmds.polySelectConstraint(disable=True)
+        yield
+    finally:
+        mel.eval(original)

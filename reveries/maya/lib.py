@@ -1393,3 +1393,39 @@ def pick_cacheable(nodes):
         cacheables.update(transforms)
 
     return list(cacheables)
+
+
+def polyConstraint(components, *args, **kwargs):
+    """Return the list of *components* with the constraints applied.
+
+    A wrapper around Maya's `polySelectConstraint` to retrieve its results as
+    a list without altering selections. For a list of possible constraints
+    see `maya.cmds.polySelectConstraint` documentation.
+
+    Arguments:
+        components (list): List of components of polygon meshes
+
+    Returns:
+        list: The list of components filtered by the given constraints.
+
+    """
+    from .capsule import (  # Avoid circular import
+        no_undo,
+        maintained_selection,
+        reset_polySelectConstraint,
+    )
+
+    kwargs.pop("mode", None)
+
+    with no_undo(flush=False):
+        with maintained_selection():
+            # Apply constraint using mode=2 (current and next) so
+            # it applies to the selection made before it; because just
+            # a `maya.cmds.select()` call will not trigger the constraint.
+            with reset_polySelectConstraint():
+                cmds.select(components, r=1, noExpand=True)
+                cmds.polySelectConstraint(*args, mode=2, **kwargs)
+                result = cmds.ls(selection=True)
+                cmds.select(clear=True)
+
+    return result
