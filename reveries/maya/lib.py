@@ -168,15 +168,15 @@ def query_by_setuplayer(node, attr, layer):
         appliers = cmds.ls(cmds.listHistory(node_attr_, pruneDagObjects=True),
                            type="applyOverride")
         if appliers:
-            return cmds.getAttr(appliers[-1] + ".original")
+            return cmds.getAttr(appliers[-1] + ".original", asString=True)
         else:
-            return cmds.getAttr(node + "." + attr_)
+            return cmds.getAttr(node + "." + attr_, asString=True)
 
     current_layer = cmds.editRenderLayerGlobals(query=True,
                                                 currentRenderLayer=True)
     if layer == current_layer:
         # At current layer, simple get
-        return cmds.getAttr(node_attr)
+        return cmds.getAttr(node_attr, asString=True)
 
     if layer == "defaultRenderLayer":
         # Querying masterLayer, get original value
@@ -199,7 +199,7 @@ def query_by_setuplayer(node, attr, layer):
 
     if not enabled_overrides:
         # No Override enabled in every layer
-        return cmds.getAttr(node_attr)
+        return cmds.getAttr(node_attr, asString=True)
 
     setup_layer = cmds.listConnections(layer + ".message",
                                        type="renderSetupLayer")[0]
@@ -304,7 +304,7 @@ def query_by_setuplayer(node, attr, layer):
 
         try:
             # Absolute override
-            root = cmds.getAttr(override + ".attrValue")
+            root = cmds.getAttr(override + ".attrValue", asString=True)
             root = value_filter(root, attr_)
             if attr_ in child_attrs:
                 for i, ca in enumerate(child_attrs):
