@@ -14,7 +14,6 @@ class ValidateRenderFileNamePrefix(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     families = [
         "reveries.imgseq.render",
-        "reveries.imgseq.lookdev",
     ]
 
     @classmethod

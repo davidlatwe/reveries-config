@@ -5,13 +5,7 @@ from maya import cmds, OpenMaya
 from avalon import maya, api as avalon
 
 from .. import utils
-from .pipeline import (
-    is_editable,
-    unlock_edit,
-    reset_edit_lock,
-    lock_edit_on_open,
-    set_scene_timeline,
-)
+from .pipeline import set_scene_timeline
 from .vendor import sticker
 
 from . import PYMEL_MOCK_FLAG, utils as maya_utils
@@ -58,7 +52,6 @@ def on_init(_):
 
 
 def on_new(_):
-    reset_edit_lock()
     try:
         set_scene_timeline()
     except Exception as e:
@@ -66,16 +59,11 @@ def on_new(_):
 
 
 def on_open(_):
-    reset_edit_lock()
-    lock_edit_on_open()
     sticker.reveal()  # Show custom icon
 
 
 def on_save(_):
     avalon.logger.info("Running callback on save..")
-    if not is_editable():
-        avalon.logger.info("Unlocking nodes..")
-        unlock_edit()
 
 
 def before_save(return_code, _):

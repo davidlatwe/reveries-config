@@ -71,27 +71,6 @@ def unlock_edit():
     reset_edit_lock()
 
 
-def lock_edit_on_open():
-    """Lock nodes on scene opne
-
-    If there are active imgseq instance and other active instance, and
-    if the scene is locked, lock nodes (publishOnLock).
-
-    """
-    is_active = (lambda a: cmds.getAttr(a.split(".")[0] + ".active"))
-
-    imgseq_instances = [(cmds.getAttr(node_attr) == "reveries.imgseq" and
-                         is_active(node_attr))
-                        for node_attr in cmds.ls("*.family")]
-
-    other_instances = [(cmds.getAttr(node_attr) != "reveries.imgseq" and
-                        is_active(node_attr))
-                       for node_attr in cmds.ls("*.family")]
-
-    if is_locked() and any(imgseq_instances) and any(other_instances):
-        lock_edit()
-
-
 def env_embedded_path(path):
     """Embed environment var `$AVALON_PROJECTS` and `$AVALON_PROJECT` into path
 

@@ -38,6 +38,54 @@ FPS_MAP = {
 }
 
 
+def is_using_renderSetup():
+    """Is Maya currently using renderSetup system ?"""
+    try:
+        return cmds.mayaHasRenderSetup()
+    except AttributeError:
+        return False
+
+
+def pretty_layer_name(layer):
+    """Get GUI renderlayer name
+
+    If using renderSetup, the return node name is renderSetupLayer name.
+
+    Args:
+        layer (str): Legacy renderlayer name
+
+    Returns:
+        str: GUI renderlayer name
+
+    """
+    if layer.endswith("defaultRenderLayer"):
+        return "masterLayer"
+    else:
+        layername = cmds.ls(cmds.listHistory(layer, future=True),
+                            type="renderSetupLayer")
+        if layername:
+            # has renderSetup
+            return layername[0]
+        else:
+            return layer
+
+
+def ls_renderable_layers():
+    """List out renderable renderlayers
+
+    This will ignore referenced renderlayer, and if using renderSetup,
+    the returned node name is legacy renderlayer node name, not renderSetup
+    nodes.
+
+    Returns:
+        list: A list of renderable renderlayer node names
+
+    """
+    return [i for i in cmds.ls(type="renderLayer") if
+            cmds.getAttr("{}.renderable".format(i)) and not
+            cmds.referenceQuery(i, isNodeReferenced=True)]
+
+
 def query_by_renderlayer(node, attr, layer):
     """Query attribute without switching renderLayer when layer overridden
 
@@ -53,7 +101,7 @@ def query_by_renderlayer(node, attr, layer):
         layer (str): renderLayer name
 
     """
-    if cmds.mayaHasRenderSetup():
+    if is_using_renderSetup():
         return query_by_setuplayer(node, attr, layer)
 
     node_attr = node + "." + attr
@@ -120,15 +168,15 @@ def query_by_setuplayer(node, attr, layer):
         appliers = cmds.ls(cmds.listHistory(node_attr_, pruneDagObjects=True),
                            type="applyOverride")
         if appliers:
-            return cmds.getAttr(appliers[-1] + ".original")
+            return cmds.getAttr(appliers[-1] + ".original", asString=True)
         else:
-            return cmds.getAttr(node + "." + attr_)
+            return cmds.getAttr(node + "." + attr_, asString=True)
 
     current_layer = cmds.editRenderLayerGlobals(query=True,
                                                 currentRenderLayer=True)
     if layer == current_layer:
         # At current layer, simple get
-        return cmds.getAttr(node_attr)
+        return cmds.getAttr(node_attr, asString=True)
 
     if layer == "defaultRenderLayer":
         # Querying masterLayer, get original value
@@ -151,7 +199,7 @@ def query_by_setuplayer(node, attr, layer):
 
     if not enabled_overrides:
         # No Override enabled in every layer
-        return cmds.getAttr(node_attr)
+        return cmds.getAttr(node_attr, asString=True)
 
     setup_layer = cmds.listConnections(layer + ".message",
                                        type="renderSetupLayer")[0]
@@ -256,7 +304,7 @@ def query_by_setuplayer(node, attr, layer):
 
         try:
             # Absolute override
-            root = cmds.getAttr(override + ".attrValue")
+            root = cmds.getAttr(override + ".attrValue", asString=True)
             root = value_filter(root, attr_)
             if attr_ in child_attrs:
                 for i, ca in enumerate(child_attrs):
@@ -1233,6 +1281,15 @@ def ls_startup_cameras():
 
 
 def ls_renderable_cameras(layer=None):
+    """List out renderable camera in layer
+
+    Args:
+        layer (str, optional): renderLayer name, default current layer
+
+    Returns:
+        list: A list of cameraShape name
+
+    """
     layer = layer or cmds.editRenderLayerGlobals(query=True,
                                                  currentRenderLayer=True)
     return [

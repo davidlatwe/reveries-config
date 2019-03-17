@@ -63,14 +63,9 @@ class ValidateVersionedSurfaces(pyblish.api.InstancePlugin):
                     break
 
         # Or hidden ?
-        if "reveries.imgseq.playblast" in instance.data["families"]:
-            start = instance.context.data["startFrame"]
-            end = instance.context.data["endFrame"]
-            step = 1
-        else:
-            start = instance.data["startFrame"]
-            end = instance.data["endFrame"]
-            step = instance.data["byFrameStep"]
+        start = instance.data["startFrame"]
+        end = instance.data["endFrame"]
+        step = instance.data["byFrameStep"]
 
         not_versioned_visible = set()
         not_versioned = transforms - has_versioned

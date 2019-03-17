@@ -25,6 +25,8 @@ class ValidateVersionedCameras(pyblish.api.InstancePlugin):
         SelectInvalid,
     ]
 
+    camera_family = "reveries.camera"
+
     @classmethod
     def get_invalid(cls, instance):
         from reveries.maya import lib
@@ -43,13 +45,13 @@ class ValidateVersionedCameras(pyblish.api.InstancePlugin):
                     has_versioned.add(cam)
                     break
 
-        not_containerized = cameras - has_versioned
-        other_instances = [i for i in instance.context
-                           if (not i.data["family"] == "reveries.imgseq" and
-                               i.data.get("publish", True))]
         # Is camera being publish ?
+        not_containerized = cameras - has_versioned
+        camera_instances = [i for i in instance.context
+                            if (i.data["family"] == cls.camera_family and
+                                i.data.get("publish", True))]
         for cam in not_containerized:
-            for inst in other_instances:
+            for inst in camera_instances:
                 if cam in inst:
                     has_versioned.add(cam)
                     break

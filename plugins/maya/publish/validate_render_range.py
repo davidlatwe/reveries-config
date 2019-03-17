@@ -30,7 +30,6 @@ class ValidateRenderRange(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     families = [
         "reveries.imgseq.render",
-        "reveries.imgseq.lookdev",
     ]
     actions = [
         pyblish.api.Category("Fix It"),
