@@ -32,21 +32,18 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
             self.log.info("Collecting dependency: %s" % instance.data["name"])
 
             # Collect nodes which related to instnace's member
-            hierarchy = set(instance)
-
             try:
                 _history = cmds.listHistory(instance, leaf=False)
             except RuntimeError:
                 # Found no items to list the history for.
                 _history = []
 
-            history = set(cmds.ls(_history, long=True))
-            instance_nodes = hierarchy.union(history)
+            history = set(cmds.ls(_history, long=True)).union(set(instance))
 
             # Compute dependency from the coverage between instance and
             # container.
             for con, con_member in container_members.items():
-                if not instance_nodes.intersection(con_member):
+                if not history.intersection(con_member):
                     # Not dependent
                     continue
 
