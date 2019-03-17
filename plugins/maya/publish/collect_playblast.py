@@ -44,7 +44,7 @@ class CollectPlayblast(pyblish.api.InstancePlugin):
             "startFrame": context.data["startFrame"],
             "endFrame": context.data["endFrame"],
             "byFrameStep": 1,
-            "renderCam": cmds.ls(member, type="camera"),
+            "renderCam": cmds.ls(member, type="camera", long=True),
         }
 
         get = (lambda a: cmds.getAttr(original + "." + a, asString=True))
