@@ -24,6 +24,15 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
     hosts = ["maya"]
     label = "Avalon Instances"
 
+    allow_empty = [
+        "reveries.imgseq",
+    ]
+
+    branched = {
+        "reveries.imgseq": "renderType",
+        "reveries.xgen": "XGenType",
+    }
+
     def process(self, context):
         from maya import cmds
 
@@ -55,16 +64,22 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
             assert has_family, "\"%s\" was missing a family" % objset
 
             # verify objectSet has members to collect
+            family = cmds.getAttr(objset + ".family")
             members = cmds.sets(objset, query=True)
-            if (members is None and
-                    "reveries.imgseq" not in cmds.getAttr(objset + ".family")):
-                # family `reveries.imgseq` can be empty
+            if members is None and family not in self.allow_empty:
                 self.log.warning("Skipped empty Set: \"%s\" " % objset)
                 continue
 
             data = avalon.maya.lib.read(objset)
             data["objectName"] = objset
             data["setMembers"] = members
+
+            # Inject shadow family
+            if family in self.branched:
+                entry = self.branched[family]
+                shadow_family = family + "." + data[entry]
+                self.log.info("Injecting shadow family: %s" % shadow_family)
+                data["families"] = [shadow_family]
 
             objset_data.append(data)
 
