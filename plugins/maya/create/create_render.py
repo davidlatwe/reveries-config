@@ -61,14 +61,13 @@ class RenderCreator(avalon.maya.Creator):
             message_box_error("Invalid Subset Name", msg)
             raise RuntimeError(msg)
 
-        # Check existed
+        # Return if existed
         instance = lib.lsAttrs({"id": avalon_instance_id,
-                                "family": self.family})
+                                "family": self.family,
+                                "renderType": variant})
         if instance:
-            # Update data
-            avalon.maya.lib.imprint(instance[0], self.data, upsert=True)
-            cmds.rename(instance[0], self.data["subset"])
-            return
+            self.log.warning("Already existed.")
+            return instance[0]
 
         self.data["deadlineEnable"] = True
         self.data["deadlinePriority"] = priority
