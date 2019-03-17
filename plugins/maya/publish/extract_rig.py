@@ -29,7 +29,7 @@ class ExtractRig(PackageExtractor):
         entry_path = os.path.join(package_path, entry_file)
 
         mesh_nodes = cmds.ls(self.member,
-                             type="surfaceShape",
+                             type="mesh",
                              noIntermediate=True,
                              long=True)
         clay_shader = "initialShadingGroup"
