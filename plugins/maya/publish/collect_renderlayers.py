@@ -131,6 +131,9 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             # Original instance contain renderable camera,
             # we can safely remove it
             context.remove(original)
+            # Sort by renderlayers, masterLayer will be on top
+            L = (lambda i: i.data["subset"].split(".")[-1])
+            context.sort(key=lambda i: 0 if L(i) == "masterLayer" else L(i))
 
     def collect_output_paths(self, instance):
         renderer = instance.data["renderer"]
