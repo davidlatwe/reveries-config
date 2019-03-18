@@ -62,7 +62,9 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
             raise Exception("No model for this look has been published "
                             "before, please publish model first.")
 
-        uuid_required = instance.data["requireAvalonUUID"]
+        uuid_required = cmds.ls(instance.data["requireAvalonUUID"],
+                                type="mesh",
+                                long=True)
 
         # Hash current model and collect Avalon UUID
         geo_id_and_hash = dict()
