@@ -8,7 +8,6 @@ from avalon.maya.pipeline import (
     AVALON_CONTAINER_ID,
     AVALON_CONTAINERS,
     containerise,
-    is_locked,
 )
 from maya import cmds
 from . import lib
