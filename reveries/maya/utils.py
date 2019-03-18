@@ -542,7 +542,7 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
             for tag in ("<Layer>", "<layer>", "%l"):
                 # We need to replace renderlayer tag by ourself if we don't
                 # switch renderlayer.
-                prefix = prefix.replace(tag, layer)
+                prefix = prefix.replace(tag, lib.pretty_layer_name(layer))
             prefix = mel.eval("vrayTransformFilename("
                               "\"{0}\", \"{1}\", \"{2}\", 0, 0, 0)"
                               "".format(prefix, camera, scene_name))
