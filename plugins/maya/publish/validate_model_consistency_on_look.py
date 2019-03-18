@@ -40,6 +40,9 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
         collected_profiles = dict()
 
         asset = instance.context.data["assetDoc"]
+        assert asset["name"] == instance.data["asset"], "Not the same asset."
+        self.log.info("Asset: %s" % asset["name"])
+
         for subset in io.find({"type": "subset", "parent": asset["_id"]}):
             latest = io.find_one({"type": "version", "parent": subset["_id"]},
                                  sort=[("name", -1)])
@@ -55,6 +58,7 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
 
         if not collected_profiles:
             # Model not even published before, this is not right.
+            self.log.error("No model been found.")
             raise Exception("No model for this look has been published "
                             "before, please publish model first.")
 
