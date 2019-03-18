@@ -490,7 +490,7 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
     renderer = get_renderer_by_layer(layer)
     prefix = get_render_filename_prefix(layer) or ""
     multi_render_cams = len(lib.ls_renderable_cameras(layer)) > 1
-    has_renderlayers = bool(mel.eval("IsRenderLayersOn"))
+    has_renderlayers = lib.ls_renderable_layers() != ["defaultRenderLayer"]
     is_animated = cmds.getAttr("defaultRenderGlobals.animation")
     padding_str = ""
     scene_name = cmds.file(query=True,
