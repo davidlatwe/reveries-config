@@ -73,7 +73,6 @@ class ExtractPlayblast(DelegatablePackageExtractor):
             "startFrame": start_frame,
             "endFrame": end_frame,
             "byFrameStep": 1,
-            "renderlayer": self.data["renderlayer"],
             "edit_in": e_in,
             "edit_out": e_out,
             "handles": handles,
