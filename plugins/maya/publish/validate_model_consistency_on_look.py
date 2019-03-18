@@ -17,6 +17,8 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
         "reveries.look",
     ]
 
+    model_family = "reveries.model"
+
     def process(self, instance):
 
         if "xgen" in instance.data["subset"].lower():
@@ -55,11 +57,13 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
             raise Exception("No model for this look has been published "
                             "before, please publish model first.")
 
+        uuid_required = instance.data["requireAvalonUUID"]
+
         # Hash current model and collect Avalon UUID
         geo_id_and_hash = dict()
         hasher = utils.MeshHasher()
         warned = False
-        for transform in instance.data["requireAvalonUUID"]:
+        for transform in uuid_required:
             # It must be one mesh paring to one transform.
             mesh = cmds.listRelatives(transform,
                                       shapes=True,
@@ -92,10 +96,21 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
                 self.log.debug("Not matched: %s" % name)
 
         if not matched:
-            raise Exception("Current models UUID is not consistent with "
-                            "previous published version.\n"
-                            "Please update your loaded model, or publish "
-                            "it if you are the model author.")
+            # Is the model being published ?
+            model_instances = [i for i in instance.context
+                               if (i.data["family"] == self.model_family and
+                                   i.data.get("publish", True))]
+            for inst in model_instances:
+                if set(inst).issuperset(set(uuid_required)):
+                    self.log.info("Model is being published.")
+                    break
+                else:
+                    self.log.debug("Instance not match.")
+            else:
+                raise Exception("Current models UUID is not consistent with "
+                                "previous published version.\n"
+                                "Please update your loaded model, or publish "
+                                "it if you are the model author.")
         else:
             # Checking on mesh hashes
             changed_on = list()
