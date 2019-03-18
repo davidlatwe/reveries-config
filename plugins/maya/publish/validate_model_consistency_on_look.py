@@ -36,7 +36,7 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
 
         collected_profiles = dict()
 
-        asset = instance.data["assetDoc"]
+        asset = instance.context.data["assetDoc"]
         for subset in io.find({"type": "subset", "parent": asset["_id"]}):
             latest = io.find_one({"type": "version", "parent": subset["_id"]},
                                  sort=[("name", -1)])
