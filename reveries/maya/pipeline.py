@@ -252,11 +252,19 @@ def get_group_from_container(container):
 
     """
     interface = get_interface_from_container(container)
-    group = cmds.listConnections(interface + ".subsetGroup",
-                                 source=True,
-                                 destination=False,
-                                 plugs=False)
-    return cmds.ls(group, long=True)[0]
+
+    try:
+
+        group = cmds.listConnections(interface + ".subsetGroup",
+                                     source=True,
+                                     destination=False,
+                                     plugs=False)
+
+        return cmds.ls(group, long=True)[0]
+
+    except ValueError:
+        # The subset of family 'look' does not have subsetGroup.
+        return None
 
 
 def container_metadata(container):
