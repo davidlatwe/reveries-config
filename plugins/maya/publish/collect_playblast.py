@@ -34,7 +34,7 @@ class CollectPlayblast(pyblish.api.InstancePlugin):
                                             allDescendents=True,
                                             fullPath=True) or []
 
-        member = cmds.sets(original, query=True)
+        member = cmds.sets(original, query=True) or []
         member += cmds.listRelatives(member,
                                      allDescendents=True,
                                      fullPath=True) or []
