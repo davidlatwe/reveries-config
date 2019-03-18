@@ -4,7 +4,7 @@ import pyblish.api
 import reveries.utils
 
 from avalon.vendor import clique
-from reveries.maya import io, capsule
+from reveries.maya import io
 from reveries.plugins import DelegatablePackageExtractor, skip_stage
 
 
@@ -37,22 +37,20 @@ class ExtractPlayblast(DelegatablePackageExtractor):
         width, height = reveries.utils.get_resolution_data(project)
         e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
 
-        with capsule.renderlayer(self.data["renderlayer"]):
+        start_frame = self.context.data["startFrame"]
+        end_frame = self.context.data["endFrame"]
 
-            start_frame = self.context.data["startFrame"]
-            end_frame = self.context.data["endFrame"]
+        entry_file = self.file_name(self.ext)
+        publish_dir = self.create_package()
+        entry_path = os.path.join(publish_dir, entry_file)
 
-            entry_file = self.file_name(self.ext)
-            publish_dir = self.create_package()
-            entry_path = os.path.join(publish_dir, entry_file)
-
-            camera = self.data["renderCam"][0]
-            io.capture_seq(camera,
-                           entry_path,
-                           start_frame,
-                           end_frame,
-                           width,
-                           height)
+        camera = self.data["renderCam"][0]
+        io.capture_seq(camera,
+                       entry_path,
+                       start_frame,
+                       end_frame,
+                       width,
+                       height)
 
         # Check image sequence length to ensure that the extraction did
         # not interrupted.
@@ -75,7 +73,6 @@ class ExtractPlayblast(DelegatablePackageExtractor):
             "startFrame": start_frame,
             "endFrame": end_frame,
             "byFrameStep": 1,
-            "renderlayer": self.data["renderlayer"],
             "edit_in": e_in,
             "edit_out": e_out,
             "handles": handles,
