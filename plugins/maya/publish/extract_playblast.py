@@ -4,7 +4,7 @@ import pyblish.api
 import reveries.utils
 
 from avalon.vendor import clique
-from reveries.maya import io
+from reveries.maya import io, utils
 from reveries.plugins import DelegatablePackageExtractor, skip_stage
 
 
@@ -79,4 +79,5 @@ class ExtractPlayblast(DelegatablePackageExtractor):
             "focalLength": cmds.getAttr(camera + ".focalLength"),
             "resolution": (width, height),
             "fps": self.context.data["fps"],
+            "cameraUUID": utils.get_id(camera),
         })

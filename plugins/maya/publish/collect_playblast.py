@@ -1,7 +1,6 @@
 
 import pyblish.api
 from maya import cmds
-from reveries.plugins import context_process
 
 
 class CollectPlayblast(pyblish.api.InstancePlugin):
@@ -13,18 +12,9 @@ class CollectPlayblast(pyblish.api.InstancePlugin):
         "reveries.imgseq.playblast"
     ]
 
-    @context_process
-    def process(self, context):
+    def process(self, instance):
 
-        original = None
-        # Remove dummy `imgseq.playblast` instances
-        for instance in list(context):
-            if self.families[0] in instance.data.get("families", []):
-
-                original = instance.data.get("objectName")
-
-                context.remove(instance)
-        assert original is not None, "This is a bug."
+        context = instance.context
 
         current_layer = cmds.editRenderLayerGlobals(query=True,
                                                     currentRenderLayer=True)
@@ -34,40 +24,18 @@ class CollectPlayblast(pyblish.api.InstancePlugin):
                                             allDescendents=True,
                                             fullPath=True) or []
 
-        member = cmds.sets(original, query=True) or []
+        member = cmds.sets(instance, query=True) or []
         member += cmds.listRelatives(member,
                                      allDescendents=True,
                                      fullPath=True) or []
 
-        data = {
-            "objectName": original,
+        instance.data.update({
             "startFrame": context.data["startFrame"],
             "endFrame": context.data["endFrame"],
             "byFrameStep": 1,
             "renderCam": cmds.ls(member, type="camera", long=True),
-        }
-
-        get = (lambda a: cmds.getAttr(original + "." + a, asString=True))
-        data.update({k: get(k) for k in [
-            "asset",
-            "subset",
-            "renderType",
-            "deadlineEnable",
-            "deadlinePool",
-            "deadlineGroup",
-            "deadlinePriority",
-        ]})
-
-        data["category"] = "Playblast"
-        data["family"] = "reveries.imgseq"
-        data["families"] = self.families[:]
-
-        # For dependency tracking
-        data["dependencies"] = dict()
-        data["futureDependencies"] = dict()
-
-        instance = context.create_instance(data["subset"])
-        instance.data.update(data)
+            "category": "Playblast",
+        })
 
         # Push renderlayer members into instance,
         # for collecting dependencies

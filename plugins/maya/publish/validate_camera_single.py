@@ -9,7 +9,7 @@ class ValidateSingleCamera(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ValidatorOrder
     hosts = ["maya"]
-    label = "Single Camera"
+    label = "Export Only One Camera"
     families = [
         "reveries.camera",
     ]

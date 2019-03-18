@@ -4,7 +4,6 @@ from maya import cmds
 from collections import OrderedDict
 
 import pyblish.api
-from reveries.plugins import context_process
 from reveries.maya import lib, utils
 
 
@@ -12,13 +11,6 @@ def get_render_attr(attr, layer):
     return lib.query_by_renderlayer("defaultRenderGlobals",
                                     attr,
                                     layer)
-
-
-def set_extraction_type(instance):
-    if len(instance.data["outputPaths"]) > 1:
-        instance.data["extractType"] = "imageSequenceSet"
-    else:
-        instance.data["extractType"] = "imageSequence"
 
 
 class CollectRenderlayers(pyblish.api.InstancePlugin):
@@ -32,18 +24,18 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         "reveries.imgseq.render"
     ]
 
-    @context_process
-    def process(self, context):
+    def process(self, instance):
 
-        original = None
-        # Remove dummy `imgseq.render` instances
-        for instance in list(context):
-            if self.families[0] in instance.data.get("families", []):
+        context = instance.context
+        original = instance
 
-                original = instance.data.get("objectName")
-
-                context.remove(instance)
-        assert original is not None, "This is a bug."
+        member = cmds.sets(instance, query=True) or []
+        member += cmds.listRelatives(member,
+                                     allDescendents=True,
+                                     fullPath=True) or []
+        cameras = cmds.ls(member, type="camera", long=True)
+        if not cameras:
+            return
 
         # Get all valid renderlayers
         # This is how Maya populates the renderlayer display
@@ -65,8 +57,14 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                               cmds.getAttr("%s.displayOrder" % l))
 
         # Create instance by renderlayers
-
+        collected = False
         for layer in renderlayers:
+
+            render_cams = lib.ls_renderable_cameras(layer)
+
+            if not set(cameras).intersection(set(render_cams)):
+                continue
+            collected = True
 
             self.log.debug("Creating instance for renderlayer: %s" % layer)
 
@@ -89,7 +87,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
             # Get layer specific settings, might be overrides
             data = {
-                "objectName": original,
                 "renderlayer": layer,
                 "startFrame": get_render_attr("startFrame", layer),
                 "endFrame": get_render_attr("endFrame", layer),
@@ -97,33 +94,21 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                 "renderer": renderer,
                 "fileNamePrefix": utils.get_render_filename_prefix(layer),
                 "fileExt": ext,
-                "renderCam": lib.ls_renderable_cameras(layer),
+                "renderCam": cameras,
             }
 
-            by_layer = (lambda a: lib.query_by_renderlayer(original, a, layer))
-            data.update({k: by_layer(k) for k in [
-                "asset",
-                "subset",
-                "renderType",
-                "deadlineEnable",
-                "deadlinePool",
-                "deadlineGroup",
-                "deadlinePriority",
-                "deadlineFramesPerTask",
-            ]})
+            data.update(original.data)
 
-            data["family"] = "reveries.imgseq"
             data["families"] = self.families[:]
-
-            # For dependency tracking
             data["dependencies"] = dict()
             data["futureDependencies"] = dict()
 
-            instance = context.create_instance(layername)
-            instance.data.update(data)
+            data["subset"] += "." + layername
+            data["category"] = "[{renderer}] {layer}".format(
+                renderer=instance.data["renderer"], layer=layername)
 
-            instance.data["subset"] += "." + layername
-            instance.data["category"] = "Render: " + instance.data["renderer"]
+            instance = context.create_instance(data["subset"])
+            instance.data.update(data)
 
             # Push renderlayer members into instance,
             # for collecting dependencies
@@ -135,7 +120,17 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                 instance.data["publishContractor"] = "deadline.maya.render"
 
             self.collect_output_paths(instance)
-            set_extraction_type(instance)
+
+            # Set extract type (representation type)
+            if len(instance.data["outputPaths"]) > 1:
+                instance.data["extractType"] = "imageSequenceSet"
+            else:
+                instance.data["extractType"] = "imageSequence"
+
+        if collected:
+            # Original instance contain renderable camera,
+            # we can safely remove it
+            context.remove(original)
 
     def collect_output_paths(self, instance):
         renderer = instance.data["renderer"]
@@ -156,8 +151,10 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
         output_dir = instance.context.data["outputDir"]
 
+        cam = instance.data["renderCam"][0]
+
         for aov in aov_names:
-            output_prefix = utils.compose_render_filename(layer, aov)
+            output_prefix = utils.compose_render_filename(layer, aov, cam)
             output_path = output_dir + "/" + output_prefix
 
             paths[aov] = output_path.replace("\\", "/")
