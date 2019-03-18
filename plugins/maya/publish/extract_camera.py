@@ -5,7 +5,7 @@ import contextlib
 import pyblish.api
 import avalon
 
-from reveries.maya import io, lib, capsule
+from reveries.maya import io, lib, capsule, utils
 from reveries.plugins import PackageExtractor
 
 from maya import cmds
@@ -33,6 +33,8 @@ class ExtractCamera(PackageExtractor):
         self.start = context_data.get("startFrame")
         self.end = context_data.get("endFrame")
         camera = cmds.ls(self.member, type="camera")[0]
+
+        self.camera_uuid = utils.get_id(camera)
 
         with contextlib.nested(
             capsule.no_refresh(),
@@ -74,6 +76,7 @@ class ExtractCamera(PackageExtractor):
 
         self.add_data({
             "entryFileName": entry_file,
+            "cameraUUID": self.camera_uuid,
         })
 
     def extract_Alembic(self):
@@ -87,6 +90,7 @@ class ExtractCamera(PackageExtractor):
 
         self.add_data({
             "entryFileName": entry_file,
+            "cameraUUID": self.camera_uuid,
         })
 
     def extract_FBX(self):
@@ -101,4 +105,5 @@ class ExtractCamera(PackageExtractor):
 
         self.add_data({
             "entryFileName": entry_file,
+            "cameraUUID": self.camera_uuid,
         })
