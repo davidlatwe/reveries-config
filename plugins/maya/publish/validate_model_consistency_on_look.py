@@ -18,6 +18,7 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
     ]
 
     model_family = "reveries.model"
+    rig_family = "reveries.rig"
 
     def process(self, instance):
 
@@ -28,12 +29,12 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
         elif "rig" in instance.data["subset"].lower():
             # rig's look
             self.log.info("Checking on rig.")
-            family = "reveries.rig"
+            FAMILY = self.rig_family
             repr_name = "mayaBinary"
         else:
             # model's look
             self.log.info("Checking on model.")
-            family = "reveries.model"
+            FAMILY = self.model_family
             repr_name = "mayaBinary"
 
         collected_profiles = dict()
@@ -42,7 +43,7 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
         for subset in io.find({"type": "subset", "parent": asset["_id"]}):
             latest = io.find_one({"type": "version", "parent": subset["_id"]},
                                  sort=[("name", -1)])
-            if family not in latest["data"]["families"]:
+            if FAMILY not in latest["data"]["families"]:
                 continue
 
             # Get representation
