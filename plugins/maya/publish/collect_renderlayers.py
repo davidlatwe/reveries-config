@@ -29,7 +29,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         context = instance.context
         original = instance
 
-        member = cmds.sets(instance, query=True) or []
+        member = instance[:]
         member += cmds.listRelatives(member,
                                      allDescendents=True,
                                      fullPath=True) or []
@@ -105,7 +105,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
             data["subset"] += "." + layername
             data["category"] = "[{renderer}] {layer}".format(
-                renderer=instance.data["renderer"], layer=layername)
+                renderer=data["renderer"], layer=layername)
 
             instance = context.create_instance(data["subset"])
             instance.data.update(data)
@@ -131,6 +131,9 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             # Original instance contain renderable camera,
             # we can safely remove it
             context.remove(original)
+            # Sort by renderlayers, masterLayer will be on top
+            L = (lambda i: i.data["subset"].split(".")[-1])
+            context.sort(key=lambda i: 0 if L(i) == "masterLayer" else L(i))
 
     def collect_output_paths(self, instance):
         renderer = instance.data["renderer"]
