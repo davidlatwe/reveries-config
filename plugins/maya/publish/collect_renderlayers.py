@@ -29,7 +29,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         context = instance.context
         original = instance
 
-        member = cmds.sets(instance, query=True) or []
+        member = instance[:]
         member += cmds.listRelatives(member,
                                      allDescendents=True,
                                      fullPath=True) or []
@@ -105,7 +105,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
             data["subset"] += "." + layername
             data["category"] = "[{renderer}] {layer}".format(
-                renderer=instance.data["renderer"], layer=layername)
+                renderer=data["renderer"], layer=layername)
 
             instance = context.create_instance(data["subset"])
             instance.data.update(data)
