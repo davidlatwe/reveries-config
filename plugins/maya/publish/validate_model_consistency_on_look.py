@@ -85,6 +85,7 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
             geo_id_and_hash[id] = hasher.digest()
             hasher.clear()
 
+        # Find matched model/rig subsets
         matched = list()
         for name, profile in collected_profiles.items():
             current_ids = set(geo_id_and_hash.keys())
@@ -102,35 +103,41 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
             else:
                 self.log.debug("Not matched: %s" % name)
 
-        if not matched:
-            # Is the model being published ?
-            model_instances = [i for i in instance.context
-                               if (i.data["family"] == self.model_family and
-                                   i.data.get("publish", True))]
-            for inst in model_instances:
-                if set(inst).issuperset(set(uuid_required)):
-                    self.log.info("Model is being published.")
-                    break
-                else:
-                    self.log.debug("Instance not match.")
+        # Is current model/rig that this look applied to being published ?
+        being_published = False
+        staged_instances = [i for i in instance.context
+                            if (i.data["family"] == FAMILY and
+                                i.data.get("publish", True))]
+        for inst in staged_instances:
+            if set(inst).issuperset(set(uuid_required)):
+                self.log.info("Model/Rig is being published.")
+                being_published = True
+                break
             else:
-                raise Exception("Current models UUID is not consistent with "
-                                "previous published version.\n"
-                                "Please update your loaded model, or publish "
-                                "it if you are the model author.")
-        else:
-            # Checking on mesh hashes
-            changed_on = list()
-            for id, hash in geo_id_and_hash.items():
+                self.log.debug("Instance not match: %s" % inst.name)
+
+        # If it's not being published, check on match state
+        if not being_published:
+            if not matched:
+                    raise Exception("Current models UUID is not consistent "
+                                    "with previous published version.\n"
+                                    "Please update your loaded model/rig, or "
+                                    "publish it if you are the author.")
+            else:
+                # Checking on mesh changes, and pop warning if changed.
+                changed_on = list()
                 for match in matched:
-                    if id not in collected_profiles[match]:
-                        continue
+                    for id, hash in geo_id_and_hash.items():
+                        if id not in collected_profiles[match]:
+                            continue
 
-                    if not collected_profiles[match][id] == hash:
-                        changed_on.append(match)
+                        if not collected_profiles[match][id] == hash:
+                            changed_on.append(match)
+                            break
 
-            if changed_on:
-                self.log.warning("Some model has been modified, the look "
-                                 "may not apply correctly on these subsets: ")
-                for changed in changed_on:
-                    self.log.warning(changed)
+                if changed_on:
+                    self.log.warning("Some model has been modified, the look "
+                                     "may not apply correctly on these "
+                                     "subsets:")
+                    for changed in changed_on:
+                        self.log.warning(changed)
