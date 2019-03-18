@@ -93,6 +93,12 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
             if current_ids.issuperset(previous_ids):
                 self.log.info("Match found: %s" % name)
                 matched.append(name)
+            elif (FAMILY == self.rig_family and
+                    current_ids.issubset(previous_ids)):
+                # In current pipeline, the look for rig is only for preview,
+                # no need to be strict on this.
+                self.log.info("Partial match found: %s" % name)
+                matched.append(name)
             else:
                 self.log.debug("Not matched: %s" % name)
 
