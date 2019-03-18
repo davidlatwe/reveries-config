@@ -18,14 +18,14 @@ avalon_instance_id = "pyblish.avalon.instance"
 class RenderCreator(avalon.maya.Creator):
     """Create image sequence from rendering or playblast
 
-    Extract image sequence for each renderlayer.
+    Each imgseq objectSet should contain one camera.
 
-    No matter it's rendering or playblast, no need to select camera or
-    pick one into objectSet, just set one camera to be renderabled for
-    each renderlayer.
+    Since the camera and the image sequence has direct input-output
+    relation, the imgseq subset name should be related to camera subset
+    name.
 
-    The instance of this family can be empty, and wont have any affect
-    if it's not.
+    * Playblast should only be extracted from masterLayer.
+    * Render type subset will be suffix with renderlayer name, if used.
 
     """
 
@@ -64,6 +64,7 @@ class RenderCreator(avalon.maya.Creator):
         # Return if existed
         instance = lib.lsAttrs({"id": avalon_instance_id,
                                 "family": self.family,
+                                "subset": self.data["subset"],
                                 "renderType": variant})
         if instance:
             self.log.warning("Already existed.")
