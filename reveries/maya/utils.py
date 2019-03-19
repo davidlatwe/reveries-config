@@ -178,16 +178,16 @@ def kill_turtle():
 def _get_attr(node, attr):
     """Internal function for attribute getting
     """
-    try:
+    if lib.hasAttrExact(node, attr):
         return cmds.getAttr(node + "." + attr)
-    except ValueError:
+    else:
         return None
 
 
 def _add_attr(node, attr):
     """Internal function for attribute adding
     """
-    if not lib.hasAttr(node, attr):
+    if not lib.hasAttrExact(node, attr):
         cmds.addAttr(node, longName=attr, dataType="string")
 
 

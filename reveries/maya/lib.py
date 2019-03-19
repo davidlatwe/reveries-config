@@ -960,6 +960,9 @@ def hasAttr(node, attr):
     then `cmds.attributeQuery(attr, node=node, exists=True)`, and about 9 times
     faster then pymel's `PyNode(node).hasAttr(attr)`.
 
+    (NOTE): This method will return True when you are querying against to a
+            transform node but the attribute is in it's shape node.
+
     Arguments:
         node (str): Name of Maya node
         attr (str): Name of Maya attribute
@@ -970,6 +973,24 @@ def hasAttr(node, attr):
 
     """
     return cmds.objExists(node + "." + attr)
+
+
+def hasAttrExact(node, attr):
+    """Convenience function for determining if a node has the attribute
+
+    This function is using `cmds.attributeQuery`, it's a bit slower but able
+    to differ the arrtibute is in transform node or it's shape node.
+
+    Arguments:
+        node (str): Name of Maya node
+        attr (str): Name of Maya attribute
+
+    Example:
+        >> hasAttrExact("pCube1", "translateX")
+        True
+
+    """
+    return cmds.attributeQuery(attr, node=node, exists=True)
 
 
 def lsAttr(attr, value=None, namespace=None):
