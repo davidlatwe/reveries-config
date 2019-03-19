@@ -377,6 +377,14 @@ def is_visible(node,
 
     """
     time = cmds.currentTime(query=True) if time is None else time
+    kwargs = dict()
+    if cmds.listConnections('{0}.visibility'.format(node),
+                            source=True,
+                            destination=False,
+                            connections=False):
+        # `time` flag may return incorrect value sometimes if the attribute
+        # did not have any input connections. Reason unknow.
+        kwargs = {"time": time}
 
     # Only existing objects can be visible
     if not cmds.objExists(node):
@@ -387,20 +395,20 @@ def is_visible(node,
         return False
 
     if visibility:
-        if not cmds.getAttr('{0}.visibility'.format(node), time=time):
+        if not cmds.getAttr('{0}.visibility'.format(node), **kwargs):
             return False
 
     if intermediateObject and cmds.objectType(node, isAType='shape'):
-        if cmds.getAttr('{0}.intermediateObject'.format(node), time=time):
+        if cmds.getAttr('{0}.intermediateObject'.format(node), **kwargs):
             return False
 
     if displayLayer:
         # Display layers set overrideEnabled and overrideVisibility on members
         if cmds.attributeQuery('overrideEnabled', node=node, exists=True):
             override_enabled = cmds.getAttr('{}.overrideEnabled'.format(node),
-                                            time=time)
+                                            **kwargs)
             override_visibility = cmds.getAttr(
-                '{}.overrideVisibility'.format(node), time=time)
+                '{}.overrideVisibility'.format(node), **kwargs)
             if override_enabled and not override_visibility:
                 return False
 
@@ -413,7 +421,7 @@ def is_visible(node,
                               intermediateObject=False,
                               parentHidden=parentHidden,
                               visibility=visibility,
-                              time=time):
+                              **kwargs):
                 return False
 
     return True
