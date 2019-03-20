@@ -497,9 +497,24 @@ def capture_seq(camera,
                 display_options=None,
                 viewport_options=None):
 
-    viewport_options = viewport_options or {
-        "headsUpDisplay": False,
-    }
+    viewport_options_ = capture.ViewportOptions.copy()
+
+    try:
+        options = capture.parse_active_view()
+    except RuntimeError:
+        pass
+    else:
+        viewport_options_.update({
+            k: v for k, v in options["viewport_options"].items()
+            if k in [
+                "imagePlane",
+                "dynamics",
+            ]
+        })
+
+        display_options = display_options or options["display_options"]
+
+    viewport_options_.update({"headsUpDisplay": False})
 
     output = capture.capture(
         camera,
@@ -522,7 +537,7 @@ def capture_seq(camera,
         raw_frame_numbers=False,
         camera_options=None,
         display_options=display_options,
-        viewport_options=viewport_options,
+        viewport_options=viewport_options_,
         viewport2_options=None
     )
     return output

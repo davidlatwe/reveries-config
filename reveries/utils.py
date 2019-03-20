@@ -536,12 +536,14 @@ def get_versions_from_sourcefile(source, project):
 
 
 def overlay_clipinfo_on_image(image_path,
+                              output_path,
                               project,
                               task,
                               subset,
                               version,
                               representation_id,
                               artist,
+                              date,
                               shot_name,
                               frame_num,
                               edit_in,
@@ -558,12 +560,14 @@ def overlay_clipinfo_on_image(image_path,
 
     Args:
         image_path (str): Image file path
+        output_path (str): Output file path
         project (str): Project name
         task (str): Task name
         subset (str): Subset name
         version (int): Version number
         representation_id (str): Representation ID string
         artist (str): Artist name
+        date (str): date string
         shot_name (str): Shot asset name
         frame_num (int): Frame number of this image
         edit_in (int): In frame number of the shot
@@ -577,7 +581,6 @@ def overlay_clipinfo_on_image(image_path,
     """
     from PIL import Image, ImageDraw, ImageFont
 
-    date = datetime.ctime(datetime.now())
     width, height = resolution
 
     # Templates
@@ -713,10 +716,15 @@ Duration: {duration:0>4}
     box = (int((width - scaled_w) / 2), int((height - scaled_h) / 2))
 
     src = Image.open(image_path)
+    src.load()  # required for src.split()
+
+    background = Image.new("RGB", src.size, (255, 255, 255))
+    background.paste(src)
+    background.paste(src, mask=src.split()[3])  # 3 is the alpha channel
     # Put resized original image into new image that has clipinfo
     # overlaied
-    im.paste(src.resize((scaled_w, scaled_h),
+    im.paste(background.resize((scaled_w, scaled_h),
              resample=Image.BICUBIC),
              box=box)
     # save over to original image
-    im.save(image_path)
+    im.save(output_path)

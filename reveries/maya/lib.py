@@ -377,6 +377,14 @@ def is_visible(node,
 
     """
     time = cmds.currentTime(query=True) if time is None else time
+    kwargs = dict()
+    if cmds.listConnections('{0}.visibility'.format(node),
+                            source=True,
+                            destination=False,
+                            connections=False):
+        # `time` flag may return incorrect value sometimes if the attribute
+        # did not have any input connections. Reason unknow.
+        kwargs = {"time": time}
 
     # Only existing objects can be visible
     if not cmds.objExists(node):
@@ -387,20 +395,20 @@ def is_visible(node,
         return False
 
     if visibility:
-        if not cmds.getAttr('{0}.visibility'.format(node), time=time):
+        if not cmds.getAttr('{0}.visibility'.format(node), **kwargs):
             return False
 
     if intermediateObject and cmds.objectType(node, isAType='shape'):
-        if cmds.getAttr('{0}.intermediateObject'.format(node), time=time):
+        if cmds.getAttr('{0}.intermediateObject'.format(node), **kwargs):
             return False
 
     if displayLayer:
         # Display layers set overrideEnabled and overrideVisibility on members
         if cmds.attributeQuery('overrideEnabled', node=node, exists=True):
             override_enabled = cmds.getAttr('{}.overrideEnabled'.format(node),
-                                            time=time)
+                                            **kwargs)
             override_visibility = cmds.getAttr(
-                '{}.overrideVisibility'.format(node), time=time)
+                '{}.overrideVisibility'.format(node), **kwargs)
             if override_enabled and not override_visibility:
                 return False
 
@@ -413,7 +421,7 @@ def is_visible(node,
                               intermediateObject=False,
                               parentHidden=parentHidden,
                               visibility=visibility,
-                              time=time):
+                              **kwargs):
                 return False
 
     return True
@@ -952,6 +960,9 @@ def hasAttr(node, attr):
     then `cmds.attributeQuery(attr, node=node, exists=True)`, and about 9 times
     faster then pymel's `PyNode(node).hasAttr(attr)`.
 
+    (NOTE): This method will return True when you are querying against to a
+            transform node but the attribute is in it's shape node.
+
     Arguments:
         node (str): Name of Maya node
         attr (str): Name of Maya attribute
@@ -962,6 +973,24 @@ def hasAttr(node, attr):
 
     """
     return cmds.objExists(node + "." + attr)
+
+
+def hasAttrExact(node, attr):
+    """Convenience function for determining if a node has the attribute
+
+    This function is using `cmds.attributeQuery`, it's a bit slower but able
+    to differ the arrtibute is in transform node or it's shape node.
+
+    Arguments:
+        node (str): Name of Maya node
+        attr (str): Name of Maya attribute
+
+    Example:
+        >> hasAttrExact("pCube1", "translateX")
+        True
+
+    """
+    return cmds.attributeQuery(attr, node=node, exists=True)
 
 
 def lsAttr(attr, value=None, namespace=None):

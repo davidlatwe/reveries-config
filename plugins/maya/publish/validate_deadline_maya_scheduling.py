@@ -41,9 +41,9 @@ class ValidateDeadlineMayaScheduling(pyblish.api.InstancePlugin):
         job_type = instance.data.get("renderType", "pointcache")
         priority_limit = deadline["priorities"][job_type]
 
-        self.log.info("Renderlayer: %s" % instance.data["renderlayer"])
-
         assert priority <= priority_limit, ("Deadline priority should not be "
                                             "greater than %d."
                                             "" % priority_limit)
-        assert not pool == "none", ("Deadline pool did not set.")
+
+        if job_type != "playblast":
+            assert not pool == "none", ("Deadline pool did not set.")
