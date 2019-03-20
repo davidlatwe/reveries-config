@@ -1407,14 +1407,16 @@ def pick_cacheable(nodes):
         nodes (list): A list of node names
 
     Returns:
-        list: A list of cacheable node names
+        list: A list of cacheable transfrom node names
 
     """
-    nodes = cmds.listRelatives(nodes, allDescendents=True, fullPath=True) or []
-    shapes = cmds.ls(nodes,
-                     type="deformableShape",
-                     noIntermediate=True,
-                     long=True)
+    nodes += cmds.listRelatives(nodes,
+                                allDescendents=True,
+                                fullPath=True) or []
+    shapes = set(cmds.ls(nodes,
+                         type="deformableShape",
+                         noIntermediate=True,
+                         long=True))
     cacheables = set()
     for node in shapes:
         parent = cmds.listRelatives(node, parent=True, fullPath=True)
