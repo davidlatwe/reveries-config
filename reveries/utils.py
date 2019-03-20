@@ -8,7 +8,6 @@ import weakref
 import getpass
 import pymongo
 
-from datetime import datetime
 from distutils.dir_util import copy_tree
 
 from avalon import io, Session

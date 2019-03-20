@@ -62,15 +62,24 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
             raise Exception("No model for this look has been published "
                             "before, please publish model first.")
 
-        uuid_required = cmds.ls(instance.data["requireAvalonUUID"],
-                                type="mesh",
-                                long=True)
+        hierarchy = instance.data["requireAvalonUUID"]
+        hierarchy += cmds.listRelatives(hierarchy,
+                                        allDescendents=True,
+                                        fullPath=True) or []
+        meshes = cmds.ls(hierarchy, type="mesh", long=True)
+        uuid_required_geos = cmds.listRelatives(meshes,
+                                                parent=True,
+                                                fullPath=True)
+
+        if not uuid_required_geos:
+            raise Exception("No UUID required nodes.")
+            return
 
         # Hash current model and collect Avalon UUID
         geo_id_and_hash = dict()
         hasher = utils.MeshHasher()
         warned = False
-        for transform in uuid_required:
+        for transform in uuid_required_geos:
             # It must be one mesh paring to one transform.
             mesh = cmds.listRelatives(transform,
                                       shapes=True,
@@ -115,7 +124,7 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
                             if (i.data["family"] == FAMILY and
                                 i.data.get("publish", True))]
         for inst in staged_instances:
-            if set(inst).issuperset(set(uuid_required)):
+            if set(inst).issuperset(set(uuid_required_geos)):
                 self.log.info("Model/Rig is being published.")
                 being_published = True
                 break
