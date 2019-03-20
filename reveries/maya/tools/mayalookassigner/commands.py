@@ -10,7 +10,7 @@ from avalon.maya.pipeline import AVALON_CONTAINER_ID
 from avalon.vendor import six
 
 from ....utils import get_representation_path_
-from ....maya import lib
+from ....maya import lib, utils
 from ...pipeline import (
     AVALON_INTERFACE_ID,
     get_interface_from_container,
@@ -268,14 +268,7 @@ def remove_unused_looks():
     log.info("Finished removing unused looks. (see log for details)")
 
 
-def assign_look(namespaces, look):
-    """Assign looks via namespaces
-
-    Args:
-        namespaces (str, unicode or set): Target subsets' namespaces
-        look (dict): The container data of look
-
-    """
+def get_relationship(look):
     representation_id = io.ObjectId(look["representation"])
     representation = io.find_one({"_id": representation_id})
 
@@ -284,6 +277,19 @@ def assign_look(namespaces, look):
 
     file_name = representation["data"]["linkFname"]
     relationship = os.path.join(package_path, file_name)
+
+    return relationship
+
+
+def assign_look(namespaces, look, via_uv):
+    """Assign looks via namespaces
+
+    Args:
+        namespaces (str, unicode or set): Target subsets' namespaces
+        look (dict): The container data of look
+
+    """
+    relationship = get_relationship(look)
 
     if not os.path.isfile(relationship):
         log.warning("Look development asset "
@@ -295,31 +301,131 @@ def assign_look(namespaces, look):
     with open(relationship) as f:
         relationships = json.load(f)
 
-    namespace = look["namespace"][1:]
-    look_container = look["objectName"]
-
     # Apply shader to target subset by namespace
     if isinstance(namespaces, six.string_types):
         namespaces = [namespaces]
     target_namespaces = [ns + ":" for ns in namespaces]
 
-    lib.apply_shaders(relationships["shaderById"],
+    if via_uv:
+        _look_via_uv(look, relationships, target_namespaces)
+    else:
+        _apply_shaders(look,
+                       relationships["shaderById"],
+                       target_namespaces)
+        _apply_crease_edges(look,
+                            relationships["creaseSets"],
+                            target_namespaces)
+        _apply_smooth_sets(look,
+                           relationships.get("alSmoothSets"),
+                           target_namespaces)
+
+
+def _apply_shaders(look, relationship, target_namespaces):
+    namespace = look["namespace"][1:]
+
+    lib.apply_shaders(relationship,
                       namespace,
                       target_namespaces)
 
-    crease_sets = lib.apply_crease_edges(relationships["creaseSets"],
+
+def _apply_crease_edges(look, relationship, target_namespaces):
+    namespace = look["namespace"][1:]
+
+    crease_sets = lib.apply_crease_edges(relationship,
                                          namespace,
                                          target_namespaces)
-    cmds.sets(crease_sets, forceElement=look_container)
+    cmds.sets(crease_sets, forceElement=look["objectName"])
 
-    if relationships.get("alSmoothSets"):
+
+def _apply_smooth_sets(look, relationship, target_namespaces):
+    namespace = look["namespace"][1:]
+
+    if relationship is not None:
         try:
             from ....maya import arnold
         except RuntimeError:
             pass
         else:
             arnold.utils.apply_smooth_sets(
-                relationships["alSmoothSets"],
+                relationship,
                 namespace,
                 target_namespaces
             )
+
+
+def _look_via_uv(look, relationships, target_namespaces):
+    """Assign looks via namespaces and using UV hash as hint
+
+    In some cases, a setdress liked subset may assembled from a numbers of
+    duplicated models, and for some reason the duplicated models may be given
+    different Avalon UUIDs. Which cause the look only able to apply to one of
+    those models.
+
+    By the help of UV hash, as long as there's one set of model's Avalon UUID
+    is correct, the rest of the models can compare with thier UV hashes and
+    use that as a hint to apply look.
+
+    """
+
+    hasher = utils.MeshHasher()
+    uv_via_id = dict()
+    id_via_uv = dict()
+    for target_namespace in target_namespaces:
+        for mesh in cmds.ls(target_namespace + "*",
+                            type="mesh",  # We can only hash meshes.
+                            long=True):
+            node = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
+
+            id = utils.get_id(node)
+            if id in uv_via_id:
+                continue
+
+            hasher.clear()
+            hasher.set_mesh(node)
+            hasher.update_uvmap()
+            uv_hash = hasher.digest()["uvmap"]
+            uv_via_id[id] = uv_hash
+
+            if uv_hash not in id_via_uv:
+                id_via_uv[uv_hash] = set()
+            id_via_uv[uv_hash].add(id)
+
+    # Apply shaders
+    #
+    shader_by_id = dict()
+    for shader, ids in relationships["shaderById"].items():
+        for id_ in ids:
+            id, faces = (id_.rsplit(".", 1) + [""])[:2]
+
+            uv_hash = uv_via_id[id]
+            same_uv_ids = id_via_uv[uv_hash]
+            shader_by_id[shader] = [".".join([i, faces]) for i in same_uv_ids]
+
+    _apply_shaders(look, shader_by_id, target_namespaces)
+
+    # Apply crease edges
+    #
+    crease_by_id = dict()
+    for level, members in relationships["creaseSets"].items():
+        for member in members:
+            id, edges = member.split(".")
+
+            uv_hash = uv_via_id[id]
+            same_uv_ids = id_via_uv[uv_hash]
+            crease_by_id[level] = [".".join([i, edges]) for i in same_uv_ids]
+
+    _apply_crease_edges(look, crease_by_id, target_namespaces)
+
+    # Apply Arnold smooth sets
+    #
+    if relationships.get("alSmoothSets") is None:
+        return
+
+    smooth_by_id = dict()
+    for id, attrs in relationships["alSmoothSets"].items():
+        uv_hash = uv_via_id[id]
+        same_uv_ids = id_via_uv[uv_hash]
+        for i in same_uv_ids:
+            smooth_by_id[i] = attrs
+
+    _apply_smooth_sets(look, smooth_by_id, target_namespaces)

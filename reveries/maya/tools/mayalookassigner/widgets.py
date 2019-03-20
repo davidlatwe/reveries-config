@@ -161,6 +161,7 @@ class AssetOutliner(QtWidgets.QWidget):
 class LookOutliner(QtWidgets.QWidget):
 
     menu_apply_action = QtCore.Signal()
+    menu_apply_via_uv_action = QtCore.Signal()
 
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
@@ -230,5 +231,12 @@ class LookOutliner(QtWidgets.QWidget):
         apply_action.triggered.connect(self.menu_apply_action)
 
         menu.addAction(apply_action)
+
+        # Assign via UUID-UV relation
+        apply_via_uv_action = QtWidgets.QAction(menu,
+                                                text="Assign looks via UV..")
+        apply_via_uv_action.triggered.connect(self.menu_apply_via_uv_action)
+
+        menu.addAction(apply_via_uv_action)
 
         menu.exec_(globalpos)
