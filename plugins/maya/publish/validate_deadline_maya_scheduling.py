@@ -44,6 +44,4 @@ class ValidateDeadlineMayaScheduling(pyblish.api.InstancePlugin):
         assert priority <= priority_limit, ("Deadline priority should not be "
                                             "greater than %d."
                                             "" % priority_limit)
-
-        if job_type != "playblast":
-            assert not pool == "none", ("Deadline pool did not set.")
+        assert not pool == "none", ("Deadline pool did not set.")
