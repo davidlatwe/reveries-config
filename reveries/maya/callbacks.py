@@ -11,6 +11,28 @@ from .vendor import sticker
 from . import PYMEL_MOCK_FLAG, utils as maya_utils
 
 
+def _outliner_hide_set_member():
+    """Set outliner default display options
+
+    Turn off `showSetMembers` for avoiding long wait on a big objectSet that
+    being accidentally selected.
+
+    """
+    options = {
+        "showShapes": False,
+        "showSetMembers": False,
+        "showReferenceMembers": False,
+        "showDagOnly": True,
+    }
+    avalon.logger.info("Disabling outliner set member display..")
+    for outliner_pan in cmds.getPanel(type="outlinerPanel"):
+        outliner = cmds.outlinerPanel(outliner_pan,
+                                      query=True,
+                                      outlinerEditor=True)
+        # Set options
+        cmds.outlinerEditor(outliner, edit=True, **options)
+
+
 def on_task_changed(_, *args):
     avalon.logger.info("Changing Task module..")
 
@@ -50,6 +72,9 @@ def on_init(_):
         before_import_reference
     )
 
+    cmds.evalDeferred("from reveries.maya import callbacks;"
+                      "callbacks._outliner_hide_set_member()")
+
 
 def on_new(_):
     try:
@@ -57,9 +82,15 @@ def on_new(_):
     except Exception as e:
         cmds.warning(e.message)
 
+    cmds.evalDeferred("from reveries.maya import callbacks;"
+                      "callbacks._outliner_hide_set_member()")
+
 
 def on_open(_):
     sticker.reveal()  # Show custom icon
+
+    cmds.evalDeferred("from reveries.maya import callbacks;"
+                      "callbacks._outliner_hide_set_member()")
 
 
 def on_save(_):
