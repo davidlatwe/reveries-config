@@ -116,6 +116,9 @@ class App(QtWidgets.QWidget):
             lambda: self.echo("Loaded assets.."))
 
         self.look_outliner.menu_apply_action.connect(self.on_process_selected)
+        self.look_outliner.menu_apply_via_uv_action.connect(
+            lambda: self.on_process_selected(uv=True)
+        )
         self.remove_unused.clicked.connect(commands.remove_unused_looks)
 
         # Maya renderlayer switch callback
@@ -167,7 +170,7 @@ class App(QtWidgets.QWidget):
         self.look_outliner.clear()
         self.look_outliner.add_items(items)
 
-    def on_process_selected(self):
+    def on_process_selected(self, uv=False):
         """Process all selected looks for the selected assets"""
 
         assets = self.asset_outliner.get_selected_items()
@@ -202,7 +205,8 @@ class App(QtWidgets.QWidget):
             # Assign look
             namespaces = item.get("namespace", item["namespaces"])
             commands.assign_look(namespaces=namespaces,
-                                 look=assign_look)
+                                 look=assign_look,
+                                 via_uv=uv)
 
         end = time.time()
 
