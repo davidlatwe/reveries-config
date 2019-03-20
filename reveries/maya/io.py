@@ -514,6 +514,7 @@ def capture_seq(camera,
 
         display_options = display_options or options["display_options"]
 
+    viewport_options_.update(viewport_options or {})
     viewport_options_.update({"headsUpDisplay": False})
 
     output = capture.capture(
