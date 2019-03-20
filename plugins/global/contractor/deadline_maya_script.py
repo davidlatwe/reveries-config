@@ -79,8 +79,6 @@ class ContractorDeadlineMayaScript(BaseContractor):
         for settings, group in instance_group.items():
             dl_pool, dl_group, dl_priority = settings
 
-            self.log.info("Grouping: %s" % settings)
-
             if len(group) == 1:
                 instance = group[0]
                 job_name = "{subset} v{version:0>3}".format(
