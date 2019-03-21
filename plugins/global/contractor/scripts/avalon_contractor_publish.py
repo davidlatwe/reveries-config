@@ -44,9 +44,11 @@ def publish():
     log.info("Collecting instances ...")
     pyblish.util.collect(context)
 
+    """
     log.info("Validating ...")
     pyblish.util.validate(context)
     check_success(context)
+    """
 
     log.info("Extracting ...")
     pyblish.util.extract(context)
