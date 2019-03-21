@@ -380,7 +380,7 @@ class HierarchicalLoader(MayaBaseLoader):
             "type": "representation"
         })
         package_path = avalon.api.get_representation_path(current_repr)
-        entry_file = self.file_path(current_repr)
+        entry_file = os.path.basename(self.file_path(current_repr))
         entry_path = os.path.join(package_path, entry_file)
 
         return _parse_members_data(entry_path)
