@@ -46,6 +46,7 @@ class BaseContractor(object):
             # have accesss to these paths, such as if slaves are
             # running Linux and the submitter is on Windows.
             "PYTHONPATH": os.getenv("PYTHONPATH", ""),
+            "AVALON_TOOLS": os.getenv("AVALON_TOOLS", ""),
         }, **avalon.api.Session)
 
         # Save Context data from source
