@@ -31,7 +31,6 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
     label = "Transform Freezed"
     families = [
         "reveries.model",
-        "reveries.rig",
     ]
 
     actions = [
@@ -62,18 +61,7 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
                      0.0, 0.0, 0.0, 1.0]
         _tolerance = 1e-30
 
-        if instance.data["family"] == "reveries.model":
-            transforms = cmds.ls(instance, type="transform", long=True)
-        else:
-            goemetries = cmds.ls(instance,
-                                 type=("mesh", "nurbsCurve"),
-                                 long=True)
-            transforms = cmds.listRelatives(goemetries,
-                                            parent=True,
-                                            fullPath=True,
-                                            type="transform")
-
-        for transform in transforms:
+        for transform in cmds.ls(instance, type="transform", long=True):
 
             if cmds.listConnections(transform,
                                     source=True,
