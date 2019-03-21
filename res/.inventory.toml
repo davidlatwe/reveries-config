@@ -24,7 +24,6 @@ pointcache = [
 ]  # This also determined the preferable cache format by order.
 
 [deadline]
-publishGroup = "avalon_slaves"
 publishUser = "avalon"
 
 [deadline.maya]

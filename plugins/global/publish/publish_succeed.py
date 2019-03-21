@@ -16,6 +16,8 @@ class PublishSucceed(pyblish.api.ContextPlugin):
             "Atomicity not held, aborting.")
 
         for instance in context:
+            if not instance.data.get("publish", True):
+                continue
 
             version_dir = instance.data["versionDir"]
             metadata_path = os.path.join(version_dir, self.META_FILE)

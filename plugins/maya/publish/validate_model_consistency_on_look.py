@@ -28,13 +28,18 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
 
         elif "rig" in instance.data["subset"].lower():
             # rig's look
-            self.log.info("Checking on rig.")
-            FAMILY = self.rig_family
+            self.log.info("Checking on rig and model.")
+            FAMILIES = [
+                self.model_family,
+                self.rig_family,
+            ]
             repr_name = "mayaBinary"
         else:
             # model's look
             self.log.info("Checking on model.")
-            FAMILY = self.model_family
+            FAMILIES = [
+                self.model_family,
+            ]
             repr_name = "mayaBinary"
 
         collected_profiles = dict()
@@ -46,7 +51,9 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
         for subset in io.find({"type": "subset", "parent": asset["_id"]}):
             latest = io.find_one({"type": "version", "parent": subset["_id"]},
                                  sort=[("name", -1)])
-            if FAMILY not in latest["data"]["families"]:
+
+            if not any(family in latest["data"]["families"]
+                       for family in FAMILIES):
                 continue
 
             # Get representation
@@ -109,19 +116,21 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
             if current_ids.issuperset(previous_ids):
                 self.log.info("Match found: %s" % name)
                 matched.append(name)
-            elif (FAMILY == self.rig_family and
+
+            elif (self.rig_family in FAMILIES and
                     current_ids.issubset(previous_ids)):
                 # In current pipeline, the look for rig is only for preview,
                 # no need to be strict on this.
                 self.log.info("Partial match found: %s" % name)
                 matched.append(name)
+
             else:
                 self.log.debug("Not matched: %s" % name)
 
         # Is current model/rig that this look applied to being published ?
         being_published = False
         staged_instances = [i for i in instance.context
-                            if (i.data["family"] == FAMILY and
+                            if (i.data["family"] in FAMILIES and
                                 i.data.get("publish", True))]
         for inst in staged_instances:
             if set(inst).issuperset(set(uuid_required_geos)):

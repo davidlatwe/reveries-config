@@ -8,9 +8,13 @@ will be local path which highly possible not be able to access by Deadline
 slaves.
 
 """
+import os
+import subprocess
 import logging
 import pyblish.api
 import pyblish.util
+import avalon.api
+import avalon.io
 
 from reveries.utils import publish_results_formatting
 from reveries.plugins import parse_contract_environment
@@ -40,9 +44,11 @@ def publish():
     log.info("Collecting instances ...")
     pyblish.util.collect(context)
 
+    """
     log.info("Validating ...")
     pyblish.util.validate(context)
     check_success(context)
+    """
 
     log.info("Extracting ...")
     pyblish.util.extract(context)
@@ -82,5 +88,14 @@ if __name__ == "__main__":
             break
     else:
         error_raiser = log.error
+
+    if not avalon.io._is_installed:
+        log.info("Fixing database connections..")
+        os.environ["PATH"] += ";" + os.getenv("AVALON_TOOLS", "")
+        subprocess.call("db_connection_fixer", shell=True)
+        # Reinstall
+        log.info("Reinstalling..")
+        host = getattr(avalon, "maya")
+        avalon.api.install(host)
 
     publish()

@@ -46,9 +46,14 @@ class BaseContractor(object):
             # have accesss to these paths, such as if slaves are
             # running Linux and the submitter is on Windows.
             "PYTHONPATH": os.getenv("PYTHONPATH", ""),
+            "AVALON_TOOLS": os.getenv("AVALON_TOOLS", ""),
         }, **avalon.api.Session)
 
         # Save Context data from source
+        #
+        # (TODO): Deadline will convert the variable name to uppercase,
+        #         despite it show the original cases in Job Properties GUI..
+        #         Maybe we should save context data into a json file.
         #
         context_data_entry = [
             "comment",
@@ -115,7 +120,8 @@ def parse_contract_environment(context):
             # Read Context data
             #
             entry = key[len(AVALON_CONTEXT_):]
-            context.data[entry] = os_environ[key]
+            # (NOTE): Deadline will convert the variable name to uppercase..
+            context.data[entry.lower()] = os_environ[key]
 
         # Instance
         if key.startswith(AVALON_DELEGATED_SUBSET_):

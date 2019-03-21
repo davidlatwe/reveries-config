@@ -108,10 +108,13 @@ class ExtractVersionDirectory(pyblish.api.InstancePlugin):
 
             for item in os.listdir(version_dir):
                 item_path = os.path.join(version_dir, item)
-                if os.path.isdir(item_path):
-                    shutil.rmtree(item_path)
-                elif os.path.isfile(item_path):
-                    os.remove(item_path)
+                try:
+                    if os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                    elif os.path.isfile(item_path):
+                        os.remove(item_path)
+                except Exception as e:
+                    self.log.debug(e)
 
         def get_next_version():
             """Get current subset instance's next version number"""

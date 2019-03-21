@@ -51,6 +51,16 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         self.log.info("Integrating representations to shareable space ...")
         self.integrate()
 
+        existed = io.find_one({"parent": subset["_id"],
+                               "name": version["name"]})
+        if existed is not None:
+            self.log.info("Version existed, representation file has been "
+                          "overwritten.")
+            filter_ = {"_id": existed["_id"]}
+            update = {"$set": {"data.time": instance.context.data["time"]}}
+            io.update_many(filter_, update)
+            return
+
         # Write version and representations to database
         version_id = self.write_database(instance, version, representations)
 

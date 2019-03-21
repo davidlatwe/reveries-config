@@ -1,4 +1,5 @@
 
+import contextlib
 import avalon.api
 from reveries.maya.plugins import HierarchicalLoader
 
@@ -18,6 +19,15 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         "setPackage"
     ]
 
+    @contextlib.contextmanager
+    def keep_scale_pivot(self, node):
+        import maya.cmds as cmds
+        scale_pivot = cmds.xform(node, query=True, scalePivot=True)
+        try:
+            yield
+        finally:
+            cmds.xform(node, scalePivot=scale_pivot)
+
     def apply_variation(self, data, container):
         """
         """
@@ -27,16 +37,17 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
 
         # Apply matrix to root node (if any matrix edits)
         matrix = data["matrix"]
-        cmds.xform(assembly, objectSpace=True, matrix=matrix)
+        with self.keep_scale_pivot(assembly):
+            cmds.xform(assembly, objectSpace=True, matrix=matrix)
 
         # Apply matrix to components
         for transform, sub_matrix in self.parse_sub_matrix(data):
             if not transform:
                 continue
-
-            cmds.xform(transform,
-                       objectSpace=True,
-                       matrix=sub_matrix)
+            with self.keep_scale_pivot(transform):
+                cmds.xform(transform,
+                           objectSpace=True,
+                           matrix=sub_matrix)
 
     def update_variation(self, data_new, data_old, container, force=False):
         """
@@ -59,7 +70,8 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                              data_new["namespace"])
         else:
             new_matrix = data_new["matrix"]
-            cmds.xform(assembly, objectSpace=True, matrix=new_matrix)
+            with self.keep_scale_pivot(assembly):
+                cmds.xform(assembly, objectSpace=True, matrix=new_matrix)
 
         # Update matrix to components
         old_data_map = {t: m for t, m in self.parse_sub_matrix(data_old)}
@@ -85,7 +97,8 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 self.log.warning("Sub-Matrix override preserved on %s",
                                  transform)
             else:
-                cmds.xform(transform, objectSpace=True, matrix=sub_matrix)
+                with self.keep_scale_pivot(transform):
+                    cmds.xform(transform, objectSpace=True, matrix=sub_matrix)
 
     def transform_by_id(self, nodes):
         """

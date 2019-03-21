@@ -37,8 +37,6 @@ class ContractorDeadlineMayaScript(BaseContractor):
 
         asset = context.data["assetDoc"]["name"]
 
-        project = context.data["projectDoc"]
-
         batch_name = "avalon.script: [{asset}] {filename}"
         batch_name = batch_name.format(asset=asset, filename=fname)
 
@@ -62,11 +60,10 @@ class ContractorDeadlineMayaScript(BaseContractor):
 
         # Grouping instances
 
-        dl_group = project["data"]["deadline"]["publishGroup"]
-
         instance_group = dict()
         for instance in instances:
             dl_pool = instance.data["deadlinePool"]
+            dl_group = instance.data["deadlineGroup"]
             dl_priority = instance.data["deadlinePriority"]
 
             group_key = (dl_pool, dl_group, dl_priority)

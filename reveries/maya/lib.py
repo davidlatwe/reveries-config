@@ -864,7 +864,7 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
     target_namespaces = target_namespaces or [None]
 
     for shader_, ids in relationships.items():
-        print("Looking for '%s'.." % shader_)
+
         shader = next(iter(cmds.ls(shader_)), None)
         if shader is None:
             log.warning("{!r} Not found. Skipping..".format(shader_))
@@ -885,7 +885,6 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
                 if not surfaces:
                     continue
 
-                print("Assigning '%s' to '%s'" % (shader, ", ".join(surfaces)))
                 cmds.sets(surfaces, forceElement=shader)
 
 

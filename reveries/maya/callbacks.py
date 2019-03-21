@@ -25,7 +25,7 @@ def _outliner_hide_set_member():
         "showDagOnly": True,
     }
     avalon.logger.info("Disabling outliner set member display..")
-    for outliner_pan in cmds.getPanel(type="outlinerPanel"):
+    for outliner_pan in cmds.getPanel(type="outlinerPanel") or []:
         outliner = cmds.outlinerPanel(outliner_pan,
                                       query=True,
                                       outlinerEditor=True)
