@@ -70,24 +70,18 @@ class RenderCreator(avalon.maya.Creator):
             self.log.warning("Already existed.")
             return instance[0]
 
-        self.data["deadlineEnable"] = True
+        self.data["deadlineEnable"] = False
         self.data["deadlinePriority"] = priority
         self.data["deadlinePool"] = ["none"] + deadline["pool"]
         self.data["deadlineGroup"] = deadline["group"]
         self.data["deadlineFramesPerTask"] = 1
-
-        if variant == "playblast":
-            # playblast is deadline script job
-            self.data["deadlineEnable"] = False
-            self.data["deadlineGroup"] = ["none"]
-
         self.data["renderType"] = variant
         self.data["publishOrder"] = 999
 
         instance = super(RenderCreator, self).process()
 
         # (TODO) Currently, force using Deadline to render
-        if not variant == "playblast":
-            cmds.setAttr(instance + ".deadlineEnable", lock=True)
+        if variant == "render":
+            cmds.setAttr(instance + ".deadlineEnable", True, lock=True)
 
         return put_instance_icon(instance)
