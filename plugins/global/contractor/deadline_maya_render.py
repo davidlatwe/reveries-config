@@ -107,6 +107,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
                     "UseLegacyRenderLayers": not use_rendersetup,
                     "RenderLayer": instance.data["renderlayer"],
                     "Renderer": instance.data["renderer"],
+                    "Camera": instance.data["renderCam"][0],
                 },
                 # Mandatory for Deadline, may be empty
                 "AuxFiles": [],
