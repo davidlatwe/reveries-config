@@ -1,5 +1,6 @@
 
 import pyblish.api
+from reveries.maya import lib
 
 
 class ValidateRenderFileNamePrefix(pyblish.api.InstancePlugin):
@@ -43,6 +44,17 @@ class ValidateRenderFileNamePrefix(pyblish.api.InstancePlugin):
                 has_invalid = True
                 cls.log.error("File name prefix must contain renderlayer "
                               "tag since the scene has renderlayers.")
+
+        layer = instance.data["renderlayer"]
+        if len(lib.ls_renderable_cameras(layer)) > 1:
+            tags = (["<Camera>", "<camera>", "%c"] if is_vray else
+                    ["<Camera>", "%c"])
+
+            if not any(t in prefix for t in tags):
+                has_invalid = True
+                cls.log.error("File name prefix must contain camera "
+                              "tag since the layer has multiple renderable "
+                              "cameras.")
 
         return has_invalid
 
