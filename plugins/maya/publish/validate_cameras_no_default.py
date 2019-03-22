@@ -27,7 +27,7 @@ class ValidateCamerasNoDefault(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
         cameras = cmds.ls(instance[:], type="camera", long=True)
-        cameras += instance.data.get("renderCam", [])
+        cameras = instance.data.get("renderCam", cameras)
         defaults = [cam for cam in cameras if
                     cmds.camera(cam, query=True, startupCamera=True)]
 
