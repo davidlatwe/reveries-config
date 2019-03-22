@@ -8,6 +8,7 @@ from maya import cmds
 
 from . import capsule, xgen
 from .vendor import capture
+from .. import utils
 
 
 log = logging.getLogger(__name__)
@@ -493,29 +494,23 @@ def capture_seq(camera,
                 width=None,
                 height=None,
                 isolate=None,
-                frame_padding=4,
-                display_options=None,
-                viewport_options=None):
+                frame_padding=4):
 
-    viewport_options_ = capture.ViewportOptions.copy()
-
-    try:
-        options = capture.parse_active_view()
-    except RuntimeError:
-        pass
-    else:
-        viewport_options_.update({
-            k: v for k, v in options["viewport_options"].items()
-            if k in [
-                "imagePlane",
-                "dynamics",
-            ]
-        })
-
-        display_options = display_options or options["display_options"]
-
-    viewport_options_.update(viewport_options or {})
-    viewport_options_.update({"headsUpDisplay": False})
+    options = {
+        "display_options": capture.DisplayOptions.copy(),
+        "camera_options": capture.CameraOptions.copy(),
+        "viewport_options": capture.ViewportOptions.copy(),
+        "viewport2_options": capture.Viewport2Options.copy(),
+    }
+    options = utils.deep_update(options,
+                                {
+                                    "viewport_options": {
+                                        "displayLights": "all",
+                                        "headsUpDisplay": False,
+                                        # object display
+                                        "dynamics": True,
+                                    }
+                                })
 
     output = capture.capture(
         camera,
@@ -536,10 +531,7 @@ def capture_seq(camera,
         overwrite=True,
         frame_padding=frame_padding,
         raw_frame_numbers=False,
-        camera_options=None,
-        display_options=display_options,
-        viewport_options=viewport_options_,
-        viewport2_options=None
+        **options
     )
     return output
 
