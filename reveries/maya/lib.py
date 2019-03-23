@@ -892,6 +892,8 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
                 # Convert IDs to surface + id, e.g. "nameOfNode.f[1:100]"
                 surfaces += list(".".join([m, faces]) for m in
                                  surface_cache[surface][target_namespace])
+        if not surfaces:
+            continue
 
         cmds.sets(surfaces, forceElement=shader)
 
