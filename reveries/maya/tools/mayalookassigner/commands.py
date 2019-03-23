@@ -202,7 +202,7 @@ def create_items_from_nodes(nodes):
             continue
 
         # Collect available look subsets for this asset
-        looks = list_loaded_looks(asset["_id"])
+        looks = list_looks(asset["_id"])
 
         # Collect namespaces the asset is found in
         namespaces = set()
@@ -218,25 +218,48 @@ def create_items_from_nodes(nodes):
     return asset_view_items
 
 
-def list_loaded_looks(asset_id):
-    """Return all look subsets in scene for the given asset
+def list_looks(asset_id):
+    """Return all look subsets from database for the given asset
     """
-    look_subsets = list()
-
-    for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID}):
-        if (cmds.getAttr(container + ".loader") == "LookLoader" and
-                _asset_id(container) == str(asset_id)):
-
-            look = parse_container(container)
-
-            version_id = io.ObjectId(look["versionId"])
-            version = io.find_one({"_id": version_id},
-                                  projection={"name": True})
-            look["version"] = version["name"]
-
-            look_subsets.append(look)
+    look_subsets = list(io.find({"parent": io.ObjectId(asset_id),
+                                 "type": "subset",
+                                 "name": {"$regex": "look*"}}))
+    for look in look_subsets:
+        # Get the latest version of this look subset
+        version = io.find_one({"type": "version",
+                               "parent": look["_id"]},
+                              sort=[("name", -1)])
+        look["version"] = version["name"]
+        look["versionId"] = version["_id"]
 
     return look_subsets
+
+
+def load_look(look):
+    """Load look subset if it's not been loaded
+    """
+    representation = io.find_one({"type": "representation",
+                                  "parent": look["versionId"],
+                                  "name": "LookDev"})
+    representation_id = str(representation["_id"])
+
+    for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
+                                  "loader": "LookLoader",
+                                  "representation": representation_id}):
+        log.info("Reusing loaded look ..")
+        return parse_container(container)
+
+    # Not loaded
+    log.info("Using look for the first time ..")
+
+    loaders = api.loaders_from_representation(api.discover(api.Loader),
+                                              representation_id)
+    Loader = next((i for i in loaders if i.__name__ == "LookLoader"), None)
+    if Loader is None:
+        raise RuntimeError("Could not find LookLoader, this is a bug")
+
+    container = api.load(Loader, representation)
+    return container
 
 
 def remove_unused_looks():

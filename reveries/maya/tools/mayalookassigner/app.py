@@ -197,15 +197,14 @@ class App(QtWidgets.QWidget):
                           "look for {}".format(prefix, asset))
                 continue
 
-            subset_name = assign_look["name"]
+            look = commands.load_look(assign_look)
             self.echo("{} Assigning {} to {}\t".format(prefix,
-                                                       subset_name,
+                                                       look["name"],
                                                        asset))
-
             # Assign look
             namespaces = item.get("namespace", item["namespaces"])
             commands.assign_look(namespaces=namespaces,
-                                 look=assign_look,
+                                 look=look,
                                  via_uv=uv)
 
         end = time.time()
