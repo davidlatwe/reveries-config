@@ -152,7 +152,7 @@ class App(QtWidgets.QWidget):
             self.warn_layer.hide()
 
     def echo(self, message):
-        self.status.showMessage(message, 1500)
+        self.status.showMessage(message, 6000)
 
     def refresh(self):
         """Refresh the content"""
