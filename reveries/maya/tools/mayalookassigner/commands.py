@@ -14,6 +14,7 @@ from ....maya import lib, utils
 from ...pipeline import (
     AVALON_INTERFACE_ID,
     get_interface_from_container,
+    get_container_from_namespace,
     parse_container,
 )
 
@@ -453,3 +454,29 @@ def _look_via_uv(look, relationships, target_namespaces):
             smooth_by_id[i] = attrs
 
     _apply_smooth_sets(look, smooth_by_id, target_namespaces)
+
+
+def remove_look(namespaces, asset_ids):
+
+    look_sets = set()
+    for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
+                                  "loader": "LookLoader"}):
+        container = parse_container(container)
+        if container["assetId"] not in asset_ids:
+            continue
+
+        members = cmds.sets(container["objectName"], query=True)
+        look_sets.update(cmds.ls(members, type="objectSet"))
+
+    for namespace in namespaces:
+        container = get_container_from_namespace(namespace)
+        nodes = cmds.sets(container, query=True)
+        shaded = cmds.ls(nodes, type=("transform", "surfaceShape"))
+
+        for look_set in look_sets:
+            for member in cmds.sets(look_set, query=True) or []:
+                if member.rsplit(".")[0] in shaded:
+                    cmds.sets(member, remove=look_set)
+
+        # Assign to lambert1
+        cmds.sets(shaded, forceElement="initialShadingGroup")
