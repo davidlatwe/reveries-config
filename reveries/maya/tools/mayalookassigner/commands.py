@@ -31,7 +31,7 @@ def get_workfolder():
 
 
 def select(nodes):
-    cmds.select(nodes)
+    cmds.select(nodes, noExpand=True)
 
 
 def get_interface_from_namespace(namespaces):
@@ -51,9 +51,10 @@ def get_interface_from_namespace(namespaces):
 
     for namespace in namespaces:
         interfaces += lib.lsAttrs({"id": AVALON_INTERFACE_ID,
-                                   "namespace": ":" + namespace})
+                                   "namespace": namespace})
 
     return cmds.ls(cmds.sets(interfaces, query=True, nodesOnly=True),
+                   type="transform",
                    long=True)
 
 

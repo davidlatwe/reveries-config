@@ -122,8 +122,8 @@ class AssetOutliner(QtWidgets.QWidget):
             namespaces = item.get("namespace", item["namespaces"])
             nodes = commands.get_interface_from_namespace(namespaces)
 
-            assets[asset_name] = item
-            assets[asset_name]["nodes"] = nodes
+            assets[item.get("namespace") or asset_name] = item
+            assets[item.get("namespace") or asset_name]["nodes"] = nodes
 
         return assets
 
