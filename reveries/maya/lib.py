@@ -854,7 +854,7 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
     """
 
     if namespace is not None:
-        # Append namespace to shader group identifier.
+        # Add namespace to shader group identifier.
         # E.g. `blinn1SG` -> `Bruce_:blinn1SG`
         relationships = {
             "%s:%s" % (namespace, shader): relationships[shader]
@@ -862,6 +862,7 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
         }
 
     target_namespaces = target_namespaces or [None]
+    surface_cache = dict()
 
     for shader_, ids in relationships.items():
 
@@ -871,21 +872,28 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
             log.warning("Associated shader not part of asset, this is a bug.")
             continue
 
-        for id_ in ids:
+        surfaces = []
+
+        for id_ in sorted(ids):
             surface, faces = (id_.rsplit(".", 1) + [""])[:2]
 
+            if surface not in surface_cache:
+                surface_cache[surface] = dict()
+
             for target_namespace in target_namespaces:
+                if target_namespace not in surface_cache[surface]:
+                    # cache
+                    surface_cache[surface][target_namespace] = list(
+                        m for m in lsAttr(AVALON_ID_ATTR_LONG,
+                                          value=surface,
+                                          namespace=target_namespace)
+                    )
                 # Find all surfaces matching this particular ID
                 # Convert IDs to surface + id, e.g. "nameOfNode.f[1:100]"
-                surfaces = list(".".join([m, faces])
-                                for m in lsAttr(AVALON_ID_ATTR_LONG,
-                                                value=surface,
-                                                namespace=target_namespace))
+                surfaces += list(".".join([m, faces]) for m in
+                                 surface_cache[surface][target_namespace])
 
-                if not surfaces:
-                    continue
-
-                cmds.sets(surfaces, forceElement=shader)
+        cmds.sets(surfaces, forceElement=shader)
 
 
 def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
@@ -902,6 +910,8 @@ def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
 
     """
     namespace = namespace or ""
+    target_namespaces = target_namespaces or [None]
+    surface_cache = dict()
     crease_sets = list()
 
     for level, members in relationships.items():
@@ -917,21 +927,30 @@ def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
 
         crease_sets.append(crease_set)
 
+        edges = []
+
         for member in members:
             id, edge_ids = member.split(".")
 
+            if id not in surface_cache:
+                surface_cache[id] = dict()
+
             for target_namespace in target_namespaces:
+                if target_namespace not in surface_cache[id]:
+                    # cache
+                    surface_cache[id][target_namespace] = list(
+                        m for m in lsAttr(AVALON_ID_ATTR_LONG,
+                                          value=id,
+                                          namespace=target_namespace)
+                    )
                 # Find all surfaces matching this particular ID
                 # Convert IDs to surface + id, e.g. "nameOfNode.f[1:100]"
-                edges = list(".".join([m, edge_ids])
-                             for m in lsAttr(AVALON_ID_ATTR_LONG,
-                                             value=id,
-                                             namespace=target_namespace))
-                if not edges:
-                    continue
+                edges += list(".".join([m, edge_ids]) for m in
+                              surface_cache[id][target_namespace])
+        if not edges:
+            continue
 
-                print("Applying '%s' to '%s'" % (crease_set, ", ".join(edges)))
-                cmds.sets(edges, forceElement=crease_set)
+        cmds.sets(edges, forceElement=crease_set)
 
     return crease_sets
 
