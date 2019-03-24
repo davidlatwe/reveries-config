@@ -488,11 +488,12 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         if "hardlinks" not in self.data:
             self.data["hardlinks"] = list()
 
-    def file_name(self, extension, suffix=""):
+    def file_name(self, extension="", suffix=""):
         """Convenient method for composing file name with default format"""
-        return "{subset}{suffix}.{ext}".format(subset=self.data["subset"],
-                                               suffix=suffix,
-                                               ext=extension)
+        extension = ("." + extension) if extension else ""
+        return "{subset}{suffix}{ext}".format(subset=self.data["subset"],
+                                              suffix=suffix,
+                                              ext=extension)
 
     def create_package(self):
         """Create representation stage dir

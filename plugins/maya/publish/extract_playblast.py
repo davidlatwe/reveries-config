@@ -40,7 +40,7 @@ class ExtractPlayblast(DelegatablePackageExtractor):
         start_frame = self.context.data["startFrame"]
         end_frame = self.context.data["endFrame"]
 
-        entry_file = self.file_name(self.ext)
+        entry_file = self.file_name()
         publish_dir = self.create_package()
         entry_path = os.path.join(publish_dir, entry_file)
 

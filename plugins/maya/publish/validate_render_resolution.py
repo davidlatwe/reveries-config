@@ -68,9 +68,9 @@ class ValidateRenderResolution(pyblish.api.InstancePlugin):
 
         if invalid:
             cls.log.error("Resolution width and height should be {0} x {1}."
-                          "".format(valid_resolutions.pop()))
+                          "".format(*valid_resolutions.pop()))
             for res in valid_resolutions:
-                cls.log.error("Or {0} x {1}".format(res))
+                cls.log.error("Or {0} x {1}".format(*res))
         return invalid
 
     def process(self, instance):

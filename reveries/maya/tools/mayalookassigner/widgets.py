@@ -122,8 +122,8 @@ class AssetOutliner(QtWidgets.QWidget):
             namespaces = item.get("namespace", item["namespaces"])
             nodes = commands.get_interface_from_namespace(namespaces)
 
-            assets[asset_name] = item
-            assets[asset_name]["nodes"] = nodes
+            assets[item.get("namespace") or asset_name] = item
+            assets[item.get("namespace") or asset_name]["nodes"] = nodes
 
         return assets
 
@@ -137,6 +137,21 @@ class AssetOutliner(QtWidgets.QWidget):
 
         commands.select(nodes)
 
+    def remove_look_from_items(self):
+        namespaces = set()
+        asset_ids = set()
+
+        for item in self.get_selected_items():
+            namespace = item.get("namespace")
+            if namespace:
+                namespaces.add(namespace)
+            else:
+                namespaces.update(item["namespaces"])
+
+            asset_ids.add(str(item["asset"]["_id"]))
+
+        commands.remove_look(namespaces, asset_ids)
+
     def right_mouse_menu(self, pos):
         """Build RMB menu for asset outliner"""
 
@@ -146,14 +161,18 @@ class AssetOutliner(QtWidgets.QWidget):
 
         menu = QtWidgets.QMenu(self.view)
 
-        # Direct assignment
         apply_action = QtWidgets.QAction(menu, text="Select nodes")
         apply_action.triggered.connect(self.select_asset_from_items)
 
+        remove_action = QtWidgets.QAction(menu, text="Remove look")
+        remove_action.triggered.connect(self.remove_look_from_items)
+
         if not active.isValid():
             apply_action.setEnabled(False)
+            remove_action.setEnabled(False)
 
         menu.addAction(apply_action)
+        menu.addAction(remove_action)
 
         menu.exec_(globalpos)
 
