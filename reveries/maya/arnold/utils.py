@@ -66,10 +66,12 @@ def apply_smooth_sets(relationships, namespace=None, target_namespaces=None):
     namespace = namespace or ""
 
     for id, attrs in relationships.items():
+        if not attrs:
+            continue
+
         for target_namespace in target_namespaces:
-            nodes = lib.lsAttr(lib.AVALON_ID_ATTR_LONG,
-                               value=id,
-                               namespace=target_namespace)
+            nodes = lib.ls_nodes_by_id(id, target_namespace)
+
             if not nodes:
                 continue
 
