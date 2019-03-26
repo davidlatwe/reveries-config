@@ -5,15 +5,14 @@ from reveries import plugins
 from reveries.maya import pipeline
 
 
-def create_texture_subset_from_look(look_instance, textures):
+def create_texture_subset_from_look(instance, textures):
     """
     """
-    look_name = "look"
-    texture_name = "texture"
     family = "reveries.texture"
-    subset = texture_name + look_instance.data["subset"][len(look_name):]
+    subset = instance.data["subset"]
+    subset = "texture" + subset[0].upper() + subset[1:]
 
-    plugins.create_dependency_instance(look_instance,
+    plugins.create_dependency_instance(instance,
                                        subset,
                                        family,
                                        textures)
