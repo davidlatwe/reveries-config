@@ -51,6 +51,8 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
         for subset in io.find({"type": "subset", "parent": asset["_id"]}):
             latest = io.find_one({"type": "version", "parent": subset["_id"]},
                                  sort=[("name", -1)])
+            if latest is None:
+                continue
 
             if not any(family in latest["data"]["families"]
                        for family in FAMILIES):
