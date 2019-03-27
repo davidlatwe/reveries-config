@@ -212,8 +212,8 @@ class ReferenceLoader(MayaBaseLoader):
 
         # Representation that use `ReferenceLoader`, either "ma" or "mb"
         file_type = representation["name"]
-        if file_type != "MayaBinary":
-            file_type = "MayaAscii"
+        if file_type != "mayaBinary":
+            file_type = "mayaAscii"
 
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
