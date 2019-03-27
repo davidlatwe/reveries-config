@@ -874,24 +874,21 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
 
         surfaces = []
 
-        for id_ in sorted(ids):
-            surface, faces = (id_.rsplit(".", 1) + [""])[:2]
+        for id_ in ids:
+            id, faces = (id_.rsplit(".", 1) + [""])[:2]
 
-            if surface not in surface_cache:
-                surface_cache[surface] = dict()
+            if id not in surface_cache:
+                surface_cache[id] = dict()
 
             for target_namespace in target_namespaces:
-                if target_namespace not in surface_cache[surface]:
+                if target_namespace not in surface_cache[id]:
                     # cache
-                    surface_cache[surface][target_namespace] = list(
-                        m for m in lsAttr(AVALON_ID_ATTR_LONG,
-                                          value=surface,
-                                          namespace=target_namespace)
-                    )
+                    nodes = ls_nodes_by_id(id, target_namespace)
+                    surface_cache[id][target_namespace] = nodes
                 # Find all surfaces matching this particular ID
-                # Convert IDs to surface + id, e.g. "nameOfNode.f[1:100]"
+                # Convert IDs to surface + faceid, e.g. "nameOfNode.f[1:100]"
                 surfaces += list(".".join([m, faces]) for m in
-                                 surface_cache[surface][target_namespace])
+                                 surface_cache[id][target_namespace])
         if not surfaces:
             continue
 
@@ -940,11 +937,8 @@ def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
             for target_namespace in target_namespaces:
                 if target_namespace not in surface_cache[id]:
                     # cache
-                    surface_cache[id][target_namespace] = list(
-                        m for m in lsAttr(AVALON_ID_ATTR_LONG,
-                                          value=id,
-                                          namespace=target_namespace)
-                    )
+                    nodes = ls_nodes_by_id(id, target_namespace)
+                    surface_cache[id][target_namespace] = nodes
                 # Find all surfaces matching this particular ID
                 # Convert IDs to surface + id, e.g. "nameOfNode.f[1:100]"
                 edges += list(".".join([m, edge_ids]) for m in
@@ -1011,6 +1005,20 @@ def hasAttrExact(node, attr):
 
     """
     return cmds.attributeQuery(attr, node=node, exists=True)
+
+
+def ls_nodes_by_id(id, namespace=None):
+    """Return nodes by matching Avalon UUID
+
+    This function is faster then using `lsAttrs({"AvalonID": id})` because
+    it does not return nodes with long name.
+
+    """
+    namespace = namespace or ""
+    nodes = cmds.ls("{0}*.{1}".format(namespace, AVALON_ID_ATTR_LONG),
+                    long=False,
+                    recursive=True)
+    return [n.rsplit(".", 1)[0] for n in nodes if cmds.getAttr(n) == id]
 
 
 def lsAttr(attr, value=None, namespace=None):

@@ -7,7 +7,8 @@ from reveries.maya import lib, xgen, pipeline
 
 def create_model_subset_from_xgen(instance):
     family = "reveries.model"
-    subset = "modelXGenBoundMesh"
+    subset = instance.data["subset"]
+    subset = "model" + subset[0].upper() + subset[1:]
 
     if "igsBoundMeshes" in instance.data:
         member = cmds.listRelatives(instance.data["igsBoundMeshes"],
@@ -28,7 +29,8 @@ def create_model_subset_from_xgen(instance):
 
 def create_look_subset_from_xgen(instance):
     family = "reveries.look"
-    subset = "lookXGenHair"
+    subset = instance.data["subset"]
+    subset = "look" + subset[0].upper() + subset[1:]
 
     if "igsDescriptions" in instance.data:
         member = instance.data["igsDescriptions"][:]
@@ -67,7 +69,8 @@ def create_look_subset_from_xgen(instance):
 
 def create_texture_subset_from_look(instance, textures):
     family = "reveries.texture"
-    subset = "textureXGenMaps"
+    subset = instance.data["subset"]
+    subset = "texture" + subset[0].upper() + subset[1:]
     plugins.create_dependency_instance(instance,
                                        subset,
                                        family,

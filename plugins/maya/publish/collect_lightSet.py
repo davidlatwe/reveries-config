@@ -8,10 +8,9 @@ from reveries.maya import pipeline
 def create_texture_subset_from_lightSet(instance, textures):
     """
     """
-    look_name = "lightSet"
-    texture_name = "texture"
     family = "reveries.texture"
-    subset = texture_name + instance.data["subset"][len(look_name):]
+    subset = instance.data["subset"]
+    subset = "texture" + subset[0].upper() + subset[1:]
 
     plugins.create_dependency_instance(instance,
                                        subset,
