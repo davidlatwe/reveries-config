@@ -37,11 +37,7 @@ class CollectReferencedNamespaces(pyblish.api.InstancePlugin):
         all_containers.update(context.data["SubContainers"])
 
         for container in all_containers.values():
-            if container.get("loader") == "LookLoader":
-                # lookDev does not have `subsetGroup`
-                continue
 
-            group = container["subsetGroup"]
             members = cmds.sets(container["objectName"], query=True)
 
             references = cmds.ls(members, type="reference")
@@ -58,7 +54,10 @@ class CollectReferencedNamespaces(pyblish.api.InstancePlugin):
 
             members = list(set(members + referenced_members))
 
-            referenced_content.add(group)
+            group = container["subsetGroup"]
+            if group:
+                referenced_content.add(group)
+
             referenced_content.update(cmds.ls(members,
                                               long=True,
                                               referencedNodes=True))

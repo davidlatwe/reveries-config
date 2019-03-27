@@ -32,7 +32,6 @@ class ExtractRig(PackageExtractor):
                              type="mesh",
                              noIntermediate=True,
                              long=True)
-        clay_shader = "initialShadingGroup"
 
         # Hash model and collect Avalon UUID
         geo_id_and_hash = dict()
@@ -59,7 +58,6 @@ class ExtractRig(PackageExtractor):
             capsule.no_undo(),
             capsule.no_display_layers(self.member),
             maya.maintained_selection(),
-            capsule.assign_shader(mesh_nodes, shadingEngine=clay_shader),
         ):
             with capsule.undo_chunk_when_no_undo():
                 # (NOTE) Current workflow may keep model stay loaded as
