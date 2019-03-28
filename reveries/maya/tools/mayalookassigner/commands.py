@@ -419,12 +419,14 @@ def _look_via_uv(look, relationships, target_namespaces):
     #
     shader_by_id = dict()
     for shader, ids in relationships["shaderById"].items():
+        shader_by_id[shader] = list()
+
         for id_ in ids:
             id, faces = (id_.rsplit(".", 1) + [""])[:2]
 
             uv_hash = uv_via_id[id]
             same_uv_ids = id_via_uv[uv_hash]
-            shader_by_id[shader] = [".".join([i, faces]) for i in same_uv_ids]
+            shader_by_id[shader] += [".".join([i, faces]) for i in same_uv_ids]
 
     _apply_shaders(look, shader_by_id, target_namespaces)
 
@@ -432,12 +434,14 @@ def _look_via_uv(look, relationships, target_namespaces):
     #
     crease_by_id = dict()
     for level, members in relationships["creaseSets"].items():
+        crease_by_id[level] = list()
+
         for member in members:
             id, edges = member.split(".")
 
             uv_hash = uv_via_id[id]
             same_uv_ids = id_via_uv[uv_hash]
-            crease_by_id[level] = [".".join([i, edges]) for i in same_uv_ids]
+            crease_by_id[level] += [".".join([i, edges]) for i in same_uv_ids]
 
     _apply_crease_edges(look, crease_by_id, target_namespaces)
 
