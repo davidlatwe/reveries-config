@@ -472,15 +472,16 @@ def remove_look(namespaces, asset_ids):
         members = cmds.sets(container["objectName"], query=True)
         look_sets.update(cmds.ls(members, type="objectSet"))
 
+    shaded = list()
     for namespace in namespaces:
         container = get_container_from_namespace(namespace)
         nodes = cmds.sets(container, query=True)
-        shaded = cmds.ls(nodes, type=("transform", "surfaceShape"))
+        shaded += cmds.ls(nodes, type=("transform", "surfaceShape"))
 
-        for look_set in look_sets:
-            for member in cmds.sets(look_set, query=True) or []:
-                if member.rsplit(".")[0] in shaded:
-                    cmds.sets(member, remove=look_set)
+    for look_set in look_sets:
+        for member in cmds.sets(look_set, query=True) or []:
+            if member.rsplit(".")[0] in shaded:
+                cmds.sets(member, remove=look_set)
 
-        # Assign to lambert1
-        cmds.sets(shaded, forceElement="initialShadingGroup")
+    # Assign to lambert1
+    cmds.sets(shaded, forceElement="initialShadingGroup")
