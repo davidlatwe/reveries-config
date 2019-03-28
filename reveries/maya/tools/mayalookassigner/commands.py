@@ -419,12 +419,14 @@ def _look_via_uv(look, relationships, target_namespaces):
     #
     shader_by_id = dict()
     for shader, ids in relationships["shaderById"].items():
+        shader_by_id[shader] = list()
+
         for id_ in ids:
             id, faces = (id_.rsplit(".", 1) + [""])[:2]
 
             uv_hash = uv_via_id[id]
             same_uv_ids = id_via_uv[uv_hash]
-            shader_by_id[shader] = [".".join([i, faces]) for i in same_uv_ids]
+            shader_by_id[shader] += [".".join([i, faces]) for i in same_uv_ids]
 
     _apply_shaders(look, shader_by_id, target_namespaces)
 
@@ -432,12 +434,14 @@ def _look_via_uv(look, relationships, target_namespaces):
     #
     crease_by_id = dict()
     for level, members in relationships["creaseSets"].items():
+        crease_by_id[level] = list()
+
         for member in members:
             id, edges = member.split(".")
 
             uv_hash = uv_via_id[id]
             same_uv_ids = id_via_uv[uv_hash]
-            crease_by_id[level] = [".".join([i, edges]) for i in same_uv_ids]
+            crease_by_id[level] += [".".join([i, edges]) for i in same_uv_ids]
 
     _apply_crease_edges(look, crease_by_id, target_namespaces)
 
@@ -468,15 +472,16 @@ def remove_look(namespaces, asset_ids):
         members = cmds.sets(container["objectName"], query=True)
         look_sets.update(cmds.ls(members, type="objectSet"))
 
+    shaded = list()
     for namespace in namespaces:
         container = get_container_from_namespace(namespace)
         nodes = cmds.sets(container, query=True)
-        shaded = cmds.ls(nodes, type=("transform", "surfaceShape"))
+        shaded += cmds.ls(nodes, type=("transform", "surfaceShape"))
 
-        for look_set in look_sets:
-            for member in cmds.sets(look_set, query=True) or []:
-                if member.rsplit(".")[0] in shaded:
-                    cmds.sets(member, remove=look_set)
+    for look_set in look_sets:
+        for member in cmds.sets(look_set, query=True) or []:
+            if member.rsplit(".")[0] in shaded:
+                cmds.sets(member, remove=look_set)
 
-        # Assign to lambert1
-        cmds.sets(shaded, forceElement="initialShadingGroup")
+    # Assign to lambert1
+    cmds.sets(shaded, forceElement="initialShadingGroup")
