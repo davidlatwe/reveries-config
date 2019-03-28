@@ -369,6 +369,17 @@ def nodes_locker(nodes, lock=True, lockName=True, lockUnpublished=True):
         lib.restore_lock_state(lock_state)
 
 
+@contextlib.contextmanager
+def ref_edit_unlock():
+    ref_lock = cmds.optionVar(query="refLockEditable")
+    try:
+        cmds.optionVar(intValue=("refLockEditable", 1))
+        yield
+
+    finally:
+        cmds.optionVar(intValue=("refLockEditable", ref_lock))
+
+
 class delete_after(object):
     """Context Manager that will delete collected nodes after exit.
 
