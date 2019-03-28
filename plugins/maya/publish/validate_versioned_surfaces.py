@@ -21,6 +21,7 @@ class ValidateVersionedSurfaces(pyblish.api.InstancePlugin):
     label = "Has Versioned Surfaces"
     families = [
         "reveries.imgseq",
+        "reveries.standin",
     ]
 
     actions = [
@@ -53,7 +54,7 @@ class ValidateVersionedSurfaces(pyblish.api.InstancePlugin):
 
         not_containerized = transforms - has_versioned
         other_instances = [i for i in instance.context
-                           if (not i.data["family"] == "reveries.imgseq" and
+                           if (i.data["family"] not in cls.families and
                                i.data.get("publish", True))]
         # Is node being publish ?
         for node in not_containerized:

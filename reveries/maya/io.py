@@ -475,7 +475,7 @@ FBXResetImport;
 """
     fbx_node_template = """
 $cachefile = `file -q -loc "{filePath}"`;  // Resolve relative path
-file -import -type "FBX" -groupReference -groupName "{groupName}" $cachefile";
+file -import -type "FBX" -groupReference -groupName "{groupName}" $cachefile;
 """
     fbx_script = ""
     for fbx_path, group_name in fbx_files:
@@ -485,6 +485,53 @@ file -import -type "FBX" -groupReference -groupName "{groupName}" $cachefile";
 
     with open(wrapper_path, "w") as maya_file:
         maya_file.write(MayaAscii_template + fbx_script)
+
+
+def wrap_ass(wrapper_path, ass_files, use_sequences):
+    """Wrapping Arnold Stand-Ins into a MayaAscii file
+
+    (NOTE) The file path of `ass_files` should be a relative path, relative to
+        `wrapper_path`.
+
+        For example:
+            ```python
+
+            wrapper_path = ".../publish/standin/v001/ASS/standin.ma"
+            ass_files = [("Peter_01/standin.ass", "Peter_01"), ...]
+
+            ```
+
+    Args:
+        wrapper_path (str): MayaAscii file path
+        ass_files (list): A list of tuple of .ass file path and cached
+            asset name.
+
+    """
+    MayaAscii_template = """//Maya ASCII scene
+requires maya "2016";
+requires -nodeType "aiStandIn"
+         -nodeType "aiOptions"
+         -nodeType "aiAOVDriver"
+         -nodeType "aiAOVFilter"
+         "mtoa" "3.0.1";
+"""
+    ass_node_template = """
+$proxyfile = `file -q -loc "{filePath}"`;  // Resolve relative path
+$new = `file -i -typ "ASS" -rnn -gr -gn "{groupName}" $proxyfile`;
+for($i in `ls -typ "aiStandIn" $new`){{
+    setAttr ($i + ".useFrameExtension") {useSeq};
+}}
+"""
+    ass_script = ""
+    for (ass_path, group_name), use_seq in zip(ass_files, use_sequences):
+        ass_path = ass_path.replace("\\", "/")
+        use_seq = "true" if use_seq else "false"
+        ass_script += ass_node_template.format(groupName=group_name,
+                                               filePath=ass_path,
+                                               useSeq=use_seq)
+
+    with open(wrapper_path, "w") as maya_file:
+        maya_file.write(MayaAscii_template + ass_script)
 
 
 def capture_seq(camera,
