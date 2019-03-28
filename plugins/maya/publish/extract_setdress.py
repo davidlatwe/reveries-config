@@ -27,7 +27,6 @@ class ExtractSetDress(PackageExtractor):
 
     representations = [
         "setPackage",
-        "GPUCache",
     ]
 
     def _collect_components_matrix(self, data, container):
@@ -117,24 +116,3 @@ class ExtractSetDress(PackageExtractor):
         self.log.debug("Exported: {}".format(entry_path))
 
         cmds.select(clear=True)
-
-    def extract_GPUCache(self):
-        entry_file = self.file_name("ma")
-        cache_file = self.file_name("abc")
-        package_path = self.create_package()
-        entry_path = os.path.join(package_path, entry_file)
-        cache_path = os.path.join(package_path, cache_file)
-
-        cmds.select(self.data["subsetSlots"])
-
-        self.log.info("Extracting setDress GPUCache ..")
-
-        frame = cmds.currentTime(query=True)
-        io.export_gpu(cache_path, frame, frame)
-        io.wrap_gpu(entry_path, [(cache_file, self.data["subset"])])
-
-        self.add_data({
-            "entryFileName": entry_file,
-        })
-
-        self.log.debug("Exported: {}".format(entry_path))
