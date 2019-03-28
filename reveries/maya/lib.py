@@ -1,7 +1,7 @@
 
 import re
 import logging
-
+from collections import defaultdict
 from maya import cmds, mel
 from maya.api import OpenMaya as om
 
@@ -862,7 +862,6 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
         }
 
     target_namespaces = target_namespaces or [None]
-    surface_cache = dict()
 
     for shader_, ids in relationships.items():
 
@@ -872,23 +871,23 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
             log.warning("Associated shader not part of asset, this is a bug.")
             continue
 
-        surfaces = []
-
+        face_map = dict()
         for id_ in ids:
             id, faces = (id_.rsplit(".", 1) + [""])[:2]
+            face_map[id] = faces
 
-            if id not in surface_cache:
-                surface_cache[id] = dict()
+        surface_cache = defaultdict(set)
+        for target_namespace in target_namespaces:
+            _map = ls_nodes_by_id(set(face_map.keys()), target_namespace)
+            for id, nodes in _map.items():
+                surface_cache[id].update(nodes)
 
-            for target_namespace in target_namespaces:
-                if target_namespace not in surface_cache[id]:
-                    # cache
-                    nodes = ls_nodes_by_id(id, target_namespace)
-                    surface_cache[id][target_namespace] = nodes
-                # Find all surfaces matching this particular ID
-                # Convert IDs to surface + faceid, e.g. "nameOfNode.f[1:100]"
-                surfaces += list(".".join([m, faces]) for m in
-                                 surface_cache[id][target_namespace])
+        surfaces = []
+        for id, faces in face_map.items():
+            # Find all surfaces matching this particular ID
+            # Convert IDs to surface + faceid, e.g. "nameOfNode.f[1:100]"
+            surfaces += list(".".join([n, faces]) for n in surface_cache[id])
+
         if not surfaces:
             continue
 
@@ -910,7 +909,6 @@ def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
     """
     namespace = namespace or ""
     target_namespaces = target_namespaces or [None]
-    surface_cache = dict()
     crease_sets = list()
 
     for level, members in relationships.items():
@@ -926,23 +924,23 @@ def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
 
         crease_sets.append(crease_set)
 
-        edges = []
-
+        edge_map = dict()
         for member in members:
             id, edge_ids = member.split(".")
+            edge_map[id] = edge_ids
 
-            if id not in surface_cache:
-                surface_cache[id] = dict()
+        surface_cache = defaultdict(set)
+        for target_namespace in target_namespaces:
+            _map = ls_nodes_by_id(set(edge_map.keys()), target_namespace)
+            for id, nodes in _map.items():
+                surface_cache[id].update(nodes)
 
-            for target_namespace in target_namespaces:
-                if target_namespace not in surface_cache[id]:
-                    # cache
-                    nodes = ls_nodes_by_id(id, target_namespace)
-                    surface_cache[id][target_namespace] = nodes
-                # Find all surfaces matching this particular ID
-                # Convert IDs to surface + id, e.g. "nameOfNode.f[1:100]"
-                edges += list(".".join([m, edge_ids]) for m in
-                              surface_cache[id][target_namespace])
+        edges = []
+        for id, edge_ids in edge_map.items():
+            # Find all surfaces matching this particular ID
+            # Convert IDs to surface + edgeid, e.g. "nameOfNode.e[1:100]"
+            edges += list(".".join([n, edge_ids]) for n in surface_cache[id])
+
         if not edges:
             continue
 
@@ -1007,18 +1005,33 @@ def hasAttrExact(node, attr):
     return cmds.attributeQuery(attr, node=node, exists=True)
 
 
-def ls_nodes_by_id(id, namespace=None):
+def ls_nodes_by_id(ids, namespace=None):
     """Return nodes by matching Avalon UUID
 
     This function is faster then using `lsAttrs({"AvalonID": id})` because
-    it does not return nodes with long name.
+    it does not return nodes with long name, and matching a list of ids in
+    one `ls`.
+
+    Args:
+        ids (list or set): A list of ids
+        namespace (str, optional): Search under this namespace, default all.
+
+    Returns:
+        defaultdict(set): {id(str): nodes(set)}
 
     """
     namespace = namespace or ""
     nodes = cmds.ls("{0}*.{1}".format(namespace, AVALON_ID_ATTR_LONG),
                     long=False,
                     recursive=True)
-    return [n.rsplit(".", 1)[0] for n in nodes if cmds.getAttr(n) == id]
+
+    id_map = defaultdict(set)
+    for node in nodes:
+        id = cmds.getAttr(node)
+        if id in ids:
+            id_map[id].add(node.rsplit(".", 1)[0])
+
+    return id_map
 
 
 def lsAttr(attr, value=None, namespace=None):

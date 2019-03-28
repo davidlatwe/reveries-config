@@ -1,4 +1,5 @@
 
+from collections import defaultdict
 from maya import cmds
 from .. import lib
 
@@ -65,16 +66,21 @@ def apply_smooth_sets(relationships, namespace=None, target_namespaces=None):
     """
     namespace = namespace or ""
 
+    ids = set()
     for id, attrs in relationships.items():
-        if not attrs:
+        if attrs:
+            ids.add(id)
+
+    surfaces = defaultdict(set)
+    for target_namespace in target_namespaces:
+        _map = lib.ls_nodes_by_id(ids, target_namespace)
+        for id, nodes in _map.items():
+            surfaces[id].update(nodes)
+
+    for id, attrs in relationships.items():
+        if id not in surfaces:
             continue
 
-        for target_namespace in target_namespaces:
-            nodes = lib.ls_nodes_by_id(id, target_namespace)
-
-            if not nodes:
-                continue
-
-            for node in nodes:
-                for attr, value in attrs.items():
-                    cmds.setAttr(node + "." + attr, value)
+        for node in surfaces[id]:
+            for attr, value in attrs.items():
+                cmds.setAttr(node + "." + attr, value)
