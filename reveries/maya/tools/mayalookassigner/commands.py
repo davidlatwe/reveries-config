@@ -424,6 +424,10 @@ def _look_via_uv(look, relationships, target_namespaces):
         for id_ in ids:
             id, faces = (id_.rsplit(".", 1) + [""])[:2]
 
+            if id not in uv_via_id:
+                # The id from relationships does not exists in scene
+                continue
+
             uv_hash = uv_via_id[id]
             same_uv_ids = id_via_uv[uv_hash]
             shader_by_id[shader] += [".".join([i, faces]) for i in same_uv_ids]
@@ -439,6 +443,10 @@ def _look_via_uv(look, relationships, target_namespaces):
         for member in members:
             id, edges = member.split(".")
 
+            if id not in uv_via_id:
+                # The id from relationships does not exists in scene
+                continue
+
             uv_hash = uv_via_id[id]
             same_uv_ids = id_via_uv[uv_hash]
             crease_by_id[level] += [".".join([i, edges]) for i in same_uv_ids]
@@ -452,6 +460,11 @@ def _look_via_uv(look, relationships, target_namespaces):
 
     smooth_by_id = dict()
     for id, attrs in relationships["alSmoothSets"].items():
+
+        if id not in uv_via_id:
+            # The id from relationships does not exists in scene
+            continue
+
         uv_hash = uv_via_id[id]
         same_uv_ids = id_via_uv[uv_hash]
         for i in same_uv_ids:
