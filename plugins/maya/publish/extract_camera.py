@@ -32,7 +32,7 @@ class ExtractCamera(PackageExtractor):
         context_data = self.context.data
         self.start = context_data.get("startFrame")
         self.end = context_data.get("endFrame")
-        camera = cmds.ls(self.member, type="camera")[0]
+        camera = cmds.ls(self.member, type="camera", long=True)[0]
 
         self.camera_uuid = utils.get_id(camera)
 

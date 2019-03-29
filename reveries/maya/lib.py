@@ -660,9 +660,10 @@ def bake_camera(camera, startFrame, endFrame):
     shape = None
     if cmds.objectType(camera) == "transform":
         transform = camera
-        shape = (cmds.listRelatives(camera, shapes=True) or [None])[0]
+        shape = (cmds.listRelatives(camera, shapes=True, fullPath=True) or
+                 [None])[0]
     elif cmds.objectType(camera) == "camera":
-        transform = cmds.listRelatives(camera, parent=True)[0]
+        transform = cmds.listRelatives(camera, parent=True, fullPath=True)[0]
         shape = camera
 
     if shape is None:
