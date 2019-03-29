@@ -408,7 +408,11 @@ def _look_via_uv(look, relationships, target_namespaces):
             hasher.clear()
             hasher.set_mesh(node)
             hasher.update_uvmap()
-            uv_hash = hasher.digest()["uvmap"]
+            uv_hash = hasher.digest().get("uvmap")
+
+            if uv_hash is None:
+                continue
+
             uv_via_id[id] = uv_hash
 
             if uv_hash not in id_via_uv:
