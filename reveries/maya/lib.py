@@ -871,10 +871,10 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
             log.warning("Associated shader not part of asset, this is a bug.")
             continue
 
-        face_map = dict()
+        face_map = defaultdict(set)
         for id_ in ids:
-            id, faces = (id_.rsplit(".", 1) + [""])[:2]
-            face_map[id] = faces
+            id, face = (id_.rsplit(".", 1) + [""])[:2]
+            face_map[id].add(face)
 
         surface_cache = defaultdict(set)
         for target_namespace in target_namespaces:
@@ -886,7 +886,9 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
         for id, faces in face_map.items():
             # Find all surfaces matching this particular ID
             # Convert IDs to surface + faceid, e.g. "nameOfNode.f[1:100]"
-            surfaces += list(".".join([n, faces]) for n in surface_cache[id])
+            surfaces += list(".".join([n, face])
+                             for n in surface_cache[id]
+                             for face in faces)
 
         if not surfaces:
             continue
@@ -924,10 +926,10 @@ def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
 
         crease_sets.append(crease_set)
 
-        edge_map = dict()
+        edge_map = defaultdict(set)
         for member in members:
-            id, edge_ids = member.split(".")
-            edge_map[id] = edge_ids
+            id, edge_id = member.split(".")
+            edge_map[id].add(edge_id)
 
         surface_cache = defaultdict(set)
         for target_namespace in target_namespaces:
@@ -939,7 +941,9 @@ def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
         for id, edge_ids in edge_map.items():
             # Find all surfaces matching this particular ID
             # Convert IDs to surface + edgeid, e.g. "nameOfNode.e[1:100]"
-            edges += list(".".join([n, edge_ids]) for n in surface_cache[id])
+            edges += list(".".join([n, edge])
+                          for n in surface_cache[id]
+                          for edge in edge_ids)
 
         if not edges:
             continue
