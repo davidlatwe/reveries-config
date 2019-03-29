@@ -18,11 +18,9 @@ class CollectPlayblast(pyblish.api.InstancePlugin):
 
         current_layer = cmds.editRenderLayerGlobals(query=True,
                                                     currentRenderLayer=True)
-        layer_members = cmds.editRenderLayerMembers(current_layer, query=True)
-        layer_members = cmds.ls(layer_members, long=True)
-        layer_members += cmds.listRelatives(layer_members,
-                                            allDescendents=True,
-                                            fullPath=True) or []
+        layer_members = cmds.editRenderLayerMembers(current_layer,
+                                                    query=True,
+                                                    fullNames=True)
 
         member = instance[:]
         member += cmds.listRelatives(member,
@@ -39,7 +37,7 @@ class CollectPlayblast(pyblish.api.InstancePlugin):
 
         # Push renderlayer members into instance,
         # for collecting dependencies
-        instance += list(set(layer_members))
+        instance += layer_members
 
         # Assign contractor
         if instance.data["deadlineEnable"]:

@@ -73,11 +73,9 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                 self.log.warning("%s is invalid, skipping" % layer)
                 continue
 
-            layer_members = cmds.editRenderLayerMembers(layer, query=True)
-            layer_members = cmds.ls(layer_members, long=True)
-            layer_members += cmds.listRelatives(layer_members,
-                                                allDescendents=True,
-                                                fullPath=True) or []
+            layer_members = cmds.editRenderLayerMembers(layer,
+                                                        query=True,
+                                                        fullNames=True)
 
             layername = lib.pretty_layer_name(layer)
 
@@ -112,7 +110,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
 
             # Push renderlayer members into instance,
             # for collecting dependencies
-            instance += list(set(layer_members))
+            instance += layer_members
 
             # Assign contractor
             if instance.data["deadlineEnable"]:
