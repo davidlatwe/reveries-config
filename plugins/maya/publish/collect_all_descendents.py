@@ -6,7 +6,7 @@ class CollectAllDescendents(pyblish.api.InstancePlugin):
     """Collect instance's allDescendents
     """
 
-    order = pyblish.api.CollectorOrder
+    order = pyblish.api.CollectorOrder + 0.11
     hosts = ["maya"]
     label = "Collect All Descendents"
 
@@ -20,7 +20,7 @@ class CollectAllDescendents(pyblish.api.InstancePlugin):
                                        allDescendents=True,
                                        fullPath=True) or []
 
-        instance[:] = sorted(list(set(instance)))
+        instance[:] = sorted(set(instance))
 
         self.log.debug("Descendents collected for instance {!r}."
                        "".format(str(instance.name)))

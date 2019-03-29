@@ -20,10 +20,12 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
         # Collect root containers' members
 
         for container in root_containers:
-            members = cmds.sets(container, query=True, nodesOnly=True) or []
-            shapes = cmds.listRelatives(members, shapes=True) or []
-            members = cmds.ls(members + shapes, long=True)
-            container_members[container] = set(members)
+            members = set()
+            members.update(cmds.ls(cmds.sets(container,
+                                             query=True,
+                                             nodesOnly=True),
+                                   long=True))
+            container_members[container] = members
 
         # Scan dependencies for each instance
 
@@ -31,21 +33,18 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
 
             self.log.info("Collecting dependency: %s" % instance.data["name"])
 
-            # Collect nodes which related to instnace's member
-            try:
-                _history = cmds.listHistory(instance, leaf=False)
-            except RuntimeError:
-                # Found no items to list the history for.
-                _history = []
-
-            history = set(cmds.ls(_history, long=True)).union(set(instance))
+            members = set(instance)
 
             # Compute dependency from the coverage between instance and
             # container.
             for con, con_member in container_members.items():
-                if not history.intersection(con_member):
-                    # Not dependent
-                    continue
+
+                if not members.intersection(con_member):
+                    # Try history
+                    history = instance.data["allHistory"]
+                    if not history.intersection(con_member):
+                        # Not dependent
+                        continue
 
                 namespace = root_containers[con]["namespace"]
                 name = root_containers[con]["name"]
@@ -62,14 +61,14 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
                 version = avalon.io.find_one({"_id": representation["parent"]})
 
                 self.register_dependency(instance, version["_id"])
-                self.log.info("Collected: %s - %s" % (namespace, name))
+                self.log.debug("Collected: %s - %s" % (namespace, name))
 
             # Register dependency from data.futureDependencies for those
             # not yet being published (containerized in scene).
             future_dependencies = instance.data["futureDependencies"]
             for name, pregenerated_version_id in future_dependencies.items():
                 self.register_dependency(instance, pregenerated_version_id)
-                self.log.info("Collected (Future): %s" % name)
+                self.log.debug("Collected (Future): %s" % name)
 
     def register_dependency(self, instance, version_id):
         """
