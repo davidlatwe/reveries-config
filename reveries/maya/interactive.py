@@ -48,6 +48,19 @@ def wipe_all_namespaces():
             pass
 
 
+def apply_avalon_uuid(*args):
+    # (TODO): Implement GUI
+    nodes = (set(cmds.ls(type="surfaceShape", long=True)) -
+             set(cmds.ls(long=True, readOnly=True)) -
+             set(cmds.ls(long=True, lockedNodes=True)))
+
+    transforms = cmds.listRelatives(list(nodes), parent=True) or list()
+
+    # Add unique identifiers
+    for node in transforms:
+        utils.set_avalon_uuid(node)
+
+
 def swap_to_published_model(*args):
     """Hide the working model and load the published version of it
 

@@ -551,7 +551,8 @@ def overlay_clipinfo_on_image(image_path,
                               duration,
                               focal_length,
                               resolution,
-                              fps):
+                              fps,
+                              expand_hight=False):
     """Overlay clipinfo onto image for human reviewing
 
     (NOTE): This function requires package `PIL` be installed in the
@@ -576,6 +577,8 @@ def overlay_clipinfo_on_image(image_path,
         focal_length (float): Camera focal length
         resolution (tuple): Image resolution
         fps (float): Shot frame rate
+        expand_hight (bool): Instead of scaling down the source image, expand
+            hight for clipinfo
 
     """
     from PIL import Image, ImageDraw, ImageFont
@@ -584,35 +587,26 @@ def overlay_clipinfo_on_image(image_path,
 
     # Templates
 
-    _TOP = "{project}".format(project=project)
+    _TOP = "{project}".format(project=project.split("_", 1)[-1])
 
     _TOP_LEFT = """
-  Date: {date}
-Artist: {artist}
-  Task: {task}
-"""[1:-1].format(date=date, artist=artist, task=task)
-
-    _TOP_RIGHT = """
-    Subset: {subset_name}
-      RPID: {representation_id}
-Resolution: {width}px * {height}px
-"""[1:-1].format(subset_name=subset,
-                 representation_id=representation_id,
-                 width=width,
-                 height=height)
-
-    _BTM = "{frame_num:0>4}".format(frame_num=frame_num)
-
-    _BTM_LEFT = """
- Frame: {frame_num:0>4}
   Shot: {shot_name}  ver {version:0>3}
+ Frame: {frame_num:0>4}
 FocalL: {focal_length} mm
 """[1:-1].format(frame_num=frame_num,
                  shot_name=shot_name,
                  version=version,
                  focal_length=focal_length)
 
-    _BTM_RIGHT = """
+    _TOP_RIGHT = """
+  Date: {date}
+Artist: {artist}
+  Task: {task}
+"""[1:-1].format(date=date, artist=artist, task=task)
+
+    _BTM = "{frame_num:0>4}".format(frame_num=frame_num)
+
+    _BTM_LEFT = """
    Range: {edit_in:0>4} - {edit_out:0>4}
 Duration: {duration:0>4}
  Handles: {handles}  FPS: {fps}
@@ -622,12 +616,26 @@ Duration: {duration:0>4}
                  handles=handles,
                  fps=fps)
 
+    _BTM_RIGHT = """
+    Subset: {subset_name}
+      RPID: {representation_id}
+Resolution: {width}px * {height}px
+"""[1:-1].format(subset_name=subset,
+                 representation_id=representation_id,
+                 width=width,
+                 height=height)
+
     # Compute font size and spacing base on image resolution
 
     spacing = int(width / 320)    # 6 in Full HD
     titlesize = int(width / 48)  # 40 in Full HD
     datasize = int(width / 96)   # 20 in Full HD
     border = datasize
+
+    if expand_hight:
+        expand = ((datasize + spacing) * 3 +  # 3 lines of info
+                  border * 2)
+        height += expand * 2  # Above and below
 
     # Get font
 
@@ -668,7 +676,8 @@ Duration: {duration:0>4}
     x = (width - size_btm[0]) / 2
     y = height - border - size_btm[1]
     pos_btm = (x, y)
-    puttext(_BTM, pos_btm, title=True)
+    # Disabled, but still take into calculation
+    # puttext(_BTM, pos_btm, title=True)
 
     # Top Left
     size_top_left = textsize(_TOP_LEFT)
@@ -700,30 +709,41 @@ Duration: {duration:0>4}
 
     # Assemble
 
-    # Comput the size that the original image need to be scaled
-    # after the clipinfo applied on.
-    retract = (max(pos_top[1] + size_top[1],
-                   pos_top_left[1] + size_top_left[1],
-                   pos_top_right[1] + size_top_right[1]) +
-               max(height - pos_btm[1] + size_btm[1],
-                   height - pos_btm_left[1] + size_btm_left[1],
-                   height - pos_btm_right[1] + size_btm_right[1]))
+    if expand_hight:
 
-    scale = float(height) / (height + retract)
-    scaled_w = int(width * scale) - border
-    scaled_h = int(height * scale) - border
-    box = (int((width - scaled_w) / 2), int((height - scaled_h) / 2))
+        src = Image.open(image_path)
+        holdout = Image.new("L", src.size)
+        background = Image.new("L", im.size, 255)
+        background.paste(holdout, box=(0, expand))
+        im.putalpha(background)
 
-    src = Image.open(image_path)
-    src.load()  # required for src.split()
+    else:
 
-    background = Image.new("RGB", src.size, (255, 255, 255))
-    background.paste(src)
-    background.paste(src, mask=src.split()[3])  # 3 is the alpha channel
-    # Put resized original image into new image that has clipinfo
-    # overlaied
-    im.paste(background.resize((scaled_w, scaled_h),
-             resample=Image.BICUBIC),
-             box=box)
+        # Comput the size that the original image need to be scaled
+        # after the clipinfo applied on.
+        retract = (max(pos_top[1] + size_top[1],
+                       pos_top_left[1] + size_top_left[1],
+                       pos_top_right[1] + size_top_right[1]) +
+                   max(height - pos_btm[1] + size_btm[1],
+                       height - pos_btm_left[1] + size_btm_left[1],
+                       height - pos_btm_right[1] + size_btm_right[1]))
+
+        scale = float(height) / (height + retract)
+        scaled_w = int(width * scale) - border
+        scaled_h = int(height * scale) - border
+        box = (int((width - scaled_w) / 2), int((height - scaled_h) / 2))
+
+        src = Image.open(image_path)
+        src.load()  # required for src.split()
+
+        background = Image.new("RGB", src.size, (255, 255, 255))
+        background.paste(src)
+        background.paste(src, mask=src.split()[3])  # 3 is the alpha channel
+        # Put resized original image into new image that has clipinfo
+        # overlaied
+        im.paste(background.resize((scaled_w, scaled_h),
+                 resample=Image.BICUBIC),
+                 box=box)
+
     # save over to original image
     im.save(output_path)

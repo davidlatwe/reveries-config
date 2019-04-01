@@ -20,8 +20,10 @@ class ValidateCameraCenterOfInterest(pyblish.api.InstancePlugin):
     def get_invalid(cls, instance):
         invalid = list()
 
-        cameras = cmds.ls(instance[:], type="camera", long=True)
-        cameras += instance.data.get("renderCam", [])
+        cameras = instance.data.get("renderCam")
+        if not cameras:
+            cameras = cmds.ls(instance, type="camera", long=True)
+
         for cam in cameras:
             coi_value = cmds.getAttr(cam + ".centerOfInterest")
             if math.isnan(coi_value):

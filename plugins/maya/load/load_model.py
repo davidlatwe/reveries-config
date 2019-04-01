@@ -17,7 +17,6 @@ class ModelLoader(ReferenceLoader, avalon.api.Loader):
 
     representations = [
         "mayaBinary",
-        "GPUCache",
     ]
 
     def process_reference(self, context, name, namespace, group, options):

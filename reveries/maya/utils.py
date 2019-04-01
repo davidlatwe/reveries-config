@@ -332,7 +332,7 @@ class Identifier(object):
         _set_attr(node, self.ATTR_VERIFIER, verifier)
 
     __action_map = {
-        Clean: (lambda n: None),
+        Clean: (lambda self, n: None),
         Duplicated: on_track,
         Untracked: on_track,
     }

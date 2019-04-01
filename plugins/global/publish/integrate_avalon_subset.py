@@ -63,6 +63,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         # Write version and representations to database
         version_id = self.write_database(instance, version, representations)
+        instance.data["insertedVersionId"] = version_id
 
         # Update dependent
         self.update_dependent(instance, version_id)

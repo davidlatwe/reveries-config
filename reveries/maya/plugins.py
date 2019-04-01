@@ -82,7 +82,8 @@ class MayaBaseLoader(PackageLoader):
         return env_embedded_path(entry_path)
 
     def group_name(self, namespace, name):
-        return subset_group_name(namespace, name)
+        group = subset_group_name(namespace, name)
+        return group.replace(".", "_")
 
 
 def get_reference_node_parents(ref):

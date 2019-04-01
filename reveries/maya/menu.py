@@ -61,6 +61,9 @@ import reveries.maya.tools
 reveries.maya.tools.show('mayalookassigner')
 """)
 
+        cmds.menuItem("Set AvalonUUID", parent="Menu_LookDev",
+                      command=interactive.apply_avalon_uuid)
+
         cmds.menuItem("Swap Modle", parent="Menu_LookDev",
                       command=interactive.swap_to_published_model)
 

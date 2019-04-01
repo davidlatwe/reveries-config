@@ -19,13 +19,14 @@ DEVELOPER_DIR = os.environ.get("AVALON_DEV_PLUGINS", "")
 # Global plugin paths
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "global", "publish")
 LOADER_PATH = os.path.join(PLUGINS_DIR, "global", "load")
-DEVELOPER_LOADER_PATH = os.path.join(DEVELOPER_DIR, "global", "load")
+DEV_LOADER_PATH = os.path.join(DEVELOPER_DIR, "global", "load")
 
 PYBLISH_PATH = os.path.dirname(pyblish.__file__)
 PYBLISH_DEFAULT = os.path.join(PYBLISH_PATH, "plugins")
 
 CONTRACTOR_PATH = os.path.join(PLUGINS_DIR, "global", "contractor")
 LAUNCHER_ACTION_PATH = os.path.join(PLUGINS_DIR, "global", "launcher")
+DEV_LAUNCHER_ACTION_PATH = os.path.join(DEVELOPER_DIR, "global", "launcher")
 
 REVERIES_ICONS = os.path.join("$REVERIES_PATH", "res", "icons")
 
@@ -42,7 +43,7 @@ def install():  # pragma: no cover
     print("Registering global plug-ins..")
     pyblish.register_plugin_path(PUBLISH_PATH)
     avalon.register_plugin_path(avalon.Loader, LOADER_PATH)
-    avalon.register_plugin_path(avalon.Loader, DEVELOPER_LOADER_PATH)
+    avalon.register_plugin_path(avalon.Loader, DEV_LOADER_PATH)
     # Remove pyblish-base default plugins
     pyblish.deregister_plugin_path(PYBLISH_DEFAULT)
 
@@ -53,7 +54,7 @@ def uninstall():  # pragma: no cover
     print("Deregistering global plug-ins..")
     pyblish.deregister_plugin_path(PUBLISH_PATH)
     avalon.deregister_plugin_path(avalon.Loader, LOADER_PATH)
-    avalon.deregister_plugin_path(avalon.Loader, DEVELOPER_LOADER_PATH)
+    avalon.deregister_plugin_path(avalon.Loader, DEV_LOADER_PATH)
     # Restore pyblish-base default plugins
     pyblish.register_plugin_path(PYBLISH_DEFAULT)
 
@@ -64,4 +65,5 @@ def register_launcher_actions():
     from avalon import api
     from launcher.actions import ProjectManagerAction
     avalon.deregister_plugin(api.Action, ProjectManagerAction)
-    avalon.register_plugin_path(avalon.Action, LAUNCHER_ACTION_PATH)
+    avalon.register_plugin_path(api.Action, LAUNCHER_ACTION_PATH)
+    avalon.register_plugin_path(api.Action, DEV_LAUNCHER_ACTION_PATH)

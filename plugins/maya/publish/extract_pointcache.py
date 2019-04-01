@@ -66,7 +66,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
                           root=root,
                           attr=[lib.AVALON_ID_ATTR_LONG])
 
-        io.wrap_abc(entry_path, [(cache_file, self.data["subset"])])
+        io.wrap_abc(entry_path, [(cache_file, "ROOT")])
 
         self.add_data({"entryFileName": entry_file})
 
@@ -84,7 +84,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
         with io.export_fbx_set_pointcache("FBXCacheSET"):
             io.export_fbx(cache_path)
 
-        io.wrap_fbx(entry_path, [(cache_file, self.data["subset"])])
+        io.wrap_fbx(entry_path, [(cache_file, "ROOT")])
 
         self.add_data({"entryFileName": entry_file})
 
@@ -96,6 +96,6 @@ class ExtractPointCache(DelegatablePackageExtractor):
         cache_path = os.path.join(package_path, cache_file)
 
         io.export_gpu(cache_path, self.start_frame, self.end_frame)
-        io.wrap_gpu(entry_path, [(cache_file, self.data["subset"])])
+        io.wrap_gpu(entry_path, [(cache_file, "ROOT")])
 
         self.add_data({"entryFileName": entry_file})
