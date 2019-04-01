@@ -12,6 +12,8 @@ class OpenMayaSource(object):
 
     hosts = ["maya"]
 
+    is_utility = True
+
     def __init__(self, context):
         pass
 
@@ -117,6 +119,12 @@ class OpenSourceAnimation(OpenMayaSource, avalon.api.Loader):
 
     families = ["reveries.animation"]
     representations = ["mayaAscii"]
+
+
+class OpenSourcePointCache(OpenMayaSource, avalon.api.Loader):
+
+    families = ["reveries.pointcache"]
+    representations = ["Alembic", "FBXCache", "GPUCache"]
 
 
 class OpenSourceCamera(OpenMayaSource, avalon.api.Loader):
