@@ -6,7 +6,7 @@ import pyblish.api
 import maya.cmds as cmds
 import avalon.maya as maya
 
-from reveries.maya import capsule, io, utils
+from reveries.maya import capsule, utils
 from reveries.plugins import PackageExtractor
 
 
@@ -26,7 +26,6 @@ class ExtractModel(PackageExtractor):
 
     representations = [
         "mayaBinary",
-        "GPUCache",
     ]
 
     def extract(self):
@@ -107,18 +106,3 @@ class ExtractModel(PackageExtractor):
             name=self.data["subset"],
             path=entry_path)
         )
-
-    def extract_GPUCache(self):
-        entry_file = self.file_name("ma")
-        cache_file = self.file_name("abc")
-        package_path = self.create_package()
-        entry_path = os.path.join(package_path, entry_file)
-        cache_path = os.path.join(package_path, cache_file)
-
-        frame = cmds.currentTime(query=True)
-        io.export_gpu(cache_path, frame, frame)
-        io.wrap_gpu(entry_path, [(cache_file, self.data["subset"])])
-
-        self.add_data({
-            "entryFileName": entry_file,
-        })
