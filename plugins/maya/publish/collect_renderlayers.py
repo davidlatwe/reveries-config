@@ -76,6 +76,8 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             layer_members = cmds.editRenderLayerMembers(layer,
                                                         query=True,
                                                         fullNames=True)
+            # (NOTE): Some of renderLayer member may not exists..
+            layer_members = cmds.ls(layer_members)
 
             layername = lib.pretty_layer_name(layer)
 
