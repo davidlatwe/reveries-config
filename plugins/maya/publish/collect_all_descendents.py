@@ -11,10 +11,6 @@ class CollectAllDescendents(pyblish.api.InstancePlugin):
     label = "Collect All Descendents"
 
     def process(self, instance):
-        # Keep origin objectSet member, for plugins that requires
-        # strict selection.
-        instance.data["originMembers"] = instance[:]
-
         # Collect all descendents
         instance += cmds.listRelatives(instance,
                                        allDescendents=True,
