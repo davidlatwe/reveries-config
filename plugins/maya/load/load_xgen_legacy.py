@@ -64,10 +64,12 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
             xgen.set_data_path(palette_node, data_path)
 
             # Apply ID
-            for desc in xgen.list_descriptions(palette_node):
-                _desc = desc.rsplit(":", 1)[-1]
-                id = desc_ids[_desc]
-                utils.set_id(desc, id)
+            asset_id = str(asset["_id"])
+            with utils.id_namespace(asset_id):
+                for desc in xgen.list_descriptions(palette_node):
+                    _desc = desc.rsplit(":", 1)[-1]
+                    id = desc_ids[_desc]
+                    utils.upsert_id(desc, id)
 
         group_name = self.group_name(namespace, name)
         # Cannot be grouped

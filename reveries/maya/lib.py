@@ -757,6 +757,7 @@ def serialise_shaders(nodes):
         }
 
     """
+    from . import utils  # Avoid circular import
 
     valid_nodes = cmds.ls(
         nodes,
@@ -779,15 +780,15 @@ def serialise_shaders(nodes):
         except IndexError:
             continue
 
-        try:
-            id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_LONG)
-        except ValueError:
-            continue
-        else:
-            if id_ not in surfaces_by_id:
-                surfaces_by_id[id_] = list()
+        id_ = utils.get_id(transform)
 
-            surfaces_by_id[id_].append(surface)
+        if id_ is None:
+            continue
+
+        if id_ not in surfaces_by_id:
+            surfaces_by_id[id_] = list()
+
+        surfaces_by_id[id_].append(surface)
 
     surfaces_by_shader = {}
     for id_, surfaces in surfaces_by_id.items():
@@ -827,15 +828,15 @@ def serialise_shaders(nodes):
                 # Ignore nodes which were not in the query list
                 continue
 
-            try:
-                id_ = cmds.getAttr(transform + "." + AVALON_ID_ATTR_LONG)
-            except ValueError:
-                continue
-            else:
-                if shader not in shader_by_id:
-                    shader_by_id[shader] = list()
+            id_ = utils.get_id(transform)
 
-                shader_by_id[shader].append(surface.replace(name, id_))
+            if id_ is None:
+                continue
+
+            if shader not in shader_by_id:
+                shader_by_id[shader] = list()
+
+            shader_by_id[shader].append(surface.replace(name, id_))
 
         # Remove duplicates
         shader_by_id[shader] = list(set(shader_by_id[shader]))
@@ -1025,16 +1026,19 @@ def ls_nodes_by_id(ids, namespace=None):
         defaultdict(set): {id(str): nodes(set)}
 
     """
+    from . import utils  # Avoid circular import
+
     namespace = namespace or ""
     nodes = cmds.ls("{0}*.{1}".format(namespace, AVALON_ID_ATTR_LONG),
                     long=False,
+                    objectsOnly=True,
                     recursive=True)
 
     id_map = defaultdict(set)
     for node in nodes:
-        id = cmds.getAttr(node)
-        if id in ids:
-            id_map[id].add(node.rsplit(".", 1)[0])
+        id = utils.get_id(node)
+        if id is not None and id in ids:
+            id_map[id].add(node)
 
     return id_map
 

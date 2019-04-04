@@ -7,7 +7,7 @@ import pyblish.api
 from avalon.maya.pipeline import AVALON_CONTAINER_ID
 
 from reveries.maya import lib, pipeline
-from reveries.maya.utils import Identifier, get_id_status, set_avalon_uuid
+from reveries.maya.utils import Identifier, get_id_status, upsert_id
 from reveries.plugins import RepairInstanceAction
 from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
@@ -43,19 +43,12 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder - 0.12
     hosts = ["maya"]
     label = "Avalon UUID Assigned"
-    families = [
-        "reveries.model",
-        "reveries.rig",
-        "reveries.look",
-        "reveries.setdress",
-        "reveries.camera",
-        "reveries.lightset",
-        "reveries.mayashare",
-        "reveries.xgen",
-    ]
+
+    families = pipeline.UUID_REQUIRED_FAMILIES
+
     actions = [
         pyblish.api.Category("Select"),
         SelectMissing,
@@ -118,7 +111,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         invalid = (cls.get_invalid_missing(instance) +
                    cls.get_invalid_duplicated(instance))
         for node in invalid:
-            set_avalon_uuid(node)
+            upsert_id(node)
 
     @classmethod
     def _get_avalon_uuid(cls, instance):
