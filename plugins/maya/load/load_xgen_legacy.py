@@ -67,7 +67,7 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
             for desc in xgen.list_descriptions(palette_node):
                 _desc = desc.rsplit(":", 1)[-1]
                 id = desc_ids[_desc]
-                utils.set_id(desc, id)
+                utils.upsert_id(desc, id)
 
         group_name = self.group_name(namespace, name)
         # Cannot be grouped

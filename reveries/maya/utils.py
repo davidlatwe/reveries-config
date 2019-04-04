@@ -2,6 +2,7 @@
 import os
 import uuid
 import hashlib
+import contextlib
 
 try:
     import bson
@@ -14,6 +15,7 @@ from avalon import io
 
 from maya import cmds, mel
 from maya.api import OpenMaya as om
+from ..vendor import six
 from ..utils import _C4Hasher, get_representation_path_
 from .pipeline import get_interface_from_container, env_embedded_path
 from . import lib, capsule
@@ -210,6 +212,50 @@ class Identifier(object):
     ATTR_ADDRESS = lib.AVALON_ID_ATTR_LONG
     ATTR_VERIFIER = "verifier"
 
+    ID_SEP = ":"
+    _NS = ""
+
+    def register_namespace(self, namespace):
+        """Setup Avalon UUID namespace
+
+        The namespace will be used or applied in the follow up Avalon UUID
+        read/write actions.
+
+        Arguments:
+            namespace (str): Avalon UUID namespace
+
+        """
+        if not isinstance(namespace, six.string_types):
+            raise TypeError("ID namespace must be string.")
+        self._NS = namespace + (self.ID_SEP if namespace else "")
+
+    def registered_namespace(self):
+        """Return current Avalon UUID namespace setup
+        """
+        return self._NS[:-len(self.ID_SEP)]
+
+    def read_full_address(self, node):
+        """Read Avalon UUID namespace + address value from node
+
+        Arguments:
+            node (str): Maya node name
+
+        """
+        return _get_attr(node, self.ATTR_ADDRESS)
+
+    def read_namespace(self, node):
+        """Read Avalon UUID namespace from node
+
+        Arguments:
+            node (str): Maya node name
+
+        """
+        full_address = self.read_full_address(node) or ""
+        if self.ID_SEP in full_address:
+            return self.read_full_address(node).split(self.ID_SEP)[0]
+        else:
+            return None
+
     def read_address(self, node):
         """Read address value from node
 
@@ -217,7 +263,11 @@ class Identifier(object):
             node (str): Maya node name
 
         """
-        return _get_attr(node, self.ATTR_ADDRESS)
+        try:
+            return self.read_full_address(node).split(self.ID_SEP)[-1]
+        except AttributeError:
+            # full_address is None, 'NoneType' object has no attribute 'split'
+            return None
 
     def read_verifier(self, node):
         """Read verifier value from node
@@ -299,19 +349,21 @@ class Identifier(object):
             else:
                 return self.Duplicated
 
-    def on_track(self, node):
+    def on_track(self, node, address=None):
         """Update node's address
 
         MUST do this if `status` return flag `api.Untracked`.
 
         Arguments:
             node (str): Maya node name
+            address (str, optional): Previous generated address id from node.
+                New address id will be generated if not provid one.
 
         """
-        address = self._generate_address()
+        address = address or self._generate_address()
         _add_attr(node, self.ATTR_ADDRESS)
-        _set_attr(node, self.ATTR_ADDRESS, address)
-        self.on_duplicate(node)
+        _set_attr(node, self.ATTR_ADDRESS, self._NS + address)
+        self.on_duplicate(node)  # Update verifier
 
     def on_duplicate(self, node):
         """Update node's verifier
@@ -360,6 +412,22 @@ class Identifier(object):
         for node in nodes:
             self.on_duplicate(node)
 
+    def update_namespace(self, nodes):
+        """Update input nodes' UUID namespace
+
+        Remember to use `register_namespace` method to setup the namespace
+        you want to apply.
+
+        Arguments:
+            nodes (list): A list of Maya node name
+
+        """
+        for node in nodes:
+            address = self.read_address(node)
+            if address is None:
+                continue
+            _set_attr(node, self.ATTR_ADDRESS, self._NS + address)
+
     def get_time(self, node):
         """Retrive datetime object from Maya node
 
@@ -386,11 +454,43 @@ class Identifier(object):
 _identifier = Identifier()
 
 
-def set_avalon_uuid(node):
+@contextlib.contextmanager
+def id_namespace(namespace, manager=None):
+    """Avalon UUID namespace context
+    """
+    manager = manager or _identifier
+
+    original_ns = manager.registered_namespace()
+    manager.register_namespace(namespace)
+    try:
+        yield
+    finally:
+        manager.register_namespace(original_ns)
+
+
+def upsert_id(node, id=None, namespace_only=False):
     """Add or renew avID ( Avalon ID ) to `node`
     """
-    status = _identifier.status(node)
-    _identifier.manage(node, status)
+    if id is None and not namespace_only:
+        # Add or renew id based on id status
+        status = _identifier.status(node)
+        _identifier.manage(node, status)
+    else:
+        if namespace_only:
+            id = _identifier.read_address(node)
+        # Set id
+        _identifier.on_track(node, id)
+
+
+def get_id_namespace(node):
+    """
+    Get AvalonID namespace of the given node
+
+    Args:
+        node (str): the name of the node to retrieve the value from
+
+    """
+    return _identifier.read_namespace(node)
 
 
 def get_id(node):
@@ -408,12 +508,6 @@ def get_id(node):
 
 def get_id_status(node):
     return _identifier.status(node)
-
-
-def set_id(node, id):
-    _add_attr(node, lib.AVALON_ID_ATTR_LONG)
-    _set_attr(node, lib.AVALON_ID_ATTR_LONG, str(id))
-    _identifier.on_duplicate(node)
 
 
 def update_id_verifiers(nodes):
