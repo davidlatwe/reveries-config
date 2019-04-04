@@ -21,6 +21,8 @@ class CollectPlayblast(pyblish.api.InstancePlugin):
         layer_members = cmds.editRenderLayerMembers(current_layer,
                                                     query=True,
                                                     fullNames=True)
+        # (NOTE): Some of renderLayer member may not exists..
+        layer_members = cmds.ls(layer_members)
 
         member = instance[:]
         member += cmds.listRelatives(member,

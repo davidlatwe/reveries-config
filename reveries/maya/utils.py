@@ -410,16 +410,6 @@ def get_id_status(node):
     return _identifier.status(node)
 
 
-def set_transform_id():
-    nodes = (set(cmds.ls(type="transform", long=True)) -
-             set(cmds.ls(long=True, readOnly=True)) -
-             set(cmds.ls(long=True, lockedNodes=True)))
-
-    for node in nodes:
-        status = _identifier.status(node)
-        _identifier.manage(node, status)
-
-
 def set_id(node, id):
     _add_attr(node, lib.AVALON_ID_ATTR_LONG)
     _set_attr(node, lib.AVALON_ID_ATTR_LONG, str(id))

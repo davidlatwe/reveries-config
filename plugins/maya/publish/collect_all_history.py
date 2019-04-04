@@ -6,7 +6,7 @@ class CollectAllHistory(pyblish.api.InstancePlugin):
     """Collect instance shape members' history connections
     """
 
-    order = pyblish.api.CollectorOrder + 0.12
+    order = pyblish.api.CollectorOrder + 0.39
     hosts = ["maya"]
     label = "Collect All History"
 
