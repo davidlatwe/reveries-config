@@ -65,7 +65,7 @@ class ValidateAvalonUUIDNamespace(pyblish.api.InstancePlugin):
     def process(self, instance):
         invalid = self.get_invalid(instance)
         if invalid:
-            pass
+            raise Exception("Incorrect Avalon UUID Namespace.")
 
     @classmethod
     def fix_invalid(cls, instance):
