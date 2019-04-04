@@ -113,11 +113,6 @@ def get_all_asset_nodes():
     return nodes
 
 
-_cached_containerized_nodes = dict()
-_interface = (lambda con: get_interface_from_container(con))
-_asset_id = (lambda con: cmds.getAttr(_interface(con) + ".assetId"))
-
-
 def get_asset_id_from_node(node):
     """Get asset id by lookup container that this node belongs to
     Args:
@@ -125,26 +120,9 @@ def get_asset_id_from_node(node):
 
     Returns:
         str
+
     """
-    if node in _cached_containerized_nodes:
-        return _cached_containerized_nodes[node]
-
-    _cached_containerized_nodes.clear()
-
-    containers = {
-        container: set(cmds.ls(cmds.sets(container, query=True),
-                               long=True))
-        for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID})
-        if not cmds.getAttr(container + ".loader") == "LookLoader"
-    }
-    for container, content in containers.items():
-        _id = _asset_id(container)
-        for _node in content:
-            if not lib.hasAttr(_node, lib.AVALON_ID_ATTR_LONG):
-                continue
-            _cached_containerized_nodes[_node] = _id
-
-    return _cached_containerized_nodes.get(node)
+    return utils.get_id_namespace(node)
 
 
 def create_asset_id_hash(nodes):
