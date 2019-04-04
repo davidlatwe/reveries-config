@@ -43,7 +43,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder - 0.12
     hosts = ["maya"]
     label = "Avalon UUID Assigned"
 
