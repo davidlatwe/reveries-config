@@ -102,8 +102,11 @@ def get_all_asset_nodes():
 
     nodes = []
     for container in host.ls():
-        # We are not interested in looks but assets!
-        if container["loader"] == "LookLoader":
+        # We only interested in surface assets !
+        # (TODO): This black list should be somewhere else
+        if container["loader"] in ("LookLoader",
+                                   "CameraLoader",
+                                   "LightSetLoader"):
             continue
 
         # Gather all information
@@ -203,7 +206,7 @@ def create_items_from_nodes(nodes):
 def list_looks(asset_id):
     """Return all look subsets from database for the given asset
     """
-    look_subsets = list(io.find({"parent": io.ObjectId(asset_id),
+    look_subsets = list(io.find({"parent": asset_id,
                                  "type": "subset",
                                  "name": {"$regex": "look*"}}))
     for look in look_subsets:
