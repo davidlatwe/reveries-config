@@ -35,6 +35,10 @@ class ValidateXGenNoMissingMap(pyblish.api.InstancePlugin):
             palette, description, obj, attr, index = parents
 
             if description in instance.data["xgenDescriptions"]:
+                if obj in xgen.list_fx_modules(description, activated=False):
+                    # Ignore if not active
+                    continue
+
                 invalid.append((parents, path))
 
         return invalid

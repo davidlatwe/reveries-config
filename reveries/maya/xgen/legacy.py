@@ -220,6 +220,22 @@ def list_guides(description):
     return xg.descriptionGuides(description)
 
 
+def list_fx_modules(description, activated=None):
+    palette = get_palette_by_description(description)
+    modules = xg.fxModules(palette, description)
+
+    if activated is not None:
+        state = "true" if activated else "false"
+        matched = list()
+        for fxm in modules:
+            if xg.getAttr("active", palette, description, fxm) == state:
+                matched.append(fxm)
+        return matched
+
+    else:
+        return modules
+
+
 def preview_auto_update(auto):
     """XGen auto Update preview on/off
 
@@ -574,6 +590,12 @@ def maps_to_transfer(description):
     transfer = set()
 
     for path, parents in parse_description_maps(description):
+        _, _, obj, _, _ = parents
+        if obj in list_fx_modules(description, activated=False):
+            # Ignore if not active
+            cmds.warning("FxModule %s not active, transfer skipped." % obj)
+            continue
+
         if "${FXMODULE}" in path:
             path = path.replace("${FXMODULE}", parents[2])
         dir_path = os.path.dirname(path)
