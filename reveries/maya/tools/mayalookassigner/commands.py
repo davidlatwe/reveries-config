@@ -183,6 +183,7 @@ def create_items_from_nodes(nodes):
 
         # Collect available look subsets for this asset
         looks = list_looks(asset["_id"])
+        loaded_looks = list_loaded_looks(asset["_id"])
 
         # Collect namespaces the asset is found in
         namespaces = set()
@@ -193,6 +194,7 @@ def create_items_from_nodes(nodes):
         asset_view_items.append({"label": asset["name"],
                                  "asset": asset,
                                  "looks": looks,
+                                 "loadedLooks": loaded_looks,
                                  "namespaces": namespaces})
 
     return asset_view_items
@@ -213,6 +215,31 @@ def list_looks(asset_id):
         look["versionId"] = version["_id"]
 
     return look_subsets
+
+
+def list_loaded_looks(asset_id):
+    look_subsets = dict()
+
+    for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
+                                  "loader": "LookLoader"}):
+
+        interface = get_interface_from_container(container)
+
+        if str(asset_id) == cmds.getAttr(interface + ".assetId"):
+            subset_id = cmds.getAttr(interface + ".subsetId")
+            if subset_id in look_subsets:
+                continue
+
+            look = io.find_one({"_id": io.ObjectId(subset_id)})
+
+            namespace = cmds.getAttr(interface + ".namespace")
+            # Example: ":Zombie_look_02_"
+            look["No."] = namespace.split("_")[-2]  # result: "02"
+            look["namespace"] = namespace
+
+            look_subsets[subset_id] = look
+
+    return list(look_subsets.values())
 
 
 def load_look(look):
@@ -240,6 +267,11 @@ def load_look(look):
 
     container = api.load(Loader, representation)
     return container
+
+
+def get_loaded_look(look):
+    container = get_container_from_namespace(look["namespace"])
+    return parse_container(container)
 
 
 def remove_unused_looks():

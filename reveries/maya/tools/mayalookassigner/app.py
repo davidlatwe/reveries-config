@@ -58,11 +58,15 @@ class App(QtWidgets.QWidget):
         looks_widget = QtWidgets.QWidget()
         looks_layout = QtWidgets.QVBoxLayout(looks_widget)
 
-        look_outliner = widgets.LookOutliner()  # Database look overview
+        # Database look overview
+        look_outliner = widgets.LookOutliner()
+        # Scene look overview
+        loaded_look_outliner = widgets.LoadedLookOutliner()
 
         remove_unused_btn = QtWidgets.QPushButton("Remove Unused Looks")
 
         looks_layout.addWidget(look_outliner)
+        looks_layout.addWidget(loaded_look_outliner)
         looks_layout.addWidget(remove_unused_btn)
 
         # Footer
@@ -97,9 +101,14 @@ class App(QtWidgets.QWidget):
         look_outliner.view.setColumnWidth(1, 60)   # "version" column
         look_outliner.view.setColumnWidth(2, 50)   # "match" column
 
+        loaded_look_outliner.view.setColumnWidth(0, 140)  # "label" column
+        loaded_look_outliner.view.setColumnWidth(1, 60)   # "No." column
+        loaded_look_outliner.view.setColumnWidth(2, 50)   # "match" column
+
         # Open widgets
         self.asset_outliner = asset_outliner
         self.look_outliner = look_outliner
+        self.loaded_look_outliner = loaded_look_outliner
         self.status = status
         self.warn_layer = warn_layer
 
@@ -119,6 +128,13 @@ class App(QtWidgets.QWidget):
         self.look_outliner.menu_apply_via_uv_action.connect(
             lambda: self.on_process_selected(uv=True)
         )
+        self.loaded_look_outliner.menu_apply_action.connect(
+            lambda: self.on_process_selected(use_loaded=True)
+        )
+        self.loaded_look_outliner.menu_apply_via_uv_action.connect(
+            lambda: self.on_process_selected(use_loaded=True, uv=True)
+        )
+
         self.remove_unused.clicked.connect(commands.remove_unused_looks)
 
         # Maya renderlayer switch callback
@@ -162,22 +178,32 @@ class App(QtWidgets.QWidget):
         found_items = self.asset_outliner.get_all_assets()
         if not found_items:
             self.look_outliner.clear()
+            self.loaded_look_outliner.clear()
 
     def on_asset_selection_changed(self):
         """Get selected items from asset loader and fill look outliner"""
 
         items = self.asset_outliner.get_selected_items()
         self.look_outliner.clear()
+        self.loaded_look_outliner.clear()
         self.look_outliner.add_items(items)
+        self.loaded_look_outliner.add_items(items)
 
-    def on_process_selected(self, uv=False):
+    def on_process_selected(self, use_loaded=False, uv=False):
         """Process all selected looks for the selected assets"""
 
         assets = self.asset_outliner.get_selected_items()
         assert assets, "No asset selected"
 
+        if use_loaded:
+            look_outliner = self.loaded_look_outliner
+            look_getter = commands.get_loaded_look
+        else:
+            look_outliner = self.look_outliner
+            look_getter = commands.load_look
+
         # Collect the looks we want to apply (by name)
-        look_items = self.look_outliner.get_selected_items()
+        look_items = look_outliner.get_selected_items()
         looks = {look["subset"] for look in look_items}
 
         asset_nodes = self.asset_outliner.get_nodes()
@@ -197,7 +223,7 @@ class App(QtWidgets.QWidget):
                           "look for {}".format(prefix, asset))
                 continue
 
-            look = commands.load_look(assign_look)
+            look = look_getter(assign_look)
             self.echo("{} Assigning {} to {}\t".format(prefix,
                                                        look["name"],
                                                        asset))
