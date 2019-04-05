@@ -221,7 +221,8 @@ def list_looks(asset_id):
 
 
 def list_loaded_looks(asset_id):
-    look_subsets = dict()
+    look_subsets = list()
+    cached_look = dict()
 
     for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
                                   "loader": "LookLoader"}):
@@ -230,22 +231,23 @@ def list_loaded_looks(asset_id):
 
         if str(asset_id) == cmds.getAttr(interface + ".assetId"):
             subset_id = cmds.getAttr(interface + ".subsetId")
-            if subset_id in look_subsets:
-                continue
-
-            look = io.find_one({"_id": io.ObjectId(subset_id)})
+            if subset_id in cached_look:
+                look = cached_look[subset_id].copy()
+            else:
+                look = io.find_one({"_id": io.ObjectId(subset_id)})
+                cached_look[subset_id] = look
 
             namespace = cmds.getAttr(interface + ".namespace")
             # Example: ":Zombie_look_02_"
             look["No."] = namespace.split("_")[-2]  # result: "02"
             look["namespace"] = namespace
 
-            look_subsets[subset_id] = look
+            look_subsets.append(look)
 
-    return list(look_subsets.values())
+    return look_subsets
 
 
-def load_look(look):
+def load_look(look, overload=False):
     """Load look subset if it's not been loaded
     """
     representation = io.find_one({"type": "representation",
@@ -253,14 +255,21 @@ def load_look(look):
                                   "name": "LookDev"})
     representation_id = str(representation["_id"])
 
+    is_loaded = False
     for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
                                   "loader": "LookLoader",
                                   "representation": representation_id}):
+        if overload:
+            is_loaded = True
+            log.info("Overload look ..")
+            break
+
         log.info("Reusing loaded look ..")
         return parse_container(container)
 
-    # Not loaded
-    log.info("Using look for the first time ..")
+    if not is_loaded:
+        # Not loaded
+        log.info("Using look for the first time ..")
 
     loaders = api.loaders_from_representation(api.discover(api.Loader),
                                               representation_id)
@@ -268,11 +277,13 @@ def load_look(look):
     if Loader is None:
         raise RuntimeError("Could not find LookLoader, this is a bug")
 
-    container = api.load(Loader, representation)
+    container = api.load(Loader,
+                         representation,
+                         options={"overload": overload})
     return container
 
 
-def get_loaded_look(look):
+def get_loaded_look(look, *args, **kwargs):
     container = get_container_from_namespace(look["namespace"])
     return parse_container(container)
 

@@ -207,7 +207,7 @@ class LookOutliner(QtWidgets.QWidget):
 
         view = views.View()
         view.setModel(proxy)
-        view.setMinimumHeight(180)
+        view.setMinimumHeight(80)
         view.setToolTip("Use right mouse button menu for direct actions")
         view.customContextMenuRequested.connect(self.right_mouse_menu)
         view.sortByColumn(0, QtCore.Qt.AscendingOrder)

@@ -28,9 +28,16 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         entry_path = self.file_path(representation)
 
         expanded = os.path.expandvars(entry_path).replace("\\", "/")
-        if expanded not in cmds.file(query=True, reference=True):
+        loaded = expanded in cmds.file(query=True, reference=True)
+        overload = options.get("overload")
 
-            self.log.info("Loading lookdev for the first time..")
+        if not loaded or overload:
+
+            if loaded and overload:
+                self.log.info("Loading lookdev again..")
+            else:
+                self.log.info("Loading lookdev for the first time..")
+
             nodes = cmds.file(
                 entry_path,
                 namespace=namespace,
