@@ -757,9 +757,10 @@ def description_ctrl_method(description):
     palette = get_palette_by_description(description)
     primitive = xg.getActive(palette, description, "Primitive")
 
-    if xg.getAttr("iMethod", palette, description, primitive):
+    if xg.getAttr("iMethod", palette, description, primitive) == "1":
         return "Guides"
     else:
+        # iMethod == "0"
         if xg.getAttr("groom", palette, description):
             return "Groom"
         else:
