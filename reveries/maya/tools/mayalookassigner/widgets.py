@@ -182,7 +182,10 @@ class LookOutliner(QtWidgets.QWidget):
     menu_apply_action = QtCore.Signal()
     menu_apply_via_uv_action = QtCore.Signal()
 
-    def __init__(self, parent=None):
+    TITLE = "Published Looks"
+    MODEL = models.LookModel
+
+    def __init__(self, title=None, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
 
         # look manager layout
@@ -191,12 +194,12 @@ class LookOutliner(QtWidgets.QWidget):
         layout.setSpacing(10)
 
         # Looks from database
-        title = QtWidgets.QLabel("Looks")
+        title = QtWidgets.QLabel(self.TITLE)
         title.setAlignment(QtCore.Qt.AlignCenter)
         title.setStyleSheet("font-weight: bold; font-size: 12px")
         title.setAlignment(QtCore.Qt.AlignCenter)
 
-        model = models.LookModel()
+        model = self.MODEL()
 
         # Proxy for dynamic sorting
         proxy = QtCore.QSortFilterProxyModel()
@@ -259,3 +262,9 @@ class LookOutliner(QtWidgets.QWidget):
         menu.addAction(apply_via_uv_action)
 
         menu.exec_(globalpos)
+
+
+class LoadedLookOutliner(LookOutliner):
+
+    TITLE = "Loaded Looks"
+    MODEL = models.LoadedLookModel
