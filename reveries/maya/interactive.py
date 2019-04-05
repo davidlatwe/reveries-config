@@ -198,10 +198,10 @@ def bind_xgen_interactive_by_selection(*args):
                             "".format(desc))
 
         bound_meshes = []
-        for id in bound_map[desc_id]:
-            models = lib.lsAttr(lib.AVALON_ID_ATTR_LONG,
-                                value=id,
-                                namespace=mesh_namespace + ":")
+        ids = bound_map[desc_id]
+        nodes = lib.ls_nodes_by_id(ids, mesh_namespace + ":")
+        for id in ids:
+            models = list(nodes[id])
             _meshes = cmds.listRelatives(models,
                                          shapes=True,
                                          noIntermediate=True,
@@ -285,10 +285,10 @@ def bind_xgen_legacy_by_selection(*args):
                                 "".format(desc))
 
             bound_meshes = []
-            for id in bound_map[desc_id]:
-                models = lib.lsAttr(lib.AVALON_ID_ATTR_LONG,
-                                    value=id,
-                                    namespace=mesh_namespace + ":")
+            ids = bound_map[desc_id]
+            nodes = lib.ls_nodes_by_id(ids, mesh_namespace + ":")
+            for id in ids:
+                models = list(nodes[id])
                 _meshes = cmds.listRelatives(models,
                                              shapes=True,
                                              noIntermediate=True,
