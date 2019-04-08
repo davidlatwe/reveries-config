@@ -57,12 +57,33 @@ class App(QtWidgets.QWidget):
         # Looks (right)
         looks_widget = QtWidgets.QWidget()
         looks_layout = QtWidgets.QVBoxLayout(looks_widget)
+        # Sub widgets and layouts
+        db_looks_widget = QtWidgets.QWidget()
+        db_looks_layout = QtWidgets.QVBoxLayout(db_looks_widget)
+        loaded_looks_widget = QtWidgets.QWidget()
+        loaded_looks_layout = QtWidgets.QVBoxLayout(loaded_looks_widget)
 
-        look_outliner = widgets.LookOutliner()  # Database look overview
-
+        # Database look overview
+        look_outliner = widgets.LookOutliner()
+        # Scene look overview
+        loaded_look_outliner = widgets.LoadedLookOutliner()
+        # Button and checkBox
+        overload_chk = QtWidgets.QCheckBox("Overload Looks")
         remove_unused_btn = QtWidgets.QPushButton("Remove Unused Looks")
 
-        looks_layout.addWidget(look_outliner)
+        db_looks_layout.addWidget(look_outliner)
+        db_looks_layout.addWidget(overload_chk)
+        loaded_looks_layout.addWidget(loaded_look_outliner)
+
+        # Look Splitter
+        look_splitter = QtWidgets.QSplitter()
+        look_splitter.setOrientation(QtCore.Qt.Vertical)
+        look_splitter.setStyleSheet("QSplitter{ border: 0px; }")
+        look_splitter.addWidget(db_looks_widget)
+        look_splitter.addWidget(loaded_looks_widget)
+        look_splitter.setSizes([200, 120])
+
+        looks_layout.addWidget(look_splitter)
         looks_layout.addWidget(remove_unused_btn)
 
         # Footer
@@ -87,7 +108,7 @@ class App(QtWidgets.QWidget):
         main_splitter.setStyleSheet("QSplitter{ border: 0px; }")
         main_splitter.addWidget(asset_outliner)
         main_splitter.addWidget(looks_widget)
-        main_splitter.setSizes([350, 260])
+        main_splitter.setSizes([350, 280])
         main_layout.addWidget(main_splitter)
         main_layout.addLayout(footer)
 
@@ -97,14 +118,20 @@ class App(QtWidgets.QWidget):
         look_outliner.view.setColumnWidth(1, 60)   # "version" column
         look_outliner.view.setColumnWidth(2, 50)   # "match" column
 
+        loaded_look_outliner.view.setColumnWidth(0, 140)  # "label" column
+        loaded_look_outliner.view.setColumnWidth(1, 60)   # "No." column
+        loaded_look_outliner.view.setColumnWidth(2, 50)   # "match" column
+
         # Open widgets
         self.asset_outliner = asset_outliner
         self.look_outliner = look_outliner
+        self.loaded_look_outliner = loaded_look_outliner
         self.status = status
         self.warn_layer = warn_layer
 
-        # Buttons
+        # Buttons and CheckBoxes
         self.remove_unused = remove_unused_btn
+        self.overload = overload_chk
 
     def setup_connections(self):
         """Connect interactive widgets with actions"""
@@ -119,6 +146,13 @@ class App(QtWidgets.QWidget):
         self.look_outliner.menu_apply_via_uv_action.connect(
             lambda: self.on_process_selected(uv=True)
         )
+        self.loaded_look_outliner.menu_apply_action.connect(
+            lambda: self.on_process_selected(use_loaded=True)
+        )
+        self.loaded_look_outliner.menu_apply_via_uv_action.connect(
+            lambda: self.on_process_selected(use_loaded=True, uv=True)
+        )
+
         self.remove_unused.clicked.connect(commands.remove_unused_looks)
 
         # Maya renderlayer switch callback
@@ -162,23 +196,41 @@ class App(QtWidgets.QWidget):
         found_items = self.asset_outliner.get_all_assets()
         if not found_items:
             self.look_outliner.clear()
+            self.loaded_look_outliner.clear()
 
     def on_asset_selection_changed(self):
         """Get selected items from asset loader and fill look outliner"""
 
         items = self.asset_outliner.get_selected_items()
         self.look_outliner.clear()
+        self.loaded_look_outliner.clear()
         self.look_outliner.add_items(items)
+        self.loaded_look_outliner.add_items(items)
 
-    def on_process_selected(self, uv=False):
+    def on_process_selected(self, use_loaded=False, uv=False):
         """Process all selected looks for the selected assets"""
 
         assets = self.asset_outliner.get_selected_items()
         assert assets, "No asset selected"
 
+        if use_loaded:
+            look_outliner = self.loaded_look_outliner
+            look_getter = commands.get_loaded_look
+            look_key = "loadedLooks"
+            match_tag = "No."
+            match_key = "No."
+        else:
+            look_outliner = self.look_outliner
+            look_getter = commands.load_look
+            look_key = "looks"
+            match_tag = "subset"
+            match_key = "name"
+
+        overload = self.overload.isChecked()
+
         # Collect the looks we want to apply (by name)
-        look_items = self.look_outliner.get_selected_items()
-        looks = {look["subset"] for look in look_items}
+        look_items = look_outliner.get_selected_items()
+        looks = {look[match_tag] for look in look_items}
 
         asset_nodes = self.asset_outliner.get_nodes()
 
@@ -190,14 +242,14 @@ class App(QtWidgets.QWidget):
 
             # Assign the first matching look relevant for this asset
             # (since assigning multiple to the same nodes makes no sense)
-            assign_look = next((subset for subset in item["looks"]
-                               if subset["name"] in looks), None)
+            assign_look = next((subset for subset in item[look_key]
+                               if subset[match_key] in looks), None)
             if not assign_look:
                 self.echo("{} No matching selected "
                           "look for {}".format(prefix, asset))
                 continue
 
-            look = commands.load_look(assign_look)
+            look = look_getter(assign_look, overload=overload)
             self.echo("{} Assigning {} to {}\t".format(prefix,
                                                        look["name"],
                                                        asset))
@@ -210,6 +262,9 @@ class App(QtWidgets.QWidget):
         end = time.time()
 
         self.echo("Finished assigning.. ({0:.3f}s)".format(end - start))
+
+        if overload:
+            self.overload.setChecked(False)
 
 
 def show():

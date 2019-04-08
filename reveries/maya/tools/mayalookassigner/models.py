@@ -120,3 +120,41 @@ class LookModel(model.TreeModel):
             self.add_child(item_node)
 
         self.endResetModel()
+
+
+class LoadedLookModel(model.TreeModel):
+    """Model displaying a list of loaded looks and matches for assets"""
+
+    COLUMNS = ["label", "No.", "match"]
+
+    def add_items(self, items):
+
+        self.beginResetModel()
+
+        # Collect the assets per look name (from the items of the AssetModel)
+        look_subsets = defaultdict(list)
+        for asset_item in items:
+            asset = asset_item["asset"]
+            for look in asset_item["loadedLooks"]:
+                key = (look["name"], look["No."])
+                look_subsets[key].append(asset)
+
+        for (subset, num), assets in sorted(look_subsets.iteritems()):
+
+            # Define nice label without "look" prefix for readability
+            label = subset if not subset.startswith("look") else subset[4:]
+
+            item_node = model.Node()
+            item_node["label"] = label
+            item_node["subset"] = subset
+            item_node["No."] = num
+
+            # Amount of matching assets for this look
+            item_node["match"] = len(assets)
+
+            # Store the assets that have this subset available
+            item_node["assets"] = assets
+
+            self.add_child(item_node)
+
+        self.endResetModel()

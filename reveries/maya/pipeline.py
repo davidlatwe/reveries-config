@@ -170,8 +170,17 @@ def get_interface_from_container(container):
     Returns a str
 
     """
-    namespace = cmds.getAttr(container + ".namespace")
-    nodes = lib.lsAttrs({"id": AVALON_INTERFACE_ID}, namespace=namespace)
+    nodes = list()
+
+    for node in cmds.listConnections(container + ".message",
+                                     destination=True,
+                                     source=False,
+                                     type="objectSet"):
+        if not cmds.objExists(node + ".id"):
+            continue
+
+        if cmds.getAttr(node + ".id") == AVALON_INTERFACE_ID:
+            nodes.append(node)
 
     if not len(nodes) == 1:
         raise RuntimeError("Container has none or more then one interface, "

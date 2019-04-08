@@ -220,6 +220,22 @@ def list_guides(description):
     return xg.descriptionGuides(description)
 
 
+def list_fx_modules(description, activated=None):
+    palette = get_palette_by_description(description)
+    modules = xg.fxModules(palette, description)
+
+    if activated is not None:
+        state = "true" if activated else "false"
+        matched = list()
+        for fxm in modules:
+            if xg.getAttr("active", palette, description, fxm) == state:
+                matched.append(fxm)
+        return matched
+
+    else:
+        return modules
+
+
 def preview_auto_update(auto):
     """XGen auto Update preview on/off
 
@@ -352,7 +368,7 @@ _ATTR_ALIAS = {
 }
 
 
-def _parse_attribute(attr):
+def _parse_attribute(attr, obj):
     if attr.endswith(")"):
         attr, attr_indx = attr[:-1].split("(")
         attr_indx = int(attr_indx)
@@ -364,10 +380,14 @@ def _parse_attribute(attr):
     except KeyError:
         # (TODO) It seems these attributes will prefixed
         #        with description name.
-        if attr.endswith("Bak"):
+        if attr.endswith("Bak") or attr.endswith("Bake"):
             attr = "bakeDir"
         elif attr.endswith("Point"):
-            attr = "pointDir"
+            if obj == "FileGenerator":
+                attr = "inputDir"
+            else:
+                attr = "pointDir"
+
     finally:
         attr = str(attr)
 
@@ -459,7 +479,7 @@ def parse_objects(map_attr):
         # Example: descriptionShape.generator.mask
 
         attr = address[2]
-        attr, attr_indx = _parse_attribute(attr)
+        attr, attr_indx = _parse_attribute(attr, subtype)
 
         return palette, description, subtype, attr, attr_indx
 
@@ -470,7 +490,7 @@ def parse_objects(map_attr):
         mod_indx = int(mod_indx)
 
         attr = address[3]
-        attr, attr_indx = _parse_attribute(attr)
+        attr, attr_indx = _parse_attribute(attr, subtype)
 
         try:
             module = xg.fxModules(palette, description)[mod_indx]
@@ -570,6 +590,12 @@ def maps_to_transfer(description):
     transfer = set()
 
     for path, parents in parse_description_maps(description):
+        _, _, obj, _, _ = parents
+        if obj in list_fx_modules(description, activated=False):
+            # Ignore if not active
+            cmds.warning("FxModule %s not active, transfer skipped." % obj)
+            continue
+
         if "${FXMODULE}" in path:
             path = path.replace("${FXMODULE}", parents[2])
         dir_path = os.path.dirname(path)
@@ -731,9 +757,10 @@ def description_ctrl_method(description):
     palette = get_palette_by_description(description)
     primitive = xg.getActive(palette, description, "Primitive")
 
-    if xg.getAttr("iMethod", palette, description, primitive):
+    if xg.getAttr("iMethod", palette, description, primitive) == "1":
         return "Guides"
     else:
+        # iMethod == "0"
         if xg.getAttr("groom", palette, description):
             return "Groom"
         else:

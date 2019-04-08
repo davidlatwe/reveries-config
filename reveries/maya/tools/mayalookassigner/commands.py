@@ -102,8 +102,11 @@ def get_all_asset_nodes():
 
     nodes = []
     for container in host.ls():
-        # We are not interested in looks but assets!
-        if container["loader"] == "LookLoader":
+        # We only interested in surface assets !
+        # (TODO): This black list should be somewhere else
+        if container["loader"] in ("LookLoader",
+                                   "CameraLoader",
+                                   "LightSetLoader"):
             continue
 
         # Gather all information
@@ -183,6 +186,7 @@ def create_items_from_nodes(nodes):
 
         # Collect available look subsets for this asset
         looks = list_looks(asset["_id"])
+        loaded_looks = list_loaded_looks(asset["_id"])
 
         # Collect namespaces the asset is found in
         namespaces = set()
@@ -193,6 +197,7 @@ def create_items_from_nodes(nodes):
         asset_view_items.append({"label": asset["name"],
                                  "asset": asset,
                                  "looks": looks,
+                                 "loadedLooks": loaded_looks,
                                  "namespaces": namespaces})
 
     return asset_view_items
@@ -201,7 +206,7 @@ def create_items_from_nodes(nodes):
 def list_looks(asset_id):
     """Return all look subsets from database for the given asset
     """
-    look_subsets = list(io.find({"parent": io.ObjectId(asset_id),
+    look_subsets = list(io.find({"parent": asset_id,
                                  "type": "subset",
                                  "name": {"$regex": "look*"}}))
     for look in look_subsets:
@@ -215,7 +220,34 @@ def list_looks(asset_id):
     return look_subsets
 
 
-def load_look(look):
+def list_loaded_looks(asset_id):
+    look_subsets = list()
+    cached_look = dict()
+
+    for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
+                                  "loader": "LookLoader"}):
+
+        interface = get_interface_from_container(container)
+
+        if str(asset_id) == cmds.getAttr(interface + ".assetId"):
+            subset_id = cmds.getAttr(interface + ".subsetId")
+            if subset_id in cached_look:
+                look = cached_look[subset_id].copy()
+            else:
+                look = io.find_one({"_id": io.ObjectId(subset_id)})
+                cached_look[subset_id] = look
+
+            namespace = cmds.getAttr(interface + ".namespace")
+            # Example: ":Zombie_look_02_"
+            look["No."] = namespace.split("_")[-2]  # result: "02"
+            look["namespace"] = namespace
+
+            look_subsets.append(look)
+
+    return look_subsets
+
+
+def load_look(look, overload=False):
     """Load look subset if it's not been loaded
     """
     representation = io.find_one({"type": "representation",
@@ -223,14 +255,21 @@ def load_look(look):
                                   "name": "LookDev"})
     representation_id = str(representation["_id"])
 
+    is_loaded = False
     for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
                                   "loader": "LookLoader",
                                   "representation": representation_id}):
+        if overload:
+            is_loaded = True
+            log.info("Overload look ..")
+            break
+
         log.info("Reusing loaded look ..")
         return parse_container(container)
 
-    # Not loaded
-    log.info("Using look for the first time ..")
+    if not is_loaded:
+        # Not loaded
+        log.info("Using look for the first time ..")
 
     loaders = api.loaders_from_representation(api.discover(api.Loader),
                                               representation_id)
@@ -238,8 +277,15 @@ def load_look(look):
     if Loader is None:
         raise RuntimeError("Could not find LookLoader, this is a bug")
 
-    container = api.load(Loader, representation)
+    container = api.load(Loader,
+                         representation,
+                         options={"overload": overload})
     return container
+
+
+def get_loaded_look(look, *args, **kwargs):
+    container = get_container_from_namespace(look["namespace"])
+    return parse_container(container)
 
 
 def remove_unused_looks():
