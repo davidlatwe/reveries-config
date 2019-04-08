@@ -29,7 +29,9 @@ name = "layout"
 name = "lighting"
 
 [template]
-work = "{root}/{project}/Avalon/{silo}/{asset}/work/{task}/{user}/{app}"
+# Arg {user} been removed.
+# To re-implement {user} into path, better work file management tool is required.
+work = "{root}/{project}/Avalon/{silo}/{asset}/work/{task}/{app}"
 publish = "{root}/{project}/Avalon/{silo}/{asset}/publish/{subset}/v{version:0>3}/{representation}"
 
 
