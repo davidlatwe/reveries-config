@@ -22,6 +22,8 @@ class ValidateMeshLaminaFaces(pyblish.api.InstancePlugin):
         MayaSelectInvalidInstanceAction,
     ]
 
+    optional = True
+
     @classmethod
     def get_invalid(cls, instance):
         from maya import cmds

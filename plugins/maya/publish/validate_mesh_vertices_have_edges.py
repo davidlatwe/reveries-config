@@ -71,6 +71,8 @@ class ValidateMeshVerticesHaveEdges(pyblish.api.InstancePlugin):
         RepairInstanceAction,
     ]
 
+    optional = True
+
     @classmethod
     def get_invalid(cls, instance):
         invalid = []

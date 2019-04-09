@@ -34,6 +34,8 @@ class ValidateNormalsUnlocked(pyblish.api.Validator):
         RepairInvalid,
     ]
 
+    optional = True
+
     @staticmethod
     def has_locked_normals(mesh):
         """Return whether a mesh node has locked normals"""
