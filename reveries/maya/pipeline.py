@@ -254,7 +254,7 @@ def update_container(container, asset, subset, version, representation):
         "versionId": str(version["_id"]),
         "representation": str(representation["_id"]),
     }.items():
-        cmds.setAttr(container + "." + key, value, type="string")
+        cmds.setAttr(container_node + "." + key, value, type="string")
 
     name = subset["name"]
 
