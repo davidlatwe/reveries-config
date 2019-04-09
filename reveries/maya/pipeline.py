@@ -182,20 +182,24 @@ def get_container_from_group(group):
         str or None
 
     """
-    group = group.rsplit("|", 1)[-1]
-    nodes = lib.lsAttrs({"id": AVALON_INTERFACE_ID,
-                         "subsetGroup": group})
-    if not nodes:
+    if not cmds.objExists(group):
         return None
 
-    assert len(nodes) == 1, ("Group node has more then one interface, "
-                             "this is a bug.")
+    nodes = list()
 
-    source = cmds.listConnections(nodes[0] + ".container",
-                                  source=True,
-                                  destination=False,
-                                  plugs=False)
-    return source[0]
+    for node in cmds.listConnections(group + ".message",
+                                     destination=True,
+                                     source=False,
+                                     type="objectSet"):
+        if not cmds.objExists(node + ".id"):
+            continue
+
+        if cmds.getAttr(node + ".id") == AVALON_CONTAINER_ID:
+            nodes.append(node)
+
+    assert len(nodes) == 1, ("Group node has more then one container, "
+                             "this is a bug.")
+    return nodes[0]
 
 
 def get_group_from_container(container):
@@ -205,11 +209,8 @@ def get_group_from_container(container):
         container (str): Name of container node
 
     """
-    interface = get_interface_from_container(container)
-
     try:
-
-        group = cmds.listConnections(interface + ".subsetGroup",
+        group = cmds.listConnections(container + ".subsetGroup",
                                      source=True,
                                      destination=False,
                                      plugs=False)
