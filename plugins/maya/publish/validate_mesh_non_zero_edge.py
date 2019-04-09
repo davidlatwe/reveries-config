@@ -26,6 +26,8 @@ class ValidateMeshNonZeroEdgeLength(pyblish.api.InstancePlugin):
         MayaSelectInvalidInstanceAction,
     ]
 
+    optional = True
+
     __tolerance = 1e-5
 
     @classmethod

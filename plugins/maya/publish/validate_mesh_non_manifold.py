@@ -23,6 +23,8 @@ class ValidateMeshNonManifold(pyblish.api.Validator):
         MayaSelectInvalidInstanceAction,
     ]
 
+    optional = True
+
     @staticmethod
     def get_invalid(instance):
 
