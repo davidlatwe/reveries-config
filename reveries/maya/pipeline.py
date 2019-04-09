@@ -279,22 +279,19 @@ def subset_containerising(name,
                           namespace,
                           container_id,
                           nodes,
-                          ports,
                           context,
                           cls_name,
                           group_name):
-    """Containerise loaded subset and build interface
+    """Containerise loaded subset
 
-    Containerizing imported/referenced nodes and creating interface node,
-    and the interface node will connected to container node and top group
-    node's `message` attribute.
+    Containerizing imported/referenced nodes and connect subset group
+    node's `message` attribute to container node.
 
     Arguments:
         name (str): Name of resulting assembly
-        namespace (str): Namespace under which to host interface
+        namespace (str): Namespace under which to host container
         container_id (str): Container UUID
         nodes (list): Long names of imported/referenced nodes
-        ports (list): Long names of nodes for interfacing
         context (dict): Asset information
         cls_name (str): avalon Loader class name
         group_name (str): Top group node of imported/referenced new nodes

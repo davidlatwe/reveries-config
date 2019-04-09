@@ -35,13 +35,13 @@ def select(nodes):
 
 
 def get_groups_from_namespaces(namespaces):
-    """Return interface nodes from namespace
+    """Return group nodes from namespace
 
     Args:
         namespaces (str, unicode or set): Target subsets' namespaces
 
     Returns:
-        list: List of interface node in long name
+        list: List of group node in long name
 
     """
     if isinstance(namespaces, six.string_types):
