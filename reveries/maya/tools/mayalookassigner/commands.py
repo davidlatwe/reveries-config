@@ -13,7 +13,6 @@ from ....utils import get_representation_path_
 from ....maya import lib, utils
 from ...pipeline import (
     AVALON_INTERFACE_ID,
-    get_interface_from_container,
     get_container_from_namespace,
     parse_container,
 )
@@ -227,17 +226,15 @@ def list_loaded_looks(asset_id):
     for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
                                   "loader": "LookLoader"}):
 
-        interface = get_interface_from_container(container)
-
-        if str(asset_id) == cmds.getAttr(interface + ".assetId"):
-            subset_id = cmds.getAttr(interface + ".subsetId")
+        if str(asset_id) == cmds.getAttr(container + ".assetId"):
+            subset_id = cmds.getAttr(container + ".subsetId")
             if subset_id in cached_look:
                 look = cached_look[subset_id].copy()
             else:
                 look = io.find_one({"_id": io.ObjectId(subset_id)})
                 cached_look[subset_id] = look
 
-            namespace = cmds.getAttr(interface + ".namespace")
+            namespace = cmds.getAttr(container + ".namespace")
             # Example: ":Zombie_look_02_"
             look["No."] = namespace.split("_")[-2]  # result: "02"
             look["namespace"] = namespace
