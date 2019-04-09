@@ -47,7 +47,16 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Avalon UUID Assigned"
 
-    families = pipeline.UUID_REQUIRED_FAMILIES
+    families = [
+        "reveries.model",
+        "reveries.rig",
+        "reveries.look",
+        "reveries.setdress",
+        "reveries.camera",
+        "reveries.lightset",
+        "reveries.mayashare",
+        "reveries.xgen",
+    ]
 
     actions = [
         pyblish.api.Category("Select"),

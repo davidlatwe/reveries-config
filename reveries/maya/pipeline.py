@@ -354,18 +354,6 @@ def find_stray_textures(instance):
     return stray
 
 
-UUID_REQUIRED_FAMILIES = [
-    "reveries.model",
-    "reveries.rig",
-    "reveries.look",
-    "reveries.setdress",
-    "reveries.camera",
-    "reveries.lightset",
-    "reveries.mayashare",
-    "reveries.xgen",
-]
-
-
 _uuid_required_node_types = {
     "reveries.model": {
         "transform",
