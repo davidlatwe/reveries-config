@@ -133,21 +133,6 @@ def get_interface_from_container(container):
     return nodes[0]
 
 
-def get_container_from_interface(interface):
-    """Return container node from interface node
-
-    Raise `RuntimeError` if getting none or more then one container.
-
-    Arguments:
-        interface (str): Name of interface node
-
-    Returns a str
-
-    """
-    namespace = cmds.getAttr(interface + ".namespace")
-    return get_container_from_namespace(namespace)
-
-
 def get_container_from_namespace(namespace):
     """Return container node from namespace
 
