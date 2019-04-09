@@ -13,10 +13,7 @@ from ..plugins import message_box_error
 
 from . import lib
 from . import capsule
-from .pipeline import (
-    AVALON_PORTS,
-    parse_container,
-)
+from .pipeline import parse_container
 
 
 _log = logging.getLogger("reveries.maya.hierarchy")
@@ -245,7 +242,6 @@ def add_subset(data, namespace, root, on_update=None):
                                     data["representationDoc"],
                                     namespace=sub_namespace,
                                     options=options)
-    sub_interface = sub_container["interface"]
     subset_group = sub_container["subsetGroup"]
 
     try:
@@ -263,12 +259,10 @@ def add_subset(data, namespace, root, on_update=None):
 
         if on_update is None:
             cmds.sets(sub_container["objectName"], remove=AVALON_CONTAINERS)
-            cmds.sets(sub_interface, remove=AVALON_PORTS)
         else:
             container = on_update
             cmds.sets(sub_container["objectName"],
                       forceElement=container["objectName"])
-            cmds.sets(sub_interface, forceElement=container["interface"])
 
 
 def get_referenced_containers(container):

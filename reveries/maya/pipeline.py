@@ -15,9 +15,6 @@ from .vendor import sticker
 from .capsule import namespaced, nodes_locker
 from .. import REVERIES_ICONS, utils
 
-
-AVALON_PORTS = ":AVALON_PORTS"
-
 AVALON_GROUP_ATTR = "subsetGroup"
 AVALON_CONTAINER_ATTR = "container"
 
