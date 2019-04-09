@@ -104,61 +104,6 @@ def unique_root_namespace(asset_name, family_name, parent_namespace=""):
     return ":" + unique  # Ensure in root
 
 
-def subset_interfacing(name,
-                       namespace,
-                       container_id,
-                       nodes,
-                       context,
-                       suffix="PORT"):
-    """Expose crucial `nodes` as an interface of a subset container
-
-    Interfacing enables a faster way to access nodes of loaded subsets from
-    outliner.
-
-    (NOTE) Yes, currently, the `containerId` attribute is in interface node,
-           not in container.
-
-    Arguments:
-        name (str): Name of resulting assembly
-        namespace (str): Namespace under which to host interface
-        container_id (str): Container UUID
-        nodes (list): Long names of nodes for interfacing
-        context (dict): Asset information
-        suffix (str, optional): Suffix of interface, defaults to `_PORT`.
-
-    Returns:
-        interface (str): Name of interface assembly
-
-    """
-    from collections import OrderedDict
-    from maya import cmds
-
-    interface = cmds.sets(nodes,
-                          name=container_naming(namespace, name, suffix))
-
-    data = OrderedDict()
-    data["id"] = AVALON_INTERFACE_ID
-    data["namespace"] = namespace
-    data["containerId"] = container_id
-    data["assetId"] = str(context["asset"]["_id"])
-    data["subsetId"] = str(context["subset"]["_id"])
-    data["versionId"] = str(context["version"]["_id"])
-
-    avalon.maya.lib.imprint(interface, data)
-
-    main_interface = cmds.ls(AVALON_PORTS, type="objectSet")
-    if not main_interface:
-        main_interface = cmds.sets(empty=True, name=AVALON_PORTS)
-        _icon = os.path.join(REVERIES_ICONS, "interface_main-01.png")
-        sticker.put(main_interface, _icon)
-    else:
-        main_interface = main_interface[0]
-
-    cmds.sets(interface, addElement=main_interface)
-
-    return interface
-
-
 def get_interface_from_container(container):
     """Return interface node from container node
 
@@ -286,22 +231,7 @@ def container_metadata(container):
         (dict)
 
     """
-    interface = get_interface_from_container(container)
-    # (NOTE) subsetGroup could be None type if it's lookDev or animCurve
-    subset_group = get_group_from_container(container)
-    container_id = cmds.getAttr(interface + ".containerId")
-    asset_id = cmds.getAttr(interface + ".assetId")
-    subset_id = cmds.getAttr(interface + ".subsetId")
-    version_id = cmds.getAttr(interface + ".versionId")
-
-    return {
-        "interface": interface,
-        "subsetGroup": subset_group,
-        "containerId": container_id,
-        "assetId": asset_id,
-        "subsetId": subset_id,
-        "versionId": version_id,
-    }
+    return {}
 
 
 def parse_container(container):
@@ -432,31 +362,33 @@ def subset_containerising(name,
         group_name (str): Top group node of imported/referenced new nodes
 
     """
-    interface = subset_interfacing(name=name,
-                                   namespace=namespace,
-                                   container_id=container_id,
-                                   nodes=ports,
-                                   context=context)
     container = containerise(name=name,
                              namespace=namespace,
                              nodes=nodes,
                              context=context,
                              loader=cls_name)
+    # Add additional data
+    for key, value in {
+        "containerId": container_id,
+        "assetId": str(context["asset"]["_id"]),
+        "subsetId": str(context["subset"]["_id"]),
+        "versionId": str(context["version"]["_id"]),
+    }.items():
+        cmds.addAttr(container, longName=key, dataType="string")
+        cmds.setAttr(container + "." + key, value, type="string")
+
+    # Connect subset group
+    if group_name and cmds.objExists(group_name):
+        lib.connect_message(group_name, container, AVALON_GROUP_ATTR)
+
     # Put icon to main container
     main_container = cmds.ls(AVALON_CONTAINERS, type="objectSet")[0]
     _icon = os.path.join(REVERIES_ICONS, "container_main-01.png")
     sticker.put(main_container, _icon)
 
-    # interface -> top_group.message
-    #           -> container.message
-    lib.connect_message(group_name, interface, AVALON_GROUP_ATTR)
-    lib.connect_message(container, interface, AVALON_CONTAINER_ATTR)
-
     # Apply icons
     container_icon = os.path.join(REVERIES_ICONS, "container-01.png")
-    interface_icon = os.path.join(REVERIES_ICONS, "interface-01.png")
     sticker.put(container, container_icon)
-    sticker.put(interface, interface_icon)
 
     if cmds.objExists(group_name):
         package_icon = os.path.join(REVERIES_ICONS, "package-01.png")
