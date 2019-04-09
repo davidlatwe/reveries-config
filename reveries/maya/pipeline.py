@@ -263,7 +263,6 @@ def update_container(container, asset, subset, version, representation):
     log.info("Updating container...")
 
     container_node = container["objectName"]
-    interface_node = container["interface"]
 
     asset_changed = False
     subset_changed = False
@@ -299,35 +298,33 @@ def update_container(container, asset, subset, version, representation):
         subset_changed = True
         name = subset["name"]
         # Rename group node
-        group = container["subsetGroup"]
-        cmds.rename(group, subset_group_name(namespace, name))
-        # Update data
+        group = container.get("subsetGroup")
+        if group and cmds.objExists(group):
+            cmds.rename(group, subset_group_name(namespace, name))
+        # Update subset name
         cmds.setAttr(container_node + ".name", name, type="string")
 
-    # Update interface data: representation id
+    # Update representation id
     cmds.setAttr(container_node + ".representation",
                  str(representation["_id"]),
                  type="string")
-    # Update interface data: version id
-    cmds.setAttr(interface_node + ".versionId",
+    # Update version id
+    cmds.setAttr(container_node + ".versionId",
                  str(version["_id"]),
                  type="string")
 
     if any((asset_changed, subset_changed)):
-        # Update interface data: subset id
-        cmds.setAttr(interface_node + ".subsetId",
+        # Update subset id
+        cmds.setAttr(container_node + ".subsetId",
                      str(subset["_id"]),
                      type="string")
-        # Update interface data: asset id
-        cmds.setAttr(interface_node + ".assetId",
+        # Update asset id
+        cmds.setAttr(container_node + ".assetId",
                      str(asset["_id"]),
                      type="string")
         # Rename container
         container_node = cmds.rename(
             container_node, container_naming(namespace, name, "CON"))
-        # Rename interface
-        cmds.rename(interface_node,
-                    container_naming(namespace, name, "PORT"))
         # Rename reference node
         reference_node = next((n for n in cmds.sets(container_node, query=True)
                                if cmds.nodeType(n) == "reference"), None)
