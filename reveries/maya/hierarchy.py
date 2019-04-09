@@ -13,12 +13,7 @@ from ..plugins import message_box_error
 
 from . import lib
 from . import capsule
-from .pipeline import (
-    AVALON_PORTS,
-    AVALON_INTERFACE_ID,
-    get_container_from_interface,
-    parse_container,
-)
+from .pipeline import parse_container
 
 
 _log = logging.getLogger("reveries.maya.hierarchy")
@@ -61,21 +56,21 @@ def walk_containers(container):
             yield sub_con
 
 
-def climb_container_id(interface):
+def climb_container_id(container):
     """Recursively yield container ID from buttom(leaf) to top(root)
 
     Args:
-        interface (str): The interface node name
+        container (str): The container node name
 
     Yields:
         str: container id
 
     """
-    parents = cmds.ls(cmds.listSets(object=interface), type="objectSet")
+    parents = cmds.ls(cmds.listSets(object=container), type="objectSet")
     for m in parents:
-        # Find interface node
+        # Find container node
         if (lib.hasAttr(m, "id") and
-                cmds.getAttr(m + ".id") == AVALON_INTERFACE_ID):
+                cmds.getAttr(m + ".id") == AVALON_CONTAINER_ID):
 
             yield cmds.getAttr(m + ".containerId")
             # Next parent
@@ -83,26 +78,26 @@ def climb_container_id(interface):
                 yield n
 
 
-def walk_container_id(interface):
+def walk_container_id(container):
     """Recursively yield container ID from top(root) to buttom(leaf)
 
     Args:
-        interface (str): The interface node name
+        container (str): The container node name
 
     Yields:
         str: container id
 
     """
-    parents = cmds.ls(cmds.listSets(object=interface), type="objectSet")
+    parents = cmds.ls(cmds.listSets(object=container), type="objectSet")
     for m in parents:
-        # Find interface node
+        # Find container node
         if (lib.hasAttr(m, "id") and
-                cmds.getAttr(m + ".id") == AVALON_INTERFACE_ID):
+                cmds.getAttr(m + ".id") == AVALON_CONTAINER_ID):
             # Find next parent before yielding `containerId`
             for n in walk_container_id(m):
                 yield n
 
-    yield cmds.getAttr(interface + ".containerId")
+    yield cmds.getAttr(container + ".containerId")
 
 
 def container_to_id_path(container):
@@ -115,7 +110,7 @@ def container_to_id_path(container):
         str: container id path
 
     """
-    return "|".join(walk_container_id(container["interface"]))
+    return "|".join(walk_container_id(container["objectName"]))
 
 
 def container_from_id_path(container_id_path, parent_namespace):
@@ -131,11 +126,11 @@ def container_from_id_path(container_id_path, parent_namespace):
     """
     container_ids = container_id_path.split("|")
 
-    leaf_interfaces = lib.lsAttr("containerId",
+    leaf_containers = lib.lsAttr("containerId",
                                  container_ids.pop(),  # leaf container id
                                  parent_namespace + "::")
 
-    walkers = {leaf: climb_container_id(leaf) for leaf in leaf_interfaces}
+    walkers = {leaf: climb_container_id(leaf) for leaf in leaf_containers}
 
     while container_ids:
         con_id = container_ids.pop()
@@ -156,8 +151,7 @@ def container_from_id_path(container_id_path, parent_namespace):
     if not len(walkers):
         raise RuntimeError("Container not found, this is a bug.")
 
-    interface = list(walkers.keys())[0]
-    container = get_container_from_interface(interface)
+    container = list(walkers.keys())[0]
 
     return container
 
@@ -248,7 +242,6 @@ def add_subset(data, namespace, root, on_update=None):
                                     data["representationDoc"],
                                     namespace=sub_namespace,
                                     options=options)
-    sub_interface = sub_container["interface"]
     subset_group = sub_container["subsetGroup"]
 
     try:
@@ -266,12 +259,10 @@ def add_subset(data, namespace, root, on_update=None):
 
         if on_update is None:
             cmds.sets(sub_container["objectName"], remove=AVALON_CONTAINERS)
-            cmds.sets(sub_interface, remove=AVALON_PORTS)
         else:
             container = on_update
             cmds.sets(sub_container["objectName"],
                       forceElement=container["objectName"])
-            cmds.sets(sub_interface, forceElement=container["interface"])
 
 
 def get_referenced_containers(container):

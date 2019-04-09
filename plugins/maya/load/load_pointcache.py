@@ -27,7 +27,6 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
 
     def process_reference(self, context, name, namespace, group, options):
         import maya.cmds as cmds
-        from reveries.maya.lib import get_highest_in_hierarchy
 
         representation = context["representation"]
 
@@ -45,9 +44,6 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
 
         reveries.maya.lib.lock_transform(group)
         self[:] = nodes
-
-        transforms = cmds.ls(nodes, type="transform", long=True)
-        self.interface = get_highest_in_hierarchy(transforms)
 
     def switch(self, container, representation):
         self.update(container, representation)

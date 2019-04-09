@@ -15,10 +15,6 @@ from .vendor import sticker
 from .capsule import namespaced, nodes_locker
 from .. import REVERIES_ICONS, utils
 
-
-AVALON_PORTS = ":AVALON_PORTS"
-AVALON_INTERFACE_ID = "pyblish.avalon.interface"
-
 AVALON_GROUP_ATTR = "subsetGroup"
 AVALON_CONTAINER_ATTR = "container"
 
@@ -104,105 +100,6 @@ def unique_root_namespace(asset_name, family_name, parent_namespace=""):
     return ":" + unique  # Ensure in root
 
 
-def subset_interfacing(name,
-                       namespace,
-                       container_id,
-                       nodes,
-                       context,
-                       suffix="PORT"):
-    """Expose crucial `nodes` as an interface of a subset container
-
-    Interfacing enables a faster way to access nodes of loaded subsets from
-    outliner.
-
-    (NOTE) Yes, currently, the `containerId` attribute is in interface node,
-           not in container.
-
-    Arguments:
-        name (str): Name of resulting assembly
-        namespace (str): Namespace under which to host interface
-        container_id (str): Container UUID
-        nodes (list): Long names of nodes for interfacing
-        context (dict): Asset information
-        suffix (str, optional): Suffix of interface, defaults to `_PORT`.
-
-    Returns:
-        interface (str): Name of interface assembly
-
-    """
-    from collections import OrderedDict
-    from maya import cmds
-
-    interface = cmds.sets(nodes,
-                          name=container_naming(namespace, name, suffix))
-
-    data = OrderedDict()
-    data["id"] = AVALON_INTERFACE_ID
-    data["namespace"] = namespace
-    data["containerId"] = container_id
-    data["assetId"] = str(context["asset"]["_id"])
-    data["subsetId"] = str(context["subset"]["_id"])
-    data["versionId"] = str(context["version"]["_id"])
-
-    avalon.maya.lib.imprint(interface, data)
-
-    main_interface = cmds.ls(AVALON_PORTS, type="objectSet")
-    if not main_interface:
-        main_interface = cmds.sets(empty=True, name=AVALON_PORTS)
-        _icon = os.path.join(REVERIES_ICONS, "interface_main-01.png")
-        sticker.put(main_interface, _icon)
-    else:
-        main_interface = main_interface[0]
-
-    cmds.sets(interface, addElement=main_interface)
-
-    return interface
-
-
-def get_interface_from_container(container):
-    """Return interface node from container node
-
-    Raise `RuntimeError` if getting none or more then one interface.
-
-    Arguments:
-        container (str): Name of container node
-
-    Returns a str
-
-    """
-    nodes = list()
-
-    for node in cmds.listConnections(container + ".message",
-                                     destination=True,
-                                     source=False,
-                                     type="objectSet"):
-        if not cmds.objExists(node + ".id"):
-            continue
-
-        if cmds.getAttr(node + ".id") == AVALON_INTERFACE_ID:
-            nodes.append(node)
-
-    if not len(nodes) == 1:
-        raise RuntimeError("Container has none or more then one interface, "
-                           "this is a bug.")
-    return nodes[0]
-
-
-def get_container_from_interface(interface):
-    """Return container node from interface node
-
-    Raise `RuntimeError` if getting none or more then one container.
-
-    Arguments:
-        interface (str): Name of interface node
-
-    Returns a str
-
-    """
-    namespace = cmds.getAttr(interface + ".namespace")
-    return get_container_from_namespace(namespace)
-
-
 def get_container_from_namespace(namespace):
     """Return container node from namespace
 
@@ -237,20 +134,24 @@ def get_container_from_group(group):
         str or None
 
     """
-    group = group.rsplit("|", 1)[-1]
-    nodes = lib.lsAttrs({"id": AVALON_INTERFACE_ID,
-                         "subsetGroup": group})
-    if not nodes:
+    if not cmds.objExists(group):
         return None
 
-    assert len(nodes) == 1, ("Group node has more then one interface, "
-                             "this is a bug.")
+    nodes = list()
 
-    source = cmds.listConnections(nodes[0] + ".container",
-                                  source=True,
-                                  destination=False,
-                                  plugs=False)
-    return source[0]
+    for node in cmds.listConnections(group + ".message",
+                                     destination=True,
+                                     source=False,
+                                     type="objectSet"):
+        if not cmds.objExists(node + ".id"):
+            continue
+
+        if cmds.getAttr(node + ".id") == AVALON_CONTAINER_ID:
+            nodes.append(node)
+
+    assert len(nodes) == 1, ("Group node has more then one container, "
+                             "this is a bug.")
+    return nodes[0]
 
 
 def get_group_from_container(container):
@@ -260,11 +161,8 @@ def get_group_from_container(container):
         container (str): Name of container node
 
     """
-    interface = get_interface_from_container(container)
-
     try:
-
-        group = cmds.listConnections(interface + ".subsetGroup",
+        group = cmds.listConnections(container + ".subsetGroup",
                                      source=True,
                                      destination=False,
                                      plugs=False)
@@ -286,22 +184,7 @@ def container_metadata(container):
         (dict)
 
     """
-    interface = get_interface_from_container(container)
-    # (NOTE) subsetGroup could be None type if it's lookDev or animCurve
-    subset_group = get_group_from_container(container)
-    container_id = cmds.getAttr(interface + ".containerId")
-    asset_id = cmds.getAttr(interface + ".assetId")
-    subset_id = cmds.getAttr(interface + ".subsetId")
-    version_id = cmds.getAttr(interface + ".versionId")
-
-    return {
-        "interface": interface,
-        "subsetGroup": subset_group,
-        "containerId": container_id,
-        "assetId": asset_id,
-        "subsetId": subset_id,
-        "versionId": version_id,
-    }
+    return {}
 
 
 def parse_container(container):
@@ -333,17 +216,20 @@ def update_container(container, asset, subset, version, representation):
     log.info("Updating container...")
 
     container_node = container["objectName"]
-    interface_node = container["interface"]
-
-    asset_changed = False
-    subset_changed = False
-
-    origin_asset = container["assetId"]
-    update_asset = str(asset["_id"])
 
     namespace = container["namespace"]
-    if not origin_asset == update_asset:
-        asset_changed = True
+
+    asset_changed = container["assetId"] != str(asset["_id"])
+    version_changed = container["versionId"] != str(version["_id"])
+    family_changed = False
+    if version_changed:
+        origin_version = avalon.io.find_one(
+            {"_id": avalon.io.ObjectId(container["versionId"])})
+        origin_family = origin_version["data"]["families"][0]
+        new_family = version["data"]["families"][0]
+        family_changed = origin_family != new_family
+
+    if (asset_changed or family_changed):
         # Update namespace
         parent_namespace = namespace.rsplit(":", 1)[0] + ":"
         with namespaced(parent_namespace, new=False) as parent_namespace:
@@ -358,105 +244,86 @@ def update_container(container, asset, subset, version, representation):
                                    new_namespace[1:].rsplit(":", 1)[-1]))
 
         namespace = new_namespace
-        # Update data
-        cmds.setAttr(container_node + ".namespace", namespace, type="string")
 
-    origin_subset = container["name"]
-    update_subset = subset["name"]
+    # Update data
+    for key, value in {
+        "name": subset["name"],
+        "namespace": namespace,
+        "assetId": str(asset["_id"]),
+        "subsetId": str(subset["_id"]),
+        "versionId": str(version["_id"]),
+        "representation": str(representation["_id"]),
+    }.items():
+        cmds.setAttr(container_node + "." + key, value, type="string")
 
-    name = origin_subset
-    if not origin_subset == update_subset:
-        subset_changed = True
-        name = subset["name"]
-        # Rename group node
-        group = container["subsetGroup"]
+    name = subset["name"]
+
+    # Rename group node
+    group = container.get("subsetGroup")
+    if group and cmds.objExists(group):
         cmds.rename(group, subset_group_name(namespace, name))
-        # Update data
-        cmds.setAttr(container_node + ".name", name, type="string")
 
-    # Update interface data: representation id
-    cmds.setAttr(container_node + ".representation",
-                 str(representation["_id"]),
-                 type="string")
-    # Update interface data: version id
-    cmds.setAttr(interface_node + ".versionId",
-                 str(version["_id"]),
-                 type="string")
+    # Rename container
+    container_node = cmds.rename(
+        container_node, container_naming(namespace, name, "CON"))
 
-    if any((asset_changed, subset_changed)):
-        # Update interface data: subset id
-        cmds.setAttr(interface_node + ".subsetId",
-                     str(subset["_id"]),
-                     type="string")
-        # Update interface data: asset id
-        cmds.setAttr(interface_node + ".assetId",
-                     str(asset["_id"]),
-                     type="string")
-        # Rename container
-        container_node = cmds.rename(
-            container_node, container_naming(namespace, name, "CON"))
-        # Rename interface
-        cmds.rename(interface_node,
-                    container_naming(namespace, name, "PORT"))
-        # Rename reference node
-        reference_node = next((n for n in cmds.sets(container_node, query=True)
-                               if cmds.nodeType(n) == "reference"), None)
-        if reference_node:
-            # Unlock reference node
-            with nodes_locker(reference_node, False, False, False):
-                cmds.rename(reference_node, namespace + "RN")
+    # Rename reference node
+    reference_node = next((n for n in cmds.sets(container_node, query=True)
+                           if cmds.nodeType(n) == "reference"), None)
+    if reference_node:
+        with nodes_locker(reference_node, False, False, False):
+            cmds.rename(reference_node, namespace + "RN")
 
 
 def subset_containerising(name,
                           namespace,
                           container_id,
                           nodes,
-                          ports,
                           context,
                           cls_name,
                           group_name):
-    """Containerise loaded subset and build interface
+    """Containerise loaded subset
 
-    Containerizing imported/referenced nodes and creating interface node,
-    and the interface node will connected to container node and top group
-    node's `message` attribute.
+    Containerizing imported/referenced nodes and connect subset group
+    node's `message` attribute to container node.
 
     Arguments:
         name (str): Name of resulting assembly
-        namespace (str): Namespace under which to host interface
+        namespace (str): Namespace under which to host container
         container_id (str): Container UUID
         nodes (list): Long names of imported/referenced nodes
-        ports (list): Long names of nodes for interfacing
         context (dict): Asset information
         cls_name (str): avalon Loader class name
         group_name (str): Top group node of imported/referenced new nodes
 
     """
-    interface = subset_interfacing(name=name,
-                                   namespace=namespace,
-                                   container_id=container_id,
-                                   nodes=ports,
-                                   context=context)
     container = containerise(name=name,
                              namespace=namespace,
                              nodes=nodes,
                              context=context,
                              loader=cls_name)
+    # Add additional data
+    for key, value in {
+        "containerId": container_id,
+        "assetId": str(context["asset"]["_id"]),
+        "subsetId": str(context["subset"]["_id"]),
+        "versionId": str(context["version"]["_id"]),
+    }.items():
+        cmds.addAttr(container, longName=key, dataType="string")
+        cmds.setAttr(container + "." + key, value, type="string")
+
+    # Connect subset group
+    if group_name and cmds.objExists(group_name):
+        lib.connect_message(group_name, container, AVALON_GROUP_ATTR)
+
     # Put icon to main container
     main_container = cmds.ls(AVALON_CONTAINERS, type="objectSet")[0]
     _icon = os.path.join(REVERIES_ICONS, "container_main-01.png")
     sticker.put(main_container, _icon)
 
-    # interface -> top_group.message
-    #           -> container.message
-    lib.connect_message(group_name, interface, AVALON_GROUP_ATTR)
-    lib.connect_message(container, interface, AVALON_CONTAINER_ATTR)
-
     # Apply icons
     container_icon = os.path.join(REVERIES_ICONS, "container-01.png")
-    interface_icon = os.path.join(REVERIES_ICONS, "interface-01.png")
     sticker.put(container, container_icon)
-    sticker.put(interface, interface_icon)
 
     if cmds.objExists(group_name):
         package_icon = os.path.join(REVERIES_ICONS, "package-01.png")

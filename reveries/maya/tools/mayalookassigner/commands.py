@@ -12,9 +12,8 @@ from avalon.vendor import six
 from ....utils import get_representation_path_
 from ....maya import lib, utils
 from ...pipeline import (
-    AVALON_INTERFACE_ID,
-    get_interface_from_container,
     get_container_from_namespace,
+    get_group_from_container,
     parse_container,
 )
 
@@ -35,28 +34,28 @@ def select(nodes):
     cmds.select(nodes, noExpand=True)
 
 
-def get_interface_from_namespace(namespaces):
-    """Return interface nodes from namespace
+def get_groups_from_namespaces(namespaces):
+    """Return group nodes from namespace
 
     Args:
         namespaces (str, unicode or set): Target subsets' namespaces
 
     Returns:
-        list: List of interface node in long name
+        list: List of group node in long name
 
     """
     if isinstance(namespaces, six.string_types):
         namespaces = [namespaces]
 
-    interfaces = list()
+    groups = list()
 
     for namespace in namespaces:
-        interfaces += lib.lsAttrs({"id": AVALON_INTERFACE_ID,
-                                   "namespace": namespace})
+        container = get_container_from_namespace(namespace)
+        group = get_group_from_container(container)
+        if group is not None:
+            groups.append(group)
 
-    return cmds.ls(cmds.sets(interfaces, query=True, nodesOnly=True),
-                   type="transform",
-                   long=True)
+    return groups
 
 
 def list_descendents(nodes):
@@ -227,17 +226,15 @@ def list_loaded_looks(asset_id):
     for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
                                   "loader": "LookLoader"}):
 
-        interface = get_interface_from_container(container)
-
-        if str(asset_id) == cmds.getAttr(interface + ".assetId"):
-            subset_id = cmds.getAttr(interface + ".subsetId")
+        if str(asset_id) == cmds.getAttr(container + ".assetId"):
+            subset_id = cmds.getAttr(container + ".subsetId")
             if subset_id in cached_look:
                 look = cached_look[subset_id].copy()
             else:
                 look = io.find_one({"_id": io.ObjectId(subset_id)})
                 cached_look[subset_id] = look
 
-            namespace = cmds.getAttr(interface + ".namespace")
+            namespace = cmds.getAttr(container + ".namespace")
             # Example: ":Zombie_look_02_"
             look["No."] = namespace.split("_")[-2]  # result: "02"
             look["namespace"] = namespace

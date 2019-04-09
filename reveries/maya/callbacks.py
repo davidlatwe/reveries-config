@@ -92,6 +92,8 @@ def on_open(_):
     cmds.evalDeferred("from reveries.maya import callbacks;"
                       "callbacks._outliner_hide_set_member()")
 
+    maya_utils.drop_interface()
+
 
 def on_save(_):
     avalon.logger.info("Running callback on save..")

@@ -17,7 +17,11 @@ from maya import cmds, mel
 from maya.api import OpenMaya as om
 from ..vendor import six
 from ..utils import _C4Hasher, get_representation_path_
-from .pipeline import get_interface_from_container, env_embedded_path
+from .pipeline import (
+    env_embedded_path,
+    get_container_from_namespace,
+    AVALON_GROUP_ATTR,
+)
 from . import lib, capsule
 
 
@@ -724,11 +728,9 @@ def update_dependency(container):
 
     version, subset, asset, project = io.parenthood(representation)
 
-    interface = get_interface_from_container(container)
-
-    cmds.setAttr(interface + ".assetId", str(asset["_id"]), type="string")
-    cmds.setAttr(interface + ".subsetId", str(subset["_id"]), type="string")
-    cmds.setAttr(interface + ".versionId", str(version["_id"]), type="string")
+    cmds.setAttr(container + ".assetId", str(asset["_id"]), type="string")
+    cmds.setAttr(container + ".subsetId", str(subset["_id"]), type="string")
+    cmds.setAttr(container + ".versionId", str(version["_id"]), type="string")
 
     # Update Reference path
     reference_node = next(iter(cmds.ls(cmds.sets(container, query=True),
@@ -759,3 +761,44 @@ def update_dependency(container):
               loadReference=reference_node,
               type=file_type,
               defaultExtensions=False)
+
+
+def drop_interface():
+    """Remove deprecated interface nodes from scene
+
+    Transfer data from interface node to container node and delete
+
+    """
+
+    PORTS = ":AVALON_PORTS"
+    INTERFACE = "pyblish.avalon.interface"
+
+    if not cmds.objExists(PORTS):
+        return
+
+    for interface in lib.lsAttr("id", INTERFACE):
+
+        namespace = cmds.getAttr(interface + ".namespace")
+        container = get_container_from_namespace(namespace)
+
+        getter = (lambda a: cmds.getAttr(interface + "." + a))
+
+        for key, value in {
+            "containerId": getter("containerId"),
+            "assetId": getter("assetId"),
+            "subsetId": getter("subsetId"),
+            "versionId": getter("versionId"),
+        }.items():
+            cmds.addAttr(container, longName=key, dataType="string")
+            cmds.setAttr(container + "." + key, value, type="string")
+
+        try:
+            group = cmds.listConnections(interface + ".subsetGroup",
+                                         source=True,
+                                         destination=False)[0]
+        except ValueError:
+            pass
+        else:
+            lib.connect_message(group, container, AVALON_GROUP_ATTR)
+
+        cmds.delete(interface)

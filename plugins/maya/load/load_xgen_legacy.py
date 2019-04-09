@@ -80,7 +80,6 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         #        being binded.
 
         # Containerising..
-        self.interface = palette_nodes[:]
         nodes = palette_nodes[:]
         nodes += cmds.listRelatives(palette_nodes,
                                     allDescendents=True,
@@ -92,7 +91,6 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
                                           namespace=namespace,
                                           container_id=container_id,
                                           nodes=nodes,
-                                          ports=self.interface,
                                           context=context,
                                           cls_name=self.__class__.__name__,
                                           group_name=group_name)
