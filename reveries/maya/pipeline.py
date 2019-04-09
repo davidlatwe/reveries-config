@@ -104,35 +104,6 @@ def unique_root_namespace(asset_name, family_name, parent_namespace=""):
     return ":" + unique  # Ensure in root
 
 
-def get_interface_from_container(container):
-    """Return interface node from container node
-
-    Raise `RuntimeError` if getting none or more then one interface.
-
-    Arguments:
-        container (str): Name of container node
-
-    Returns a str
-
-    """
-    nodes = list()
-
-    for node in cmds.listConnections(container + ".message",
-                                     destination=True,
-                                     source=False,
-                                     type="objectSet"):
-        if not cmds.objExists(node + ".id"):
-            continue
-
-        if cmds.getAttr(node + ".id") == AVALON_INTERFACE_ID:
-            nodes.append(node)
-
-    if not len(nodes) == 1:
-        raise RuntimeError("Container has none or more then one interface, "
-                           "this is a bug.")
-    return nodes[0]
-
-
 def get_container_from_namespace(namespace):
     """Return container node from namespace
 

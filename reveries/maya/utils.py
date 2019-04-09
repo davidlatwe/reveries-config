@@ -17,7 +17,7 @@ from maya import cmds, mel
 from maya.api import OpenMaya as om
 from ..vendor import six
 from ..utils import _C4Hasher, get_representation_path_
-from .pipeline import get_interface_from_container, env_embedded_path
+from .pipeline import env_embedded_path
 from . import lib, capsule
 
 
@@ -724,11 +724,9 @@ def update_dependency(container):
 
     version, subset, asset, project = io.parenthood(representation)
 
-    interface = get_interface_from_container(container)
-
-    cmds.setAttr(interface + ".assetId", str(asset["_id"]), type="string")
-    cmds.setAttr(interface + ".subsetId", str(subset["_id"]), type="string")
-    cmds.setAttr(interface + ".versionId", str(version["_id"]), type="string")
+    cmds.setAttr(container + ".assetId", str(asset["_id"]), type="string")
+    cmds.setAttr(container + ".subsetId", str(subset["_id"]), type="string")
+    cmds.setAttr(container + ".versionId", str(version["_id"]), type="string")
 
     # Update Reference path
     reference_node = next(iter(cmds.ls(cmds.sets(container, query=True),
