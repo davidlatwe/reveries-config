@@ -32,7 +32,9 @@ def remove_file_env_path(data):
     for node in data["fileNodes"]:
         # Must be starts with `root`, validated.
         origin_path = cmds.getAttr(node + ".fileTextureName")
-        arnold_path = origin_path.replace(root, replace)
+        for root_key, replace_key in zip(root, replace):
+            origin_path = origin_path.replace(root_key, replace_key)
+        arnold_path = origin_path
 
         with unlock_colorspace(node):
             cmds.setAttr(node + ".fileTextureName",
@@ -43,7 +45,9 @@ def remove_file_env_path(data):
     finally:
         for node in data["fileNodes"]:
             arnold_path = cmds.getAttr(node + ".fileTextureName")
-            origin_path = arnold_path.replace(replace, root)
+            for root_key, replace_key in zip(root, replace):
+                arnold_path = arnold_path.replace(replace_key, root_key)
+            origin_path = arnold_path
             with unlock_colorspace(node):
                 cmds.setAttr(node + ".fileTextureName",
                              origin_path,
