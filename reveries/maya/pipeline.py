@@ -264,15 +264,19 @@ def update_container(container, asset, subset, version, representation):
 
     container_node = container["objectName"]
 
-    asset_changed = False
-    subset_changed = False
-
-    origin_asset = container["assetId"]
-    update_asset = str(asset["_id"])
-
     namespace = container["namespace"]
-    if not origin_asset == update_asset:
-        asset_changed = True
+
+    asset_changed = container["assetId"] != str(asset["_id"])
+    version_changed = container["versionId"] != str(version["_id"])
+    family_changed = False
+    if version_changed:
+        origin_version = avalon.io.find_one(
+            {"_id": avalon.io.ObjectId(container["versionId"])})
+        origin_family = origin_version["data"]["families"][0]
+        new_family = version["data"]["families"][0]
+        family_changed = origin_family != new_family
+
+    if (asset_changed or family_changed):
         # Update namespace
         parent_namespace = namespace.rsplit(":", 1)[0] + ":"
         with namespaced(parent_namespace, new=False) as parent_namespace:
@@ -287,51 +291,35 @@ def update_container(container, asset, subset, version, representation):
                                    new_namespace[1:].rsplit(":", 1)[-1]))
 
         namespace = new_namespace
-        # Update data
-        cmds.setAttr(container_node + ".namespace", namespace, type="string")
 
-    origin_subset = container["name"]
-    update_subset = subset["name"]
+    # Update data
+    for key, value in {
+        "name": subset["name"],
+        "namespace": namespace,
+        "assetId": str(asset["_id"]),
+        "subsetId": str(subset["_id"]),
+        "versionId": str(version["_id"]),
+        "representation": str(representation["_id"]),
+    }.items():
+        cmds.setAttr(container + "." + key, value, type="string")
 
-    name = origin_subset
-    if not origin_subset == update_subset:
-        subset_changed = True
-        name = subset["name"]
-        # Rename group node
-        group = container.get("subsetGroup")
-        if group and cmds.objExists(group):
-            cmds.rename(group, subset_group_name(namespace, name))
-        # Update subset name
-        cmds.setAttr(container_node + ".name", name, type="string")
+    name = subset["name"]
 
-    # Update representation id
-    cmds.setAttr(container_node + ".representation",
-                 str(representation["_id"]),
-                 type="string")
-    # Update version id
-    cmds.setAttr(container_node + ".versionId",
-                 str(version["_id"]),
-                 type="string")
+    # Rename group node
+    group = container.get("subsetGroup")
+    if group and cmds.objExists(group):
+        cmds.rename(group, subset_group_name(namespace, name))
 
-    if any((asset_changed, subset_changed)):
-        # Update subset id
-        cmds.setAttr(container_node + ".subsetId",
-                     str(subset["_id"]),
-                     type="string")
-        # Update asset id
-        cmds.setAttr(container_node + ".assetId",
-                     str(asset["_id"]),
-                     type="string")
-        # Rename container
-        container_node = cmds.rename(
-            container_node, container_naming(namespace, name, "CON"))
-        # Rename reference node
-        reference_node = next((n for n in cmds.sets(container_node, query=True)
-                               if cmds.nodeType(n) == "reference"), None)
-        if reference_node:
-            # Unlock reference node
-            with nodes_locker(reference_node, False, False, False):
-                cmds.rename(reference_node, namespace + "RN")
+    # Rename container
+    container_node = cmds.rename(
+        container_node, container_naming(namespace, name, "CON"))
+
+    # Rename reference node
+    reference_node = next((n for n in cmds.sets(container_node, query=True)
+                           if cmds.nodeType(n) == "reference"), None)
+    if reference_node:
+        with nodes_locker(reference_node, False, False, False):
+            cmds.rename(reference_node, namespace + "RN")
 
 
 def subset_containerising(name,
