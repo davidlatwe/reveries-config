@@ -12,8 +12,8 @@ from avalon.vendor import six
 from ....utils import get_representation_path_
 from ....maya import lib, utils
 from ...pipeline import (
-    AVALON_INTERFACE_ID,
     get_container_from_namespace,
+    get_group_from_container,
     parse_container,
 )
 
@@ -34,7 +34,7 @@ def select(nodes):
     cmds.select(nodes, noExpand=True)
 
 
-def get_interface_from_namespace(namespaces):
+def get_groups_from_namespaces(namespaces):
     """Return interface nodes from namespace
 
     Args:
@@ -47,15 +47,15 @@ def get_interface_from_namespace(namespaces):
     if isinstance(namespaces, six.string_types):
         namespaces = [namespaces]
 
-    interfaces = list()
+    groups = list()
 
     for namespace in namespaces:
-        interfaces += lib.lsAttrs({"id": AVALON_INTERFACE_ID,
-                                   "namespace": namespace})
+        container = get_container_from_namespace(namespace)
+        group = get_group_from_container(container)
+        if group is not None:
+            groups.append(group)
 
-    return cmds.ls(cmds.sets(interfaces, query=True, nodesOnly=True),
-                   type="transform",
-                   long=True)
+    return groups
 
 
 def list_descendents(nodes):

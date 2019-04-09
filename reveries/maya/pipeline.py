@@ -17,7 +17,6 @@ from .. import REVERIES_ICONS, utils
 
 
 AVALON_PORTS = ":AVALON_PORTS"
-AVALON_INTERFACE_ID = "pyblish.avalon.interface"
 
 AVALON_GROUP_ATTR = "subsetGroup"
 AVALON_CONTAINER_ATTR = "container"
