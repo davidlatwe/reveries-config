@@ -28,8 +28,10 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
         upstream_nodes = cmds.ls(_history, long=True)
 
         instance.data["fileNodes"] = cmds.ls(upstream_nodes, type="file")
-        instance.data["relativeRoot"] = "$AVALON_PROJECTS\$AVALON_PROJECT"
-        instance.data["replaceRoot"] = "[AVALON_PROJECTS]/[AVALON_PROJECT]"
+        instance.data["relativeRoot"] = ["$AVALON_PROJECTS",
+                                         "$AVALON_PROJECT"]
+        instance.data["replaceRoot"] = ["[AVALON_PROJECTS]",
+                                        "[AVALON_PROJECT]"]
 
         # Frame range
         if instance.data["staticCache"]:

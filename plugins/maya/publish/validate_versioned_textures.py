@@ -36,7 +36,8 @@ class ValidateVersionedTextures(pyblish.api.InstancePlugin):
 
         has_versioned = set()
         for node in files:
-            if cmds.getAttr(node + ".fileTextureName").startswith(root):
+            file_path = cmds.getAttr(node + ".fileTextureName")
+            if all(key in file_path for key in root):
                 # As long as the texture file path starts with project
                 # env vars, consider it's been published.
                 has_versioned.add(node)
