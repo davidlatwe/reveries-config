@@ -23,7 +23,6 @@ class ModelLoader(ReferenceLoader, avalon.api.Loader):
 
         import maya.cmds as cmds
         from avalon import maya
-        from reveries.maya.lib import get_highest_in_hierarchy
 
         representation = context["representation"]
 
@@ -38,9 +37,6 @@ class ModelLoader(ReferenceLoader, avalon.api.Loader):
                               groupReference=True,
                               groupName=group)
         self[:] = nodes
-
-        transforms = cmds.ls(nodes, type="transform", long=True)
-        self.interface = get_highest_in_hierarchy(transforms)
 
     def switch(self, container, representation):
         self.update(container, representation)

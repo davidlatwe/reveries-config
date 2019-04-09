@@ -42,8 +42,5 @@ class CameraLoader(ReferenceLoader, avalon.api.Loader):
         reveries.maya.lib.lock_transform(group)
         self[:] = nodes
 
-        self.interface = cmds.listRelatives(cmds.ls(nodes, type="camera"),
-                                            parent=True)
-
     def switch(self, container, representation):
         self.update(container, representation)

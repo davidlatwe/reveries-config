@@ -63,8 +63,6 @@ def load_plugin(representation):
 
 class MayaBaseLoader(PackageLoader):
 
-    interface = []
-
     def __init__(self, context):
         from reveries.maya.pipeline import is_editable
         if not is_editable():
@@ -152,7 +150,6 @@ class ReferenceLoader(MayaBaseLoader):
                                           namespace=namespace,
                                           container_id=container_id,
                                           nodes=nodes,
-                                          ports=self.interface,
                                           context=context,
                                           cls_name=self.__class__.__name__,
                                           group_name=group_name)
@@ -203,7 +200,6 @@ class ReferenceLoader(MayaBaseLoader):
         from maya import cmds
 
         node = container["objectName"]
-        interface = container["interface"]
 
         # Get reference node from container members
         members = cmds.sets(node, query=True, nodesOnly=True)
@@ -237,7 +233,6 @@ class ReferenceLoader(MayaBaseLoader):
         holders = (lambda N: [x for x in cmds.sets(N, query=True) or []
                               if ".placeHolderList" in x])
         cmds.sets(holders(node), remove=node)
-        cmds.sets(holders(interface), remove=interface)
 
         # Update container
         version, subset, asset, _ = parents
@@ -316,7 +311,6 @@ class ImportLoader(MayaBaseLoader):
                                           namespace=namespace,
                                           container_id=container_id,
                                           nodes=nodes,
-                                          ports=self.interface,
                                           context=context,
                                           cls_name=self.__class__.__name__,
                                           group_name=group_name)
@@ -452,7 +446,6 @@ class HierarchicalLoader(MayaBaseLoader):
 
         # Load sub-subsets
         sub_containers = []
-        sub_interfaces = []
         for data in members:
 
             repr_id = data["representation"]
@@ -466,10 +459,8 @@ class HierarchicalLoader(MayaBaseLoader):
                                      container=sub_container)
 
             sub_containers.append(sub_container["objectName"])
-            sub_interfaces.append(sub_container["interface"])
 
         self[:] = hierarchy + sub_containers
-        self.interface = [group_name] + sub_interfaces
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
@@ -480,7 +471,6 @@ class HierarchicalLoader(MayaBaseLoader):
                                           namespace=namespace,
                                           container_id=container_id,
                                           nodes=nodes,
-                                          ports=self.interface,
                                           context=context,
                                           cls_name=self.__class__.__name__,
                                           group_name=group_name)
