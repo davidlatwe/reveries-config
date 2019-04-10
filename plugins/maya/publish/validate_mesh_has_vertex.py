@@ -26,8 +26,6 @@ class ValidateMeshHasVertex(pyblish.api.InstancePlugin):
         RepairInvalid,
     ]
 
-    optional = True
-
     @classmethod
     def get_invalid(cls, instance):
         from maya import cmds
