@@ -55,8 +55,9 @@ class ValidateAvalonUUIDNamespace(pyblish.api.InstancePlugin):
         family = instance.data["family"]
         required_types = pipeline.uuid_required_node_types(family)
 
-        lock_state = cmds.lockNode(instance, query=True, lock=True)
-        for node, lock in zip(instance, lock_state):
+        nodes = cmds.ls(instance, long=True)  # Ensure existed nodes
+        lock_state = cmds.lockNode(nodes, query=True, lock=True)
+        for node, lock in zip(nodes, lock_state):
             if lock:
                 cls.log.debug("Skipping locked node: %s" % node)
                 continue
