@@ -23,7 +23,7 @@ class ValidateNormalsUnlocked(pyblish.api.Validator):
 
     """
 
-    order = pyblish.api.ValidatorOrder + 0.45
+    order = pyblish.api.ValidatorOrder + 0.3
     hosts = ["maya"]
     families = ["reveries.model"]
     label = "Mesh Normals Unlocked"

@@ -13,7 +13,7 @@ class RepairInvalid(RepairInstanceAction):
 class ValidateMeshHasVertex(pyblish.api.InstancePlugin):
     """Validate meshes must has vertex"""
 
-    order = pyblish.api.ValidatorOrder + 0.15
+    order = pyblish.api.ValidatorOrder
     label = "Mesh Has Vertex"
     hosts = ["maya"]
     families = [

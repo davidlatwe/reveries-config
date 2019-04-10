@@ -15,7 +15,7 @@ class ValidateMeshNonZeroEdgeLength(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder + 0.3
     hosts = ["maya"]
     label = "Mesh Edge Length Non Zero"
     families = [
