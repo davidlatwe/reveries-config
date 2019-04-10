@@ -11,7 +11,7 @@ class ValidateMeshLaminaFaces(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ValidatorOrder + 0.15
+    order = pyblish.api.ValidatorOrder + 0.3
     label = "Mesh Lamina Faces"
     hosts = ["maya"]
     families = [

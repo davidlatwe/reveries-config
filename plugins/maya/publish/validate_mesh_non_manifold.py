@@ -12,7 +12,7 @@ class ValidateMeshNonManifold(pyblish.api.Validator):
 
     """
 
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder + 0.3
     hosts = ["maya"]
     label = "Mesh Non-Manifold Vertices/Edges"
     families = [

@@ -57,7 +57,7 @@ class ValidateMeshVerticesHaveEdges(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder + 0.3
     hosts = ["maya"]
     families = [
         "reveries.model",

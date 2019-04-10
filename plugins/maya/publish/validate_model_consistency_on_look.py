@@ -71,7 +71,7 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
             raise Exception("No model for this look has been published "
                             "before, please publish model first.")
 
-        hierarchy = instance.data["requireAvalonUUID"]
+        hierarchy = cmds.ls(instance.data["requireAvalonUUID"], long=True)
         hierarchy += cmds.listRelatives(hierarchy,
                                         allDescendents=True,
                                         fullPath=True) or []
@@ -135,7 +135,8 @@ class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
                             if (i.data["family"] in FAMILIES and
                                 i.data.get("publish", True))]
         for inst in staged_instances:
-            if set(inst).issuperset(set(uuid_required_geos)):
+            nodes = cmds.ls(inst, long=True)
+            if set(nodes).issuperset(set(uuid_required_geos)):
                 self.log.info("Model/Rig is being published.")
                 being_published = True
                 break

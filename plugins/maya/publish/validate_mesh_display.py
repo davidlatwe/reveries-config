@@ -36,9 +36,7 @@ class ValidateShapeDisplay(pyblish.api.InstancePlugin):
             ".ghosting": False
         }
 
-        for node in instance:
-            if not cmds.nodeType(node) == "mesh":
-                continue
+        for node in cmds.ls(instance, long=True, type="mesh"):
             # Ensure mesh shape is not hidden
             not_hidden = (
                 all([cmds.getAttr(node + attr) is display_attrs[attr]

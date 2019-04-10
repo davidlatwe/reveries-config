@@ -35,8 +35,10 @@ class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid_missing(cls, instance):
+        from maya import cmds
         invalid = list()
-        for node in instance.data["requireAvalonUUID"]:
+        nodes = cmds.ls(instance.data["requireAvalonUUID"], long=True)
+        for node in nodes:
             if get_id_status(node) == Identifier.Untracked:
                 invalid.append(node)
 
@@ -44,8 +46,10 @@ class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid_duplicated(cls, instance):
+        from maya import cmds
         invalid = list()
-        for node in instance.data["requireAvalonUUID"]:
+        nodes = cmds.ls(instance.data["requireAvalonUUID"], long=True)
+        for node in nodes:
             if get_id_status(node) == Identifier.Duplicated:
                 invalid.append(node)
 

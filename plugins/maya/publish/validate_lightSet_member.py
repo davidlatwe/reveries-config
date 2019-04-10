@@ -32,7 +32,7 @@ class ValidateLightSetMember(pyblish.api.InstancePlugin):
 
         invalid = list()
 
-        lights = set(instance.data["lights"])
+        lights = set(cmds.ls(instance.data["lights"], long=True))
         dag_nodes = cmds.ls(instance.data["dagMembers"], long=True)
         valid_nodes = set(cmds.ls(dag_nodes, type=VALID_TYPES, long=True))
         invalid = list(set(dag_nodes) - valid_nodes - lights)

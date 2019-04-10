@@ -37,9 +37,7 @@ class ValidateTransformDisplay(pyblish.api.InstancePlugin):
             ".ghosting": False
         }
 
-        for node in instance:
-            if not cmds.nodeType(node) == "transform":
-                continue
+        for node in cmds.ls(instance, long=True, type="transform"):
             # Ensure transform shape is not hidden
             not_hidden = (
                 all([cmds.getAttr(node + attr) is display_attrs[attr]
