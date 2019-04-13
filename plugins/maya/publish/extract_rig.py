@@ -107,7 +107,8 @@ class ExtractRig(PackageExtractor):
                           channels=True,
                           constraints=True,
                           expressions=True,
-                          constructionHistory=True)
+                          constructionHistory=True,
+                          shader=True)
 
         self.add_data({
             "entryFileName": entry_file,
