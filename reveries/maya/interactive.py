@@ -365,3 +365,31 @@ def bake_all_xgen_legacy_modifiers(*args):
     for palette in xgen.legacy.list_palettes():
         for description in xgen.legacy.list_descriptions(palette):
             xgen.legacy.bake_modules(palette, description)
+
+
+def link_palettes_to_hair_system(*args):
+    selection = cmds.ls(sl=True)
+    selection += cmds.listRelatives(selection, allDescendents=True) or []
+    palettes = cmds.ls(selection, type="xgmPalette")
+
+    assert palettes, "No XGen palette node selected."
+
+    for palette in cmds.ls(selection, type="xgmPalette"):
+        xgen.legacy.build_hair_system(palette)
+
+
+def set_refwires_frame_by_nucleus(*args):
+    selection = cmds.ls(sl=True)
+    selection += cmds.listRelatives(selection, allDescendents=True) or []
+
+    palettes = cmds.ls(selection, type="xgmPalette")
+    nucleus = cmds.ls(selection, type="nucleus")
+
+    assert len(nucleus) == 1, "Select at least one and only nucleus node."
+
+    assert palettes, "Select at least one XGen palette."
+
+    start_frame = cmds.getAttr(nucleus[0] + ".startFrame")
+
+    for pal in palettes:
+        xgen.legacy.set_refWires_frame(start_frame, pal)
