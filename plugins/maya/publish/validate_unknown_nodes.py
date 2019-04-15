@@ -55,6 +55,11 @@ class ValidateUnknownNodes(pyblish.api.InstancePlugin):
     def fix_invalid(cls, context):
         """Delete unknown nodes"""
         from maya import cmds
-        for item in cls.get_invalid(context):
-            if cmds.objExists(item):
-                cmds.delete(item)
+        unknown_nodes = cls.get_invalid(context)
+        lock_state = cmds.lockNode(unknown_nodes, query=True)
+        for item, locked in zip(unknown_nodes, lock_state):
+            if not cmds.objExists(item):
+                continue
+            if locked:
+                cmds.lockNode(item, lock=False)
+            cmds.delete(item)

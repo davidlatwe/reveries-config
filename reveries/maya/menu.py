@@ -85,6 +85,12 @@ reveries.maya.tools.show('mayalookassigner')
         cmds.menuItem("Bake All Modifiers",
                       parent="Menu_XGen",
                       command=interactive.bake_all_xgen_legacy_modifiers)
+        cmds.menuItem("Link Hair System",
+                      parent="Menu_XGen",
+                      command=interactive.link_palettes_to_hair_system)
+        cmds.menuItem("Set RefWire Frame",
+                      parent="Menu_XGen",
+                      command=interactive.set_refwires_frame_by_nucleus)
 
         cmds.menuItem(divider=True, dividerLabel="XGen Interactive Groom")
 
