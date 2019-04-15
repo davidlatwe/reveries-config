@@ -4,6 +4,7 @@ import contextlib
 import xgenm as xg
 import xgenm.xgGlobal as xgg
 
+import pymel.core as pmc
 from maya import cmds, mel
 from avalon.vendor.Qt import QtCore
 from .. import capsule
@@ -854,3 +855,197 @@ def delete_palette(palette):
         palette (str): XGen Legacy palette name
     """
     xg.deletePalette(str(palette))
+
+
+def build_hair_system(palette):
+    """Build hair system and link to the descriptions that has animWire modifier
+
+    Args:
+        palette (str): XGen Legacy palette name
+
+    """
+
+    def exportCurvesMel(descName):
+        """
+        Replace original "exportCurvesMel", since "xgmNullRender" will fail
+        if scene is too large
+        """
+        # select guides
+        cmds.select(xg.descriptionGuides(descName), replace=True)
+        # guides to curves
+        pmc.mel.xgmCreateCurvesFromGuides(0, False)
+
+    def xgmMakeCurvesDynamic(descHairSysName, collide):
+        """
+        Create nHairSystem with good name before MakeCurvesDynamic
+        and without optionBox UI
+        """
+        selection = pmc.ls(sl=True, long=True)
+        # find hair holding mesh for later rigid body rename
+        meshPatch = []
+        for dag in selection:
+            if dag.getShape().type() == "mesh":
+                meshPatch.append(dag.name())
+
+        # create the first time we hit a valid curve
+        hsys = pmc.createNode("hairSystem")
+        hsys.getParent().rename(descHairSysName)
+
+        # we want uniform stiffness because the curves
+        # are initially point locked to both ends
+        pmc.removeMultiInstance(hsys.stiffnessScale[1], b=True)
+
+        hsys.clumpWidth.set(0.00001)
+        hsys.hairsPerClump.set(1)
+        pmc.connectAttr("time1.outTime", hsys.currentTime)
+
+        nucleus = pmc.mel.getActiveNucleusNode(False, True)
+        pmc.mel.addActiveToNSystem(hsys, nucleus)
+        pmc.connectAttr(nucleus + ".startFrame", hsys.startFrame)
+
+        # select the hairSystem we just created and well named,
+        # and maya won't create one when making curves dynamic
+        selection.append(hsys)
+        # re-select curves, mesh and hairSystem
+        pmc.select(selection, replace=True)
+        # trun on 'Collide With Mesh'
+        pmc.optionVar(
+            intValue=["makeCurvesDynamicCollideWithMesh", int(collide)]
+        )
+        # MakeCurvesDynamic callback
+        mel.eval('makeCurvesDynamic 2 { "1", "1", "1", "1", "0"}')
+
+        return meshPatch, hsys.name()
+
+    def nRigidRename(meshPatch):
+        # `meshPatch` is a list of geo long name
+        renameDict = {}
+        for rigid in cmds.ls(type="nRigid"):
+            shapes = cmds.listConnections(rigid + ".inputMesh", shapes=True)
+            if shapes and cmds.nodeType(shapes[0]) == "mesh":
+                meshName = cmds.listRelatives(shapes[0],
+                                              parent=True,
+                                              fullPath=True)[0]
+                if meshName in meshPatch:
+                    renameDict[rigid] = meshName
+        # rename rigid body
+        for rigidName in renameDict:
+            rigid = cmds.ls(rigidName)
+            if not rigid:
+                continue
+            cmds.rename(cmds.listRelatives(rigid[0], parent=True)[0],
+                        "%s_nRigid" % renameDict[rigidName])
+
+    def getHairCurves(descHairSysName):
+        """List out curves which output from descHairSysName"""
+        # since we had our nHairSystem well named, we can search it by name
+        hsysList = cmds.ls(descHairSysName)
+        if not hsysList:
+            return
+
+        curves = []
+        shapes = cmds.listRelatives(hsysList[0], shapes=True, fullPath=True)
+        if cmds.nodeType(shapes[0]) == "hairSystem":
+            # find curves
+            hsys = shapes[0]
+            follicles = cmds.listConnections(
+                hsys + ".inputHair", shapes=True, type="follicle")
+            for foll in follicles:
+                curve = cmds.listConnections(
+                    foll + ".outCurve", shapes=True, type="nurbsCurve")
+                curves.extend(curve)
+        return curves
+
+    def attachSlot(palette, desc, fxmName, descHairSysName):
+        if not (str(xg.fxModuleType(palette, desc, fxmName)) ==
+                "AnimWiresFXModule"):
+            return
+
+        refwFrame = xg.getAttr("refWiresFrame", palette, desc, fxmName)
+        if str(xg.getAttr("liveMode", palette, desc, fxmName)) == "false":
+            wiresfile = xg.getAttr("wiresFile", palette, desc, fxmName)
+            pmc.mel.xgmFindAttachment(
+                d=desc, f=wiresfile, fm=int(refwFrame), m=fxmName)
+        else:
+            curves = getHairCurves(descHairSysName)
+            if curves:
+                # attach wires to curves
+                cmds.select(curves, replace=True)
+                pmc.mel.xgmFindAttachment(d=desc, fm=int(refwFrame), m=fxmName)
+                # print('The following curves were attached: ',
+                #       [c.name() for c in curves])
+            else:
+                cmds.warning("No curves selected. Nothing to attach.")
+
+    # Start process
+
+    preview_clear()
+
+    get_hsys_name = (lambda desc: desc + "_hairSystem")
+
+    nHairAttrs = {
+        "stretchResistance": 600,
+        "compressionResistance": 100,
+        "startCurveAttract": 0.3,
+        "mass": 0.05
+    }
+
+    palette = str(palette)
+
+    # get active AnimWire module list
+    animWireDict = {}
+    for desc in xg.descriptions(palette):
+        for fxm in xg.fxModules(palette, desc):
+            if xg.fxModuleType(palette, desc, fxm) != "AnimWiresFXModule":
+                continue
+            if xg.getAttr("active", palette, desc, fxm) == "true":
+
+                hsysName = get_hsys_name(desc)
+                hsysTransforms = [cmds.listRelatives(hsys, parent=True)[0]
+                                  for hsys in cmds.ls(type="hairSystem")]
+
+                if hsysName in hsysTransforms:
+                    cmds.warning("Description %s has hairSystem [%s], "
+                                 "skipped." % (desc, hsysName))
+                else:
+                    animWireDict[desc] = fxm
+
+    # build hairSystem
+    for desc in animWireDict:
+
+        print("Building hairSystem for description: %s, FXModule: %s"
+              "" % (desc, fxm))
+
+        fxm = animWireDict[desc]
+        descHairSysName = get_hsys_name(desc)
+
+        exportCurvesMel(desc)
+        # add patch to selection
+        cmds.select(list_bound_geometry(desc), add=True)
+        meshPatch, hsys = xgmMakeCurvesDynamic(descHairSysName, False)
+        nRigidRename(meshPatch)
+        attachSlot(palette, desc, fxm, descHairSysName)
+
+        print("HairSystem linked.")
+
+        # set some attributes
+        for attr, val in nHairAttrs.items():
+            cmds.setAttr(hsys + "." + attr, val)
+
+
+def set_refWires_frame(refWiresFrame, palette):
+    """Setup refWireFrame to the descriptions that has animWire modifier
+
+    Args:
+        refWiresFrame (int, float): refWireFrame value
+        palette (str): XGen Legacy palette name
+
+    """
+    refWiresFrame = str(int(refWiresFrame))
+    palette = str(palette)
+
+    for desc in xg.descriptions(palette):
+        for fxm in xg.fxModules(palette, desc):
+            if xg.fxModuleType(palette, desc, fxm) != "AnimWiresFXModule":
+                continue
+            xg.setAttr("refWiresFrame", refWiresFrame, palette, desc, fxm)
