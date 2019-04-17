@@ -541,7 +541,8 @@ def capture_seq(camera,
                 width=None,
                 height=None,
                 isolate=None,
-                frame_padding=4):
+                frame_padding=4,
+                display_lights="default"):
 
     options = {
         "display_options": capture.DisplayOptions.copy(),
@@ -552,7 +553,7 @@ def capture_seq(camera,
     options = utils.deep_update(options,
                                 {
                                     "viewport_options": {
-                                        "displayLights": "all",
+                                        "displayLights": display_lights,
                                         "headsUpDisplay": False,
                                         # object display
                                         "dynamics": True,
