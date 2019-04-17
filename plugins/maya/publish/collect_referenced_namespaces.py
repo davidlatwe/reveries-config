@@ -54,7 +54,7 @@ class CollectReferencedNamespaces(pyblish.api.InstancePlugin):
 
             members = list(set(members + referenced_members))
 
-            group = container["subsetGroup"]
+            group = container.get("subsetGroup")
             if group:
                 referenced_content.add(group)
 

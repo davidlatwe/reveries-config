@@ -44,13 +44,17 @@ class ExtractPlayblast(DelegatablePackageExtractor):
         publish_dir = self.create_package()
         entry_path = os.path.join(publish_dir, entry_file)
 
+        pipeline_data = self.data["projectDoc"]["data"]["pipeline"]
+        use_lights = pipeline_data["maya"].get("playblastLights", "default")
+
         camera = self.data["renderCam"][0]
         io.capture_seq(camera,
                        entry_path,
                        start_frame,
                        end_frame,
                        width,
-                       height)
+                       height,
+                       display_lights=use_lights)
 
         # Check image sequence length to ensure that the extraction did
         # not interrupted.

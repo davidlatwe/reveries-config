@@ -17,6 +17,8 @@ admin = [
 [pipeline]
 [pipeline.maya]
 turntable = "LookDevStage"
+# Whether to use `all` lights or `default` light in playblast
+playblastLights = "default"
 pointcache = [
     "Alembic",
     "GPUCache",
