@@ -6,7 +6,7 @@ class ValidateLightSetMember(pyblish.api.InstancePlugin):
     """Validate lightSet nodes' node type
 
     Only these types of node allow to be exists in LightSet:
-        * light (MeshLight currently not supported)
+        * light
         * transform
         * nurbsCurve
         * constraint
@@ -30,14 +30,21 @@ class ValidateLightSetMember(pyblish.api.InstancePlugin):
             "constraint",
         ]
 
-        invalid = list()
+        invalid = set()
 
         lights = set(cmds.ls(instance.data["lights"], long=True))
         dag_nodes = cmds.ls(instance.data["dagMembers"], long=True)
         valid_nodes = set(cmds.ls(dag_nodes, type=VALID_TYPES, long=True))
-        invalid = list(set(dag_nodes) - valid_nodes - lights)
 
-        return invalid
+        invalid = set(dag_nodes) - valid_nodes - lights
+
+        if invalid:
+            if "aiMeshLight" in instance.data["lightsByType"]:
+                for lit in instance.data["lightsByType"]["aiMeshLight"]:
+                    mesh = cmds.listConnections(lit + ".inMesh", shapes=True)
+                    invalid.difference_update(cmds.ls(mesh, long=True))
+
+        return list(invalid)
 
     def process(self, instance):
 

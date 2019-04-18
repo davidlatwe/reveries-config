@@ -29,9 +29,11 @@ class CollectLightSet(pyblish.api.InstancePlugin):
         from maya import cmds
 
         lights = list()
+        light_types = dict()
         # Find all light node from shapes
         for node in cmds.ls(instance, type="shape", long=True):
-            if "Light" in cmds.nodeType(node):
+            node_type = cmds.nodeType(node)
+            if "Light" in node_type:
                 # (NOTE) The light node from third party render engine might
                 # not inherited from Maya `renderLight` type node, hence you
                 # cannot use `cmds.ls(type="light")` nor `cmds.ls(lights=True)`
@@ -40,8 +42,13 @@ class CollectLightSet(pyblish.api.InstancePlugin):
                 # so I use this as a workaround to filter out all the light
                 # nodes.
                 lights.append(node)
+                # Collect by type
+                if node_type not in light_types:
+                    light_types[node_type] = list()
+                light_types[node_type].append(node)
 
         instance.data["lights"] = lights
+        instance.data["lightsByType"] = light_types
         instance.data["dagMembers"] = instance[:]
 
         upstream_nodes = cmds.ls(cmds.listHistory(lights), long=True)
