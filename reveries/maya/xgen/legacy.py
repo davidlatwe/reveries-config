@@ -567,7 +567,7 @@ def parse_description_maps(description):
 
         path, parents = parse_map_path(map_attr)
 
-        if not path.endswith(".ptx"):
+        if not (path.endswith(".ptx") or path.endswith(".abc")):
             sep = "" if path.endswith("/") else "/"
             path += sep + fname
 
