@@ -361,6 +361,7 @@ def parse_expr_maps(attr, palette, description, object):
 _ATTR_ALIAS = {
     "region": "regionMap",
     "inputMap": "mapDir",
+    "MeshFile": "meshFile",
     "controlMap": "controlMapDir",
     "tiltU": "offU",
     "tiltV": "offV",
