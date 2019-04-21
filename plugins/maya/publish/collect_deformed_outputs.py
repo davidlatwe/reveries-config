@@ -44,8 +44,9 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             out_sets = list()
 
             for node in cmds.ls(members, type="transform", long=True):
-                container = pipeline.get_container_from_group(node)
-                if container is None:
+                try:
+                    container = pipeline.get_container_from_group(node)
+                except AssertionError:
                     continue
 
                 sets = cmds.ls(cmds.sets(container, query=True),
