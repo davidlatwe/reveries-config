@@ -5,7 +5,6 @@ from maya import cmds
 from reveries import lib
 from reveries.plugins import RepairInstanceAction
 from reveries.maya.plugins import MayaSelectInvalidInstanceAction
-from reveries.maya.lib import TRANSFORM_ATTRS
 
 
 class SelectInvalid(MayaSelectInvalidInstanceAction):
@@ -63,26 +62,13 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
 
         for transform in cmds.ls(instance, type="transform", long=True):
 
-            if cmds.listConnections(transform,
-                                    source=True,
-                                    destination=False,
-                                    type="constraint"):
-                # Skip constrainted
-                continue
-
             matrix = cmds.xform(transform,
                                 query=True,
                                 matrix=True,
                                 objectSpace=True)
 
             if not lib.matrix_equals(_identity, matrix, _tolerance):
-
-                # If it's transform is not keyable, should be fine to ignore
-                def is_keyable(attr):
-                    return cmds.getAttr(transform + "." + attr, keyable=True)
-
-                if any(is_keyable(attr) for attr in TRANSFORM_ATTRS):
-                    invalid.append(transform)
+                invalid.append(transform)
 
         return invalid
 
