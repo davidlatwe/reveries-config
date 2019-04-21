@@ -172,7 +172,7 @@ def no_undo(flush=False):
 
 
 @contextlib.contextmanager
-def undo_chunk():
+def undo_chunk(undo_on_exit=True):
     """Open undo chunk and undo when exit
 
     Use with caution !
@@ -184,10 +184,11 @@ def undo_chunk():
     finally:
         cmds.undoInfo(cck=True)
 
-        try:  # Undo without RuntimeError: no command to undo
-            cmds.undo()
-        except RuntimeError as e:
-            cmds.warning(str(e))
+        if undo_on_exit:
+            try:  # Undo without RuntimeError: no command to undo
+                cmds.undo()
+            except RuntimeError as e:
+                cmds.warning(str(e))
 
 
 @contextlib.contextmanager
