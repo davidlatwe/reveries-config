@@ -142,14 +142,14 @@ def get_container_from_group(group):
     for node in cmds.listConnections(group + ".message",
                                      destination=True,
                                      source=False,
-                                     type="objectSet"):
+                                     type="objectSet") or []:
         if not cmds.objExists(node + ".id"):
             continue
 
         if cmds.getAttr(node + ".id") == AVALON_CONTAINER_ID:
             nodes.append(node)
 
-    assert len(nodes) == 1, ("Group node has more then one container, "
+    assert len(nodes) == 1, ("Group node has non or more then one container, "
                              "this is a bug.")
     return nodes[0]
 
