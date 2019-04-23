@@ -14,6 +14,11 @@ class RepairInvalid(RepairContextAction):
     label = "Reset Timeline"
 
 
+def asset_has_frame_range(context):
+    asset = context.data["assetDoc"]
+    return "edit_in" in asset["data"]
+
+
 class ValidateTimeline(pyblish.api.InstancePlugin):
     """Valides the frame ranges and fps.
 
@@ -42,6 +47,10 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
     def process(self, context):
 
         asset_name = has_turntable()
+
+        if asset_name is None and not asset_has_frame_range(context):
+            self.log.info("No range been set on this asset, skipping..")
+            return True
 
         project = context.data["projectDoc"]
         proj_start, proj_end, fps = utils.compose_timeline_data(project,
