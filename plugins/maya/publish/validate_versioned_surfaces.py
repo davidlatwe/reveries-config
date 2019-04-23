@@ -83,6 +83,10 @@ class ValidateVersionedSurfaces(pyblish.api.InstancePlugin):
     def process(self, instance):
         invalid = self.get_invalid(instance)
         if invalid:
+            self.log.warning("Surface node not versioned.")
+
+            # Add log data, this entry will be written into database
+            instance.data["hasUnversionedSurfaces"] = True
+
             for i in invalid:
-                self.log.error(i)
-            raise Exception("Surface node not versioned.")
+                self.log.debug(i)

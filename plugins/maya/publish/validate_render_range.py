@@ -18,6 +18,11 @@ def get_render_range(instance):
     return proj_start, proj_end
 
 
+def asset_has_frame_range(context):
+    asset = context.data["assetDoc"]
+    return "edit_in" in asset["data"]
+
+
 class ValidateRenderRange(pyblish.api.InstancePlugin):
     """Ensure render setttings has been set correctly
 
@@ -51,6 +56,11 @@ class ValidateRenderRange(pyblish.api.InstancePlugin):
             return True
 
     def process(self, instance):
+
+        if not asset_has_frame_range(instance.context):
+            self.log.info("No range been set on this asset, skipping..")
+            return True
+
         self.log.info("Validating frame range..")
         if self.get_invalid(instance):
             raise Exception("Rendering frame range is not correct.")

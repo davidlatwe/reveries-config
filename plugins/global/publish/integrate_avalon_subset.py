@@ -367,7 +367,13 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         }
 
         # Include optional data if present in
-        optionals = ["startFrame", "endFrame", "step", "handles"]
+        optionals = [
+            "startFrame",
+            "endFrame",
+            "step",
+            "handles",
+            "hasUnversionedSurfaces",
+        ]
         for key in optionals:
             if key in instance.data:
                 version_data[key] = instance.data[key]
