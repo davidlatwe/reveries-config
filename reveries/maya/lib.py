@@ -13,7 +13,7 @@ from .vendor import capture
 log = logging.getLogger(__name__)
 
 
-AVALON_ID_ATTR_LONG = "AvalonID"
+AVALON_ID_ATTR_LONG = lib.AVALON_ID
 
 TRANSFORM_ATTRS = [
     "translateX", "translateY", "translateZ",
