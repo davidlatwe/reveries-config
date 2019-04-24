@@ -104,9 +104,11 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_controls(cls, instance):
-        controllers_sets = [i for i in instance if i == cls.CONTROLSET]
-        controls = cmds.sets(controllers_sets, query=True)
-        assert controls, "Must have %s in rig instance" % cls.CONTROLSET
+        control_sets = [i for i in instance if i == cls.CONTROLSET]
+        assert control_sets, "Must have %s in rig instance" % cls.CONTROLSET
+
+        controls = cmds.sets(control_sets, query=True)
+        assert controls, "Rig instance's %s is empty" % cls.CONTROLSET
 
         # Ensure all controls are within the top group
         lookup = set(instance[:])
