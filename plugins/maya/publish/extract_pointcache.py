@@ -56,15 +56,22 @@ class ExtractPointCache(DelegatablePackageExtractor):
 
         root = cmds.ls(sl=True, long=True)
 
-        io.export_alembic(cache_path,
-                          self.start_frame,
-                          self.end_frame,
-                          selection=False,
-                          renderableOnly=True,
-                          writeCreases=True,
-                          worldSpace=True,
-                          root=root,
-                          attr=[lib.AVALON_ID_ATTR_LONG])
+        io.export_alembic(
+            cache_path,
+            self.start_frame,
+            self.end_frame,
+            selection=False,
+            renderableOnly=True,
+            writeCreases=True,
+            worldSpace=True,
+            root=root,
+            attr=[
+                lib.AVALON_ID_ATTR_LONG,
+            ],
+            attrPrefix=[
+                "ai",  # Write out Arnold attributes
+            ],
+        )
 
         io.wrap_abc(entry_path, [(cache_file, "ROOT")])
 
