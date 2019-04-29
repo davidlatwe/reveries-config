@@ -8,6 +8,7 @@ from reveries import utils
 class SetRenderRange(RepairInstanceAction):
 
     label = "Set Render Range"
+    on = "processed"
 
 
 def get_render_range(instance):
@@ -49,9 +50,9 @@ class ValidateRenderRange(pyblish.api.InstancePlugin):
         render_end = instance.data["endFrame"]
 
         if proj_start != render_start or proj_end != render_end:
-            cls.log.error("Invalid frame range: {0} - {1}"
+            cls.log.debug("Invalid frame range: {0} - {1}"
                           "".format(render_start, render_end))
-            cls.log.error("start and end frame should be {0} - {1}."
+            cls.log.debug("start and end frame should be {0} - {1}."
                           "".format(proj_start, proj_end))
             return True
 
@@ -63,7 +64,7 @@ class ValidateRenderRange(pyblish.api.InstancePlugin):
 
         self.log.info("Validating frame range..")
         if self.get_invalid(instance):
-            raise Exception("Rendering frame range is not correct.")
+            self.log.warning("Rendering frame range is not correct.")
 
     @classmethod
     def fix_invalid(cls, instance):
