@@ -3,7 +3,6 @@ import os
 import contextlib
 
 import pyblish.api
-import avalon.maya
 
 from reveries.maya import io, lib, capsule
 from reveries.plugins import DelegatablePackageExtractor
@@ -42,7 +41,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
             capsule.no_undo(),
             capsule.no_refresh(),
             capsule.evaluation("off"),
-            avalon.maya.maintained_selection(),
+            capsule.maintained_selection(),
         ):
             cmds.select(self.data["outCache"], replace=True)
             super(ExtractPointCache, self).extract()
