@@ -80,6 +80,8 @@ if __name__ == "__main__":
             self.end = end_box
             self.handles = handle_box
 
+            project = io.find_one({"type": "project"})
+            self.handles_min = project["data"]["handles"]
             self.end.setMaximum(self.MAX)
 
             self.find_assets()
@@ -90,6 +92,9 @@ if __name__ == "__main__":
             group.addWidget(label)
             group.addWidget(widget)
             return group
+
+        def min_handles(self, handles):
+            return handles if handles < self.handles_min else self.handles_min
 
         def on_asset_changed(self):
             asset = self.assets.currentText()
@@ -111,7 +116,7 @@ if __name__ == "__main__":
             self.end.setMinimum(start + 1)
 
             self.handles.setMaximum(start)
-            self.handles.setMinimum(0)
+            self.handles.setMinimum(self.min_handles(handles))
 
         def find_assets(self):
             for asset in io.find({"silo": Session["AVALON_SILO"]}):
