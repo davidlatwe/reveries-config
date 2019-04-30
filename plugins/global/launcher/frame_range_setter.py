@@ -119,7 +119,9 @@ if __name__ == "__main__":
             self.handles.setMinimum(self.min_handles(handles))
 
         def find_assets(self):
-            for asset in io.find({"silo": Session["AVALON_SILO"]}):
+            for asset in io.find({"silo": Session["AVALON_SILO"]},
+                                 {"name": True},
+                                 sort=[("name", 1)]):
                 self.assets.addItem(asset["name"])
 
         def save_range(self):
