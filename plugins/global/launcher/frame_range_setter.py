@@ -46,6 +46,7 @@ if __name__ == "__main__":
             self.setWindowTitle("Set Frame Range")
             self.setFocusPolicy(QtCore.Qt.StrongFocus)
             self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+            self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
             asset_menu = QtWidgets.QComboBox()
             asset_grp = self.make_group(asset_menu, "Asset Name")
