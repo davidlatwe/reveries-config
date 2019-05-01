@@ -3,6 +3,8 @@ import os
 import uuid
 import hashlib
 import contextlib
+import logging
+from collections import OrderedDict
 
 try:
     import bson
@@ -23,6 +25,9 @@ from .pipeline import (
     AVALON_GROUP_ATTR,
 )
 from . import lib, capsule
+
+
+log = logging.getLogger(__name__)
 
 
 def _hash_MPoint(x, y, z, w):
@@ -705,6 +710,34 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
         output_prefix = output_prefix.replace(padding_str, frame_str)
 
     return output_prefix
+
+
+def get_output_paths(output_dir, renderer, layer, camera):
+    """
+    """
+    paths = OrderedDict()
+
+    if renderer == "vray":
+        import reveries.maya.vray.utils as utils_
+        aov_names = utils_.get_vray_element_names(layer)
+
+    elif renderer == "arnold":
+        import reveries.maya.arnold.utils as utils_
+        aov_names = utils_.get_arnold_aov_names(layer)
+
+    else:
+        aov_names = [""]
+
+    for aov in aov_names:
+        output_prefix = compose_render_filename(layer, aov, camera)
+        output_path = output_dir + "/" + output_prefix
+
+        paths[aov] = output_path.replace("\\", "/")
+
+        log.debug("Collecting AOV output path: %s" % aov)
+        log.debug("                      path: %s" % paths[aov])
+
+    return paths
 
 
 def update_dependency(container):

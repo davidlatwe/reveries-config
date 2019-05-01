@@ -1,7 +1,6 @@
 
 import os
 from maya import cmds
-from collections import OrderedDict
 
 import pyblish.api
 from reveries.maya import lib, utils
@@ -138,31 +137,10 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
     def collect_output_paths(self, instance):
         renderer = instance.data["renderer"]
         layer = instance.data["renderlayer"]
-
-        paths = OrderedDict()
-
-        if renderer == "vray":
-            import reveries.maya.vray.utils as utils_
-            aov_names = utils_.get_vray_element_names(layer)
-
-        elif renderer == "arnold":
-            import reveries.maya.arnold.utils as utils_
-            aov_names = utils_.get_arnold_aov_names(layer)
-
-        else:
-            aov_names = [""]
-
         output_dir = instance.context.data["outputDir"]
-
         cam = instance.data["renderCam"][0]
 
-        for aov in aov_names:
-            output_prefix = utils.compose_render_filename(layer, aov, cam)
-            output_path = output_dir + "/" + output_prefix
-
-            paths[aov] = output_path.replace("\\", "/")
-
-            self.log.debug("Collecting AOV output path: %s" % aov)
-            self.log.debug("                      path: %s" % paths[aov])
-
-        instance.data["outputPaths"] = paths
+        instance.data["outputPaths"] = utils.get_output_paths(output_dir,
+                                                              renderer,
+                                                              layer,
+                                                              cam)

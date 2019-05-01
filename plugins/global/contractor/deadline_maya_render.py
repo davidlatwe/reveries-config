@@ -20,6 +20,16 @@ def parse_output_paths(instance):
     return output_paths
 
 
+def add_envvars(environment):
+    add_vars = [
+        "MAYA_MODULE_PATH",
+        "ARNOLD_PLUGIN_PATH",
+    ]
+
+    for var in add_vars:
+        environment[var] = os.getenv(var, "")
+
+
 class ContractorDeadlineMayaRender(BaseContractor):
     """Publish via rendering Maya renderlayers on Deadline
 
@@ -117,6 +127,9 @@ class ContractorDeadlineMayaRender(BaseContractor):
             payload["JobInfo"].update(parse_output_paths(instance))
 
             environment = self.assemble_environment(instance)
+
+            add_envvars(environment)
+
             parsed_environment = {
                 "EnvironmentKeyValue%d" % index: "{key}={value}".format(
                     key=key,

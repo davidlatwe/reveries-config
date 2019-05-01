@@ -25,6 +25,23 @@ class ExtractRender(DelegatablePackageExtractor):
         "imageSequenceSet",
     ]
 
+    def process(self, instance):
+        # Update output path since the scene file name has changed by
+        # plugin `AvalonLockScene`.
+        # And we need to do this in `process`, before the instance gets
+        # delegated.
+
+        renderer = instance.data["renderer"]
+        layer = instance.data["renderlayer"]
+        output_dir = instance.context.data["outputDir"]
+        cam = instance.data["renderCam"][0]
+
+        instance.data["outputPaths"] = utils.get_output_paths(output_dir,
+                                                              renderer,
+                                                              layer,
+                                                              cam)
+        super(ExtractRender, self).process(instance)
+
     @skip_stage
     def extract_imageSequence(self):
         """Extract per renderlayer that has no AOVs
