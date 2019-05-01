@@ -36,18 +36,22 @@ class AtomsCrowdCacheLoader(ImportLoader, avalon.api.Loader):
         variation_file = representation["data"]["variationFile"]
         variation_path = os.path.dirname(entry_path) + "/" + variation_file
 
-        with capsule.namespaced(namespace):
-            node_name = "tcAtomsProxy"
-            node = cmds.createNode("tcAtomsProxy", name=node_name + "Shape")
-            cmds.rename(cmds.listRelatives(node, parent=True), node_name)
+        nodes = list()
 
-        cmds.setAttr(node + ".cachePath", entry_path, type="string")
-        cmds.setAttr(node + ".variationsPath", variation_path, type="string")
-        cmds.connectAttr("time1.outTime", node + ".time", f=True)
+        with capsule.namespaced(namespace):
+            node = "tcAtomsProxy"
+            shape = cmds.createNode("tcAtomsProxy", name=node + "Shape")
+            parent = cmds.listRelatives(shape, parent=True)
+            node = cmds.rename(parent, node)
+
+            nodes = [shape, node]
+
+        cmds.setAttr(shape + ".cachePath", entry_path, type="string")
+        cmds.setAttr(shape + ".variationsPath", variation_path, type="string")
+        cmds.connectAttr("time1.outTime", shape + ".time", f=True)
 
         group = cmds.group(node, name=group, world=True)
-
-        nodes = [node, group]
+        nodes.append(group)
 
         lib.lock_transform(group)
         self[:] = nodes
