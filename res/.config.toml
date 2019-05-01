@@ -103,6 +103,11 @@ label = "Arnold Stand-In"
 icon = "coffee"
 
 [[families]]
+name = "reveries.atomscrowd"
+label = "Atoms Crowd"
+icon = "building"
+
+[[families]]
 name = "reveries.mayashare"
 label = "Maya Share (.ma)"
 icon = "share-square-o"
