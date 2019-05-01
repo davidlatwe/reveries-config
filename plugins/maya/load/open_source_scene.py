@@ -145,6 +145,12 @@ class OpenSourceXGen(OpenMayaSource, avalon.api.Loader):
     representations = ["XGenLegacy", "XGenInteractive"]
 
 
+class OpenSourceAiStandIn(OpenMayaSource, avalon.api.Loader):
+
+    families = ["reveries.standin"]
+    representations = ["Ass"]
+
+
 class OpenSourceShared(OpenMayaSource, avalon.api.Loader):
 
     families = ["reveries.mayashare"]

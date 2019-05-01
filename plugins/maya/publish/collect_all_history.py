@@ -12,14 +12,7 @@ class CollectAllHistory(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         shapes = cmds.ls(instance, type="shape", noIntermediate=True)
-
-        try:
-            history = cmds.listHistory(shapes,
-                                       future=True,
-                                       pruneDagObjects=True) or []
-        except RuntimeError:
-            # Found no items to list the history for.
-            history = []
+        history = cmds.listConnections(shapes, skipConversionNodes=True) or []
 
         instance.data["allHistory"] = set(history)
 
