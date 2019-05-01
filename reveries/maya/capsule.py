@@ -1,5 +1,4 @@
 import contextlib
-import avalon.maya
 from maya import cmds, mel
 from . import lib
 
@@ -261,8 +260,7 @@ def namespaced(namespace, new=True):
     """Work inside namespace during context
 
     Args:
-        new (bool): When enabled this will rename the namespace to a unique
-            namespace if the input namespace already exists.
+        new (bool): Create namespace before entering the context
 
     Yields:
         str: The namespace that is used during the context
@@ -270,7 +268,6 @@ def namespaced(namespace, new=True):
     """
     original = cmds.namespaceInfo(currentNamespace=True)
     if new:
-        namespace = avalon.maya.lib.unique_namespace(namespace)
         cmds.namespace(add=namespace)
 
     try:
