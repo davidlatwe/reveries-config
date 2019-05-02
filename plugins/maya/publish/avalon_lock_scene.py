@@ -51,7 +51,8 @@ class AvalonLockScene(pyblish.api.ContextPlugin):
         index = 0
         while exists:
             publishing = publishing_dir + publishing_file % suffix
-            exists = os.path.isfile(publishing)
+            failed = publishing_dir + "__failed." + publishing_file % suffix
+            exists = os.path.isfile(publishing) or os.path.isfile(failed)
             index += 1
             suffix = ".%02d" % index
 
