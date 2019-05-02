@@ -82,18 +82,8 @@ class ExtractTexture(PackageExtractor):
             else:
 
                 paths = [package_path]
-                paths += file_node.split(":")  # Namespace as fsys hierarchy
                 paths.append(os.path.basename(pattern))  # image pattern name
-                #
-                # Include node name as part of the path should prevent
-                # file name collision which may introduce by two or
-                # more file nodes sourcing from different directory
-                # with same file name but different file content.
-                #
-                # For example:
-                #   File_A.fileTextureName = "asset/a/texture.png"
-                #   File_B.fileTextureName = "asset/b/texture.png"
-                #
+
                 final_pattern = os.path.join(*paths)
                 processed_pattern[pattern] = final_pattern
 
@@ -111,7 +101,7 @@ class ExtractTexture(PackageExtractor):
                 continue
 
             # Files to be transfered
-            curreent_files = findAllFilesForPattern(pattern, None)
+            curreent_files = findAllFilesForPattern(pattern, None) or [pattern]
             self.log.debug("File count: {}".format(len(curreent_files)))
 
             for file in curreent_files:
