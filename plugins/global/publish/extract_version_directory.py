@@ -96,11 +96,16 @@ class ExtractVersionDirectory(pyblish.api.InstancePlugin):
 
             fingerprint = context.data["sourceFingerprint"]
 
-            if strict:
-                return metadata == fingerprint
+            same_path = (os.path.normpath(metadata["currentMaking"]) ==
+                         os.path.normpath(fingerprint["currentMaking"]))
 
-            again = metadata["currentMaking"] == fingerprint["currentMaking"]
-            return again or not success
+            if strict:
+                same_hash = (metadata["currentHash"] ==
+                             fingerprint["currentHash"])
+
+                return same_hash and same_path
+
+            return same_path or not success
 
         def clean_version_dir(version_dir):
             """Remove all content from the version dir, except fingerprint"""

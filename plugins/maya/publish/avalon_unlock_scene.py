@@ -16,6 +16,10 @@ class AvalonUnlockScene(pyblish.api.ContextPlugin):
 
     def process(self, context):
 
+        if context.data.get("contractorAccepted"):
+            # Already in contractor's hand.
+            return
+
         maya.unlock()
 
         with capsule.maintained_selection():

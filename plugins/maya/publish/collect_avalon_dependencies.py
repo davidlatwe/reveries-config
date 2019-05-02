@@ -41,7 +41,7 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
 
                 if not members.intersection(con_member):
                     # Try history
-                    history = instance.data["allHistory"]
+                    history = instance.data.get("allHistory", set())
                     if not history.intersection(con_member):
                         # Not dependent
                         continue
