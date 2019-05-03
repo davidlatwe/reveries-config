@@ -28,6 +28,9 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
 
     def load(self, context, name=None, namespace=None, options=None):
 
+        if not cmds.pluginInfo("xgenToolkit", query=True, loaded=True):
+            cmds.loadPlugin("xgenToolkit", quiet=True)
+
         asset = context["asset"]
 
         asset_name = asset["data"].get("shortName", asset["name"])
