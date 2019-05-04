@@ -14,6 +14,11 @@ class ValidateNoAtomsSimulationNodes(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        if not instance.data["deadlineEnable"]:
+            # Allow local playblast simulation result.
+            self.log.info("Not using Deadline, skip validation.")
+            return
+
         has_atoms = bool(instance.data["AtomsNodes"])
         has_group = bool(instance.data["AtomsAgentGroups"])
 
