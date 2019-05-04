@@ -31,11 +31,12 @@ class ExtractAtomsCrowdCache(PackageExtractor):
         cache_dir = str(os.path.dirname(entry_path))
         cache_name = str(os.path.basename(entry_path).replace(".atoms", ""))
 
+        agent_groups = self.data["AtomsAgentGroups"]
         MayaCommandsHostBridge.export_atoms_cache(cache_dir,
                                                   cache_name,
                                                   start_frame,
                                                   end_frame,
-                                                  self.data["AgentGroups"])
+                                                  agent_groups)
 
         variation_file = self.file_name("json")
         variation_path = os.path.join(package_path, variation_file)
