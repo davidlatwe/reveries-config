@@ -84,6 +84,11 @@ class ContractorDeadlineMayaRender(BaseContractor):
                 version=instance.data["versionNext"],
             )
 
+            if instance.data.get("hasAtomsCrowds"):
+                group = "atomscrowd"
+            else:
+                group = instance.data["deadlineGroup"]
+
             payload = {
                 "JobInfo": {
                     "Plugin": "MayaBatch",
@@ -93,7 +98,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
                     "MachineName": platform.node(),
                     "Comment": comment,
                     "Pool": instance.data["deadlinePool"],
-                    "Group": instance.data["deadlineGroup"],
+                    "Group": group,
                     "Priority": instance.data["deadlinePriority"],
                     "Frames": "{start}-{end}x{step}".format(
                         start=int(instance.data["startFrame"]),

@@ -14,4 +14,4 @@ class ValidateAtomsCrowdHasAgentGroup(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        assert instance.data["AgentGroups"], "No agentGroup node exists."
+        assert instance.data["AtomsAgentGroups"], "No agentGroup node exists."
