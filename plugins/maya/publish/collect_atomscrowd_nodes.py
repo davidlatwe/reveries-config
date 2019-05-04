@@ -24,3 +24,6 @@ class CollectAtomsCrowdNodes(pyblish.api.InstancePlugin):
 
         atoms_proxies = cmds.ls(instance, type="tcAtomsProxy")
         instance.data["AtomsProxies"] = atoms_proxies
+
+        # For Rendering
+        instance.data["hasAtomsCrowds"] = bool(atoms_proxies)
