@@ -61,15 +61,21 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                                                           query=True) or [])
                 cacheables = self.cache_by_visibility(cacheables)
 
-                out_cache[namespace] = (name, cacheables)
+                out_cache[(namespace, name)] = cacheables
 
             # Re-Create instances
             context = instance.context
             context.remove(instance)
             source_data = instance.data
 
-            for namespace, (name, cacheables) in out_cache.items():
-                instance = context.create_instance(namespace or name)
+            for (namespace, name), cacheables in out_cache.items():
+
+                if not cacheables:
+                    self.log.debug("Skip empty OutSet %s in %s"
+                                   % (name, namespace))
+                    continue
+
+                instance = context.create_instance(namespace + "." + name)
 
                 instance.data.update(source_data)
                 instance.data["subset"] = ".".join(["pointcache",

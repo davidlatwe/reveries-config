@@ -18,6 +18,7 @@ class ValidateMeshHasVertex(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     families = [
         "reveries.model",
+        "reveries.rig",
     ]
     actions = [
         pyblish.api.Category("Select"),
