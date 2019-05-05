@@ -1,7 +1,7 @@
 
 import pyblish.api
 from maya import cmds
-from reveries.plugins import RepairInstanceAction
+from reveries.plugins import RepairInstanceAction, depended_plugins_succeed
 from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 from reveries.maya import capsule
 
@@ -60,7 +60,7 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
         - Break all incoming connections to keyable attributes
 
     """
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder + 0.11
     label = "Rig Controllers"
     hosts = ["maya"]
     families = [
@@ -81,6 +81,10 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
         FixInvalidVisibility,
     ]
 
+    dependencies = [
+        "ValidateRigContents",
+    ]
+
     # Default controller values
     CONTROLLER_DEFAULTS = {
         "translateX": 0,
@@ -94,8 +98,6 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
         "scaleZ": 1
     }
 
-    CONTROLSET = "ControlSet"
-
     def process(self, instance):
         invalid = self.get_invalid(instance)
         if invalid:
@@ -104,22 +106,19 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_controls(cls, instance):
-        control_sets = [i for i in instance if i == cls.CONTROLSET]
-        assert control_sets, "Must have %s in rig instance" % cls.CONTROLSET
+        control_sets = instance.data["controlSets"]
 
-        controls = cmds.sets(control_sets, query=True)
-        assert controls, "Rig instance's %s is empty" % cls.CONTROLSET
+        controls = cmds.sets(control_sets, query=True) or []
+        assert controls, "Rig instance's 'ControlSet' is empty"
 
-        # Ensure all controls are within the top group
-        lookup = set(instance[:])
-        assert all(control in lookup for control in cmds.ls(controls,
-                                                            long=True)), (
-            "All controls must be inside the rig's group."
-        )
         return controls
 
     @classmethod
     def get_invalid(cls, instance):
+
+        if not depended_plugins_succeed(cls, instance):
+            raise Exception("Depended plugin failed. See error log.")
+
         # Validate all controls
         has_connections = cls.get_invalid_connections(instance)
         has_unlocked_vis = cls.get_invalid_visibility(instance)
