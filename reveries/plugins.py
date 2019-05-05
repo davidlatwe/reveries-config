@@ -14,6 +14,40 @@ from .utils import temp_dir, deep_update
 from . import CONTRACTOR_PATH
 
 
+def depended_plugins_succeed(plugin, instance):
+    """Lookup context for depended plugins results
+
+    Args:
+        plugin (pyblish.api.Plugin): pyblish plugin object
+        instance (pyblish.plugin.Instance): pyblish Instance object
+
+    Returns:
+        (bool): True if all depended plugins has succeed, else False
+
+    """
+    dependencies = getattr(plugin, "dependencies", None)
+    if not dependencies:
+        plugin.log.warning("No depended plugins.")
+        return True
+
+    succeed = True
+
+    for result in instance.context.data["results"]:
+        if result["instance"] is None:
+            continue
+        if result["instance"].id != instance.id:
+            continue
+
+        previous = result["plugin"].__name__
+        success = result["success"]
+
+        if previous in dependencies and not success:
+            plugin.log.error("Depended plugin failed: %s" % previous)
+            succeed = False
+
+    return succeed
+
+
 class BaseContractor(object):
     """Publish delegation contractor base class
     """
