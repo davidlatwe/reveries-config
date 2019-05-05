@@ -31,6 +31,7 @@ class ValidateNoMeshParenting(pyblish.api.InstancePlugin):
 
     families = [
         "reveries.model",
+        "reveries.rig",
     ]
 
     actions = [
@@ -49,9 +50,13 @@ class ValidateNoMeshParenting(pyblish.api.InstancePlugin):
             parent = cmds.listRelatives(mesh, parent=True, fullPath=True)
             children = cmds.listRelatives(parent, children=True, fullPath=True)
 
-            transforms = cmds.ls(children, type="transform", long=True)
-            if transforms:
-                invalid += transforms
+            for node in cmds.ls(children, type="transform", long=True):
+                # (NOTE) constraint node is allowed.
+                if cmds.listRelatives(node,
+                                      allDescendents=True,
+                                      type="shape"):
+                    invalid.append(node)
+
             checked += children
 
         return invalid
