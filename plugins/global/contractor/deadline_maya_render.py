@@ -84,11 +84,6 @@ class ContractorDeadlineMayaRender(BaseContractor):
                 version=instance.data["versionNext"],
             )
 
-            if instance.data.get("hasAtomsCrowds"):
-                group = "atomscrowd"
-            else:
-                group = instance.data["deadlineGroup"]
-
             payload = {
                 "JobInfo": {
                     "Plugin": "MayaBatch",
@@ -98,7 +93,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
                     "MachineName": platform.node(),
                     "Comment": comment,
                     "Pool": instance.data["deadlinePool"],
-                    "Group": group,
+                    "Group": instance.data["deadlineGroup"],
                     "Priority": instance.data["deadlinePriority"],
                     "Frames": "{start}-{end}x{step}".format(
                         start=int(instance.data["startFrame"]),
@@ -134,6 +129,21 @@ class ContractorDeadlineMayaRender(BaseContractor):
             environment = self.assemble_environment(instance)
 
             add_envvars(environment)
+
+            if instance.data.get("hasAtomsCrowds"):
+                # Change Deadline group for AtomsCrowd
+                payload["JobInfo"]["Group"] = "atomscrowd"
+            else:
+                # AtomsCrowd module path is available for every machine by
+                # default, so we must remove it if this renderLayer does
+                # not require AtomsCrowd plugin. Or the license will not
+                # be enough for other job that require Atoms.
+                module_path = environment["MAYA_MODULE_PATH"]
+                filtered = list()
+                for path in module_path.split(";"):
+                    if "AtomsMaya" not in path:
+                        filtered.append(path)
+                environment["MAYA_MODULE_PATH"] = ";".join(filtered)
 
             parsed_environment = {
                 "EnvironmentKeyValue%d" % index: "{key}={value}".format(
