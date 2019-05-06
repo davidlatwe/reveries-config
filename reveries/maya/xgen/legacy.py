@@ -237,6 +237,31 @@ def list_fx_modules(description, activated=None):
         return modules
 
 
+def is_modifier_under_bake_manager(palette, description, modifier):
+    """Is this modifier stack under an active bake groom manager ?
+
+    Args:
+        palette (str): XGen Legacy palette name
+        description (str): XGen Legacy description name
+        modifier (str): Name of an XGen modifier object
+
+    Returns:
+        (bool)
+
+    """
+    fxmod_typ = (lambda fxm: xg.fxModuleType(palette, description, fxm))
+
+    fx_modules = xg.fxModules(palette, description)
+    bake_found = False
+    for fxm in reversed(fx_modules):
+        if fxm == modifier:
+            return bake_found
+
+        if fxmod_typ(fxm) == "BakedGroomManagerFXModule":
+            if xg.getAttr("active", palette, description, fxm) == "true":
+                bake_found = True
+
+
 def preview_auto_update(auto):
     """XGen auto Update preview on/off
 
