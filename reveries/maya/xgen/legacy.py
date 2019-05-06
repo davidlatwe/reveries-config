@@ -306,11 +306,13 @@ def xgen_preview_all(palette):
                        "GLRenderer")
 
 
-def current_data_path(palette, expand=False):
-    path = xg.getAttr("xgDataPath", palette)
-    if expand:
-        return xg.expandFilepath(str(path), "")
-    return path
+def current_data_paths(palette, expand=False):
+    paths = list()
+    for path in xg.getAttr("xgDataPath", palette).split(";"):
+        if expand:
+            path = xg.expandFilepath(str(path), "")
+        paths.append(path)
+    return paths
 
 
 @contextlib.contextmanager
