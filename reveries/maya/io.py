@@ -774,7 +774,7 @@ def export_xgen_LGC_guides(guides, out_path):
     ):
         # guides to curves
         curves = xgen.legacy.guides_to_curves(guides)
-        curves += cmds.listRelatives(curves, shapes=True)
+        curves += cmds.listRelatives(curves, shapes=True, fullPath=True)
         cmds.select(curves, replace=True)
 
         frame = cmds.currentTime(query=True)

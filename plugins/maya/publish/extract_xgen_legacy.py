@@ -42,10 +42,23 @@ class ExtractXGenLegacy(PackageExtractor):
             # Transfer maps
             maps = xgen.maps_to_transfer(desc)
             palette = xgen.get_palette_by_description(desc)
-            data_path = xgen.current_data_path(palette, expand=True)
+            data_paths = xgen.current_data_paths(palette, expand=True)
 
             for src in maps:
-                tail = src[len(data_path):]
+                for root in data_paths:
+                    if src.startswith(root):
+                        # At least one root will be matched, since all
+                        # map path has been validated that must exists
+                        # under ${DESC} dir.
+                        tail = src[len(root):]
+                        break
+                else:
+                    self.log.critical("Searched data path:")
+                    for root in data_paths:
+                        self.log.critical(root)
+                    raise Exception("Could not find root path for %s , "
+                                    "this is a bug." % src)
+
                 dst = os.path.join(package_dir, "maps", palette, tail)
                 self.add_file(src, dst)
 

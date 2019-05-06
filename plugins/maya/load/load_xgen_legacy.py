@@ -1,5 +1,6 @@
 
 import os
+import contextlib
 from distutils.dir_util import copy_tree
 
 import avalon.api
@@ -113,14 +114,45 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         self.log.info("Removing '%s' from Maya.." % container["name"])
 
         palettes = cmds.ls(nodes, type="xgmPalette")
-        for palette in palettes:
-            xgen.delete_palette(palette)
+        with ensure_desc_editor():
+            for palette in palettes:
+                xgen.delete_palette(palette)
 
-        try:
-            cmds.delete(nodes)
-        except ValueError:
-            pass
+        for node in nodes:
+            try:
+                cmds.delete(node)
+            except ValueError:
+                pass
 
         cmds.namespace(removeNamespace=namespace, deleteNamespaceContent=True)
 
         return True
+
+
+class MockDescriptionEditor(object):
+
+    class Previewer(object):
+        tracking = True
+        idle = True
+
+    previewer = Previewer()
+    refresh = (lambda self, *args: None)
+    clearPreview = (lambda self, *args: None)
+
+
+@contextlib.contextmanager
+def ensure_desc_editor():
+    # Avoid "AttributeError: 'NoneType' object has no attribute 'previewer'"
+    # when there's no DescriptionEditor GUI exists.
+    import xgenm.xgGlobal as xgg
+
+    mocked = False
+    if xgg.DescriptionEditor is None:
+        mocked = True
+        xgg.DescriptionEditor = MockDescriptionEditor()
+    try:
+        yield
+
+    finally:
+        if mocked:
+            xgg.DescriptionEditor = None

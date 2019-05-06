@@ -237,6 +237,31 @@ def list_fx_modules(description, activated=None):
         return modules
 
 
+def is_modifier_under_bake_manager(palette, description, modifier):
+    """Is this modifier stack under an active bake groom manager ?
+
+    Args:
+        palette (str): XGen Legacy palette name
+        description (str): XGen Legacy description name
+        modifier (str): Name of an XGen modifier object
+
+    Returns:
+        (bool)
+
+    """
+    fxmod_typ = (lambda fxm: xg.fxModuleType(palette, description, fxm))
+
+    fx_modules = xg.fxModules(palette, description)
+    bake_found = False
+    for fxm in reversed(fx_modules):
+        if fxm == modifier:
+            return bake_found
+
+        if fxmod_typ(fxm) == "BakedGroomManagerFXModule":
+            if xg.getAttr("active", palette, description, fxm) == "true":
+                bake_found = True
+
+
 def preview_auto_update(auto):
     """XGen auto Update preview on/off
 
@@ -306,11 +331,13 @@ def xgen_preview_all(palette):
                        "GLRenderer")
 
 
-def current_data_path(palette, expand=False):
-    path = xg.getAttr("xgDataPath", palette)
-    if expand:
-        return xg.expandFilepath(str(path), "")
-    return path
+def current_data_paths(palette, expand=False):
+    paths = list()
+    for path in xg.getAttr("xgDataPath", palette).split(";"):
+        if expand:
+            path = xg.expandFilepath(str(path), "")
+        paths.append(path)
+    return paths
 
 
 @contextlib.contextmanager
@@ -362,6 +389,7 @@ _ATTR_ALIAS = {
     "region": "regionMap",
     "inputMap": "mapDir",
     "MeshFile": "meshFile",
+    "inputMapDir": "controlMapDir",
     "controlMap": "controlMapDir",
     "tiltU": "offU",
     "tiltV": "offV",
@@ -592,10 +620,17 @@ def maps_to_transfer(description):
     transfer = set()
 
     for path, parents in parse_description_maps(description):
-        _, _, obj, _, _ = parents
+        palette, _, obj, _, _ = parents
         if obj in list_fx_modules(description, activated=False):
             # Ignore if not active
             cmds.warning("FxModule %s not active, transfer skipped." % obj)
+            continue
+
+        if is_modifier_under_bake_manager(palette,
+                                          description,
+                                          obj):
+            # Ignore if obj is a modifier and is under an active bake
+            # groom manager
             continue
 
         if "${FXMODULE}" in path:
@@ -707,7 +742,11 @@ def bake_modules(palette, description):
 
 def guides_to_curves(guides):
     cmds.select(guides, replace=True)
-    return mel.eval("xgmCreateCurvesFromGuides(0, true)")
+    # This mel command does not reture correct converted curve names,
+    # only selecting them.
+    mel.eval("xgmCreateCurvesFromGuides(0, true)")
+    # Return curve name by selection
+    return cmds.ls(selection=True, long=True)
 
 
 def curves_to_guides(description, curves):
