@@ -116,10 +116,11 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         for palette in palettes:
             xgen.delete_palette(palette)
 
-        try:
-            cmds.delete(nodes)
-        except ValueError:
-            pass
+        for node in nodes:
+            try:
+                cmds.delete(node)
+            except ValueError:
+                pass
 
         cmds.namespace(removeNamespace=namespace, deleteNamespaceContent=True)
 
