@@ -708,7 +708,11 @@ def bake_modules(palette, description):
 
 def guides_to_curves(guides):
     cmds.select(guides, replace=True)
-    return mel.eval("xgmCreateCurvesFromGuides(0, true)")
+    # This mel command does not reture correct converted curve names,
+    # only selecting them.
+    mel.eval("xgmCreateCurvesFromGuides(0, true)")
+    # Return curve name by selection
+    return cmds.ls(selection=True, long=True)
 
 
 def curves_to_guides(description, curves):
