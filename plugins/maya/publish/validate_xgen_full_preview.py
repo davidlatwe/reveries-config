@@ -1,6 +1,13 @@
 
 import pyblish.api
 
+from reveries.plugins import RepairInstanceAction
+
+
+class FixXGenFullPreview(RepairInstanceAction):
+
+    label = "Set 100% Preview"
+
 
 class ValidateXGenFullPreview(pyblish.api.InstancePlugin):
     """Should publish with 100% primitives generated preview
@@ -14,6 +21,11 @@ class ValidateXGenFullPreview(pyblish.api.InstancePlugin):
     label = "XGen Full Preview"
     families = [
         "reveries.xgen.legacy",
+    ]
+
+    actions = [
+        pyblish.api.Category("Fix It"),
+        FixXGenFullPreview,
     ]
 
     @classmethod
@@ -39,3 +51,17 @@ class ValidateXGenFullPreview(pyblish.api.InstancePlugin):
             for i in invalid:
                 self.log.error(i)
             raise Exception("These descriptions not preview 100% primitives.")
+
+    @classmethod
+    def fix_invalid(cls, instance):
+        import xgenm as xg
+
+        invalid = cls.get_invalid(instance)
+
+        for description in invalid:
+            palette = xg.palette(description)
+            xg.setAttr("percent",
+                       "100.0",
+                       palette,
+                       description,
+                       "GLRenderer")
