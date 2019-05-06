@@ -92,6 +92,7 @@ class ExtractArnoldStandIn(PackageExtractor):
                                          frameStep=self.data["byFrameStep"],
                                          shadowLinks=1,
                                          lightLinks=1,
+                                         expandProcedurals=True,
                                          mask=24)
 
         use_sequence = self.data["startFrame"] != self.data["endFrame"]
