@@ -362,6 +362,7 @@ _ATTR_ALIAS = {
     "region": "regionMap",
     "inputMap": "mapDir",
     "MeshFile": "meshFile",
+    "inputMapDir": "controlMapDir",
     "controlMap": "controlMapDir",
     "tiltU": "offU",
     "tiltV": "offV",
