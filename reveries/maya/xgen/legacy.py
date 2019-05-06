@@ -620,10 +620,17 @@ def maps_to_transfer(description):
     transfer = set()
 
     for path, parents in parse_description_maps(description):
-        _, _, obj, _, _ = parents
+        palette, _, obj, _, _ = parents
         if obj in list_fx_modules(description, activated=False):
             # Ignore if not active
             cmds.warning("FxModule %s not active, transfer skipped." % obj)
+            continue
+
+        if is_modifier_under_bake_manager(palette,
+                                          description,
+                                          obj):
+            # Ignore if obj is a modifier and is under an active bake
+            # groom manager
             continue
 
         if "${FXMODULE}" in path:

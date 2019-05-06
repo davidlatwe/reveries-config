@@ -39,6 +39,13 @@ class ValidateXGenNoMissingMap(pyblish.api.InstancePlugin):
                     # Ignore if not active
                     continue
 
+                if xgen.is_modifier_under_bake_manager(palette,
+                                                       description,
+                                                       obj):
+                    # Ignore if obj is a modifier and is under an active bake
+                    # groom manager
+                    continue
+
                 invalid.append((parents, path))
 
         return invalid
