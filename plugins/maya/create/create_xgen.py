@@ -42,6 +42,13 @@ class XGenCreator(avalon.maya.Creator):
 
         self.data["XGenType"] = variant
 
+        if variant == "legacy":
+            self.data["step"] = [
+                "shaping",
+                "baked",
+                "wired",
+            ]
+
         instance = super(XGenCreator, self).process()
 
         cmds.setAttr(instance + ".XGenType", lock=True)
