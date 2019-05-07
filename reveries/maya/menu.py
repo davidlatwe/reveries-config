@@ -88,7 +88,7 @@ reveries.maya.tools.show('mayalookassigner')
         cmds.menuItem("Link Hair System",
                       parent="Menu_XGen",
                       command=interactive.link_palettes_to_hair_system)
-        cmds.menuItem("Set RefWire Frame",
+        cmds.menuItem("Set RefWires Frame By Nucleus",
                       parent="Menu_XGen",
                       command=interactive.set_refwires_frame_by_nucleus)
 
