@@ -58,7 +58,8 @@ def apply_avalon_uuid(*args):
 
     # Add unique identifiers
     for node in transforms:
-        utils.upsert_id(node)
+        if utils.get_id(node) is None:
+            utils.upsert_id(node)
 
 
 def swap_to_published_model(*args):

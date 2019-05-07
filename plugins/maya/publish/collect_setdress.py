@@ -24,7 +24,7 @@ class CollectHierarchyData(pyblish.api.InstancePlugin):
 
         for container in root_containers:
 
-            subset_group = container["subsetGroup"]
+            subset_group = container.get("subsetGroup")
 
             if subset_group in instance:
                 self.log.info("Collecting {!r} ..".format(subset_group))
