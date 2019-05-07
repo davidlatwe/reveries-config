@@ -3,7 +3,7 @@ import os
 import contextlib
 
 import pyblish.api
-from reveries.plugins import PackageExtractor
+from reveries.plugins import PackageExtractor, skip_stage
 from reveries.maya import io, capsule
 
 from maya import cmds
@@ -69,6 +69,7 @@ class ExtractArnoldStandIn(PackageExtractor):
         "Ass",
     ]
 
+    @skip_stage
     def extract_Ass(self):
         entry_file = self.file_name("ma")
         cache_file = self.file_name("ass")
