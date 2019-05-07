@@ -134,6 +134,12 @@ class CollectXGen(pyblish.api.InstancePlugin):
             bound_meshes.update(xgen.legacy.list_bound_geometry(desc))
         instance.data["xgenBoundGeos"] = list(bound_meshes)
 
+        # Update subset name with step
+        name = instance.data["subset"]
+        step = instance.data["step"].capitalize()
+        if step != "Shaping" and not name.endswith(step):
+            instance.data["subset"] = name + step
+
         # Create model subset for bounding meshes
         create_model_subset_from_xgen(instance)
 
