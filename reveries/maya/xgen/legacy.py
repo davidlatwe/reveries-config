@@ -222,6 +222,20 @@ def list_guides(description):
     return xg.descriptionGuides(description)
 
 
+def get_groom(description):
+    """Return description's grooming node
+
+    Args:
+        description (str): XGen Legacy description name
+
+    Returns:
+        (str)
+
+    """
+    palette = get_palette_by_description(description)
+    return xg.getAttr("groom", palette, description)
+
+
 def list_fx_modules(description, activated=None):
     palette = get_palette_by_description(description)
     modules = xg.fxModules(palette, description)
@@ -236,6 +250,21 @@ def list_fx_modules(description, activated=None):
 
     else:
         return modules
+
+
+def get_fx_module_type(palette, description, modifier):
+    """Return FXModule type
+
+    Args:
+        palette (str): XGen Legacy palette name
+        description (str): XGen Legacy description name
+        modifier (str): Name of an XGen modifier object
+
+    Returns:
+        (str)
+
+    """
+    return xg.fxModuleType(palette, description, modifier)
 
 
 def is_modifier_under_bake_manager(palette, description, modifier):
@@ -654,6 +683,17 @@ def maps_to_transfer(description):
             cmds.warning("Map not exists: %s" % parents)
 
     return sorted(list(transfer))
+
+
+def set_to_use_xpd(palette, description):
+    """Set description's primitive generator to use XPD file
+
+    Args:
+        palette (str): XGen Legacy palette name
+        description (str): XGen Legacy description name
+
+    """
+    xg.setActive(palette, description, "FileGenerator")
 
 
 def bake_description(palette, description):
