@@ -801,6 +801,9 @@ def import_palette(xgen_path, deltas=None, namespace="", wrapPatches=True):
 
 
 def export_grooming(description, groom, out_dir):
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir)
+
     # Textels per unit
     tpu = xg.igDescriptionTpu(xg.igDescription(description))
 
