@@ -457,3 +457,13 @@ def reset_polySelectConstraint(reset=True):
         yield
     finally:
         mel.eval(original)
+
+
+@contextlib.contextmanager
+def wait_cursor():
+    """Provide a waiting cursor"""
+    try:
+        cmds.waitCursor(state=True)
+        yield
+    finally:
+        cmds.waitCursor(state=False)
