@@ -626,13 +626,6 @@ def maps_to_transfer(description):
             cmds.warning("FxModule %s not active, transfer skipped." % obj)
             continue
 
-        if is_modifier_under_bake_manager(palette,
-                                          description,
-                                          obj):
-            # Ignore if obj is a modifier and is under an active bake
-            # groom manager
-            continue
-
         if "${FXMODULE}" in path:
             path = path.replace("${FXMODULE}", parents[2])
         dir_path = os.path.dirname(path)
@@ -649,12 +642,15 @@ def maps_to_transfer(description):
             # Copy file
             transfer.add(file_path.replace("\\", "/"))
 
-        else:
+        elif os.path.isdir(dir_path):
             # Possible contain variables in file name, copy folder
             for file in os.listdir(dir_path):
                 path = os.path.join(dir_path, file)
                 if os.path.isfile(path):
                     transfer.add(path.replace("\\", "/"))
+
+        else:
+            cmds.warning("Map not exists: %s" % parents)
 
     return sorted(list(transfer))
 
