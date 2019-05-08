@@ -44,6 +44,8 @@ class ValidateXGenNoMissingMap(pyblish.api.InstancePlugin):
                                                        obj):
                     # Ignore if obj is a modifier and is under an active bake
                     # groom manager
+                    cls.log.warning("Map missing but baked, ignored.")
+                    cls.log.warning(path)
                     continue
 
                 invalid.append((parents, path))
