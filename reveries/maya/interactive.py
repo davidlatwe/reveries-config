@@ -359,7 +359,7 @@ def bind_xgen_legacy_by_selection(*args):
 def bake_all_xgen_legacy_descriptions(*args):
     for palette in xgen.legacy.list_palettes():
         for description in xgen.legacy.list_descriptions(palette):
-            xgen.legacy.bake_description(palette, description, rebake=True)
+            xgen.legacy.bake_description(palette, description)
 
 
 def bake_all_xgen_legacy_modifiers(*args):

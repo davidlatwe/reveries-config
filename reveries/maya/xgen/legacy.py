@@ -655,38 +655,26 @@ def maps_to_transfer(description):
     return sorted(list(transfer))
 
 
-def bake_description(palette, description, rebake=False):
+def bake_description(palette, description):
     """Bake description with BakedGroomManagerFXModule
+
+    Will create a bakedGroomManager module if not existing one.
 
     Args:
         palette (str): XGen Legacy palette name
         description (str): XGen Legacy description name
-        rebake (bool): Remove previous bake groom modifier if set to True,
-            default False.
-
-    Raise:
-        RuntimeError if there are bake groom modifier existed and `rebake`
-            is False.
 
     """
     fxmod_typ = (lambda fxm: xg.fxModuleType(palette, description, fxm))
 
-    fx_modules = xg.fxModules(palette, description)
+    for fxm in xg.fxModules(palette, description):
+        if fxmod_typ(fxm) == "BakedGroomManagerFXModule":
+            break
+    else:
+        # bake groom modifiers
+        xg.addFXModule(palette, description, "BakedGroomManagerFXModule")
 
-    for fxm in fx_modules:
-        if not fxmod_typ(fxm) == "BakedGroomManagerFXModule":
-            continue
-        if not rebake:
-            raise RuntimeError("This description has been baked.")
-        # Remove bake module
-        xg.removeFXModule(palette, description, fxm)
-
-    # bake groom modifiers
-    fxm = xg.addFXModule(palette, description, "BakedGroomManagerFXModule")
-    xg.setAttr("active", "true", palette, description, fxm)
     xg.bakedGroomManagerBake(palette, description)
-    # set Generator to XPD
-    xg.setActive(palette, description, "FileGenerator")
 
 
 def bake_modules(palette, description):
