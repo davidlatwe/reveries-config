@@ -13,8 +13,8 @@ from .. import capsule
 
 # Legacy work steps
 SHAPING = "Shaping"
-BAKED = "baked"
-WIRED = "wired"
+BAKED = "Baked"
+WIRED = "Wired"
 
 
 def _getMapExprStrings():
