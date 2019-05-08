@@ -1,5 +1,6 @@
 
 import os
+import json
 import contextlib
 import xgenm as xg
 import xgenm.xgGlobal as xgg
@@ -751,6 +752,85 @@ def import_palette(xgen_path, deltas=None, namespace="", wrapPatches=True):
                             deltas,
                             str(namespace),
                             bool(wrapPatches))
+
+
+def export_grooming(description, groom, out_dir):
+    # Textels per unit
+    tpu = xg.igDescriptionTpu(xg.igDescription(description))
+
+    # Export Maps
+    # (NOTE) may have .ptx file handle lock issue
+    with capsule.wait_cursor():
+        # Attribute Map
+        pmc.mel.iGroom(exportMaps=out_dir,
+                       texelsPerUnit=tpu,
+                       instanceMethod=2,  # Use Interpolate
+                       description=groom)
+    with capsule.wait_cursor():
+        # Mask
+        pmc.mel.iGroom(exportMask=out_dir,
+                       texelsPerUnit=tpu,
+                       description=groom)
+    with capsule.wait_cursor():
+        # Region
+        pmc.mel.iGroom(exportRegion=out_dir,
+                       texelsPerUnit=tpu,
+                       description=groom)
+
+    # Export Settings
+    groom_attrs = [
+        "density",
+        "length",
+        "width",
+        "interpStyle",  # Grooming instance sampling method
+    ]
+    settings = {}
+    for key in groom_attrs:
+        settings[key] = pmc.getAttr(groom + "." + key)
+
+    json_path = out_dir + "groomSettings.json"
+    with open(json_path, "w") as fp:
+        json.dump(settings, fp, indent=4)
+
+
+def import_grooming(description, groom, groom_dir):
+    # bind groom to geo
+    pmc.mel.igBindFromXGen(description)
+    # set groom density and sampling method
+    pmc.setAttr(groom + ".density", 1)
+    pmc.setAttr(groom + ".interpStyle", 1)
+    # set all groom visible on
+    xg.igSetDescriptionVisibility(True)
+    # sync primitives tab attritube map path with auto export path
+    xg.igSyncMaps(description)
+
+    # clear out autoExport path for preventing grooming auto export
+    xg.setOptionVarString("igAutoExportFolder", "")
+
+    # import Attribute Map
+    with capsule.wait_cursor():
+        pmc.mel.iGroom(im=groom_dir, d=groom)
+    # import Mask
+    with capsule.wait_cursor():
+        pmc.mel.iGroom(ik=groom_dir, d=groom)
+    # import Region
+    with capsule.wait_cursor():
+        pmc.mel.iGroom(ir=groom_dir, d=groom)
+
+    # restore default autoExport path
+    xg.setOptionVarString("igAutoExportFolder", "${DESC}/groom")
+
+    # Import Settings
+    # (NOTE) Currently only grab [density] setting, ["length", "width"] will
+    #        messed up imported grooming's map attribute
+
+    json_path = groom_dir + "groomSettings.json"
+    settings = {}
+    with open(json_path) as fp:
+        settings = json.load(fp)
+
+    pmc.setAttr(groom + "." + "density", settings["density"])
+    pmc.setAttr(groom + "." + "interpStyle", settings["interpStyle"])
 
 
 def bind(description, meshes):
