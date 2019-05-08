@@ -82,6 +82,9 @@ reveries.maya.tools.show('mayalookassigner')
         cmds.menuItem("Bake All Modifiers",
                       parent="Menu_XGen",
                       command=interactive.bake_all_xgen_legacy_modifiers)
+        cmds.menuItem("Copy Mesh To World",
+                      parent="Menu_XGen",
+                      command=interactive.copy_mesh_to_world)
         cmds.menuItem("Link Hair System",
                       parent="Menu_XGen",
                       command=interactive.link_palettes_to_hair_system)

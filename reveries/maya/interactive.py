@@ -372,6 +372,12 @@ def bake_all_xgen_legacy_modifiers(*args):
             xgen.legacy.bake_modules(palette, description)
 
 
+def copy_mesh_to_world(*args):
+    for node in cmds.ls(sl=True, long=True):
+        new_node = cmds.duplicate(node, inputConnections=True)[0]
+        cmds.parent(new_node, world=True)
+
+
 def link_palettes_to_hair_system(*args):
     selection = cmds.ls(sl=True)
     selection += cmds.listRelatives(selection, allDescendents=True) or []
