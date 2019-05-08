@@ -32,11 +32,35 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         if not cmds.pluginInfo("xgenToolkit", query=True, loaded=True):
             cmds.loadPlugin("xgenToolkit", quiet=True)
 
-        asset = context["asset"]
+        representation = context["representation"]
 
+        asset = context["asset"]
         asset_name = asset["data"].get("shortName", asset["name"])
         family_name = context["version"]["data"]["families"][0].split(".")[-1]
         namespace = namespace or unique_root_namespace(asset_name, family_name)
+
+        dir_suffix = "_" + namespace.replace(":", "_")
+        descriptions_data = representation["data"]["descriptionsData"]
+        is_baked = representation["data"]["step"] != xgen.SHAPING
+        bound_meshes = list()
+
+        # Varify selection
+        selected = cmds.ls(sl=True, long=True)
+
+        all_bound_geos = set()
+        for data in descriptions_data.values():
+            for geo in data["bound"]:
+                all_bound_geos.add("|" + geo)
+
+        assert set(selected) == all_bound_geos
+
+        # Rename bound geos to namespace
+        for node in selected:
+            new_name = namespace + ":" + node
+            if cmds.objExists(new_name):
+                raise RuntimeError("Already existed: %s" % new_name)
+            cmds.rename(node, new_name)
+            bound_meshes.append(new_name)
 
         # Copy maps
         local_map_dir = os.path.join(avalon.api.Session["AVALON_WORKDIR"],
@@ -45,34 +69,56 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         map_dir = os.path.join(self.package_path, "maps")
         for palette in os.listdir(map_dir):
             palette_dir = os.path.join(map_dir, palette)
-            local_palette_dir = os.path.join(local_map_dir, palette)
+            namespaced_dir = palette + dir_suffix
+            local_palette_dir = os.path.join(local_map_dir, namespaced_dir)
 
             # Copy
             copy_tree(palette_dir, local_palette_dir)
 
-        # Import palette (No bind)
+        # Import palette
         palette_nodes = list()
-        palettes = context["representation"]["data"]["palettes"]
-        desc_ids = context["representation"]["data"]["descriptionIds"]
-        for file in palettes:
+        xgen.preview_clear()
+
+        for file in representation["data"]["palettes"]:
+
             xgen_path = os.path.join(self.package_path, file)
             xgen_path = xgen_path.replace("\\", "/")
             palette_node = xgen.import_palette(xgen_path,
                                                namespace=namespace,
-                                               wrapPatches=False)
+                                               wrapPatches=True)
             palette_nodes.append(palette_node)
 
             # Set xgDataPath
             palette = os.path.splitext(file)[0]
             data_path = os.path.join(local_map_dir, palette).replace("\\", "/")
-            xgen.set_data_path(palette_node, data_path)
+            namespaced_dir = data_path + dir_suffix
+            xgen.set_data_path(palette_node, namespaced_dir)
+
+            if is_baked:
+                # Update XPD file with new namespace
+                for desc in xgen.list_descriptions(palette_node):
+                    # Ensure using XPD file so the description will not
+                    # be baked with modifiers below `bakedGroomManager`
+                    xgen.set_to_use_xpd(palette_node, desc)
+                    xgen.bake_description(palette_node, desc)
+
+            else:
+                # Bind grooming descriptions to geometry
+                for desc in xgen.list_descriptions(palette_node):
+                    groom = xgen.get_groom(desc)
+                    if groom:
+                        groom_dir = os.path.join(self.package_path,
+                                                 "groom",
+                                                 palette_node,
+                                                 desc)
+                        xgen.import_grooming(desc, groom, groom_dir)
 
             # Apply ID
             asset_id = str(asset["_id"])
             with utils.id_namespace(asset_id):
                 for desc in xgen.list_descriptions(palette_node):
                     _desc = desc.rsplit(":", 1)[-1]
-                    id = desc_ids[_desc]
+                    id = descriptions_data[_desc]["id"]
                     utils.upsert_id(desc, id)
 
         group_name = self.group_name(namespace, name)
@@ -80,11 +126,9 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         # cmds.group(palette_nodes, name=group_name, world=True)
         # palette_nodes = cmds.ls(palette_nodes, long=True)
 
-        # (NOTE) Guides will be import after description
-        #        being binded.
-
         # Containerising..
         nodes = palette_nodes[:]
+        nodes += bound_meshes
         nodes += cmds.listRelatives(palette_nodes,
                                     allDescendents=True,
                                     fullPath=True)
@@ -101,6 +145,7 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         return container
 
     def update(self, container, representation):
+        # (TODO) Update XPD file if current step is baked
         pass
 
     def remove(self, container):
