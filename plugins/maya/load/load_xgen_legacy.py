@@ -121,6 +121,9 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
                     id = descriptions_data[_desc]["id"]
                     utils.upsert_id(desc, id)
 
+            # Ensure tube shade disabled
+            xgen.disable_tube_shade(palette_node)
+
         group_name = self.group_name(namespace, name)
         # Cannot be grouped
         # cmds.group(palette_nodes, name=group_name, world=True)
