@@ -76,9 +76,6 @@ reveries.maya.tools.show('mayalookassigner')
 
         cmds.menuItem(divider=True, dividerLabel="XGen Legacy")
 
-        cmds.menuItem("Bind Legacy",
-                      parent="Menu_XGen",
-                      command=interactive.bind_xgen_legacy_by_selection)
         cmds.menuItem("Bake All Descriptions",
                       parent="Menu_XGen",
                       command=interactive.bake_all_xgen_legacy_descriptions)
@@ -93,10 +90,6 @@ reveries.maya.tools.show('mayalookassigner')
                       command=interactive.set_refwires_frame_by_nucleus)
 
         cmds.menuItem(divider=True, dividerLabel="XGen Interactive Groom")
-
-        cmds.menuItem("Bind Interactive Groom",
-                      parent="Menu_XGen",
-                      command=interactive.bind_xgen_interactive_by_selection)
 
         # System
         cmds.menuItem("Load PyMel", parent="System", command="""

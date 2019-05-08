@@ -162,6 +162,8 @@ def __load_bounding_data(representation, package_path):
 def bind_xgen_interactive_by_selection(*args):
     """Bind XGen interactive groom via selecting XGen and Model subset
 
+    (Deprecated)
+
     Select loaded XGen IGS subset group and bound mesh subset group
 
     """
@@ -242,6 +244,8 @@ def __duplicate_mesh_to_xgen_subset(bound_mesh, from_namespace, to_namespace):
 
 def bind_xgen_legacy_by_selection(*args):
     """Bind XGen legacy via selecting XGen and Model subset
+
+    (Deprecated)
 
     Select loaded XGen Legacy palette nodes and bound mesh subset group
 
