@@ -1,5 +1,6 @@
 
 import os
+import json
 import contextlib
 import xgenm as xg
 import xgenm.xgGlobal as xgg
@@ -8,6 +9,12 @@ import pymel.core as pmc
 from maya import cmds, mel
 from avalon.vendor.Qt import QtCore
 from .. import capsule
+
+
+# Legacy work steps
+SHAPING = "Shaping"
+BAKED = "Baked"
+WIRED = "Wired"
 
 
 def _getMapExprStrings():
@@ -221,6 +228,20 @@ def list_guides(description):
     return xg.descriptionGuides(description)
 
 
+def get_groom(description):
+    """Return description's grooming node
+
+    Args:
+        description (str): XGen Legacy description name
+
+    Returns:
+        (str)
+
+    """
+    palette = get_palette_by_description(description)
+    return xg.getAttr("groom", palette, description)
+
+
 def list_fx_modules(description, activated=None):
     palette = get_palette_by_description(description)
     modules = xg.fxModules(palette, description)
@@ -235,6 +256,21 @@ def list_fx_modules(description, activated=None):
 
     else:
         return modules
+
+
+def get_fx_module_type(palette, description, modifier):
+    """Return FXModule type
+
+    Args:
+        palette (str): XGen Legacy palette name
+        description (str): XGen Legacy description name
+        modifier (str): Name of an XGen modifier object
+
+    Returns:
+        (str)
+
+    """
+    return xg.fxModuleType(palette, description, modifier)
 
 
 def is_modifier_under_bake_manager(palette, description, modifier):
@@ -626,13 +662,6 @@ def maps_to_transfer(description):
             cmds.warning("FxModule %s not active, transfer skipped." % obj)
             continue
 
-        if is_modifier_under_bake_manager(palette,
-                                          description,
-                                          obj):
-            # Ignore if obj is a modifier and is under an active bake
-            # groom manager
-            continue
-
         if "${FXMODULE}" in path:
             path = path.replace("${FXMODULE}", parents[2])
         dir_path = os.path.dirname(path)
@@ -649,48 +678,50 @@ def maps_to_transfer(description):
             # Copy file
             transfer.add(file_path.replace("\\", "/"))
 
-        else:
+        elif os.path.isdir(dir_path):
             # Possible contain variables in file name, copy folder
             for file in os.listdir(dir_path):
                 path = os.path.join(dir_path, file)
                 if os.path.isfile(path):
                     transfer.add(path.replace("\\", "/"))
 
+        else:
+            cmds.warning("Map not exists: %s" % parents)
+
     return sorted(list(transfer))
 
 
-def bake_description(palette, description, rebake=False):
-    """Bake description with BakedGroomManagerFXModule
+def set_to_use_xpd(palette, description):
+    """Set description's primitive generator to use XPD file
 
     Args:
         palette (str): XGen Legacy palette name
         description (str): XGen Legacy description name
-        rebake (bool): Remove previous bake groom modifier if set to True,
-            default False.
 
-    Raise:
-        RuntimeError if there are bake groom modifier existed and `rebake`
-            is False.
+    """
+    xg.setActive(palette, description, "FileGenerator")
+
+
+def bake_description(palette, description):
+    """Bake description with BakedGroomManagerFXModule
+
+    Will create a bakedGroomManager module if not existing one.
+
+    Args:
+        palette (str): XGen Legacy palette name
+        description (str): XGen Legacy description name
 
     """
     fxmod_typ = (lambda fxm: xg.fxModuleType(palette, description, fxm))
 
-    fx_modules = xg.fxModules(palette, description)
+    for fxm in xg.fxModules(palette, description):
+        if fxmod_typ(fxm) == "BakedGroomManagerFXModule":
+            break
+    else:
+        # bake groom modifiers
+        xg.addFXModule(palette, description, "BakedGroomManagerFXModule")
 
-    for fxm in fx_modules:
-        if not fxmod_typ(fxm) == "BakedGroomManagerFXModule":
-            continue
-        if not rebake:
-            raise RuntimeError("This description has been baked.")
-        # Remove bake module
-        xg.removeFXModule(palette, description, fxm)
-
-    # bake groom modifiers
-    fxm = xg.addFXModule(palette, description, "BakedGroomManagerFXModule")
-    xg.setAttr("active", "true", palette, description, fxm)
     xg.bakedGroomManagerBake(palette, description)
-    # set Generator to XPD
-    xg.setActive(palette, description, "FileGenerator")
 
 
 def bake_modules(palette, description):
@@ -767,6 +798,85 @@ def import_palette(xgen_path, deltas=None, namespace="", wrapPatches=True):
                             deltas,
                             str(namespace),
                             bool(wrapPatches))
+
+
+def export_grooming(description, groom, out_dir):
+    # Textels per unit
+    tpu = xg.igDescriptionTpu(xg.igDescription(description))
+
+    # Export Maps
+    # (NOTE) may have .ptx file handle lock issue
+    with capsule.wait_cursor():
+        # Attribute Map
+        pmc.mel.iGroom(exportMaps=out_dir,
+                       texelsPerUnit=tpu,
+                       instanceMethod=2,  # Use Interpolate
+                       description=groom)
+    with capsule.wait_cursor():
+        # Mask
+        pmc.mel.iGroom(exportMask=out_dir,
+                       texelsPerUnit=tpu,
+                       description=groom)
+    with capsule.wait_cursor():
+        # Region
+        pmc.mel.iGroom(exportRegion=out_dir,
+                       texelsPerUnit=tpu,
+                       description=groom)
+
+    # Export Settings
+    groom_attrs = [
+        "density",
+        "length",
+        "width",
+        "interpStyle",  # Grooming instance sampling method
+    ]
+    settings = {}
+    for key in groom_attrs:
+        settings[key] = pmc.getAttr(groom + "." + key)
+
+    json_path = out_dir + "groomSettings.json"
+    with open(json_path, "w") as fp:
+        json.dump(settings, fp, indent=4)
+
+
+def import_grooming(description, groom, groom_dir):
+    # bind groom to geo
+    pmc.mel.igBindFromXGen(description)
+    # set groom density and sampling method
+    pmc.setAttr(groom + ".density", 1)
+    pmc.setAttr(groom + ".interpStyle", 1)
+    # set all groom visible on
+    xg.igSetDescriptionVisibility(True)
+    # sync primitives tab attritube map path with auto export path
+    xg.igSyncMaps(description)
+
+    # clear out autoExport path for preventing grooming auto export
+    xg.setOptionVarString("igAutoExportFolder", "")
+
+    # import Attribute Map
+    with capsule.wait_cursor():
+        pmc.mel.iGroom(im=groom_dir, d=groom)
+    # import Mask
+    with capsule.wait_cursor():
+        pmc.mel.iGroom(ik=groom_dir, d=groom)
+    # import Region
+    with capsule.wait_cursor():
+        pmc.mel.iGroom(ir=groom_dir, d=groom)
+
+    # restore default autoExport path
+    xg.setOptionVarString("igAutoExportFolder", "${DESC}/groom")
+
+    # Import Settings
+    # (NOTE) Currently only grab [density] setting, ["length", "width"] will
+    #        messed up imported grooming's map attribute
+
+    json_path = groom_dir + "groomSettings.json"
+    settings = {}
+    with open(json_path) as fp:
+        settings = json.load(fp)
+
+    pmc.setAttr(groom + "." + "density", settings["density"])
+    pmc.setAttr(groom + "." + "interpStyle", settings["interpStyle"])
 
 
 def bind(description, meshes):

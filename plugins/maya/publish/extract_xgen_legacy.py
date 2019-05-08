@@ -1,6 +1,5 @@
 
 import os
-import json
 import pyblish.api
 from reveries.plugins import PackageExtractor, skip_stage
 from reveries.maya import io, utils
@@ -28,20 +27,23 @@ class ExtractXGenLegacy(PackageExtractor):
         package_dir = self.create_package()
 
         xgen_files = list()
-        description_ids = dict()
-        bound_map = dict()
+        descriptions_data = dict()
 
         for desc in self.data["xgenDescriptions"]:
-            # Save bounding
+            palette = xgen.get_palette_by_description(desc)
 
-            desc_id = utils.get_id(desc)
-            description_ids[desc] = desc_id
-            bound_map[desc_id] = [utils.get_id(geo) for geo in
-                                  xgen.list_bound_geometry(desc)]
+            # Save UUID and bounding
+            descriptions_data[desc] = {
+                "id": utils.get_id(desc),
+                "bound": xgen.list_bound_geometry(desc),
+            }
+
+            # Bake
+            if self.data["step"] != xgen.SHAPING:
+                xgen.bake_description(palette, desc)
 
             # Transfer maps
             maps = xgen.maps_to_transfer(desc)
-            palette = xgen.get_palette_by_description(desc)
             data_paths = xgen.current_data_paths(palette, expand=True)
 
             for src in maps:
@@ -71,6 +73,15 @@ class ExtractXGenLegacy(PackageExtractor):
                                           desc + ".abc")
                 io.export_xgen_LGC_guides(guides, guide_file)
 
+            # Export grooming
+            groom = xgen.get_groom(desc)
+            if groom:
+                groom_dir = os.path.join(package_dir,
+                                         "groom",
+                                         palette,
+                                         desc)
+                xgen.export_grooming(desc, groom, groom_dir)
+
         # Extract palette
         for palette in self.data["xgenPalettes"]:
             xgen_file = palette + ".xgen"
@@ -84,16 +95,9 @@ class ExtractXGenLegacy(PackageExtractor):
             if xgen.save_culled_as_delta(palette, xgd_path):
                 self.log.info("Culled primitives saved.")
 
-        # Extract bounding map
-        link_file = self.file_name("json")
-        link_path = os.path.join(package_dir, link_file)
-
-        with open(link_path, "w") as fp:
-            json.dump(bound_map, fp, ensure_ascii=False)
-
         self.add_data({
             "entryFileName": None,  # Yes, no entry file for XGen Legacy.
-            "linkFname": link_file,
-            "descriptionIds": description_ids,
+            "descriptionsData": descriptions_data,
             "palettes": xgen_files,
+            "step": self.data["step"],
         })

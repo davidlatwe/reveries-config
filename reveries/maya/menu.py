@@ -76,27 +76,23 @@ reveries.maya.tools.show('mayalookassigner')
 
         cmds.menuItem(divider=True, dividerLabel="XGen Legacy")
 
-        cmds.menuItem("Bind Legacy",
-                      parent="Menu_XGen",
-                      command=interactive.bind_xgen_legacy_by_selection)
         cmds.menuItem("Bake All Descriptions",
                       parent="Menu_XGen",
                       command=interactive.bake_all_xgen_legacy_descriptions)
         cmds.menuItem("Bake All Modifiers",
                       parent="Menu_XGen",
                       command=interactive.bake_all_xgen_legacy_modifiers)
+        cmds.menuItem("Copy Mesh To World",
+                      parent="Menu_XGen",
+                      command=interactive.copy_mesh_to_world)
         cmds.menuItem("Link Hair System",
                       parent="Menu_XGen",
                       command=interactive.link_palettes_to_hair_system)
-        cmds.menuItem("Set RefWire Frame",
+        cmds.menuItem("Set RefWires Frame By Nucleus",
                       parent="Menu_XGen",
                       command=interactive.set_refwires_frame_by_nucleus)
 
         cmds.menuItem(divider=True, dividerLabel="XGen Interactive Groom")
-
-        cmds.menuItem("Bind Interactive Groom",
-                      parent="Menu_XGen",
-                      command=interactive.bind_xgen_interactive_by_selection)
 
         # System
         cmds.menuItem("Load PyMel", parent="System", command="""
