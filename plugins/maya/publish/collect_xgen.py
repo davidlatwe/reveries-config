@@ -136,8 +136,8 @@ class CollectXGen(pyblish.api.InstancePlugin):
 
         # Update subset name with step
         name = instance.data["subset"]
-        step = instance.data["step"].capitalize()
-        if step != "Shaping" and not name.endswith(step):
+        step = instance.data["step"]
+        if step != xgen.legacy.SHAPING and not name.endswith(step):
             instance.data["subset"] = name + step
 
         # Create model subset for bounding meshes

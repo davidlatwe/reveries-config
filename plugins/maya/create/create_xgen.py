@@ -2,6 +2,7 @@
 import avalon.maya
 
 from reveries.maya.pipeline import put_instance_icon
+from reveries.maya.xgen import legacy
 from reveries.plugins import message_box_error
 from maya import cmds
 
@@ -44,9 +45,9 @@ class XGenCreator(avalon.maya.Creator):
 
         if variant == "legacy":
             self.data["step"] = [
-                "shaping",
-                "baked",
-                "wired",
+                legacy.SHAPING,
+                legacy.BAKED,
+                legacy.WIRED,
             ]
 
         instance = super(XGenCreator, self).process()

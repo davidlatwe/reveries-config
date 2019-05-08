@@ -11,6 +11,12 @@ from avalon.vendor.Qt import QtCore
 from .. import capsule
 
 
+# Legacy work steps
+SHAPING = "Shaping"
+BAKED = "baked"
+WIRED = "wired"
+
+
 def _getMapExprStrings():
     """Return patterns for parsing map file paths from expression
 
