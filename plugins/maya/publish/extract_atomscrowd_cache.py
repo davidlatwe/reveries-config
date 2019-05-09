@@ -2,9 +2,6 @@
 import os
 import pyblish.api
 
-from AtomsMaya.hostbridge.commands import MayaCommandsHostBridge
-from AtomsMaya.hostbridge.atomsnode import MayaAtomsNodeHostBridge
-
 from reveries.plugins import PackageExtractor
 
 
@@ -20,6 +17,9 @@ class ExtractAtomsCrowdCache(PackageExtractor):
     ]
 
     def extract_atoms(self):
+        from AtomsMaya.hostbridge.commands import MayaCommandsHostBridge
+        from AtomsMaya.hostbridge.atomsnode import MayaAtomsNodeHostBridge
+
         start_frame = int(self.context.data.get("startFrame"))
         end_frame = int(self.context.data.get("endFrame"))
 

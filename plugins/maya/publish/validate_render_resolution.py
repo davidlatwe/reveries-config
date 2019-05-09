@@ -20,6 +20,8 @@ class ValidateRenderResolution(pyblish.api.InstancePlugin):
         "reveries.imgseq.render",
     ]
 
+    optional = True
+
     @classmethod
     def get_invalid(cls, instance):
         """Rendering resolution should be the same as project settings"""
