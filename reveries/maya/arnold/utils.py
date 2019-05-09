@@ -84,3 +84,8 @@ def apply_smooth_sets(relationships, namespace=None, target_namespaces=None):
         for node in surfaces[id]:
             for attr, value in attrs.items():
                 cmds.setAttr(node + "." + attr, value)
+
+
+def create_standin(path):
+    import mtoa
+    return mtoa.core.createStandIn(path)

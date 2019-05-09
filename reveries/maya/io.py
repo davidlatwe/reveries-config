@@ -490,6 +490,8 @@ file -import -type "FBX" -groupReference -groupName "{groupName}" $cachefile;
 def wrap_ass(wrapper_path, ass_files, use_sequences):
     """Wrapping Arnold Stand-Ins into a MayaAscii file
 
+    (Deprecated)
+
     (NOTE) The file path of `ass_files` should be a relative path, relative to
         `wrapper_path`.
 

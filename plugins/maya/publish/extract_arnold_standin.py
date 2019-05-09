@@ -4,7 +4,7 @@ import contextlib
 
 import pyblish.api
 from reveries.plugins import PackageExtractor, skip_stage
-from reveries.maya import io, capsule
+from reveries.maya import capsule
 
 from maya import cmds
 
@@ -71,10 +71,9 @@ class ExtractArnoldStandIn(PackageExtractor):
 
     @skip_stage
     def extract_Ass(self):
-        entry_file = self.file_name("ma")
-        cache_file = self.file_name("ass")
+
         package_path = self.create_package()
-        entry_path = os.path.join(package_path, entry_file)
+        cache_file = self.file_name("ass")
         cache_path = os.path.join(package_path, cache_file)
 
         with contextlib.nested(
@@ -97,9 +96,10 @@ class ExtractArnoldStandIn(PackageExtractor):
                                          mask=24)
 
         use_sequence = self.data["startFrame"] != self.data["endFrame"]
-        cache_file = os.path.basename(asses[0])
-        io.wrap_ass(entry_path,
-                    [(cache_file, self.data["subset"])],
-                    [use_sequence])
+        entry_file = os.path.basename(asses[0])
 
-        self.add_data({"entryFileName": entry_file})
+        self.add_data({"entryFileName": entry_file,
+                       "useSequence": use_sequence})
+        if use_sequence:
+            self.add_data({"startFrame": self.data["startFrame"],
+                           "endFrame": self.data["endFrame"]})
