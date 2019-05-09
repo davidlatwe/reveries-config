@@ -5,7 +5,7 @@ import contextlib
 import pyblish.api
 
 from reveries.maya import io, lib, capsule
-from reveries.plugins import DelegatablePackageExtractor
+from reveries.plugins import DelegatablePackageExtractor, skip_stage
 
 from maya import cmds
 
@@ -46,6 +46,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
             cmds.select(self.data["outCache"], replace=True)
             super(ExtractPointCache, self).extract()
 
+    @skip_stage
     def extract_Alembic(self):
         entry_file = self.file_name("ma")
         cache_file = self.file_name("abc")
@@ -94,6 +95,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
 
         self.add_data({"entryFileName": entry_file})
 
+    @skip_stage
     def extract_FBXCache(self):
         entry_file = self.file_name("ma")
         cache_file = self.file_name("fbx")
@@ -112,6 +114,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
 
         self.add_data({"entryFileName": entry_file})
 
+    @skip_stage
     def extract_GPUCache(self):
         entry_file = self.file_name("ma")
         cache_file = self.file_name("abc")
