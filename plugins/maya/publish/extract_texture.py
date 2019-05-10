@@ -105,6 +105,9 @@ class ExtractTexture(PackageExtractor):
             self.log.debug("File count: {}".format(len(curreent_files)))
 
             for file in curreent_files:
+                if not file:
+                    # (TODO) This should not happen. This is a hot-fix.
+                    continue
                 hash_value = hash_file(file)
 
                 img_name = os.path.basename(file)
