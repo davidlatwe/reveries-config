@@ -6,8 +6,8 @@ from reveries.maya import utils
 from maya import cmds
 
 
-class ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
-    """Ensure model UUID consistent and unchanged in LookDev
+class _ValidateModelConsistencyOnLook(pyblish.api.InstancePlugin):
+    """(Deprecated) Ensure model UUID consistent and unchanged in LookDev
     """
 
     order = pyblish.api.ValidatorOrder

@@ -618,8 +618,6 @@ def parse_description_maps(description):
                                     byType="xgmDescription",
                                     unresolved=False) or [])
 
-    collected_paths = list()
-
     desc_shape_long = get_description_long_name(description, shape=True)
 
     for map_attr, fname in zip(resloved[1::2], resloved[0::2]):
@@ -635,9 +633,7 @@ def parse_description_maps(description):
             sep = "" if path.endswith("/") else "/"
             path += sep + fname
 
-        collected_paths.append((path, parents))
-
-    return collected_paths
+        yield path, parents
 
 
 def maps_to_transfer(description):
