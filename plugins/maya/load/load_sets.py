@@ -3,11 +3,12 @@ import avalon.api
 
 
 class SetsLoader(avalon.api.Loader):
+    """(Deprecated)"""
 
     label = "Add Sets"
-    order = -10
+    order = 90
     icon = "leaf"
-    color = "green"
+    color = "gray"
 
     hosts = ["maya"]
 
@@ -24,30 +25,7 @@ class SetsLoader(avalon.api.Loader):
     ]
 
     def load(self, context, name, namespace, options):
-
-        import avalon.api
-        import avalon.maya
-        from reveries.maya.plugins import (
-            ReferenceLoader,
-            HierarchicalLoader,
-        )
-
-        representation = context["representation"]
-
-        available_loaders = avalon.api.discover(avalon.api.Loader)
-        Loaders = avalon.api.loaders_from_representation(available_loaders,
-                                                         representation)
-
-        Loader = next(L for L in Loaders
-                      if issubclass(L, (ReferenceLoader,
-                                        HierarchicalLoader,
-                                        )))
-        loader = Loader(context)
-        container = loader.load(context, name, namespace, options)
-
-        self._place_set(container)
-
-        return container
+        raise DeprecationWarning("This loader has been deprecated.")
 
     def _place_set(self, container):
         from maya import cmds
