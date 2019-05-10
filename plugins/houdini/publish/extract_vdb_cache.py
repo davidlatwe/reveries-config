@@ -1,15 +1,21 @@
 import os
 
 import pyblish.api
-import colorbleed.api
+from reveries.plugins import PackageExtractor
 
 
-class ExtractVDBCache(colorbleed.api.Extractor):
+class ExtractVDBCache(PackageExtractor):
 
     order = pyblish.api.ExtractorOrder + 0.1
     label = "Extract VDB Cache"
-    families = ["reveries.vdbcache"]
     hosts = ["houdini"]
+    families = [
+        "reveries.vdbcache",
+    ]
+
+    representations = [
+        "vdb",
+    ]
 
     def process(self, instance):
 

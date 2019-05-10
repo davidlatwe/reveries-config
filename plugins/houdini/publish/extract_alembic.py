@@ -1,10 +1,10 @@
 import os
 
 import pyblish.api
-import colorbleed.api
+from reveries.plugins import PackageExtractor
 
 
-class ExtractAlembic(colorbleed.api.Extractor):
+class ExtractAlembic(PackageExtractor):
 
     order = pyblish.api.ExtractorOrder
     label = "Extract Alembic"
@@ -14,16 +14,20 @@ class ExtractAlembic(colorbleed.api.Extractor):
         "reveries.camera",
     ]
 
-    def process(self, instance):
+    representations = [
+        "Alembic",
+    ]
+
+    def extract_Alembic(self):
 
         import hou
 
-        ropnode = instance[0]
+        ropnode = self.member[0]
 
         # Get the filename from the filename parameter
         output = ropnode.evalParm("filename")
         staging_dir = os.path.dirname(output)
-        instance.data["stagingDir"] = staging_dir
+        self.data["stagingDir"] = staging_dir
 
         file_name = os.path.basename(output)
 
@@ -40,7 +44,7 @@ class ExtractAlembic(colorbleed.api.Extractor):
             traceback.print_exc()
             raise RuntimeError("Render failed: {0}".format(exc))
 
-        if "files" not in instance.data:
-            instance.data["files"] = []
+        if "files" not in self.data:
+            self.data["files"] = []
 
-        instance.data["files"].append(file_name)
+        self.data["files"].append(file_name)
