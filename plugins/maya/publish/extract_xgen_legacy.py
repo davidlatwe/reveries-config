@@ -49,6 +49,8 @@ class ExtractXGenLegacy(PackageExtractor):
                         # map path has been validated that must exists
                         # under ${DESC} dir.
                         tail = src[len(root):]
+                        if tail.startswith("/") or tail.startswith("\\"):
+                            tail = tail[1:]
                         break
                 else:
                     self.log.critical("Searched data path:")
