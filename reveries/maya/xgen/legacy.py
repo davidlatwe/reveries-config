@@ -645,9 +645,6 @@ def maps_to_transfer(description):
     Returns:
         list: A list of collected map files
 
-    Raise:
-        RuntimeError if collected path not exists.
-
     """
     transfer = set()
 
