@@ -1160,7 +1160,7 @@ def build_hair_system(palette):
                     animWireDict[desc] = fxm
 
     # build hairSystem
-    for desc in animWireDict:
+    for desc, fxm in animWireDict.items():
 
         print("Building hairSystem for description: %s, FXModule: %s"
               "" % (desc, fxm))
