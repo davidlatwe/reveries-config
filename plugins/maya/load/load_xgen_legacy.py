@@ -29,6 +29,17 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
 
     def load(self, context, name=None, namespace=None, options=None):
 
+        # (NOTE) AnimWire modifier has a bug that not able to find wires if
+        #        namespace is applied.
+        #        The hairSystem is okay to work with, but not able to update
+        #        XGen preview. So you either simulate without the update, or
+        #        build the simulation without namespace and save with .xgen
+        #        file exported, then reference it with namespace.
+        #
+        #        https://forums.autodesk.com/t5/maya-dynamics/anim-wire-
+        #        errors-when-using-namespaces/m-p/7329883#M5642
+        #
+
         if not cmds.pluginInfo("xgenToolkit", query=True, loaded=True):
             cmds.loadPlugin("xgenToolkit", quiet=True)
 
