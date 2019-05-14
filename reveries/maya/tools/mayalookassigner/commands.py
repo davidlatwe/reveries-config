@@ -193,11 +193,18 @@ def create_items_from_nodes(nodes):
             namespace = lib.get_ns(node)
             namespaces.add(namespace)
 
+        subsets = dict()
+        for namespace in namespaces:
+            container = get_container_from_namespace(namespace)
+            subset = cmds.getAttr(container + ".name")
+            subsets[namespace] = subset
+
         asset_view_items.append({"label": asset["name"],
                                  "asset": asset,
                                  "looks": looks,
                                  "loadedLooks": loaded_looks,
-                                 "namespaces": namespaces})
+                                 "namespaces": namespaces,
+                                 "subsets": subsets})
 
     return asset_view_items
 

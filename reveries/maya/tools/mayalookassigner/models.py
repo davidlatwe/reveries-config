@@ -8,7 +8,7 @@ from avalon.style import colors
 
 class AssetModel(model.TreeModel):
 
-    COLUMNS = ["label"]
+    COLUMNS = ["label", "subset"]
 
     def add_items(self, items):
         """
@@ -39,6 +39,7 @@ class AssetModel(model.TreeModel):
                 child.update({
                     "label": (namespace if namespace != ":"
                               else "(no namespace)"),
+                    "subset": item["subsets"][namespace],
                     "namespace": namespace,
                     "looks": item["looks"],
                     "icon": "folder-o"
