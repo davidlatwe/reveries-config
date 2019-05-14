@@ -29,6 +29,17 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
 
     def load(self, context, name=None, namespace=None, options=None):
 
+        # (NOTE) AnimWire modifier has a bug that not able to find wires if
+        #        namespace is applied.
+        #        The hairSystem is okay to work with, but not able to update
+        #        XGen preview. So you either simulate without the update, or
+        #        build the simulation without namespace and save with .xgen
+        #        file exported, then reference it with namespace.
+        #
+        #        https://forums.autodesk.com/t5/maya-dynamics/anim-wire-
+        #        errors-when-using-namespaces/m-p/7329883#M5642
+        #
+
         if not cmds.pluginInfo("xgenToolkit", query=True, loaded=True):
             cmds.loadPlugin("xgenToolkit", quiet=True)
 
@@ -39,9 +50,8 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         family_name = context["version"]["data"]["families"][0].split(".")[-1]
         namespace = namespace or unique_root_namespace(asset_name, family_name)
 
-        dir_suffix = "_" + namespace.replace(":", "_")
         descriptions_data = representation["data"]["descriptionsData"]
-        is_baked = representation["data"]["step"] != xgen.SHAPING
+        baked = representation["data"]["step"] != xgen.SHAPING
         bound_meshes = list()
 
         # Varify selection
@@ -56,11 +66,7 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
 
         # Rename bound geos to namespace
         for node in selected:
-            new_name = namespace + ":" + node
-            if cmds.objExists(new_name):
-                raise RuntimeError("Already existed: %s" % new_name)
-            cmds.rename(node, new_name)
-            bound_meshes.append(new_name)
+            bound_meshes.append(node)
 
         # Copy maps
         local_map_dir = os.path.join(avalon.api.Session["AVALON_WORKDIR"],
@@ -69,8 +75,7 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         map_dir = os.path.join(self.package_path, "maps")
         for palette in os.listdir(map_dir):
             palette_dir = os.path.join(map_dir, palette)
-            namespaced_dir = palette + dir_suffix
-            local_palette_dir = os.path.join(local_map_dir, namespaced_dir)
+            local_palette_dir = os.path.join(local_map_dir, palette)
 
             # Copy
             copy_tree(palette_dir, local_palette_dir)
@@ -84,25 +89,15 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
             xgen_path = os.path.join(self.package_path, file)
             xgen_path = xgen_path.replace("\\", "/")
             palette_node = xgen.import_palette(xgen_path,
-                                               namespace=namespace,
                                                wrapPatches=True)
             palette_nodes.append(palette_node)
 
             # Set xgDataPath
             palette = os.path.splitext(file)[0]
             data_path = os.path.join(local_map_dir, palette).replace("\\", "/")
-            namespaced_dir = data_path + dir_suffix
-            xgen.set_data_path(palette_node, namespaced_dir)
+            xgen.set_data_path(palette_node, data_path)
 
-            if is_baked:
-                # Update XPD file with new namespace
-                for desc in xgen.list_descriptions(palette_node):
-                    # Ensure using XPD file so the description will not
-                    # be baked with modifiers below `bakedGroomManager`
-                    xgen.set_to_use_xpd(palette_node, desc)
-                    xgen.bake_description(palette_node, desc)
-
-            else:
+            if not baked:
                 # Bind grooming descriptions to geometry
                 for desc in xgen.list_descriptions(palette_node):
                     groom = xgen.get_groom(desc)

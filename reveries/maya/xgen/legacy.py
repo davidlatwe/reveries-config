@@ -372,6 +372,7 @@ def current_data_paths(palette, expand=False):
     for path in xg.getAttr("xgDataPath", palette).split(";"):
         if expand:
             path = xg.expandFilepath(str(path), "")
+        path = os.path.normpath(path).replace("\\", "/")
         paths.append(path)
     return paths
 
@@ -645,9 +646,6 @@ def maps_to_transfer(description):
     Returns:
         list: A list of collected map files
 
-    Raise:
-        RuntimeError if collected path not exists.
-
     """
     transfer = set()
 
@@ -660,29 +658,35 @@ def maps_to_transfer(description):
 
         if "${FXMODULE}" in path:
             path = path.replace("${FXMODULE}", parents[2])
-        dir_path = os.path.dirname(path)
-        dir_path = xg.expandFilepath(str(dir_path), str(description))
 
-        if not os.path.isdir(dir_path):
-            raise RuntimeError("{0}: Map dir not exists: {1}"
-                               "".format(parents, dir_path))
+        data_paths = current_data_paths(palette, expand=True)
 
-        file_name = os.path.basename(path)
-        file_path = os.path.join(dir_path, file_name)
+        if "${DESC}" in path:
+            for root in data_paths:
+                file_path = path.replace("${DESC}", root + "/" + description)
+                dir_path = os.path.dirname(file_path)
 
-        if os.path.isfile(file_path):
-            # Copy file
-            transfer.add(file_path.replace("\\", "/"))
+                if os.path.isfile(file_path):
+                    # Copy file
+                    transfer.add(file_path.replace("\\", "/"))
+                    break
 
-        elif os.path.isdir(dir_path):
-            # Possible contain variables in file name, copy folder
-            for file in os.listdir(dir_path):
-                path = os.path.join(dir_path, file)
-                if os.path.isfile(path):
-                    transfer.add(path.replace("\\", "/"))
+                elif os.path.isdir(dir_path):
+                    # Possible contain expression variables in file name,
+                    # copy folder
+                    for file in os.listdir(dir_path):
+                        file_path = os.path.join(dir_path, file)
+                        transfer.add(file_path.replace("\\", "/"))
+                    break
+
+            else:
+                # (TODO): The map should be exists.
+                cmds.warning("Map not exists: ({0}, {1}, {2}, {3}, {4})"
+                             "".format(*parents))
+                continue
 
         else:
-            cmds.warning("Map not exists: %s" % parents)
+            transfer.add(path.replace("\\", "/"))
 
     return sorted(list(transfer))
 
@@ -1160,7 +1164,7 @@ def build_hair_system(palette):
                     animWireDict[desc] = fxm
 
     # build hairSystem
-    for desc in animWireDict:
+    for desc, fxm in animWireDict.items():
 
         print("Building hairSystem for description: %s, FXModule: %s"
               "" % (desc, fxm))
