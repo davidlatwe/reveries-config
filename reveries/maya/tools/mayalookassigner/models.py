@@ -67,6 +67,10 @@ class AssetModel(model.TreeModel):
                 if icon:
                     return qtawesome.icon("fa.{0}".format(icon),
                                           color=colors.default)
+            if index.column() == 1:
+                node = index.internalPointer()
+                if "subset" in node:
+                    return qtawesome.icon("fa.bookmark", color="gray")
 
         return super(AssetModel, self).data(index, role)
 
