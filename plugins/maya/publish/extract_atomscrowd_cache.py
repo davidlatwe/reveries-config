@@ -2,7 +2,7 @@
 import os
 import pyblish.api
 
-from reveries.plugins import PackageExtractor
+from reveries.plugins import PackageExtractor, skip_stage
 
 
 class ExtractAtomsCrowdCache(PackageExtractor):
@@ -16,6 +16,7 @@ class ExtractAtomsCrowdCache(PackageExtractor):
         "atoms",
     ]
 
+    @skip_stage
     def extract_atoms(self):
         from AtomsMaya.hostbridge.commands import MayaCommandsHostBridge
         from AtomsMaya.hostbridge.atomsnode import MayaAtomsNodeHostBridge

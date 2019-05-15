@@ -191,6 +191,11 @@ def create_items_from_nodes(nodes):
         namespaces = set()
         for node in id_nodes:
             namespace = lib.get_ns(node)
+            if namespace == ":":
+                # (TODO) Although we could list out nodes that were under root
+                #        namespace, but assigning looks to those nodes was not
+                #        guaranteed. Skip those nodes for now...
+                continue
             namespaces.add(namespace)
 
         subsets = dict()

@@ -151,6 +151,12 @@ class OpenSourceAiStandIn(OpenMayaSource, avalon.api.Loader):
     representations = ["Ass"]
 
 
+class OpenSourceAtomsCrowdCache(OpenMayaSource, avalon.api.Loader):
+
+    families = ["reveries.atomscrowd"]
+    representations = ["atoms"]
+
+
 class OpenSourceShared(OpenMayaSource, avalon.api.Loader):
 
     families = ["reveries.mayashare"]
