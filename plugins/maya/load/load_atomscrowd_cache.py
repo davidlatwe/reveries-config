@@ -1,7 +1,9 @@
 
 import os
 import avalon.api
-from reveries.maya import lib, capsule
+import avalon.io
+from reveries.utils import get_representation_path_
+from reveries.maya import lib, capsule, pipeline
 from reveries.maya.plugins import ImportLoader
 
 
@@ -55,6 +57,37 @@ class AtomsCrowdCacheLoader(ImportLoader, avalon.api.Loader):
 
         lib.lock_transform(group)
         self[:] = nodes
+
+    def update(self, container, representation):
+        import maya.cmds as cmds
+
+        members = cmds.sets(container["objectName"], query=True)
+        proxy_node = cmds.ls(members, type="tcAtomsProxy")
+
+        if not proxy_node:
+            raise Exception("No Atoms Proxy node, this is a bug.")
+
+        parents = avalon.io.parenthood(representation)
+        self.package_path = get_representation_path_(representation, parents)
+
+        entry_path = self.file_path(representation)
+        entry_path = os.path.expandvars(entry_path)
+
+        variation_file = representation["data"]["variationFile"]
+        variation_path = os.path.dirname(entry_path) + "/" + variation_file
+
+        shape = proxy_node[0]
+        self.log.info(entry_path)
+        cmds.setAttr(shape + ".cachePath", entry_path, type="string")
+        cmds.setAttr(shape + ".variationsPath", variation_path, type="string")
+
+        # Update container
+        version, subset, asset, _ = parents
+        pipeline.update_container(container,
+                                  asset,
+                                  subset,
+                                  version,
+                                  representation)
 
     def switch(self, container, representation):
         self.update(container, representation)
