@@ -19,7 +19,6 @@ class ExtractAtomsCrowdCache(PackageExtractor):
     @skip_stage
     def extract_atoms(self):
         from AtomsMaya.hostbridge.commands import MayaCommandsHostBridge
-        from AtomsMaya.hostbridge.atomsnode import MayaAtomsNodeHostBridge
 
         start_frame = int(self.context.data.get("startFrame"))
         end_frame = int(self.context.data.get("endFrame"))
@@ -42,10 +41,8 @@ class ExtractAtomsCrowdCache(PackageExtractor):
         variation_file = self.file_name("json")
         variation_path = os.path.join(package_path, variation_file)
 
-        variation_str = MayaAtomsNodeHostBridge.get_variation_string()
-
         with open(variation_path, "w") as variation:
-            variation.write(variation_str)
+            variation.write(self.data["variationStr"])
 
         self.add_data({
             "entryFileName": entry_file,
