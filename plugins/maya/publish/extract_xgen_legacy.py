@@ -1,6 +1,7 @@
 
 import os
 import pyblish.api
+from maya import cmds
 from reveries.plugins import PackageExtractor, skip_stage
 from reveries.maya import io, utils
 from reveries.maya.xgen import legacy as xgen
@@ -73,7 +74,7 @@ class ExtractXGenLegacy(PackageExtractor):
 
             # Export grooming
             groom = xgen.get_groom(desc)
-            if groom:
+            if groom and cmds.objExists(groom):
                 groom_dir = os.path.join(package_dir,
                                          "groom",
                                          palette,
