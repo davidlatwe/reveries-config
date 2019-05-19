@@ -2,7 +2,8 @@
 import os
 import avalon.api
 
-import reveries.maya.lib
+from reveries.maya import lib, pipeline
+from reveries.utils import get_representation_path_
 from reveries.maya.plugins import ReferenceLoader, ImportLoader
 
 
@@ -50,12 +51,7 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
         from reveries.maya import capsule, arnold
 
         representation = context["representation"]
-
-        if "useSequence" not in representation["data"]:
-            entry_path, use_sequence = self._compat(representation)
-        else:
-            entry_path = self.file_path(representation)
-            use_sequence = representation["data"]["useSequence"]
+        entry_path, use_sequence = self.retrive(representation)
 
         with capsule.namespaced(namespace):
             standin = arnold.create_standin(entry_path)
@@ -66,8 +62,17 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
             cmds.setAttr(standin + ".useFrameExtension", True)
             cmds.connectAttr("time1.outTime", standin + ".frameNumber")
 
-        reveries.maya.lib.lock_transform(group)
+        lib.lock_transform(group)
         self[:] = [standin, transform, group]
+
+    def retrive(self, representation):
+        if "useSequence" not in representation["data"]:
+            entry_path, use_sequence = self._compat(representation)
+        else:
+            entry_path = self.file_path(representation)
+            use_sequence = representation["data"]["useSequence"]
+
+        return entry_path, use_sequence
 
     def _compat(self, representation):
         """For backwards compatibility"""
@@ -80,3 +85,28 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
         use_sequence = len(asses) > 1
 
         return entry_path, use_sequence
+
+    def update(self, container, representation):
+        import maya.cmds as cmds
+
+        members = cmds.sets(container["objectName"], query=True)
+        standin = next(iter(cmds.ls(members, type="aiStandIn")), None)
+
+        if not standin:
+            raise Exception("No Arnold Stand-In node, this is a bug.")
+
+        parents = avalon.io.parenthood(representation)
+        self.package_path = get_representation_path_(representation, parents)
+
+        entry_path, use_sequence = self.retrive(representation)
+
+        cmds.setAttr(standin + ".dso", entry_path, type="string")
+        cmds.setAttr(standin + ".useFrameExtension", use_sequence)
+
+        # Update container
+        version, subset, asset, _ = parents
+        pipeline.update_container(container,
+                                  asset,
+                                  subset,
+                                  version,
+                                  representation)
