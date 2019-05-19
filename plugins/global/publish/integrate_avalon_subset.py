@@ -173,26 +173,33 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #     \|________|
         #
 
+        transfered = list()
+
         for job in self.transfers:
             transfers = self.transfers[job]
 
             for src, dst in transfers:
                 # normpath
-                self.log.debug("Src. Before: {!r}".format(src))
-                self.log.debug("Dst. Before: {!r}".format(dst))
+                # self.log.debug("Src. Before: {!r}".format(src))
+                # self.log.debug("Dst. Before: {!r}".format(dst))
 
                 src = os.path.abspath(
                     os.path.normpath(os.path.expandvars(src)))
                 dst = os.path.abspath(
                     os.path.normpath(os.path.expandvars(dst)))
 
-                self.log.debug("Src. After: {!r}".format(src))
-                self.log.debug("Dst. After: {!r}".format(dst))
+                self.log.debug("Src: {!r}".format(src))
+                self.log.debug("Dst: {!r}".format(dst))
 
                 self.log.info("Copying {0}: {1} -> {2}".format(job, src, dst))
                 if src == dst:
                     self.log.debug("Source and destination are the same, "
                                    "will not copy.")
+                    continue
+
+                if dst in transfered:
+                    # (TODO) Should not implement like this. This is a hot-fix.
+                    self.log.warning("File transfered: %s" % dst)
                     continue
 
                 if job == "packages":
@@ -201,6 +208,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                     self.copy_file(src, dst)
                 if job == "hardlinks":
                     self.hardlink_file(src, dst)
+
+                transfered.append(dst)
 
     def copy_dir(self, src, dst):
         """ Copy given source to destination

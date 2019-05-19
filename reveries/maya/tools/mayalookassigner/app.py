@@ -113,7 +113,7 @@ class App(QtWidgets.QWidget):
         main_layout.addLayout(footer)
 
         # Set column width
-        asset_outliner.view.setColumnWidth(0, 240)
+        asset_outliner.view.setColumnWidth(0, 200)
         look_outliner.view.setColumnWidth(0, 140)  # "label" column
         look_outliner.view.setColumnWidth(1, 60)   # "version" column
         look_outliner.view.setColumnWidth(2, 50)   # "match" column

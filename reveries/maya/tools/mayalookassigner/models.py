@@ -8,7 +8,7 @@ from avalon.style import colors
 
 class AssetModel(model.TreeModel):
 
-    COLUMNS = ["label"]
+    COLUMNS = ["label", "subset"]
 
     def add_items(self, items):
         """
@@ -39,9 +39,10 @@ class AssetModel(model.TreeModel):
                 child.update({
                     "label": (namespace if namespace != ":"
                               else "(no namespace)"),
+                    "subset": item["subsets"][namespace],
                     "namespace": namespace,
                     "looks": item["looks"],
-                    "icon": "folder-o"
+                    "icon": "file-o"
                 })
                 asset_item.add_child(child)
 
@@ -66,6 +67,10 @@ class AssetModel(model.TreeModel):
                 if icon:
                     return qtawesome.icon("fa.{0}".format(icon),
                                           color=colors.default)
+            if index.column() == 1:
+                node = index.internalPointer()
+                if "subset" in node:
+                    return qtawesome.icon("fa.bookmark", color="gray")
 
         return super(AssetModel, self).data(index, role)
 

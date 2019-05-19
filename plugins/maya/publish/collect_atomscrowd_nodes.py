@@ -16,7 +16,7 @@ class CollectAtomsCrowdNodes(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        atoms_nodes = cmds.ls(instance, type="tcAtomsNode")
+        atoms_nodes = cmds.ls(type="tcAtomsNode")
         instance.data["AtomsNodes"] = atoms_nodes
 
         agent_groups = cmds.ls(instance, type="tcAgentGroupNode")

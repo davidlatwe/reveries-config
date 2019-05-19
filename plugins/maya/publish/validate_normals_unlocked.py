@@ -12,7 +12,7 @@ class SelectInvalid(MayaSelectInvalidInstanceAction):
 
 class RepairInvalid(RepairInstanceAction):
 
-    label = "Unlock & Smooth (NO History)"
+    label = "Unlock"
 
 
 class ValidateNormalsUnlocked(pyblish.api.Validator):
@@ -65,7 +65,9 @@ class ValidateNormalsUnlocked(pyblish.api.Validator):
         invalid = cls.get_invalid(instance)
         for mesh in invalid:
             cmds.polyNormalPerVertex(mesh, unFreezeNormal=True)
+            """
             # Smooth edge after unlock
             cmds.polySoftEdge(mesh,
                               constructionHistory=False,
                               angle=180)
+            """

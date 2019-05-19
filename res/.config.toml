@@ -4,6 +4,10 @@ schema = "avalon-core:config-1.0"
 name = "maya2018"
 label = "Maya 2018"
 
+[[apps]]
+name = "houdini17"
+label = "Houdini 17.5"
+
 [[tasks]]
 name = "modeling"
 

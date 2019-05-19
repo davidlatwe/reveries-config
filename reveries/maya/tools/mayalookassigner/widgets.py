@@ -36,7 +36,7 @@ class AssetOutliner(QtWidgets.QWidget):
         view.setModel(model)
         view.customContextMenuRequested.connect(self.right_mouse_menu)
         view.setSortingEnabled(False)
-        view.setHeaderHidden(True)
+        view.setHeaderHidden(False)
         view.setIndentation(10)
 
         from_all_asset_btn = QtWidgets.QPushButton("Get All Assets")

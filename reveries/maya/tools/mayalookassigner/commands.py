@@ -191,13 +191,25 @@ def create_items_from_nodes(nodes):
         namespaces = set()
         for node in id_nodes:
             namespace = lib.get_ns(node)
+            if namespace == ":":
+                # (TODO) Although we could list out nodes that were under root
+                #        namespace, but assigning looks to those nodes was not
+                #        guaranteed. Skip those nodes for now...
+                continue
             namespaces.add(namespace)
+
+        subsets = dict()
+        for namespace in namespaces:
+            container = get_container_from_namespace(namespace)
+            subset = cmds.getAttr(container + ".name")
+            subsets[namespace] = subset
 
         asset_view_items.append({"label": asset["name"],
                                  "asset": asset,
                                  "looks": looks,
                                  "loadedLooks": loaded_looks,
-                                 "namespaces": namespaces})
+                                 "namespaces": namespaces,
+                                 "subsets": subsets})
 
     return asset_view_items
 

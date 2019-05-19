@@ -34,8 +34,10 @@ class CollectLook(pyblish.api.InstancePlugin):
 
         # Collect shading networks
         shaders = cmds.listConnections(surfaces, type="shadingEngine")
+        shaders = list(set(shaders))
         try:
             _history = cmds.listHistory(shaders)
+            _history = list(set(_history))
         except RuntimeError:
             _history = []  # Found no items to list the history for.
         upstream_nodes = cmds.ls(_history, long=True)
