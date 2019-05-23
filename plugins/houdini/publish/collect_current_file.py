@@ -9,7 +9,7 @@ class CollectHoudiniCurrentFile(pyblish.api.ContextPlugin):
 
     order = pyblish.api.CollectorOrder - 0.5
     label = "Houdini Current File"
-    hosts = ['houdini']
+    hosts = ["houdini"]
 
     def process(self, context):
         """Inject the current working file"""
@@ -31,4 +31,4 @@ class CollectHoudiniCurrentFile(pyblish.api.ContextPlugin):
                              "unable to detect whether the current scene is "
                              "saved correctly.")
 
-        context.data['currentFile'] = filepath
+        context.data["currentMaking"] = filepath
