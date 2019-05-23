@@ -2,6 +2,7 @@
 import avalon.api
 
 import reveries.maya.lib
+from reveries.maya import utils
 from reveries.maya.plugins import ReferenceLoader
 
 
@@ -41,6 +42,9 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
                           reference=True,
                           lockReference=False,
                           returnNewNodes=True)
+
+        # (NOTE) Nodes loaded from Alembic did not have verifiers
+        utils.update_id_verifiers(nodes)
 
         reveries.maya.lib.lock_transform(group)
         self[:] = nodes
