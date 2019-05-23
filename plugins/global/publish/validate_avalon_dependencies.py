@@ -27,9 +27,18 @@ class ValidateAvalonDependencies(pyblish.api.InstancePlugin):
     label = "Avalon Dependencies Acyclic"
     order = pyblish.api.ValidatorOrder
 
+    # These families are allowed to publish the works that were build
+    # upon the previous version of themself.
+    IGNORE = [
+        "reveries.pointcache",
+    ]
+
     def process(self, instance):
         if "dependencies" not in instance.data:
             raise Exception("Dependencies not collected, this is a bug.")
+
+        if instance.data["family"] in self.IGNORE:
+            return
 
         dependencies = instance.data["dependencies"]
         asset_id = instance.context.data["assetDoc"]["_id"]

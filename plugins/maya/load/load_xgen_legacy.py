@@ -62,7 +62,9 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
             for geo in data["bound"]:
                 all_bound_geos.add("|" + geo)
 
-        assert set(selected) == all_bound_geos
+        msg = ("Require bound geos: {0}\n"
+               "Selected: {1}".format(all_bound_geos, selected))
+        assert set(selected) == all_bound_geos, msg
 
         # Rename bound geos to namespace
         for node in selected:

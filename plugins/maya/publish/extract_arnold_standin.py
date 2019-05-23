@@ -71,6 +71,8 @@ class ExtractArnoldStandIn(PackageExtractor):
 
     @skip_stage
     def extract_Ass(self):
+        # Ensure mtoa loaded
+        cmds.loadPlugin("mtoa", quiet=True)
 
         package_path = self.create_package()
         cache_file = self.file_name("ass")
