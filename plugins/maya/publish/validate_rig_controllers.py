@@ -192,9 +192,7 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
             list: The invalid plugs
 
         """
-        import maya.cmds as mc
-
-        attributes = mc.listAttr(control, keyable=True, scalar=True)
+        attributes = cmds.listAttr(control, keyable=True, scalar=True) or []
         invalid = []
         for attr in attributes:
             plug = "{}.{}".format(control, attr)
