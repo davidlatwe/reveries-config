@@ -3,6 +3,8 @@ from collections import defaultdict
 from maya import cmds
 from .. import lib
 
+from avalon.vendor import six
+
 
 def create_options():
     import mtoa
@@ -54,13 +56,13 @@ def update_full_scene():
     cmds.arnoldRenderView(option=["Update Full Scene", "1"])
 
 
-def apply_smooth_sets(relationships, namespace=None, target_namespaces=None):
-    """Given a dictionary of `relationships`, apply smooth value to edges
+def apply_ai_attrs(relationships, namespace=None, target_namespaces=None):
+    """Given a dictionary of `relationships`, apply ai attributes to nodes
 
     Arguments:
         relationships (avalon-core:shaders-1.0): A dictionary of
             shaders and how they relate to surface nodes.
-        namespace (str, optional): namespace that need to apply to smoothSet
+        namespace (str, optional): namespace that need to apply to
         target_namespaces (list, optional): model namespaces
 
     """
@@ -83,7 +85,26 @@ def apply_smooth_sets(relationships, namespace=None, target_namespaces=None):
 
         for node in surfaces[id]:
             for attr, value in attrs.items():
-                cmds.setAttr(node + "." + attr, value)
+                shape = cmds.listRelatives(node,
+                                           shapes=True,
+                                           noIntermediate=True,
+                                           fullPath=True)[0]
+                attr_path = shape + "." + attr
+                try:
+                    origin = cmds.getAttr(attr_path, asString=True)
+                except (RuntimeError, ValueError):
+                    continue
+
+                if origin == value:
+                    continue
+
+                if isinstance(value, six.string_types):
+                    cmds.setAttr(attr_path, value, type="string")
+                elif isinstance(value, list):
+                    # Ignore for now
+                    pass
+                else:
+                    cmds.setAttr(attr_path, value)
 
 
 def create_standin(path):

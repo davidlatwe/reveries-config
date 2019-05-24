@@ -62,7 +62,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         """
         from maya import cmds
         from reveries.maya import lib
-        from avalon.maya.pipeline import AVALON_CONTAINER_ID
+        from avalon.maya.pipeline import AVALON_CONTAINER_ID, parse_container
 
         # Assign to lambert1
         nodes = cmds.sets(container["objectName"], query=True)
@@ -83,6 +83,9 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
             if shaded_nodes.intersection(content):
                 shaded_subsets.append(con)
 
+        # Container node name may changed after update
+        uuid = cmds.ls(container["objectName"], uuid=True)
+
         # Update
         super(LookLoader, self).update(container, representation)
 
@@ -90,9 +93,9 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
             self.log.warning("Shader has no assignment.")
             return
 
-        # Reassign shaders
-        namespace = container["namespace"][1:]
-        self._assign_shaders(representation, namespace, shaded_subsets)
+        # Updated container data and re-assign shaders
+        container = parse_container(cmds.ls(uuid)[0])
+        self._assign_shaders(representation, container, shaded_subsets)
 
     def remove(self, container):
         from maya import cmds
@@ -111,12 +114,11 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         return True
 
-    def _assign_shaders(self, representation, namespace, containers):
+    def _assign_shaders(self, representation, container, containers):
         """Assign shaders to containers
         """
         import os
-        import json
-        from reveries.maya import lib
+        from reveries.maya.tools.mayalookassigner import commands
         from maya import cmds
 
         file_name = representation["data"]["linkFname"]
@@ -128,14 +130,8 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
                              "{!r} was not found".format(relationship))
             return
 
-        # Load map
-        with open(relationship) as f:
-            relationships = json.load(f)
-
         # Apply shader to target subset by namespace
         target_namespaces = [cmds.getAttr(con + ".namespace") + ":"
                              for con in containers]
 
-        lib.apply_shaders(relationships["shaderById"],
-                          namespace,
-                          target_namespaces)
+        commands.assign_look(target_namespaces, container, via_uv=False)
