@@ -373,9 +373,12 @@ def assign_look(namespaces, look, via_uv):
         _apply_crease_edges(look,
                             relationships["creaseSets"],
                             target_namespaces)
-        _apply_smooth_sets(look,
-                           relationships.get("alSmoothSets"),
-                           target_namespaces)
+
+        arnold_attrs = relationships.get("arnoldAttrs",
+                                         relationships.get("alSmoothSets"))
+        _apply_ai_attrs(look,
+                        arnold_attrs,
+                        target_namespaces)
 
 
 def _apply_shaders(look, relationship, target_namespaces):
@@ -395,7 +398,7 @@ def _apply_crease_edges(look, relationship, target_namespaces):
     cmds.sets(crease_sets, forceElement=look["objectName"])
 
 
-def _apply_smooth_sets(look, relationship, target_namespaces):
+def _apply_ai_attrs(look, relationship, target_namespaces):
     namespace = look["namespace"][1:]
 
     if relationship is not None:
@@ -404,7 +407,7 @@ def _apply_smooth_sets(look, relationship, target_namespaces):
         except RuntimeError:
             pass
         else:
-            arnold.utils.apply_smooth_sets(
+            arnold.utils.apply_ai_attrs(
                 relationship,
                 namespace,
                 target_namespaces
@@ -490,13 +493,15 @@ def _look_via_uv(look, relationships, target_namespaces):
 
     _apply_crease_edges(look, crease_by_id, target_namespaces)
 
-    # Apply Arnold smooth sets
+    # Apply Arnold attributes
     #
-    if relationships.get("alSmoothSets") is None:
+    arnold_attrs = relationships.get("arnoldAttrs",
+                                     relationships.get("alSmoothSets"))
+    if arnold_attrs is None:
         return
 
-    smooth_by_id = dict()
-    for id, attrs in relationships["alSmoothSets"].items():
+    ai_attrs_by_id = dict()
+    for id, attrs in arnold_attrs.items():
 
         if id not in uv_via_id:
             # The id from relationships does not exists in scene
@@ -505,9 +510,9 @@ def _look_via_uv(look, relationships, target_namespaces):
         uv_hash = uv_via_id[id]
         same_uv_ids = id_via_uv[uv_hash]
         for i in same_uv_ids:
-            smooth_by_id[i] = attrs
+            ai_attrs_by_id[i] = attrs
 
-    _apply_smooth_sets(look, smooth_by_id, target_namespaces)
+    _apply_ai_attrs(look, ai_attrs_by_id, target_namespaces)
 
 
 def remove_look(namespaces, asset_ids):
