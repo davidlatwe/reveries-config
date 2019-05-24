@@ -5,8 +5,17 @@ import contextlib
 
 import pyblish.api
 
+from maya import cmds
+
 from reveries.plugins import PackageExtractor
 from reveries.maya import utils
+
+
+def read(attr_path):
+    try:
+        return cmds.getAttr(attr_path, asString=True)
+    except (RuntimeError, ValueError):
+        pass
 
 
 class ExtractLook(PackageExtractor):
@@ -29,7 +38,6 @@ class ExtractLook(PackageExtractor):
 
     def extract_LookDev(self):
 
-        from maya import cmds
         from avalon import maya
         from reveries.maya import lib, capsule
 
@@ -135,8 +143,8 @@ class ExtractLook(PackageExtractor):
                 id = utils.get_id(node)
                 crease_sets[level].append(id + "." + edges)
 
-        # Arnold smooth sets
-        al_smooth_sets = dict()
+        # Arnold attributes
+        arnold_attrs = dict()
 
         try:
             # (TODO) This should be improved. see issue #65
@@ -146,10 +154,17 @@ class ExtractLook(PackageExtractor):
         else:
             ai_sets = dict()
             for objset in cmds.ls(type="objectSet"):
-                if any(attr.startswith("ai") for attr in
-                       cmds.listAttr(objset, userDefined=True) or []):
-                    ai_sets[objset] = cmds.ls(cmds.sets(objset, query=True),
-                                              long=True)
+                if not lib.hasAttr(objset, "aiOverride"):
+                    continue
+                if not cmds.getAttr(objset + ".aiOverride"):
+                    continue
+                # Ignore pyblish family instance
+                if (lib.hasAttr(objset, "id") and
+                        read(objset + ".id") == "pyblish.avalon.instance"):
+                    continue
+
+                ai_sets[objset] = cmds.ls(cmds.sets(objset, query=True),
+                                          long=True)
 
             # (TODO) Validate only transform nodes in ai set
             transforms = cmds.ls(cmds.listRelatives(surfaces, parent=True),
@@ -159,17 +174,32 @@ class ExtractLook(PackageExtractor):
                 id = utils.get_id(node)
 
                 attrs = dict()
+
+                # Collect all `ai*` attributes from shape
+                shape = cmds.listRelatives(node,
+                                           shapes=True,
+                                           noIntermediate=True,
+                                           fullPath=True)[0]
+                for attr in cmds.listAttr(shape, fromPlugin=True) or []:
+                    value = read(shape + "." + attr)
+                    if value is not None:
+                        attrs[attr] = value
+
+                # Collect all override attributes from objectSet
                 for ai_set, member in ai_sets.items():
                     if node not in member:
                         continue
 
                     for attr in cmds.listAttr(ai_set, userDefined=True):
-                        if not attr.startswith("ai"):
-                            continue
+                        # Collect all user attributes from objecSet
+                        # (NOTE) Some attribute like `castsShadows` does not
+                        #        startswith "ai", but also affect rendering in
+                        #        Arnold.
+                        value = read(node + "." + attr)
+                        if value is not None:
+                            attrs[attr] = value
 
-                        attrs[attr] = cmds.getAttr(ai_set + "." + attr)
-
-                al_smooth_sets[id] = attrs
+                arnold_attrs[id] = attrs
 
         # VRay Attributes
         vray_attrs = dict()
@@ -196,13 +226,13 @@ class ExtractLook(PackageExtractor):
             "shaderById": shader_by_id,
             "animatable": animatable,
             "creaseSets": crease_sets,
-            "alSmoothSets": al_smooth_sets,
+            "arnoldAttrs": arnold_attrs,
             "vrayAttrs": vray_attrs,
         }
 
         self.log.info("Extracting serialisation..")
         with open(link_path, "w") as f:
-            json.dump(relationships, f, indent=4)
+            json.dump(relationships, f)
 
         self.add_data({
             "linkFname": link_file,
