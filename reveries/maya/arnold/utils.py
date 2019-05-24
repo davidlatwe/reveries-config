@@ -96,7 +96,6 @@ def apply_ai_attrs(relationships, namespace=None, target_namespaces=None):
                     continue
 
                 if origin == value:
-                    print(attr, origin)
                     continue
 
                 if isinstance(value, six.string_types):
