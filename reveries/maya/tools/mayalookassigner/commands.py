@@ -200,7 +200,14 @@ def create_items_from_nodes(nodes):
 
         subsets = dict()
         for namespace in namespaces:
-            container = get_container_from_namespace(namespace)
+            try:
+                container = get_container_from_namespace(namespace)
+            except RuntimeError:
+                # This namespace does not belong to any container, possible
+                # because of it's a `mayashare` subset or from other dirty
+                # workflow.
+                pass
+
             subset = cmds.getAttr(container + ".name")
             subsets[namespace] = subset
 
