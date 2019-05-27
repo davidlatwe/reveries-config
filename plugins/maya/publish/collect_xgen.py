@@ -27,47 +27,7 @@ def create_model_subset_from_xgen(instance):
     model.data["extractType"] = "mayaBinary"
 
 
-def create_look_subset_from_xgen(instance):
-    family = "reveries.look"
-    subset = instance.data["subset"]
-    subset = "look" + subset[0].upper() + subset[1:]
-
-    if "igsDescriptions" in instance.data:
-        member = instance.data["igsDescriptions"][:]
-        member += cmds.listRelatives(member,
-                                     parent=True,
-                                     fullPath=True) or []
-
-    if "xgenDescriptions" in instance.data:
-        member = []
-        for desc in instance.data["xgenDescriptions"][:]:
-            for node in cmds.ls(desc, long=True):
-                shapes = cmds.listRelatives(node,
-                                            shapes=True,
-                                            fullPath=True) or []
-                if not shapes:
-                    continue
-
-                for shape in shapes:
-                    if cmds.nodeType(shape) == "xgmDescription":
-                        member.append(node)
-
-        member += cmds.listRelatives(member,
-                                     shapes=True,
-                                     fullPath=True) or []
-
-    look = plugins.create_dependency_instance(instance,
-                                              subset,
-                                              family,
-                                              member,
-                                              category="XGen LookDev")
-    # Add renderlayer data which was set from Creator
-    renderlayer = cmds.editRenderLayerGlobals(query=True,
-                                              currentRenderLayer=True)
-    look.data["renderlayer"] = renderlayer
-
-
-def create_texture_subset_from_look(instance, textures):
+def create_texture_subset_from_xgen(instance, textures):
     family = "reveries.texture"
     subset = instance.data["subset"]
     subset = "texture" + subset[0].upper() + subset[1:]
@@ -104,13 +64,10 @@ class CollectXGen(pyblish.api.InstancePlugin):
         # Create model subset for bounding meshes
         create_model_subset_from_xgen(instance)
 
-        # Create lookDev subset for hair
-        create_look_subset_from_xgen(instance)
-
         # Create texture subet for descriptions
         stray = pipeline.find_stray_textures(cmds.listHistory(descriptions))
         if stray:
-            create_texture_subset_from_look(instance, stray)
+            create_texture_subset_from_xgen(instance, stray)
 
     def get_legacy(self, instance):
         """Legacy XGen"""
@@ -142,6 +99,3 @@ class CollectXGen(pyblish.api.InstancePlugin):
 
         # Create model subset for bounding meshes
         create_model_subset_from_xgen(instance)
-
-        # Create lookDev subset for hair
-        create_look_subset_from_xgen(instance)
