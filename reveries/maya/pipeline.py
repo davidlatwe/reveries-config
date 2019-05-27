@@ -188,6 +188,8 @@ def apply_namespace_wrapper(namespace, nodes):
     Those tools must use `.lib.ls_nodes_by_id` to find nodes, that's the
     function has the implementation of reading nodes inside the wrapper.
 
+    (NOTE): Nodes that already has namespace will be ignored.
+
     Example use case:
         Currently used by XGen Legacy type subsets, since XGen Legacy did
         not fully namespace supported.
@@ -206,6 +208,10 @@ def apply_namespace_wrapper(namespace, nodes):
     wrapper_group = defaultdict(list)
 
     for node in nodes:
+        # Ignore nodes that already has namespace
+        if lib.get_ns(node) != ":":
+            continue
+
         asset_id = get_id_namespace(node)
         if asset_id is None:
             continue
