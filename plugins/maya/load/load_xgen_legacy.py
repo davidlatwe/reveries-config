@@ -8,7 +8,10 @@ from maya import cmds
 from reveries.maya import utils
 from reveries.maya.plugins import MayaBaseLoader, unique_root_namespace
 from reveries.maya.xgen import legacy as xgen
-from reveries.maya.pipeline import subset_containerising
+from reveries.maya.pipeline import (
+    subset_containerising,
+    apply_namespace_wrapper,
+)
 
 
 class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
@@ -132,6 +135,7 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         nodes += cmds.listRelatives(palette_nodes,
                                     allDescendents=True,
                                     fullPath=True)
+        nodes += apply_namespace_wrapper(namespace, nodes)
 
         container_id = options.get("containerId",
                                    utils.generate_container_id())

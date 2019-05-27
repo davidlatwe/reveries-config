@@ -91,7 +91,7 @@ def apply_ai_attrs(relationships, namespace=None, target_namespaces=None):
                                            fullPath=True)[0]
                 attr_path = shape + "." + attr
                 try:
-                    origin = cmds.getAttr(attr_path, asString=True)
+                    origin = cmds.getAttr(attr_path)
                 except (RuntimeError, ValueError):
                     continue
 
