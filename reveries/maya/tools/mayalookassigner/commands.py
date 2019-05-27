@@ -206,7 +206,7 @@ def create_items_from_nodes(nodes):
                 # This namespace does not belong to any container, possible
                 # because of it's a `mayashare` subset or from other dirty
                 # workflow.
-                pass
+                continue
 
             subset = cmds.getAttr(container + ".name")
             subsets[namespace] = subset
