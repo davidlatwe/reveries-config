@@ -195,12 +195,22 @@ def create_items_from_nodes(nodes):
                 # (TODO) Although we could list out nodes that were under root
                 #        namespace, but assigning looks to those nodes was not
                 #        guaranteed. Skip those nodes for now...
+                # (TODO) * Is namespace wrapped ?
+                #        * How to select nodes that does not have namespace ?
                 continue
             namespaces.add(namespace)
 
         subsets = dict()
         for namespace in namespaces:
-            container = get_container_from_namespace(namespace)
+            try:
+                container = get_container_from_namespace(namespace)
+            except RuntimeError:
+                # This namespace does not belong to any container, possible
+                # because of it's a `mayashare` subset or from other dirty
+                # workflow.
+                # (TODO) subsets[namespace] = "(unknown)"
+                continue
+
             subset = cmds.getAttr(container + ".name")
             subsets[namespace] = subset
 

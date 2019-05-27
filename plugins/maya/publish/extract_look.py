@@ -13,7 +13,7 @@ from reveries.maya import utils
 
 def read(attr_path):
     try:
-        return cmds.getAttr(attr_path, asString=True)
+        return cmds.getAttr(attr_path)
     except (RuntimeError, ValueError):
         pass
 
