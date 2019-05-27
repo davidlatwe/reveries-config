@@ -15,6 +15,8 @@ log = logging.getLogger(__name__)
 
 AVALON_ID_ATTR_LONG = lib.AVALON_ID
 
+AVALON_NAMESPACE_WRAPPER_ID = "000000000000000000000000"
+
 TRANSFORM_ATTRS = [
     "translateX", "translateY", "translateZ",
     "rotateX", "rotateY", "rotateZ",
@@ -1028,6 +1030,10 @@ def ls_nodes_by_id(ids, namespace=None):
     """
     from . import utils  # Avoid circular import
 
+    def is_namespace_wrapper(id, node):
+        return (id == AVALON_NAMESPACE_WRAPPER_ID and
+                cmds.nodeType(node) == "objectSet")
+
     namespace = namespace or ""
     nodes = cmds.ls("{0}*.{1}".format(namespace, AVALON_ID_ATTR_LONG),
                     long=False,
@@ -1037,8 +1043,18 @@ def ls_nodes_by_id(ids, namespace=None):
     id_map = defaultdict(set)
     for node in nodes:
         id = utils.get_id(node)
-        if id is not None and id in ids:
+
+        if id is None:
+            continue
+
+        if id in ids:
             id_map[id].add(node)
+
+        elif is_namespace_wrapper(id, node):
+            for member in cmds.sets(node, query=True, nodesOnly=True) or []:
+                id = utils.get_id(member)
+                if id is not None and id in ids:
+                    id_map[id].add(member)
 
     return id_map
 

@@ -4,6 +4,7 @@ import logging
 import avalon.maya
 import avalon.io
 
+from collections import defaultdict
 from avalon.maya.pipeline import (
     AVALON_CONTAINER_ID,
     AVALON_CONTAINERS,
@@ -172,6 +173,64 @@ def get_group_from_container(container):
     except ValueError:
         # The subset of family 'look' does not have subsetGroup.
         return None
+
+
+def apply_namespace_wrapper(namespace, nodes):
+    """Put nodes into a namespace wrapper objectSet
+
+    For nodes that could not or did not have namespace, by putting them
+    into a special objectSet so those nodes can be found by the tools
+    which require namespace to work with.
+
+    That special objectSet node is the actual member of the namespace,
+    and it's AvalonID value must be `lib.AVALON_NAMESPACE_WRAPPER_ID`.
+
+    Those tools must use `.lib.ls_nodes_by_id` to find nodes, that's the
+    function has the implementation of reading nodes inside the wrapper.
+
+    Example use case:
+        Currently used by XGen Legacy type subsets, since XGen Legacy did
+        not fully namespace supported.
+
+    Args:
+        namespace (str): Namespace string that will apply to the wrapper
+        nodes (list): A list of nodes that need to be wrapped
+
+    Returns:
+        (list): A list of wrapper nodes
+
+    """
+    from .utils import get_id_namespace, id_namespace, upsert_id
+
+    id_cache = dict()
+    wrapper_group = defaultdict(list)
+
+    for node in nodes:
+        asset_id = get_id_namespace(node)
+        if asset_id is None:
+            continue
+
+        if asset_id not in id_cache:
+            id_cache[asset_id] = avalon.io.find_one(
+                {"_id": avalon.io.ObjectId(asset_id)},
+                projection={"name": True})["name"]
+
+        asset_name = id_cache[asset_id]
+
+        wrapper = namespace + ":wrapper_" + asset_name
+        wrapper_group[(wrapper, asset_id)].append(node)
+
+    wrappers = list()
+    for (wrapper, asset_id), nodes in wrapper_group.items():
+        if not cmds.objExists(wrapper):
+            cmds.createNode("objectSet", name=wrapper)
+            with id_namespace(asset_id):
+                upsert_id(wrapper, id=lib.AVALON_NAMESPACE_WRAPPER_ID)
+
+        cmds.sets(nodes, forceElement=wrapper)
+        wrappers.append(wrapper)
+
+    return wrappers
 
 
 def container_metadata(container):
