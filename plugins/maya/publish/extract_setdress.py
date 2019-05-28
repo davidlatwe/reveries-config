@@ -13,11 +13,7 @@ from reveries.lib import DEFAULT_MATRIX, matrix_equals
 
 
 class ExtractSetDress(PackageExtractor):
-    """Produce an alembic of just point positions and normals.
-
-    Positions and normals are preserved, but nothing more,
-    for plain and predictable point caches.
-
+    """Extract hierarchical subsets' matrix data
     """
 
     order = pyblish.api.ExtractorOrder
@@ -34,6 +30,7 @@ class ExtractSetDress(PackageExtractor):
         id_path = container_to_id_path(container)
 
         data["subMatrix"][id_path] = dict()
+        data["hidden"][id_path] = list()
 
         members = cmds.sets(container["objectName"], query=True)
         transforms = cmds.ls(members,
@@ -51,6 +48,12 @@ class ExtractSetDress(PackageExtractor):
 
             address = utils.get_id(transform)
             data["subMatrix"][id_path][address] = matrix
+
+            # Collect visbility with matrix
+            visibility = cmds.getAttr(transform + ".visibility")
+            if not visibility:
+                # Only record hidden nodes
+                data["hidden"][id_path].append(address)
 
         # Collect subseet group node's matrix
         subset_group = container["subsetGroup"]
@@ -78,6 +81,7 @@ class ExtractSetDress(PackageExtractor):
             data["matrix"] = matrix
 
             data["subMatrix"] = dict()
+            data["hidden"] = dict()
 
             self._collect_components_matrix(data, container)
 

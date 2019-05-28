@@ -174,6 +174,10 @@ def get_group_from_container(container):
         # The subset of family 'look' does not have subsetGroup.
         return None
 
+    except IndexError:
+        raise Exception("Container '%s' exists but subsetGroup does not, "
+                        "possible dirty scene." % container)
+
 
 def apply_namespace_wrapper(namespace, nodes):
     """Put nodes into a namespace wrapper objectSet
