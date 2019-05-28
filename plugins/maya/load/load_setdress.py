@@ -125,6 +125,8 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             container = container_from_id_path(container_id, current_NS)
             full_NS = cmds.getAttr(container + ".namespace")
             nodes = cmds.namespaceInfo(full_NS, listOnlyDependencyNodes=True)
+            # Collect hidden nodes' address
+            hidden = data["hidden"][container_id]
 
             transform_id_map = self.transform_by_id(nodes)
 
@@ -135,6 +137,10 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 else:
                     transform = transform_id_map.get(address)
                     matrix = sub_matrix[address]
+
+                    # Apply visibility changes
+                    if address in hidden and transform is not None:
+                        cmds.setAttr(transform + ".visibility", False)
 
                 if matrix == "<default>":
                     matrix = DEFAULT_MATRIX

@@ -7,13 +7,6 @@ from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 class SelectMissing(MayaSelectInvalidInstanceAction):
 
     label = "Select ID Missing"
-    symptom = "missing"
-
-
-class SelectDuplicated(MayaSelectInvalidInstanceAction):
-
-    label = "Select ID Duplicated"
-    symptom = "duplicated"
 
 
 class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
@@ -30,11 +23,10 @@ class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
     actions = [
         pyblish.api.Category("Select"),
         SelectMissing,
-        SelectDuplicated,
     ]
 
     @classmethod
-    def get_invalid_missing(cls, instance):
+    def get_invalid(cls, instance):
         from maya import cmds
         invalid = list()
         nodes = cmds.ls(instance.data["requireAvalonUUID"], long=True)
@@ -44,26 +36,9 @@ class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
 
         return invalid
 
-    @classmethod
-    def get_invalid_duplicated(cls, instance):
-        from maya import cmds
-        invalid = list()
-        nodes = cmds.ls(instance.data["requireAvalonUUID"], long=True)
-        for node in nodes:
-            if get_id_status(node) == Identifier.Duplicated:
-                invalid.append(node)
-
-        return invalid
-
     def process(self, instance):
-        missing = self.get_invalid_missing(instance)
-        duplicated = self.get_invalid_duplicated(instance)
+        invalid = self.get_invalid(instance)
 
-        if missing:
-            self.log.error("Found node that has no ID assigned.")
-
-        if duplicated:
-            self.log.error("Found node that has assigned with duplicated ID.")
-
-        if missing or duplicated:
-            raise Exception("Found invalid nodes, require upstream to fix.")
+        if invalid:
+            raise Exception("Found node that has no ID assigned. "
+                            "Require upstream to fix.")

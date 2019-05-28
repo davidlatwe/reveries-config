@@ -7,9 +7,15 @@ import pyblish.api
 from avalon.maya.pipeline import AVALON_CONTAINER_ID
 
 from reveries.maya import lib, pipeline
-from reveries.maya.utils import Identifier, get_id_status, upsert_id
 from reveries.plugins import RepairInstanceAction
 from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries.maya.utils import (
+    Identifier,
+    get_id_status,
+    upsert_id,
+    update_id_verifiers,
+    id_namespace,
+)
 
 
 class SelectMissing(MayaSelectInvalidInstanceAction):
@@ -24,9 +30,16 @@ class SelectDuplicated(MayaSelectInvalidInstanceAction):
     symptom = "duplicated"
 
 
-class RepairInvalid(RepairInstanceAction):
+class RepairIDMissing(RepairInstanceAction):
 
-    label = "Regenerate AvalonUUID"
+    label = "Fix Missing ID"
+    symptom = "missing"
+
+
+class RepairIDDuplicated(RepairInstanceAction):
+
+    label = "Fix Duplicated ID"
+    symptom = "duplicated"
 
 
 def ls_subset_groups():
@@ -63,7 +76,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         SelectMissing,
         SelectDuplicated,
         pyblish.api.Category("Fix It"),
-        RepairInvalid,
+        RepairIDMissing,
+        RepairIDDuplicated,
     ]
 
     @classmethod
@@ -116,11 +130,28 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
             raise Exception("%s <Avalon UUID> Failed." % instance)
 
     @classmethod
-    def fix_invalid(cls, instance):
-        invalid = (cls.get_invalid_missing(instance) +
-                   cls.get_invalid_duplicated(instance))
-        for node in invalid:
-            upsert_id(node)
+    def fix_invalid_missing(cls, instance):
+        asset_id = str(instance.context.data["assetDoc"]["_id"])
+        with id_namespace(asset_id):
+            for node in cls.get_invalid_missing(instance):
+                upsert_id(node)
+
+    @classmethod
+    def fix_invalid_duplicated(cls, instance):
+        invalid = cls.get_invalid_duplicated(instance)
+
+        if instance.data["family"] in [
+            "reveries.setdress",
+            "reveries.mayashare",
+        ]:
+            # Do not renew id on these families
+            update_id_verifiers(invalid)
+        else:
+            # Re-assign unique id on duplicated
+            asset_id = str(instance.context.data["assetDoc"]["_id"])
+            with id_namespace(asset_id):
+                for node in invalid:
+                    upsert_id(node)
 
     @classmethod
     def _get_avalon_uuid(cls, instance):
