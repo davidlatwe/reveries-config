@@ -6,6 +6,24 @@ import pyblish.api
 from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
+class SelectNoUV(MayaSelectInvalidInstanceAction):
+
+    label = "Empty UV"
+    on = "failed"
+    icon = "frown-o"
+
+    symptom = "no_uv"
+
+
+class SelectIncompleteUV(MayaSelectInvalidInstanceAction):
+
+    label = "Incomplete UV"
+    on = "failed"
+    icon = "meh-o"
+
+    symptom = "incomplete_uv"
+
+
 def len_flattened(components):
     """Return the length of the list as if it was flattened.
 
@@ -52,11 +70,13 @@ class ValidateMeshHasUVs(pyblish.api.InstancePlugin):
         "reveries.model",
     ]
     actions = [
-        MayaSelectInvalidInstanceAction,
+        pyblish.api.Category("Select"),
+        SelectNoUV,
+        SelectIncompleteUV,
     ]
 
     @classmethod
-    def get_invalid(cls, instance):
+    def get_invalid_no_uv(cls, instance):
         invalid = []
 
         for node in cmds.ls(instance, type="mesh"):
@@ -64,10 +84,18 @@ class ValidateMeshHasUVs(pyblish.api.InstancePlugin):
 
             if uv == 0:
                 invalid.append(node)
-                continue
+
+        return invalid
+
+    @classmethod
+    def get_invalid_incomplete_uv(cls, instance):
+        invalid = []
+
+        for node in cmds.ls(instance, type="mesh"):
+            uv = cmds.polyEvaluate(node, uv=True)
 
             vertex = cmds.polyEvaluate(node, vertex=True)
-            if uv < vertex:
+            if uv > 0 and uv < vertex:
                 # Workaround:
                 # Maya can have instanced UVs in a single mesh, for example
                 # imported from an Alembic. With instanced UVs the UV count
@@ -91,7 +119,9 @@ class ValidateMeshHasUVs(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        invalid = self.get_invalid(instance)
-        if invalid:
+        no_uv = self.get_invalid_no_uv(instance)
+        incomplete_uv = self.get_invalid_incomplete_uv(instance)
+
+        if no_uv or incomplete_uv:
             raise RuntimeError("Meshes found in instance without "
-                               "valid UVs: {0}".format(invalid))
+                               "valid UVs: {0}".format(instance))
