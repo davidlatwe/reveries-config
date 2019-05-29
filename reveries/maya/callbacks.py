@@ -115,6 +115,10 @@ def before_save(return_code, _):
     # class_m_scene_message.html#a6bf4288015fa7dab2d2074c3a49f936
     OpenMaya.MScriptUtil.setBool(return_code, not maya.is_locked())
 
+    avalon.logger.info("Cleaning up unused plugins..")
+    maya_utils.remove_unused_plugins()
+    maya_utils.kill_turtle()
+
 
 _nodes = {"_": None}
 
