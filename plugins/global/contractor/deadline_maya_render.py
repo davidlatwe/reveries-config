@@ -53,12 +53,19 @@ class ContractorDeadlineMayaRender(BaseContractor):
         name, ext = os.path.splitext(fname)
         comment = context.data.get("comment", "")
 
+        project = context.data["projectDoc"]
+
+        project_id = str(project["_id"])[-4:].upper()
+        project_code = project["data"].get("codename", project_id)
+
         asset = context.data["assetDoc"]["name"]
 
         output_dir = context.data["outputDir"].replace("\\", "/")
 
-        batch_name = "avalon: [{asset}] {filename}"
-        batch_name = batch_name.format(asset=asset, filename=fname)
+        batch_name = "({projcode}): [{asset}] {filename}"
+        batch_name = batch_name.format(projcode=project_code,
+                                       asset=asset,
+                                       filename=fname)
 
         has_renderlayer = context.data["hasRenderLayers"]
         use_rendersetup = context.data["usingRenderSetup"]
@@ -101,6 +108,8 @@ class ContractorDeadlineMayaRender(BaseContractor):
                         step=int(instance.data["byFrameStep"]),
                     ),
                     "ChunkSize": instance.data["deadlineFramesPerTask"],
+
+                    "ExtraInfo0": project["name"],
                 },
                 "PluginInfo": {
                     # Input
@@ -163,7 +172,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
             if response.ok:
                 jobid = eval(response.text)["_id"]
                 self.log.info("Success. JobID: %s" % jobid)
-                self.submit_publish_script(instance, payload, jobid, url, auth)
+                self.submit_publish_script(project, payload, jobid, url, auth)
             else:
                 msg = response.text
                 self.log.error(msg)
@@ -171,7 +180,7 @@ class ContractorDeadlineMayaRender(BaseContractor):
 
         self.log.info("Completed.")
 
-    def submit_publish_script(self, instance, payload, jobid, url, auth):
+    def submit_publish_script(self, project, payload, jobid, url, auth):
         # Clean up
         for key in list(payload["JobInfo"].keys()):
             if (key.startswith("OutputDirectory") or
@@ -181,8 +190,6 @@ class ContractorDeadlineMayaRender(BaseContractor):
         payload["JobInfo"].pop("Frames")
         payload["PluginInfo"].pop("OutputFilePath")
         payload["PluginInfo"].pop("OutputFilePrefix")
-
-        project = instance.context.data["projectDoc"]
 
         # Update
         payload["JobInfo"].update({

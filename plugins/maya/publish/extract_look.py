@@ -190,7 +190,7 @@ class ExtractLook(PackageExtractor):
                     if node not in member:
                         continue
 
-                    for attr in cmds.listAttr(ai_set, userDefined=True):
+                    for attr in cmds.listAttr(ai_set, userDefined=True) or []:
                         # Collect all user attributes from objecSet
                         # (NOTE) Some attribute like `castsShadows` does not
                         #        startswith "ai", but also affect rendering in

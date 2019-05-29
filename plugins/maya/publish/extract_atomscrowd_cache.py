@@ -47,4 +47,6 @@ class ExtractAtomsCrowdCache(PackageExtractor):
         self.add_data({
             "entryFileName": entry_file,
             "variationFile": variation_file,
+            "startFrame": start_frame,
+            "endFrame": end_frame,
         })
