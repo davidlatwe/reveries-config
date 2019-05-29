@@ -480,3 +480,27 @@ def wait_cursor():
         yield
     finally:
         cmds.waitCursor(state=False)
+
+
+@contextlib.contextmanager
+def attr_unkeyable(attr_list):
+    """Set attribute not keyable during this context
+
+    Args:
+        attr_list (list): A list of `nodeName.attrName` strings
+
+    """
+    keyables = list()
+
+    for attr in attr_list:
+        if cmds.objExists(attr) and cmds.getAttr(attr, keyable=True):
+            keyables.append(attr)
+
+    try:
+        for attr in keyables:
+            cmds.setAttr(attr, keyable=False)
+        yield
+    finally:
+        for attr in keyables:
+            if cmds.objExists(attr):
+                cmds.setAttr(attr, keyable=True)

@@ -11,6 +11,19 @@ from reveries.plugins import PackageExtractor
 from maya import cmds
 
 
+DO_NOT_BAKE_THESE = [
+    "motionBlurOverride",
+    "aiUseGlobalShutter",
+    "aiShutterStart",
+    "aiShutterEnd",
+    "aiShutterType",
+    "aiEnableDOF",
+    "aiFov",
+    "aiHorizontalFov",
+    "aiVerticalFov",
+]
+
+
 class ExtractCamera(PackageExtractor):
     """
     """
@@ -36,8 +49,11 @@ class ExtractCamera(PackageExtractor):
 
         self.camera_uuid = utils.get_id(camera)
 
+        donot_bake = [camera + "." + attr for attr in DO_NOT_BAKE_THESE]
+
         with contextlib.nested(
             capsule.no_refresh(),
+            capsule.attr_unkeyable(donot_bake),
             capsule.evaluation("off"),
             capsule.undo_chunk(),
         ):
