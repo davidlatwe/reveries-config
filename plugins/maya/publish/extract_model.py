@@ -4,7 +4,6 @@ import contextlib
 import pyblish.api
 
 import maya.cmds as cmds
-import avalon.maya as maya
 
 from reveries.maya import capsule, utils
 from reveries.plugins import PackageExtractor
@@ -34,8 +33,8 @@ class ExtractModel(PackageExtractor):
             capsule.no_undo(),
             capsule.no_display_layers(self.member),
             capsule.no_smooth_preview(),
-            maya.maintained_selection(),
-            maya.without_extension(),
+            capsule.maintained_selection(),
+            capsule.without_extension(),
         ):
             super(ExtractModel, self).extract()
 

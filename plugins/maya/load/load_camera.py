@@ -1,6 +1,6 @@
 
 import avalon.api
-import reveries.maya.lib
+from reveries.maya import lib, capsule
 from reveries.maya.plugins import ReferenceLoader
 
 
@@ -39,7 +39,17 @@ class CameraLoader(ReferenceLoader, avalon.api.Loader):
                           lockReference=False,
                           returnNewNodes=True)
 
-        reveries.maya.lib.lock_transform(group)
+        # Lock camera
+        camera = cmds.listRelatives(cmds.ls(type="camera", long=True),
+                                    parent=True,
+                                    fullPath=True)[0]
+        with capsule.ref_edit_unlock():
+            lib.lock_transform(camera, additional=["focalLength",
+                                                   "cameraAperture",
+                                                   "lensSqueezeRatio",
+                                                   "shutterAngle",
+                                                   "centerOfInterest"])
+        lib.lock_transform(group)
         self[:] = nodes
 
     def switch(self, container, representation):

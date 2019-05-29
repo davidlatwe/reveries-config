@@ -46,6 +46,11 @@ class ExtractPointCache(DelegatablePackageExtractor):
             cmds.select(self.data["outCache"], replace=True)
             super(ExtractPointCache, self).extract()
 
+    def add_range_data(self):
+        if not self.data.get("staticCache"):
+            self.add_data({"startFrame": self.start_frame,
+                           "endFrame": self.end_frame})
+
     @skip_stage
     def extract_Alembic(self):
         entry_file = self.file_name("ma")
@@ -94,6 +99,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
         io.wrap_abc(entry_path, [(cache_file, "ROOT")])
 
         self.add_data({"entryFileName": entry_file})
+        self.add_range_data()
 
     @skip_stage
     def extract_FBXCache(self):
@@ -113,6 +119,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
         io.wrap_fbx(entry_path, [(cache_file, "ROOT")])
 
         self.add_data({"entryFileName": entry_file})
+        self.add_range_data()
 
     @skip_stage
     def extract_GPUCache(self):
@@ -126,3 +133,4 @@ class ExtractPointCache(DelegatablePackageExtractor):
         io.wrap_gpu(entry_path, [(cache_file, "ROOT")])
 
         self.add_data({"entryFileName": entry_file})
+        self.add_range_data()

@@ -55,7 +55,8 @@ def no_smooth_preview():
 
     finally:
         for attr, value in smoothed.items():
-            cmds.setAttr(attr, value)
+            if cmds.objExists(attr):
+                cmds.setAttr(attr, value)
 
 
 @contextlib.contextmanager
@@ -304,6 +305,17 @@ def relative_namespaced():
 
 
 @contextlib.contextmanager
+def without_extension():
+    """Use cmds.file with defaultExtensions=False"""
+    previous_setting = cmds.file(defaultExtensions=True, query=True)
+    try:
+        cmds.file(defaultExtensions=False)
+        yield
+    finally:
+        cmds.file(defaultExtensions=previous_setting)
+
+
+@contextlib.contextmanager
 def maintained_selection():
     """Maintain selection during context
 
@@ -323,7 +335,8 @@ def maintained_selection():
         yield
     finally:
         if previous_selection:
-            cmds.select(previous_selection,
+            exists = cmds.ls(previous_selection)
+            cmds.select(exists,
                         replace=True,
                         noExpand=True)
         else:
@@ -467,3 +480,27 @@ def wait_cursor():
         yield
     finally:
         cmds.waitCursor(state=False)
+
+
+@contextlib.contextmanager
+def attr_unkeyable(attr_list):
+    """Set attribute not keyable during this context
+
+    Args:
+        attr_list (list): A list of `nodeName.attrName` strings
+
+    """
+    keyables = list()
+
+    for attr in attr_list:
+        if cmds.objExists(attr) and cmds.getAttr(attr, keyable=True):
+            keyables.append(attr)
+
+    try:
+        for attr in keyables:
+            cmds.setAttr(attr, keyable=False)
+        yield
+    finally:
+        for attr in keyables:
+            if cmds.objExists(attr):
+                cmds.setAttr(attr, keyable=True)
