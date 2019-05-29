@@ -59,12 +59,7 @@ class ExtractCamera(PackageExtractor):
         ):
             # bake to worldspace
             baked_camera = lib.bake_camera(camera, self.start, self.end)
-            # Lock baked camera
-            lib.lock_transform(baked_camera, additional=["focalLength",
-                                                         "cameraAperture",
-                                                         "lensSqueezeRatio",
-                                                         "shutterAngle",
-                                                         "centerOfInterest"])
+
             cmds.select(baked_camera,
                         hierarchy=True,  # With shape
                         replace=True,
