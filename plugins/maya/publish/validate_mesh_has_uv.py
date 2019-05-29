@@ -79,7 +79,7 @@ class ValidateMeshHasUVs(pyblish.api.InstancePlugin):
     def get_invalid_no_uv(cls, instance):
         invalid = []
 
-        for node in cmds.ls(instance, type="mesh"):
+        for node in cmds.ls(instance, type="mesh", noIntermediate=True):
             uv = cmds.polyEvaluate(node, uv=True)
 
             if uv == 0:
@@ -91,7 +91,7 @@ class ValidateMeshHasUVs(pyblish.api.InstancePlugin):
     def get_invalid_incomplete_uv(cls, instance):
         invalid = []
 
-        for node in cmds.ls(instance, type="mesh"):
+        for node in cmds.ls(instance, type="mesh", noIntermediate=True):
             uv = cmds.polyEvaluate(node, uv=True)
 
             vertex = cmds.polyEvaluate(node, vertex=True)
