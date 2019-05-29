@@ -35,10 +35,17 @@ class ContractorDeadlineMayaScript(BaseContractor):
         name, ext = os.path.splitext(fname)
         comment = context.data.get("comment", "")
 
+        project = context.data["projectDoc"]
+
+        project_id = str(project["_id"])[-4:].upper()
+        project_code = project["data"].get("codename", project_id)
+
         asset = context.data["assetDoc"]["name"]
 
-        batch_name = "avalon.script: [{asset}] {filename}"
-        batch_name = batch_name.format(asset=asset, filename=fname)
+        batch_name = "({projcode}): [{asset}] {filename}"
+        batch_name = batch_name.format(projcode=project_code,
+                                       asset=asset,
+                                       filename=fname)
 
         script_file = os.path.join(os.path.dirname(__file__),
                                    "scripts",
@@ -101,6 +108,8 @@ class ContractorDeadlineMayaScript(BaseContractor):
                     "Pool": dl_pool,
                     "Group": dl_group,
                     "Priority": dl_priority,
+
+                    "ExtraInfo0": project["name"],
                 },
                 "PluginInfo": {
                     # Input
