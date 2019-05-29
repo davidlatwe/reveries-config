@@ -55,7 +55,8 @@ def no_smooth_preview():
 
     finally:
         for attr, value in smoothed.items():
-            cmds.setAttr(attr, value)
+            if cmds.objExists(attr):
+                cmds.setAttr(attr, value)
 
 
 @contextlib.contextmanager
@@ -323,7 +324,8 @@ def maintained_selection():
         yield
     finally:
         if previous_selection:
-            cmds.select(previous_selection,
+            exists = cmds.ls(previous_selection)
+            cmds.select(exists,
                         replace=True,
                         noExpand=True)
         else:
