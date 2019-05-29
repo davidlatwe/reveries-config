@@ -305,6 +305,17 @@ def relative_namespaced():
 
 
 @contextlib.contextmanager
+def without_extension():
+    """Use cmds.file with defaultExtensions=False"""
+    previous_setting = cmds.file(defaultExtensions=True, query=True)
+    try:
+        cmds.file(defaultExtensions=False)
+        yield
+    finally:
+        cmds.file(defaultExtensions=previous_setting)
+
+
+@contextlib.contextmanager
 def maintained_selection():
     """Maintain selection during context
 
