@@ -41,13 +41,15 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             cmds.xform(assembly, objectSpace=True, matrix=matrix)
 
         # Apply matrix to components
-        for transform, sub_matrix in self.parse_sub_matrix(data):
+        for transform, sub_matrix, is_hidden in self.parse_sub_matrix(data):
             if not transform:
                 continue
             with self.keep_scale_pivot(transform):
                 cmds.xform(transform,
                            objectSpace=True,
                            matrix=sub_matrix)
+            if is_hidden:
+                cmds.setAttr(transform + ".visibility", False)
 
     def update_variation(self, data_new, data_old, container, force=False):
         """
@@ -61,9 +63,9 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                                     query=True,
                                     matrix=True,
                                     objectSpace=True)
-        original_matrix = data_old["matrix"]
+        origin_matrix = data_old["matrix"]
         has_matrix_override = not matrix_equals(current_matrix,
-                                                original_matrix)
+                                                origin_matrix)
 
         if has_matrix_override and not force:
             self.log.warning("Matrix override preserved on %s",
@@ -74,9 +76,12 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 cmds.xform(assembly, objectSpace=True, matrix=new_matrix)
 
         # Update matrix to components
-        old_data_map = {t: m for t, m in self.parse_sub_matrix(data_old)}
+        old_data_map = {t: (m, h) for t, m, h in
+                        self.parse_sub_matrix(data_old)}
 
-        for transform, sub_matrix in self.parse_sub_matrix(data_new):
+        for parsed in self.parse_sub_matrix(data_new):
+            transform, sub_matrix, is_hidden = parsed
+
             if not transform:
                 continue
 
@@ -84,12 +89,15 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                                             query=True,
                                             matrix=True,
                                             objectSpace=True)
+            current_hidden = not cmds.getAttr(transform + ".visibility")
 
-            original_sub_matrix = old_data_map.get(transform)
+            origin_sub_matrix, origin_hidden = old_data_map.get(transform,
+                                                                (None, False))
 
-            if original_sub_matrix:
+            # Updating matrix
+            if origin_sub_matrix:
                 has_matrix_override = not matrix_equals(current_sub_matrix,
-                                                        original_sub_matrix)
+                                                        origin_sub_matrix)
             else:
                 has_matrix_override = False
 
@@ -99,6 +107,26 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             else:
                 with self.keep_scale_pivot(transform):
                     cmds.xform(transform, objectSpace=True, matrix=sub_matrix)
+
+            # Updating visibility
+            if origin_hidden:
+                has_hidden_override = current_hidden != origin_hidden
+            else:
+                has_hidden_override = False
+
+            if has_hidden_override and not force:
+                self.log.warning("Visibility override preserved on %s",
+                                 transform)
+            elif force:
+                if current_hidden and not is_hidden:
+                    cmds.setAttr(transform + ".visibility", True)
+                elif not current_hidden and is_hidden:
+                    cmds.setAttr(transform + ".visibility", False)
+            else:
+                if origin_hidden and not is_hidden:
+                    cmds.setAttr(transform + ".visibility", True)
+                elif not origin_hidden and is_hidden:
+                    cmds.setAttr(transform + ".visibility", False)
 
     def transform_by_id(self, nodes):
         """
@@ -126,11 +154,13 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             full_NS = cmds.getAttr(container + ".namespace")
             nodes = cmds.namespaceInfo(full_NS, listOnlyDependencyNodes=True)
             # Collect hidden nodes' address
-            hidden = data["hidden"][container_id]
+            hidden = data.get("hidden", {}).get(container_id, [])
 
             transform_id_map = self.transform_by_id(nodes)
 
             for address in sub_matrix:
+                is_hidden = False
+
                 if address == "GROUP":
                     name, matrix = sub_matrix[address].popitem()
                     transform = full_NS + ":" + name
@@ -138,11 +168,10 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                     transform = transform_id_map.get(address)
                     matrix = sub_matrix[address]
 
-                    # Apply visibility changes
                     if address in hidden and transform is not None:
-                        cmds.setAttr(transform + ".visibility", False)
+                        is_hidden = True
 
                 if matrix == "<default>":
                     matrix = DEFAULT_MATRIX
 
-                yield transform, matrix
+                yield transform, matrix, is_hidden
