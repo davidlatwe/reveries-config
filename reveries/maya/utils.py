@@ -163,7 +163,7 @@ def remove_unused_plugins():
         to Maya 2016.
 
     """
-    for plugin in cmds.unknownPlugin(query=True, list=True):
+    for plugin in cmds.unknownPlugin(query=True, list=True) or []:
         cmds.unknownPlugin(plugin, remove=True)
 
 
