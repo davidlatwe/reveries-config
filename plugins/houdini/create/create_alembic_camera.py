@@ -20,8 +20,10 @@ class CreateAlembicCamera(houdini.Creator):
     def process(self):
         instance = super(CreateAlembicCamera, self).process()
 
+        file_path = "$HIP/pyblish/%s/%s.abc" % (self.name, self.name)
+
         parms = {
-            "filename": "$HIP/pyblish/%s.abc" % self.name,
+            "filename": file_path,
             "use_sop_path": False
         }
 
