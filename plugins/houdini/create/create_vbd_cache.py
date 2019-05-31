@@ -11,7 +11,7 @@ class CreateVDBCache(houdini.Creator):
     def __init__(self, *args, **kwargs):
         super(CreateVDBCache, self).__init__(*args, **kwargs)
 
-        # Remove the active, we are checking the bypass flag of the nodes
+        # Remove the `active`, we are checking the `bypass` flag of the nodes
         self.data.pop("active", None)
 
         # Set node type to create for output
