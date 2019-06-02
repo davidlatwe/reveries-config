@@ -9,6 +9,9 @@ class ValidateSetdressAssembly(pyblish.api.InstancePlugin):
     The instance must have a single root node containing all the content.
     This root node *must* be a top group in the outliner.
 
+    The root node name *must* be 'ROOT' or starts with 'ROOT'.
+    For example: "ROOT" or "ROOT_setA"
+
     """
 
     label = "Setdress Assembly"
@@ -20,7 +23,7 @@ class ValidateSetdressAssembly(pyblish.api.InstancePlugin):
 
         root = cmds.ls(instance, assemblies=True, long=True)
 
-        if not (len(root) == 1 and root[0] == "|ROOT"):
+        if not (len(root) == 1 and root[0].startswith("|ROOT")):
             self.log.error(
                 "'%s' Must have a single root called 'ROOT'." % (instance)
             )

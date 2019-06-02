@@ -10,7 +10,7 @@ def no_display_layers(nodes):
     """
     # remove `displayLayerManager` type node
     invalid = set(cmds.ls(nodes, type="displayLayerManager"))
-    nodes = [x for x in nodes if x not in invalid]
+    nodes = [x for x in set(nodes) if x not in invalid]
 
     # get connections with `displayLayer` type node
     conn_pair = cmds.listConnections(
@@ -22,7 +22,7 @@ def no_display_layers(nodes):
 
     try:
         # connection list *conn_pair* must be pairable
-        # [source, destination, src, dst, ...]
+        # [destination, source, dst, src, ...]
         assert len(conn_pair) % 2 == 0
         # remove connection
         for i in range(0, len(conn_pair), 2):
@@ -35,7 +35,13 @@ def no_display_layers(nodes):
 
     finally:
         for i in range(0, len(conn_pair), 2):
-            cmds.connectAttr(conn_pair[i + 1], conn_pair[i])
+            src = conn_pair[i + 1]
+            dst = conn_pair[i]
+            if not cmds.objExists(src) or not cmds.objExists(dst):
+                continue
+
+            if not cmds.isConnected(src, dst):  # Avoid command error
+                cmds.connectAttr(src, dst)
 
 
 @contextlib.contextmanager
