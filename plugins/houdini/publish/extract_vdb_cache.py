@@ -17,20 +17,24 @@ class ExtractVDBCache(PackageExtractor):
         "vdb",
     ]
 
-    def process(self, instance):
+    def extract_vdb(self):
 
         import hou
 
-        ropnode = instance[0]
+        ropnode = self.member[0]
 
-        # Get the filename from the filename parameter
-        # `.evalParm(parameter)` will make sure all tokens are resolved
-        sop_output = ropnode.evalParm("sopoutput")
-        staging_dir = os.path.normpath(os.path.dirname(sop_output))
-        instance.data["stagingDir"] = staging_dir
-        file_name = os.path.basename(sop_output)
+        if "frameOutputs" in self.data:
+            output = self.data["frameOutputs"][0]
+        else:
+            output = ropnode.evalParm("sopoutput")
 
+        staging_dir = os.path.dirname(output)
+        self.data["stagingDir"] = staging_dir
+        self.create_package()
+
+        file_name = os.path.basename(output)
         self.log.info("Writing VDB '%s' to '%s'" % (file_name, staging_dir))
+
         try:
             ropnode.render()
         except hou.Error as exc:
@@ -41,9 +45,13 @@ class ExtractVDBCache(PackageExtractor):
             traceback.print_exc()
             raise RuntimeError("Render failed: {0}".format(exc))
 
-        if "files" not in instance.data:
-            instance.data["files"] = []
+        self.add_data({
+            "entryFileName": file_name,
+        })
 
-        output = instance.data["frames"]
-
-        instance.data["files"].append(output)
+        if self.data.get("startFrame"):
+            self.add_data({
+                "startFrame": self.data["startFrame"],
+                "endFrame": self.data["endFrame"],
+                "step": self.data["step"],
+            })
