@@ -57,7 +57,8 @@ class ValidateCleanStage(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        staging_dir = self.get_staging_dir(instance)
+        ropnode = instance[0]
+        staging_dir = self.get_staging_dir(ropnode)
         if os.path.isdir(staging_dir) and os.listdir(staging_dir):
             raise Exception("Staging dir not empty, please clean up.")
 
