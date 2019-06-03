@@ -173,6 +173,12 @@ def get_output_parameter(node):
     elif node_type == "alembic":
         return node.parm("filename")
 
+    elif node_type == "arnold":
+        if node.parm("ar_ass_export_enable").eval():
+            return node.parm("ar_ass_file")
+        else:
+            return node.parm("ar_picture")
+
     else:
         raise TypeError("Node type '%s' not supported" % node_type)
 
