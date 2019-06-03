@@ -19,7 +19,7 @@ class CreateArnoldStandIn(houdini.Creator):
     def process(self):
         instance = super(CreateArnoldStandIn, self).process()
 
-        file_path = "$HIP/pyblish/%s/%s.ass" % (self.name, self.name)
+        file_path = "$HIP/pyblish/%s/%s.$F4.ass" % (self.name, self.name)
 
         parms = {
             "ar_ass_export_enable": True,
