@@ -2,11 +2,11 @@
 import pyblish.api
 
 
-class CollectFrames(pyblish.api.InstancePlugin):
-    """Collect all frames' output file path"""
+class ValidateFrames(pyblish.api.InstancePlugin):
+    """Validate all frames's output file path"""
 
-    order = pyblish.api.CollectorOrder
-    label = "Collect Frames"
+    order = pyblish.api.ValidatorOrder + 0.1
+    label = "Validate Frames"
     hosts = ["houdini"]
     families = [
         "reveries.vdbcache",
@@ -18,22 +18,28 @@ class CollectFrames(pyblish.api.InstancePlugin):
         import hou
         from reveries.houdini import lib
 
+        collected_frames = instance.data.get("frameOutputs", [])
+
         start_frame = instance.data.get("startFrame", None)
         end_frame = instance.data.get("endFrame", None)
         step = instance.data.get("step", None)
 
         if start_frame is None:
+            if collected_frames:
+                raise Exception("Render frame changed, please restart.")
+
             self.log.info("No frame range data, skipping.")
             return
 
         ropnode = instance[0]
-
         output_parm = lib.get_output_parameter(ropnode)
         raw_output = output_parm.rawValue()
 
-        frames = list()
-        for frame in range(start_frame, end_frame, step):
+        for count, frame in enumerate(range(start_frame, end_frame, step)):
             output = hou.expandStringAtFrame(raw_output, frame)
-            frames.append(output)
 
-        instance.data.update({"frameOutputs": frames})
+            if collected_frames[count] != output:
+                raise Exception("Render frame changed, please restart.")
+
+        if count != len(collected_frames):
+            raise Exception("Render frame changed, please restart.")
