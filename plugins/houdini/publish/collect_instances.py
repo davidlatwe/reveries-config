@@ -91,8 +91,8 @@ class CollectInstances(pyblish.api.ContextPlugin):
         if node.evalParm("trange") == 0:
             return data
 
-        data["startFrame"] = node.evalParm("f1")
-        data["endFrame"] = node.evalParm("f2")
-        data["steps"] = node.evalParm("f3")
+        data["startFrame"] = int(node.evalParm("f1"))
+        data["endFrame"] = int(node.evalParm("f2"))
+        data["step"] = int(node.evalParm("f3"))
 
         return data
