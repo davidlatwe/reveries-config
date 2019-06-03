@@ -1,7 +1,11 @@
 
 import os
-from ..plugins import PackageLoader
 from .pipeline import env_embedded_path
+from ..plugins import (
+    PackageLoader,
+    SelectInvalidInstanceAction,
+    SelectInvalidContextAction,
+)
 
 
 class HoudiniBaseLoader(PackageLoader):
@@ -14,3 +18,28 @@ class HoudiniBaseLoader(PackageLoader):
             raise IOError("File Not Found: {!r}".format(entry_path))
 
         return env_embedded_path(entry_path)
+
+
+class HoudiniSelectInvalidInstanceAction(SelectInvalidInstanceAction):
+
+    def select(self, invalid):
+        self.deselect()
+        for node in invalid:
+            node.setSelected(True)
+
+    def deselect(self):
+        import hou
+        hou.clearAllSelected()
+
+
+class HoudiniSelectInvalidContextAction(SelectInvalidContextAction):
+    """ Select invalid nodes in context"""
+
+    def select(self, invalid):
+        self.deselect()
+        for node in invalid:
+            node.setSelected(True)
+
+    def deselect(self):
+        import hou
+        hou.clearAllSelected()
