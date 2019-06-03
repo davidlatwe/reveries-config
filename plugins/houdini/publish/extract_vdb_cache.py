@@ -14,10 +14,10 @@ class ExtractVDBCache(PackageExtractor):
     ]
 
     representations = [
-        "vdb",
+        "VDB",
     ]
 
-    def extract_vdb(self):
+    def extract_VDB(self):
 
         import hou
 
