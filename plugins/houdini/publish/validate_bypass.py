@@ -3,12 +3,7 @@ import pyblish.api
 
 
 class ValidateBypassed(pyblish.api.InstancePlugin):
-    """Validate all primitives build hierarchy from attribute when enabled.
-
-    The name of the attribute must exist on the prims and have the same name
-    as Build Hierarchy from Attribute's `Path Attribute` value on the Alembic
-    ROP node whenever Build Hierarchy from Attribute is enabled.
-
+    """Ensure ROP node not set to 'bypass'
     """
 
     order = pyblish.api.ValidatorOrder - 0.1

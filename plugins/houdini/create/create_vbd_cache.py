@@ -11,7 +11,7 @@ class CreateVDBCache(houdini.Creator):
     def __init__(self, *args, **kwargs):
         super(CreateVDBCache, self).__init__(*args, **kwargs)
 
-        # Remove the active, we are checking the bypass flag of the nodes
+        # Remove the `active`, we are checking the `bypass` flag of the nodes
         self.data.pop("active", None)
 
         # Set node type to create for output
@@ -20,7 +20,9 @@ class CreateVDBCache(houdini.Creator):
     def process(self):
         instance = super(CreateVDBCache, self).process()
 
-        parms = {"sopoutput": "$HIP/pyblish/%s.$F4.vdb" % self.name,
+        file_path = "$HIP/pyblish/%s/%s.$F4.vdb" % (self.name, self.name)
+
+        parms = {"sopoutput": file_path,
                  "initsim": True}
 
         if self.nodes:

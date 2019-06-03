@@ -15,16 +15,20 @@ class ValidateFileExtension(pyblish.api.InstancePlugin):
     """
 
     order = pyblish.api.ValidatorOrder
-    families = ["reveries.pointcache",
-                "reveries.camera",
-                "reveries.vdbcache"]
-    hosts = ["houdini"]
     label = "Output File Extension"
+    hosts = ["houdini"]
+    families = [
+        "reveries.pointcache",
+        "reveries.camera",
+        "reveries.vdbcache",
+        "reveries.standin",
+    ]
 
     family_extensions = {
         "reveries.pointcache": ".abc",
         "reveries.camera": ".abc",
-        "reveries.vdbcache": ".vdb"
+        "reveries.vdbcache": ".vdb",
+        "reveries.standin": ".ass",
     }
 
     def process(self, instance):

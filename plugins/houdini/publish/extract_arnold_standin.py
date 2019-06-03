@@ -4,20 +4,20 @@ import pyblish.api
 from reveries.plugins import PackageExtractor
 
 
-class ExtractVDBCache(PackageExtractor):
+class ExtractArnoldStandIn(PackageExtractor):
 
     order = pyblish.api.ExtractorOrder + 0.1
-    label = "Extract VDB Cache"
+    label = "Extract Arnold Stand-In"
     hosts = ["houdini"]
     families = [
-        "reveries.vdbcache",
+        "reveries.standin",
     ]
 
     representations = [
-        "VDB",
+        "Ass",
     ]
 
-    def extract_VDB(self):
+    def extract_Ass(self):
 
         import hou
 
@@ -26,14 +26,14 @@ class ExtractVDBCache(PackageExtractor):
         if "frameOutputs" in self.data:
             output = self.data["frameOutputs"][0]
         else:
-            output = ropnode.evalParm("sopoutput")
+            output = ropnode.evalParm("ar_ass_file")
 
         staging_dir = os.path.dirname(output)
         self.data["stagingDir"] = staging_dir
         self.create_package()
 
         file_name = os.path.basename(output)
-        self.log.info("Writing VDB '%s' to '%s'" % (file_name, staging_dir))
+        self.log.info("Writing Ass '%s' to '%s'" % (file_name, staging_dir))
 
         try:
             ropnode.render()
