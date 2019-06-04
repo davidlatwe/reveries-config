@@ -30,13 +30,15 @@ class ExtractArnoldStandIn(PackageExtractor):
 
         staging_dir = os.path.dirname(output)
         self.data["stagingDir"] = staging_dir
-        self.create_package()
+        repr_dir = self.create_package()
 
         file_name = os.path.basename(output)
-        self.log.info("Writing Ass '%s' to '%s'" % (file_name, staging_dir))
+        self.log.info("Writing Ass '%s' to '%s'" % (file_name, repr_dir))
 
+        raw_path = ropnode.parm("ar_ass_file").rawValue()
+        raw_file = os.path.basename(raw_path)
         try:
-            ropnode.render()
+            ropnode.render(output_file=repr_dir + "/" + raw_file)
         except hou.Error as exc:
             # The hou.Error is not inherited from a Python Exception class,
             # so we explicitly capture the houdini error, otherwise pyblish
