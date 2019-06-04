@@ -17,9 +17,11 @@ class ValidateVDBInputNode(pyblish.api.InstancePlugin):
     """
 
     order = pyblish.api.ValidatorOrder + 0.1
-    families = ["reveries.vdbcache"]
-    hosts = ["houdini"]
     label = "Validate Input Node (VDB)"
+    hosts = ["houdini"]
+    families = [
+        "reveries.vdbcache",
+    ]
 
     def process(self, instance):
         invalid = self.get_invalid(instance)

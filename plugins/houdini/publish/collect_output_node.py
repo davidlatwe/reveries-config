@@ -5,10 +5,12 @@ class CollectOutputSOPPath(pyblish.api.InstancePlugin):
     """Collect the out node's SOP Path value."""
 
     order = pyblish.api.CollectorOrder
-    families = ["reveries.pointcache",
-                "reveries.vdbcache"]
-    hosts = ["houdini"]
     label = "Collect Output SOP Path"
+    hosts = ["houdini"]
+    families = [
+        "reveries.pointcache",
+        "reveries.vdbcache",
+    ]
 
     def process(self, instance):
 
