@@ -24,7 +24,7 @@ class CreatePointCache(houdini.Creator):
 
         parms = {
             "use_sop_path": True,  # Export single node from SOP Path
-            "build_from_path": True,  # Direct path of primitive in output
+            "build_from_path": False,  # Direct path of primitive in output
             "path_attrib": "path",  # Pass path attribute for output
             "prim_to_detail_pattern": AVALON_ID,
             "format": 2,  # Set format to Ogawa
