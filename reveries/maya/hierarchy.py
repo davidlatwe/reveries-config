@@ -19,6 +19,24 @@ from .pipeline import parse_container
 _log = logging.getLogger("reveries.maya.hierarchy")
 
 
+def get_sub_container_nodes(container):
+    """Get the Avalon containers in this container (node only)
+
+    Args:
+        container (dict): The container dict.
+
+    Returns:
+        list: A list of child container node names.
+
+    """
+    containers = []
+    namespace = container["namespace"] + ":"
+
+    for node in lib.lsAttrs({"id": AVALON_CONTAINER_ID}, namespace=namespace):
+        containers.append(node)
+    return containers
+
+
 def parse_sub_containers(container):
     """Get the Avalon containers in this container
 
