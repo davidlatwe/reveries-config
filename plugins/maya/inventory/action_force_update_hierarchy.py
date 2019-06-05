@@ -6,9 +6,9 @@ from avalon.tools.cbsceneinventory import app
 
 class ForceUpdateHierarchy(avalon.api.InventoryAction):
 
-    label = "Force Update"
-    icon = "warning"
-    color = "#d8d8d8"
+    label = "SetDress Force Update"
+    icon = "tree"
+    color = "#ffbb66"
     order = 200
 
     @staticmethod
