@@ -1526,3 +1526,71 @@ def polyConstraint(components, *args, **kwargs):
                 cmds.select(clear=True)
 
     return result
+
+
+def get_reference_node(nodes):
+    """Get exact reference nodes from nodes
+
+    Collect the references without .placeHolderList[] attributes as
+    unique entries (objects only) and skipping the sharedReferenceNode
+    and _UNKNOWN_REF_NODE_.
+
+    Args:
+        nodes (list): list of node names
+
+    Returns:
+        set: A set of reference node names.
+
+    """
+    references = set()
+
+    for ref in cmds.ls(nodes, exactType="reference", objectsOnly=True):
+
+        # Ignore any `:sharedReferenceNode`
+        if ref.rsplit(":", 1)[-1].startswith("sharedReferenceNode"):
+            continue
+
+        # Ignore _UNKNOWN_REF_NODE_ (PLN-160)
+        if ref.rsplit(":", 1)[-1].startswith("_UNKNOWN_REF_NODE_"):
+            continue
+
+        references.add(ref)
+
+    return references
+
+
+def get_highest_reference_node(references):
+    """Get highest reference node (least parents)
+
+    Args:
+        references (list): A list of reference nodes.
+
+    Returns:
+        str: A reference node that has least parents.
+
+    """
+    highest = min(references,
+                  key=lambda x: len(get_reference_node_parents(x)))
+    return highest
+
+
+def get_reference_node_parents(reference):
+    """Return all parent reference nodes of reference node
+
+    Args:
+        reference (str): reference node.
+
+    Returns:
+        list: The upstream parent reference nodes.
+
+    """
+    parent = cmds.referenceQuery(reference,
+                                 referenceNode=True,
+                                 parent=True)
+    parents = []
+    while parent:
+        parents.append(parent)
+        parent = cmds.referenceQuery(parent,
+                                     referenceNode=True,
+                                     parent=True)
+    return parents
