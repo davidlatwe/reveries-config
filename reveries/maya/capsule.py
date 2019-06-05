@@ -10,7 +10,9 @@ def no_display_layers(nodes):
     """
     # remove `displayLayerManager` type node
     invalid = set(cmds.ls(nodes, type="displayLayerManager"))
-    nodes = [x for x in set(nodes) if x not in invalid]
+    # Ensure long name and no duplicated nodes
+    nodes = set(cmds.ls(nodes, long=True))
+    nodes = [x for x in nodes if x not in invalid]
 
     # get connections with `displayLayer` type node
     conn_pair = cmds.listConnections(

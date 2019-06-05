@@ -18,13 +18,17 @@ def create_model_subset_from_xgen(instance):
         member = instance.data["xgenBoundGeos"]
 
     member += lib.list_all_parents(member)
-    model = plugins.create_dependency_instance(instance,
-                                               subset,
-                                               family,
-                                               member,
-                                               category="XGen Bound Mesh")
-    # Only need to extract model `mayaBinary` representation
-    model.data["extractType"] = "mayaBinary"
+    if member:
+        model = plugins.create_dependency_instance(instance,
+                                                   subset,
+                                                   family,
+                                                   member,
+                                                   category="XGen Bound Mesh")
+        # Only need to extract model `mayaBinary` representation
+        model.data["extractType"] = "mayaBinary"
+        return True
+
+    return False
 
 
 def create_texture_subset_from_xgen(instance, textures):
@@ -62,7 +66,9 @@ class CollectXGen(pyblish.api.InstancePlugin):
         instance.data["igsBoundMeshes"] = list(bound_meshes)
 
         # Create model subset for bounding meshes
-        create_model_subset_from_xgen(instance)
+        result = create_model_subset_from_xgen(instance)
+        if not result:
+            self.log.warning("No bound mesh been found.")
 
         # Create texture subet for descriptions
         stray = pipeline.find_stray_textures(cmds.listHistory(descriptions))
@@ -98,4 +104,6 @@ class CollectXGen(pyblish.api.InstancePlugin):
             instance.data["subset"] = name + step
 
         # Create model subset for bounding meshes
-        create_model_subset_from_xgen(instance)
+        result = create_model_subset_from_xgen(instance)
+        if not result:
+            self.log.warning("No bound mesh been found.")
