@@ -26,7 +26,8 @@ class ValidateFrames(pyblish.api.InstancePlugin):
 
         if start_frame is None:
             if collected_frames:
-                raise Exception("Render frame changed, please restart.")
+                raise Exception("Frame range collected but not in validation"
+                                ", please restart.")
 
             self.log.info("No frame range data, skipping.")
             return
@@ -35,11 +36,13 @@ class ValidateFrames(pyblish.api.InstancePlugin):
         output_parm = lib.get_output_parameter(ropnode)
         raw_output = output_parm.rawValue()
 
-        for count, frame in enumerate(range(start_frame, end_frame, step)):
+        for count, frame in enumerate(range(start_frame, end_frame + 1, step)):
             output = hou.expandStringAtFrame(raw_output, frame)
 
             if collected_frames[count] != output:
-                raise Exception("Render frame changed, please restart.")
+                raise Exception("Output file name not matched with collected "
+                                "data, please restart.")
 
+        count += 1
         if count != len(collected_frames):
-            raise Exception("Render frame changed, please restart.")
+            raise Exception("Output range changed, please restart.")

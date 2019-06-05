@@ -12,6 +12,6 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
 
     def process(self, context):
         for instance in context:
-            instance.data["dependencies"] = list()
+            instance.data["dependencies"] = dict()
             # (TODO) Finding `ObjectMerge` node in the network,
             #        look for containerized sop path.

@@ -12,9 +12,11 @@ class ValidatePrimitiveHierarchyPaths(pyblish.api.InstancePlugin):
     """
 
     order = pyblish.api.ValidatorOrder + 0.1
-    families = ["reveries.pointcache"]
-    hosts = ["houdini"]
     label = "Validate Prims Hierarchy Path"
+    hosts = ["houdini"]
+    families = [
+        "reveries.pointcache",
+    ]
 
     def process(self, instance):
         invalid = self.get_invalid(instance)

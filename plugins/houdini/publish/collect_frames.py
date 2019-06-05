@@ -26,13 +26,16 @@ class CollectFrames(pyblish.api.InstancePlugin):
             self.log.info("No frame range data, skipping.")
             return
 
+        self.log.info("Collecting range: [{s} - {e} @ {p}]"
+                      "".format(s=start_frame, e=end_frame, p=step))
+
         ropnode = instance[0]
 
         output_parm = lib.get_output_parameter(ropnode)
         raw_output = output_parm.rawValue()
 
         frames = list()
-        for frame in range(start_frame, end_frame, step):
+        for frame in range(start_frame, end_frame + 1, step):
             output = hou.expandStringAtFrame(raw_output, frame)
             frames.append(output)
 

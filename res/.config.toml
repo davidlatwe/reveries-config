@@ -88,7 +88,7 @@ icon = "male"
 
 [[families]]
 name = "reveries.pointcache"
-label = "PointCache"
+label = "Point Cache"
 icon = "diamond"
 
 [[families]]
@@ -115,3 +115,8 @@ icon = "building"
 name = "reveries.mayashare"
 label = "Maya Share (.ma)"
 icon = "share-square-o"
+
+[[families]]
+name = "reveries.vdbcache"
+label = "VDB Cache"
+icon = "qrcode"

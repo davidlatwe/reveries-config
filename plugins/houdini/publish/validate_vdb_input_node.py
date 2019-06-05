@@ -17,9 +17,11 @@ class ValidateVDBInputNode(pyblish.api.InstancePlugin):
     """
 
     order = pyblish.api.ValidatorOrder + 0.1
-    families = ["reveries.vdbcache"]
-    hosts = ["houdini"]
     label = "Validate Input Node (VDB)"
+    hosts = ["houdini"]
+    families = [
+        "reveries.vdbcache",
+    ]
 
     def process(self, instance):
         invalid = self.get_invalid(instance)
@@ -29,6 +31,7 @@ class ValidateVDBInputNode(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        import hou
 
         node = instance.data["output_node"]
         if node is None:
@@ -46,5 +49,10 @@ class ValidateVDBInputNode(pyblish.api.InstancePlugin):
 
         for prim in prims:
             if prim.numVertices() != 1:
-                cls.log.error("Found primitive with more than 1 vertex!")
+                cls.log.error("Found primitive with more than 1 vertex !")
+                return [instance]
+
+            if not isinstance(prim, hou.VDB):
+                cls.log.error("Found primitive that is not a VDB ! "
+                              "Possible not converted ?")
                 return [instance]

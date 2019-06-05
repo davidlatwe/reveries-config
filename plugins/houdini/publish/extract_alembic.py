@@ -20,11 +20,13 @@ class ExtractAlembic(PackageExtractor):
     ]
 
     def extract(self):
-
         if "frameOutputs" in self.data:
-            self.extract_AlembicSeq()
+            extract_type = ["AlembicSeq"]
         else:
-            self.extract_Alembic()
+            extract_type = ["Alembic"]
+
+        self._active_representations = extract_type
+        super(ExtractAlembic, self).extract()
 
     def extract_Alembic(self):
         ropnode = self.member[0]
@@ -34,12 +36,12 @@ class ExtractAlembic(PackageExtractor):
         # Set custom staging dir
         staging_dir = os.path.dirname(output)
         self.data["stagingDir"] = staging_dir
-        self.create_package()
+        repr_dir = self.create_package()
 
         file_name = os.path.basename(output)
         self.log.info("Writing alembic '%s' to '%s'" % (file_name,
-                                                        staging_dir))
-        self.render(ropnode)
+                                                        repr_dir))
+        self.render(ropnode, repr_dir)
 
         self.add_data({
             "entryFileName": file_name,
@@ -53,12 +55,12 @@ class ExtractAlembic(PackageExtractor):
         # Set custom staging dir
         staging_dir = os.path.dirname(output)
         self.data["stagingDir"] = staging_dir
-        self.create_package()
+        repr_dir = self.create_package()
 
         file_name = os.path.basename(output)
         self.log.info("Writing alembic '%s' to '%s'" % (file_name,
-                                                        staging_dir))
-        self.render(ropnode)
+                                                        repr_dir))
+        self.render(ropnode, repr_dir)
 
         self.add_data({
             "entryFileName": file_name,
@@ -67,11 +69,13 @@ class ExtractAlembic(PackageExtractor):
             "step": self.data["step"],
         })
 
-    def render(self, ropnode):
+    def render(self, ropnode, output_dir):
         import hou
 
+        raw_path = ropnode.parm("filename").rawValue()
+        raw_file = os.path.basename(raw_path)
         try:
-            ropnode.render()
+            ropnode.render(output_file=output_dir + "/" + raw_file)
         except hou.Error as exc:
             # The hou.Error is not inherited from a Python Exception class,
             # so we explicitly capture the houdini error, otherwise pyblish

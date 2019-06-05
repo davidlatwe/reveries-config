@@ -1,6 +1,7 @@
 
 import sys
 import os
+import shutil
 import subprocess
 import pyblish.api
 
@@ -57,7 +58,8 @@ class ValidateCleanStage(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        staging_dir = self.get_staging_dir(instance)
+        ropnode = instance[0]
+        staging_dir = self.get_staging_dir(ropnode)
         if os.path.isdir(staging_dir) and os.listdir(staging_dir):
             raise Exception("Staging dir not empty, please clean up.")
 
@@ -91,6 +93,4 @@ class ValidateCleanStage(pyblish.api.InstancePlugin):
         ropnode = instance[0]
         staging_dir = cls.get_staging_dir(ropnode)
         if os.path.isdir(staging_dir):
-            for file in os.listdir(staging_dir):
-                filepath = os.path.join(staging_dir, file)
-                os.remove(filepath)
+            shutil.rmtree(staging_dir)

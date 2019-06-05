@@ -6,7 +6,7 @@ class CreateVDBCache(houdini.Creator):
 
     label = "VDB Cache"
     family = "reveries.vdbcache"
-    icon = "cloud"
+    icon = "qrcode"
 
     def __init__(self, *args, **kwargs):
         super(CreateVDBCache, self).__init__(*args, **kwargs)

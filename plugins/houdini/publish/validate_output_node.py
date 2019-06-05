@@ -14,10 +14,12 @@ class ValidateOutputNode(pyblish.api.InstancePlugin):
     """
 
     order = pyblish.api.ValidatorOrder
-    families = ["reveries.pointcache",
-                "reveries.vdbcache"]
-    hosts = ["houdini"]
     label = "Validate Output Node"
+    hosts = ["houdini"]
+    families = [
+        "reveries.pointcache",
+        "reveries.vdbcache",
+    ]
 
     def process(self, instance):
 
