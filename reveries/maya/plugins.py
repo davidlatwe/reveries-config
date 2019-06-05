@@ -6,6 +6,8 @@ import avalon.api
 import avalon.io
 import avalon.maya
 
+from . import lib
+
 from .utils import (
     update_id_verifiers,
     generate_container_id,
@@ -84,30 +86,6 @@ class MayaBaseLoader(PackageLoader):
         return group.replace(".", "_")
 
 
-def get_reference_node_parents(ref):
-    """Return all parent reference nodes of reference node
-
-    Args:
-        ref (str): reference node.
-
-    Returns:
-        list: The upstream parent reference nodes.
-
-    """
-    from maya import cmds
-
-    parent = cmds.referenceQuery(ref,
-                                 referenceNode=True,
-                                 parent=True)
-    parents = []
-    while parent:
-        parents.append(parent)
-        parent = cmds.referenceQuery(parent,
-                                     referenceNode=True,
-                                     parent=True)
-    return parents
-
-
 class ReferenceLoader(MayaBaseLoader):
     """A basic ReferenceLoader for Maya
 
@@ -164,29 +142,14 @@ class ReferenceLoader(MayaBaseLoader):
             str: Reference node name.
 
         """
-
-        from maya import cmds
-
         # Collect the references without .placeHolderList[] attributes as
         # unique entries (objects only) and skipping the sharedReferenceNode.
-        references = set()
-        for ref in cmds.ls(members, exactType="reference", objectsOnly=True):
-
-            # Ignore any `:sharedReferenceNode`
-            if ref.rsplit(":", 1)[-1].startswith("sharedReferenceNode"):
-                continue
-
-            # Ignore _UNKNOWN_REF_NODE_ (PLN-160)
-            if ref.rsplit(":", 1)[-1].startswith("_UNKNOWN_REF_NODE_"):
-                continue
-
-            references.add(ref)
+        references = lib.get_reference_node(members)
 
         assert references, "No reference node found in container"
 
         # Get highest reference node (least parents)
-        highest = min(references,
-                      key=lambda x: len(get_reference_node_parents(x)))
+        highest = lib.get_highest_reference_node(references)
 
         # Warn the user when we're taking the highest reference node
         if len(references) > 1:
