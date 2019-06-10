@@ -848,7 +848,10 @@ def serialise_shaders(nodes):
     return shader_by_id
 
 
-def apply_shaders(relationships, namespace=None, target_namespaces=None):
+def apply_shaders(relationships,
+                  namespace=None,
+                  target_namespaces=None,
+                  auto_fix_on_renderlayer_adjustment_fail=True):
     """Given a dictionary of `relationships`, apply shaders to surfaces
 
     Arguments:
@@ -856,6 +859,7 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
             shaders and how they relate to surfaces.
         namespace (str, optional): namespace that need to apply to shaders
         target_namespaces (list, optional): model namespaces
+        auto_fix_on_renderlayer_adjustment_fail (bool): Default True
 
     """
 
@@ -899,7 +903,35 @@ def apply_shaders(relationships, namespace=None, target_namespaces=None):
         if not surfaces:
             continue
 
-        cmds.sets(surfaces, forceElement=shader)
+        for surface in surfaces:
+            try:
+                cmds.sets(surface, forceElement=shader)
+            except RuntimeError as e:
+                if "Unable to update render layer adjustment" not in str(e):
+                    raise e
+
+                log.warning("Assign failed due to 'Unable to update render "
+                            "layer adjustment': %s @ %s" % (shader, surface))
+
+                if auto_fix_on_renderlayer_adjustment_fail:
+                    log.warning("Fix and retrying...")
+                    # (NOTE) Fixing "Unable to update render layer adjustment"
+                    #
+                    #        This error in current case was because the shader
+                    #        was face assigned, and the mesh has newly added
+                    #        faces, plus renderLayer shader override by object
+                    #        assign.
+                    #        By removing all shader assignment in master layer
+                    #        and re-assign could resolve current issue.
+                    #
+                    for set_ in cmds.listSets(o=surface):
+                        if cmds.nodeType(set_) == "shadingEngine":
+                            cmds.sets(surface, remove=set_)
+                    cmds.sets(surface, forceElement=shader)
+
+                else:
+                    # Do nothing, skip.
+                    pass
 
 
 def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
