@@ -652,7 +652,7 @@ def bake_to_world_space(nodes,
     return world_space_nodes
 
 
-def bake_camera(camera, startFrame, endFrame):
+def bake_camera(camera, startFrame, endFrame, step=1.0):
     """Bake camera to worldspace
 
     Returns:
@@ -678,7 +678,9 @@ def bake_camera(camera, startFrame, endFrame):
     for attr in CAMERA_SHAPE_KEYABLES:
         cmds.setAttr(shape + "." + attr, keyable=True, lock=False)
 
-    return bake_to_world_space([transform], (startFrame, endFrame))[0]
+    return bake_to_world_space([transform],
+                               (startFrame, endFrame),
+                               step=step)[0]
 
 
 def lock_transform(node, additional=None):

@@ -11,4 +11,5 @@ class CameraCreator(avalon.maya.Creator):
     icon = "video-camera"
 
     def process(self):
+        self.data["bakeStep"] = 1.0
         return put_instance_icon(super(CameraCreator, self).process())
