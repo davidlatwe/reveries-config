@@ -88,6 +88,8 @@ class ExtractCamera(PackageExtractor):
         self.add_data({
             "entryFileName": entry_file,
             "cameraUUID": self.camera_uuid,
+            "startFrame": self.start,
+            "endFrame": self.end,
         })
 
     def extract_Alembic(self):
@@ -102,6 +104,8 @@ class ExtractCamera(PackageExtractor):
         self.add_data({
             "entryFileName": entry_file,
             "cameraUUID": self.camera_uuid,
+            "startFrame": self.start,
+            "endFrame": self.end,
         })
 
     def extract_FBX(self):
@@ -117,4 +121,6 @@ class ExtractCamera(PackageExtractor):
         self.add_data({
             "entryFileName": entry_file,
             "cameraUUID": self.camera_uuid,
+            "startFrame": self.start,
+            "endFrame": self.end,
         })
