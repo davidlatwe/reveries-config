@@ -45,6 +45,7 @@ class ExtractCamera(PackageExtractor):
         context_data = self.context.data
         self.start = context_data.get("startFrame")
         self.end = context_data.get("endFrame")
+        self.step = self.data.get("bakeStep", 1.0)
         camera = cmds.ls(self.member, type="camera", long=True)[0]
 
         self.camera_uuid = utils.get_id(camera)
@@ -58,7 +59,10 @@ class ExtractCamera(PackageExtractor):
             capsule.undo_chunk(),
         ):
             # bake to worldspace
-            baked_camera = lib.bake_camera(camera, self.start, self.end)
+            baked_camera = lib.bake_camera(camera,
+                                           self.start,
+                                           self.end,
+                                           self.step)
 
             cmds.select(baked_camera,
                         hierarchy=True,  # With shape
@@ -88,6 +92,9 @@ class ExtractCamera(PackageExtractor):
         self.add_data({
             "entryFileName": entry_file,
             "cameraUUID": self.camera_uuid,
+            "startFrame": self.start,
+            "endFrame": self.end,
+            "byFrameStep": self.step,
         })
 
     def extract_Alembic(self):
@@ -102,6 +109,9 @@ class ExtractCamera(PackageExtractor):
         self.add_data({
             "entryFileName": entry_file,
             "cameraUUID": self.camera_uuid,
+            "startFrame": self.start,
+            "endFrame": self.end,
+            "byFrameStep": self.step,
         })
 
     def extract_FBX(self):
@@ -117,4 +127,7 @@ class ExtractCamera(PackageExtractor):
         self.add_data({
             "entryFileName": entry_file,
             "cameraUUID": self.camera_uuid,
+            "startFrame": self.start,
+            "endFrame": self.end,
+            "byFrameStep": self.step,
         })
