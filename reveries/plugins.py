@@ -296,9 +296,25 @@ class PackageLoader(object):
     """
 
     def __init__(self, context):
-        super(PackageLoader, self).__init__(context)
-        self.package_path = self.fname
-        self.fname = None  # Do not use
+        # Complete override `avalon.api.Load.__init__`
+
+        template = context["project"]["config"]["template"]["publish"]
+
+        data = {
+            key: value["name"]
+            for key, value in context.items()
+        }
+
+        representation = context["representation"]
+        repr_root = representation["data"].get("reprRoot")
+        proj_root = context["project"]["data"].get("root")
+        root = repr_root or proj_root or avalon.api.registered_root()
+
+        data["root"] = root
+        data["silo"] = context["asset"]["silo"]
+
+        package_path = template.format(**data)
+        self.package_path = package_path
 
     def file_path(self, file_name):
         return os.path.join(self.package_path, file_name)

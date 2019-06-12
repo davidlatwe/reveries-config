@@ -41,10 +41,11 @@ class ExtractVersionDirectory(pyblish.api.InstancePlugin):
         """
         context = instance.context
         project = context.data["projectDoc"]
+        root = instance.data.get("reprRoot", avalon.api.registered_root())
 
         publish_dir_template = project["config"]["template"]["publish"]
 
-        publish_dir_key = {"root": avalon.api.registered_root(),
+        publish_dir_key = {"root": root,
                            "project": avalon.Session["AVALON_PROJECT"],
                            "silo": avalon.Session["AVALON_SILO"],
                            "asset": avalon.Session["AVALON_ASSET"],
