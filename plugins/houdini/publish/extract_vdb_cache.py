@@ -49,6 +49,7 @@ class ExtractVDBCache(PackageExtractor):
 
         self.add_data({
             "entryFileName": file_name,
+            "reprRoot": self.data["reprRoot"],
         })
 
         if self.data.get("startFrame"):

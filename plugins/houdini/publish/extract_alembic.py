@@ -46,6 +46,7 @@ class ExtractAlembic(PackageExtractor):
         self.add_data({
             "entryFileName": file_name,
         })
+        self.inject_cache_root()
 
     def extract_AlembicSeq(self):
         ropnode = self.member[0]
@@ -68,6 +69,13 @@ class ExtractAlembic(PackageExtractor):
             "endFrame": self.data["endFrame"],
             "step": self.data["step"],
         })
+        self.inject_cache_root()
+
+    def inject_cache_root(self):
+        if self.data["family"] == "reveries.pointcache":
+            self.add_data({
+                "reprRoot": self.data["reprRoot"],
+            })
 
     def render(self, ropnode, output_dir):
         import hou
