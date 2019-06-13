@@ -1,6 +1,8 @@
 
 import avalon.api
+from avalon.pipeline import AVALON_CONTAINER_ID
 from reveries.maya.plugins import ReferenceLoader
+from reveries.maya.vendor import sticker
 
 
 class MayaShareLoader(ReferenceLoader, avalon.api.Loader):
@@ -35,6 +37,16 @@ class MayaShareLoader(ReferenceLoader, avalon.api.Loader):
                           reference=True,
                           lockReference=False,
                           returnNewNodes=True)
+
+        # Process container nodes from the sharing scene
+        for node in cmds.ls(nodes, type="objectSet"):
+            if (cmds.objExists(node + ".id") and
+                    cmds.getAttr(node + ".id") == AVALON_CONTAINER_ID):
+                # Update namespace
+                new_ns = namespace + cmds.getAttr(node + ".namespace")
+                cmds.setAttr(node + ".namespace", new_ns, type="string")
+
+        sticker.reveal()
 
         self[:] = nodes
 
