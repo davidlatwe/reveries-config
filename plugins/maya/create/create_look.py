@@ -13,6 +13,7 @@ class LookCreator(avalon.maya.Creator):
 
     defaults = [
         "default",
+        "RigHigh",
         "RigLow",
     ]
 

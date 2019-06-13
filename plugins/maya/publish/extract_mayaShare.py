@@ -29,7 +29,10 @@ class ExtractMayaShare(PackageExtractor):
         # Perform extraction
         self.log.info("Performing extraction..")
         with maya.maintained_selection():
-            cmds.select(self.member)
+            # Set flag `noExpand` to True for sharing containers,
+            # which will be ignored if the selection expanded since
+            # they are objectSets.
+            cmds.select(self.member, noExpand=True)
             cmds.file(entry_path,
                       force=True,
                       typ="mayaAscii",
