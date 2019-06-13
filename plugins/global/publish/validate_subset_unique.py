@@ -29,8 +29,11 @@ class ValidateSubsetUnique(pyblish.api.ContextPlugin):
         subsets = dict()
 
         for instance in context:
+            # Same subset but different 'extractType' (representation)
+            # will be processed as different thing.
             asset = instance.data["asset"]
-            subset = instance.data["subset"]
+            extract_type = "@" + instance.data.get("extractType", "*")
+            subset = instance.data["subset"] + extract_type
             if asset in subsets:
                 if subset in subsets[asset]:
                     invalid.append(instance.data["objectName"])
