@@ -45,10 +45,21 @@ class ExtractLightSet(PackageExtractor):
                 # Change texture path to published location
                 for file_node in cmds.ls(self.member, type="file"):
                     attr_name = file_node + ".fileTextureName"
+                    color_attr = file_node + ".colorSpace"
                     final_path = file_node_path[file_node]
+
+                    # Unlock colorspace
+                    color_space = cmds.getAttr(color_attr)
+                    cmds.setAttr(color_attr, lock=False)
 
                     # Set texture file path to publish location
                     cmds.setAttr(attr_name, final_path, type="string")
+
+                    # Lock colorspace
+                    cmds.setAttr(color_attr,
+                                 color_space,
+                                 lock=True,
+                                 type="string")
 
             # Select full shading network
             # If only select shadingGroups, and if there are any node
