@@ -179,7 +179,11 @@ class ExtractLook(PackageExtractor):
                 shape = cmds.listRelatives(node,
                                            shapes=True,
                                            noIntermediate=True,
-                                           fullPath=True)[0]
+                                           fullPath=True) or [None]
+                shape = shape[0]
+                if shape is None:
+                    continue
+
                 for attr in cmds.listAttr(shape, fromPlugin=True) or []:
                     value = read(shape + "." + attr)
                     if value is not None:
