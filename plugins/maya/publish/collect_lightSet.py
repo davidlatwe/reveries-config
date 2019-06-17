@@ -60,6 +60,57 @@ class CollectLightSet(pyblish.api.InstancePlugin):
 
         instance[:] = list(set(upstream_nodes + instance.data["dagMembers"]))
 
+        self.collect_ai_mesh_light(instance)
+        self.collect_ai_shader_emission(instance)
+
         stray = pipeline.find_stray_textures(instance)
         if stray:
             create_texture_subset_from_lightSet(instance, stray)
+
+    def collect_ai_mesh_light(self, instance):
+        from maya import cmds
+
+        if "aiMeshLight" in instance.data["lightsByType"]:
+            self.log.info("Collecting Arnold mesh light sources..")
+
+            for lit in instance.data["lightsByType"]["aiMeshLight"]:
+                mesh = cmds.listConnections(lit + ".inMesh", shapes=True)
+                instance.data["lights"] += cmds.ls(mesh, long=True)
+
+    def collect_ai_shader_emission(self, instance):
+        from maya import cmds
+
+        if not cmds.pluginInfo("mtoa", query=True, loaded=True):
+            return
+
+        self.log.info("Collecting Arnold shader emission light sources..")
+
+        for node in cmds.ls(instance.data["dagMembers"],
+                            type="mesh",
+                            long=True,
+                            noIntermediate=True):
+
+            shadings = cmds.listConnections(node,
+                                            type="shadingEngine",
+                                            source=False,
+                                            destination=True) or []
+            if not len(shadings) == 1:
+                continue
+
+            shaders = cmds.listConnections(shadings[0] + ".surfaceShader",
+                                           type="aiStandardSurface",
+                                           source=True,
+                                           destination=False) or []
+            if not len(shaders) == 1:
+                continue
+
+            if not cmds.getAttr(shaders[0] + ".emission"):
+                continue
+
+            emission = cmds.listConnections(shaders[0] + ".emissionColor",
+                                            type="file",
+                                            source=True,
+                                            destination=False) or []
+            if emission:
+                instance.data["lights"].append(node)
+                instance += emission  # File nodes will be collected later
