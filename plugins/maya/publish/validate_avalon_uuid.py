@@ -12,7 +12,7 @@ from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 from reveries.maya.utils import (
     Identifier,
     get_id_status,
-    get_id,
+    get_id_namespace,
     upsert_id,
     update_id_verifiers,
     id_namespace,
@@ -181,7 +181,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                 continue
 
             state = get_id_status(node)
-            if ":" not in get_id(node):
+            if not get_id_namespace(node):
                 # Must have id namespace
                 state = Identifier.Untracked
 
