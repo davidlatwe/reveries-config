@@ -12,6 +12,7 @@ from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 from reveries.maya.utils import (
     Identifier,
     get_id_status,
+    get_id,
     upsert_id,
     update_id_verifiers,
     id_namespace,
@@ -134,7 +135,10 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         asset_id = str(instance.context.data["assetDoc"]["_id"])
         with id_namespace(asset_id):
             for node in cls.get_invalid_missing(instance):
-                upsert_id(node)
+                if get_id_status(node) == Identifier.Clean:
+                    upsert_id(node, namespace_only=True)
+                else:
+                    upsert_id(node)
 
     @classmethod
     def fix_invalid_duplicated(cls, instance):
@@ -176,7 +180,11 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                 # to have id.
                 continue
 
-            # get uuid
-            uuids[get_id_status(node)].append(node)
+            state = get_id_status(node)
+            if ":" not in get_id(node):
+                # Must have id namespace
+                state = Identifier.Untracked
+
+            uuids[state].append(node)
 
         return uuids
