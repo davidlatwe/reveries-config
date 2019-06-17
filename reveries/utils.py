@@ -504,6 +504,10 @@ class AssetGraber(object):
 
     def _copy_dir(self, src, dst):
         """ Copy given source to destination"""
+        src = os.path.normpath(src)
+        dst = os.path.normpath(dst)
+        print("Copying: %s" % src)
+        print("     To: %s" % dst)
         copy_tree(src, dst)
 
 
