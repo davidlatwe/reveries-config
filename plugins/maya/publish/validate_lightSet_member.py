@@ -1,5 +1,6 @@
 
 import pyblish.api
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
 class ValidateLightSetMember(pyblish.api.InstancePlugin):
@@ -19,6 +20,10 @@ class ValidateLightSetMember(pyblish.api.InstancePlugin):
     families = [
         "reveries.lightset",
     ]
+    actions = [
+        pyblish.api.Category("Select"),
+        MayaSelectInvalidInstanceAction,
+    ]
 
     @classmethod
     def get_invalid(cls, instance):
@@ -33,7 +38,9 @@ class ValidateLightSetMember(pyblish.api.InstancePlugin):
         invalid = set()
 
         lights = set(cmds.ls(instance.data["lights"], long=True))
-        dag_nodes = cmds.ls(instance.data["dagMembers"], long=True)
+        dag_nodes = cmds.ls(instance.data["dagMembers"],
+                            long=True,
+                            noIntermediate=True)
         valid_nodes = set(cmds.ls(dag_nodes, type=VALID_TYPES, long=True))
 
         invalid = set(dag_nodes) - valid_nodes - lights
@@ -43,6 +50,29 @@ class ValidateLightSetMember(pyblish.api.InstancePlugin):
                 for lit in instance.data["lightsByType"]["aiMeshLight"]:
                     mesh = cmds.listConnections(lit + ".inMesh", shapes=True)
                     invalid.difference_update(cmds.ls(mesh, long=True))
+
+        if invalid:
+            # Opt-in shader emission as light
+            for node in list(invalid):
+                shadings = cmds.listConnections(node,
+                                                type="shadingEngine",
+                                                source=False,
+                                                destination=True) or []
+                if not len(shadings) == 1:
+                    continue
+
+                shaders = cmds.listConnections(shadings[0] + ".surfaceShader",
+                                               type="aiStandardSurface",
+                                               source=True,
+                                               destination=False) or []
+                if not len(shaders) == 1:
+                    continue
+
+                emission = cmds.listConnections(shaders[0] + ".emissionColor",
+                                                source=True,
+                                                destination=False) or []
+                if emission:
+                    invalid.remove(node)
 
         return list(invalid)
 
