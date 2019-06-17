@@ -42,6 +42,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             # Collect cacheable nodes from OutSet of loaded subset
             out_cache = dict()
             out_sets = list()
+            created = False
 
             for node in cmds.ls(members, type="transform", long=True):
                 try:
@@ -65,7 +66,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
             # Re-Create instances
             context = instance.context
-            context.remove(instance)
+            backup = instance
             source_data = instance.data
 
             for (namespace, name), cacheables in out_cache.items():
@@ -76,6 +77,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                     continue
 
                 instance = context.create_instance(namespace + "." + name)
+                created = True
 
                 instance.data.update(source_data)
                 instance.data["subset"] = ".".join(["pointcache",
@@ -86,6 +88,11 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance.data["requireAvalonUUID"] = cacheables
 
                 self.assign_contractor(instance)
+
+            if not created:
+                cmds.error("No pointcache instance created.")
+            else:
+                context.remove(backup)
 
         else:
             # Collect cacheable nodes from instance member
