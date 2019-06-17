@@ -1,5 +1,6 @@
 
 import pyblish.api
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
 class ValidateLightSetMember(pyblish.api.InstancePlugin):
@@ -19,6 +20,10 @@ class ValidateLightSetMember(pyblish.api.InstancePlugin):
     families = [
         "reveries.lightset",
     ]
+    actions = [
+        pyblish.api.Category("Select"),
+        MayaSelectInvalidInstanceAction,
+    ]
 
     @classmethod
     def get_invalid(cls, instance):
@@ -33,16 +38,12 @@ class ValidateLightSetMember(pyblish.api.InstancePlugin):
         invalid = set()
 
         lights = set(cmds.ls(instance.data["lights"], long=True))
-        dag_nodes = cmds.ls(instance.data["dagMembers"], long=True)
+        dag_nodes = cmds.ls(instance.data["dagMembers"],
+                            long=True,
+                            noIntermediate=True)
         valid_nodes = set(cmds.ls(dag_nodes, type=VALID_TYPES, long=True))
 
         invalid = set(dag_nodes) - valid_nodes - lights
-
-        if invalid:
-            if "aiMeshLight" in instance.data["lightsByType"]:
-                for lit in instance.data["lightsByType"]["aiMeshLight"]:
-                    mesh = cmds.listConnections(lit + ".inMesh", shapes=True)
-                    invalid.difference_update(cmds.ls(mesh, long=True))
 
         return list(invalid)
 

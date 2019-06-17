@@ -21,6 +21,9 @@ name = "lookdev"
 name = "charFX"
 
 [[tasks]]
+name = "FX"
+
+[[tasks]]
 name = "setdressing"
 
 [[tasks]]

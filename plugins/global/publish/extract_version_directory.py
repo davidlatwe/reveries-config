@@ -180,7 +180,7 @@ class ExtractVersionDirectory(pyblish.api.InstancePlugin):
                     pass
 
             else:
-                self.log.debug("Creating version dir.")
+                self.log.debug("Creating version dir: %s" % version_dir)
                 os.makedirs(version_dir)
                 write_metadata(version_dir)
                 break
