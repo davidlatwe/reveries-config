@@ -29,14 +29,33 @@ CAMERA_SHAPE_KEYABLES = [
 
 
 FPS_MAP = {
+    2: "2fps",
+    3: "3fps",
+    4: "4fps",
+    5: "5fps",
+    6: "6fps",
+    8: "8fps",
+    10: "10fps",
+    12: "12fps",
     15: "game",
-    23.976: "film",
+    16: "16fps",
+    20: "20fps",
+    23.976: "23.976fps",
     24: "film",
+    25: "pal",
     29.97: "ntsc",
     30: "ntsc",
+    40: "40fps",
+    47.952: "47.952fps",
     48: "show",
     50: "palf",
+    59.94: "59.94fps",
     60: "ntscf",
+    75: "75fps",
+    80: "80fps",
+    100: "100fps",
+    120: "120fps",
+    125: "125fps",
 }
 
 
