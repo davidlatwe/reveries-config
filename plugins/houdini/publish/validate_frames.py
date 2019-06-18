@@ -36,9 +36,12 @@ class ValidateFrames(pyblish.api.InstancePlugin):
         output_parm = lib.get_output_parameter(ropnode)
         raw_output = output_parm.rawValue()
 
-        for count, frame in enumerate(range(start_frame, end_frame + 1, step)):
+        frames = set()
+        for frame in range(start_frame, end_frame + 1, step):
             output = hou.expandStringAtFrame(raw_output, frame)
+            frames.add(output)
 
+        for count, output in enumerate(sorted(frames)):
             if collected_frames[count] != output:
                 raise Exception("Output file name not matched with collected "
                                 "data, please restart.")

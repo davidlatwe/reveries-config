@@ -20,10 +20,10 @@ class ExtractAlembic(PackageExtractor):
     ]
 
     def extract(self):
-        if "frameOutputs" in self.data:
-            extract_type = ["AlembicSeq"]
-        else:
+        if len(self.data.get("frameOutputs", [])) <= 1:
             extract_type = ["Alembic"]
+        else:
+            extract_type = ["AlembicSeq"]
 
         self._active_representations = extract_type
         super(ExtractAlembic, self).extract()

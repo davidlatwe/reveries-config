@@ -34,9 +34,9 @@ class CollectFrames(pyblish.api.InstancePlugin):
         output_parm = lib.get_output_parameter(ropnode)
         raw_output = output_parm.rawValue()
 
-        frames = list()
+        frames = set()
         for frame in range(start_frame, end_frame + 1, step):
             output = hou.expandStringAtFrame(raw_output, frame)
-            frames.append(output)
+            frames.add(output)
 
-        instance.data.update({"frameOutputs": frames})
+        instance.data.update({"frameOutputs": sorted(frames)})
