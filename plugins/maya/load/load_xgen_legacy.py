@@ -1,5 +1,6 @@
 
 import os
+import getpass
 import contextlib
 from distutils.dir_util import copy_tree
 
@@ -76,7 +77,9 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
         # Copy maps
         local_map_dir = os.path.join(avalon.api.Session["AVALON_WORKDIR"],
                                      "xgen",
-                                     "published")
+                                     "published",
+                                     # Add username to ease out file lock issue
+                                     getpass.getuser())
         map_dir = os.path.join(self.package_path, "maps")
         for palette in os.listdir(map_dir):
             palette_dir = os.path.join(map_dir, palette)
