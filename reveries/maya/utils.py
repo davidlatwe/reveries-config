@@ -14,6 +14,7 @@ except ImportError:
 from datetime import datetime
 
 from avalon import io
+from avalon.maya.pipeline import AVALON_CONTAINERS
 
 from maya import cmds, mel
 from maya.api import OpenMaya as om
@@ -802,9 +803,9 @@ def drop_interface():
     Transfer data from interface node to container node and delete
 
     """
-
     PORTS = ":AVALON_PORTS"
     INTERFACE = "pyblish.avalon.interface"
+    CONTAINERS = AVALON_CONTAINERS[1:]
 
     if not cmds.objExists(PORTS):
         return
@@ -814,6 +815,8 @@ def drop_interface():
         namespace = cmds.getAttr(interface + ".namespace")
         container = get_container_from_namespace(namespace)
 
+        cmds.warning("Processing container: %s" % container)
+
         getter = (lambda a: cmds.getAttr(interface + "." + a))
 
         for key, value in {
@@ -822,7 +825,8 @@ def drop_interface():
             "subsetId": getter("subsetId"),
             "versionId": getter("versionId"),
         }.items():
-            cmds.addAttr(container, longName=key, dataType="string")
+            if not cmds.objExists(container + "." + key):
+                cmds.addAttr(container, longName=key, dataType="string")
             cmds.setAttr(container + "." + key, value, type="string")
 
         try:
@@ -832,6 +836,22 @@ def drop_interface():
         except ValueError:
             pass
         else:
-            lib.connect_message(group, container, AVALON_GROUP_ATTR)
+            # Connect subsetGroup
+            grp_attr = container + "." + AVALON_GROUP_ATTR
+            msg_attr = group + ".message"
+
+            if not cmds.objExists(grp_attr):
+                cmds.addAttr(container,
+                             longName=AVALON_GROUP_ATTR,
+                             attributeType="message")
+
+            if not cmds.isConnected(msg_attr, grp_attr):
+                cmds.setAttr(grp_attr, lock=False)
+                cmds.connectAttr(msg_attr, grp_attr, force=True)
+                cmds.setAttr(grp_attr, lock=True)
+
+        # Ensure container lives in main container
+        if CONTAINERS not in cmds.listSets(o=container):
+            cmds.sets(container, addElement=CONTAINERS)
 
         cmds.delete(interface)
