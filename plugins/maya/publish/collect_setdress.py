@@ -27,6 +27,11 @@ class CollectHierarchyData(pyblish.api.InstancePlugin):
             subset_group = container.get("subsetGroup")
 
             if subset_group in instance:
+                if not cmds.getAttr(subset_group + ".visibility"):
+                    self.log.info("Hidden subset: {!r}, skipping .."
+                                  "".format(subset_group))
+                    continue
+
                 self.log.info("Collecting {!r} ..".format(subset_group))
 
                 # The namespace stored in container was absolute name,
@@ -65,6 +70,13 @@ class CollectHierarchyData(pyblish.api.InstancePlugin):
         for child in container["children"]:
 
             child_container = self.sub_containers[child]
+
+            subset_group = child_container["subsetGroup"]
+            if not cmds.getAttr(subset_group + ".visibility"):
+                self.log.debug("Hidden child subset: {!r}, skipping .."
+                               "".format(subset_group))
+                continue
+
             child_container_id = child_container["containerId"]
 
             child_representation_id = child_container["representation"]

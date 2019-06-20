@@ -86,6 +86,11 @@ class ExtractSetDress(PackageExtractor):
             self._collect_components_matrix(data, container)
 
             for sub_container in walk_containers(container):
+                subset_group = sub_container.get("subsetGroup")
+                if (not subset_group or
+                        not cmds.getAttr(subset_group + ".visibility")):
+                    # Skip hidden child subset
+                    continue
                 self._collect_components_matrix(data, sub_container)
 
     def extract_setPackage(self):
