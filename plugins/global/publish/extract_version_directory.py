@@ -86,6 +86,8 @@ class ExtractVersionDirectory(pyblish.api.InstancePlugin):
         def is_version_matched(version_dir, strict):
             """Does the fingerprint in this version match with workfile ?"""
             metadata_path = os.path.join(version_dir, self.META_FILE)
+            if not os.path.isfile(metadata_path):
+                return False
             # Load fingerprint from version dir
             with open(metadata_path, "r") as fp:
                 metadata = json.load(fp)
@@ -121,6 +123,8 @@ class ExtractVersionDirectory(pyblish.api.InstancePlugin):
                         os.remove(item_path)
                 except Exception as e:
                     self.log.debug(e)
+                    return False
+            return True
 
         def get_next_version():
             """Get current subset instance's next version number"""
@@ -159,9 +163,13 @@ class ExtractVersionDirectory(pyblish.api.InstancePlugin):
                 if is_version_matched(version_dir, VERSION_LOCKED):
                     # This version dir match the current workfile, remove
                     # previous extracted stuff.
-                    clean_version_dir(version_dir)
-                    write_metadata(version_dir)
-                    break
+                    success = clean_version_dir(version_dir)
+                    if success:
+                        write_metadata(version_dir)
+                        break
+                    else:
+                        self.log.warning("Not able to cleanup previous "
+                                         "version dir, trying next..")
 
                 elif VERSION_LOCKED:
                     # This should not happend.
