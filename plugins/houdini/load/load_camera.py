@@ -1,7 +1,8 @@
-from avalon import api
+from avalon import api, io
 
 from avalon.houdini import pipeline
 from reveries.houdini.plugins import HoudiniBaseLoader
+from reveries.utils import get_representation_path_
 
 
 class CameraLoader(HoudiniBaseLoader, api.Loader):
@@ -58,7 +59,9 @@ class CameraLoader(HoudiniBaseLoader, api.Loader):
         node = container["node"]
 
         # Update the file path
-        file_path = api.get_representation_path(representation)
+        parents = io.parenthood(representation)
+        self.package_path = get_representation_path_(representation, parents)
+        file_path = self.file_path(representation)
         file_path = file_path.replace("\\", "/")
 
         # Update attributes

@@ -1,7 +1,8 @@
-from avalon import api
+from avalon import api, io
 
 from avalon.houdini import pipeline
 from reveries.houdini.plugins import HoudiniBaseLoader
+from reveries.utils import get_representation_path_
 
 
 class AbcLoader(HoudiniBaseLoader, api.Loader):
@@ -77,8 +78,12 @@ class AbcLoader(HoudiniBaseLoader, api.Loader):
             return
 
         # Update the file path
-        file_path = api.get_representation_path(representation)
+        parents = io.parenthood(representation)
+        self.package_path = get_representation_path_(representation, parents)
+        file_path = self.file_path(representation)
         file_path = file_path.replace("\\", "/")
+        if file_path.endswith(".ma"):
+            file_path = file_path.rsplit("ma", 1)[0] + "abc"
 
         alembic_node.setParms({"fileName": file_path})
 
