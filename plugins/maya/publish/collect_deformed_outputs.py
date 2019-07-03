@@ -57,9 +57,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             for node in out_sets:
                 name = node.rsplit(":", 1)[-1][:-len("OutSet")] or "Default"
                 self.log.info(name)
-                namespace = lib.get_ns(node)[1:]  # Remove root ":"
-                # For filesystem, remove other ":" if the namespace is nested
-                namespace = namespace.replace(":", "._.")
+                namespace = lib.get_ns(node)
                 cacheables = lib.pick_cacheable(cmds.sets(node,
                                                           query=True) or [])
                 cacheables = self.cache_by_visibility(cacheables)
@@ -77,6 +75,10 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                     self.log.debug("Skip empty OutSet %s in %s"
                                    % (name, namespace))
                     continue
+
+                namespace = namespace[1:]  # Remove root ":"
+                # For filesystem, remove other ":" if the namespace is nested
+                namespace = namespace.replace(":", "._.")
 
                 instance = context.create_instance(namespace + "." + name)
                 created = True
