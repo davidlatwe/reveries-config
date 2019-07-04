@@ -69,14 +69,14 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
             container = pipeline.get_container_from_namespace(namespace)
             asset_id = cmds.getAttr(container + ".assetId")
 
-            namespace = namespace[1:]  # Remove root ":"
+            fixed_namespace = namespace[1:]  # Remove root ":"
             # For filesystem, remove other ":" if the namespace is nested
-            namespace = namespace.replace(":", "._.")
+            fixed_namespace = fixed_namespace.replace(":", "._.")
 
-            instance = context.create_instance(namespace or name)
+            instance = context.create_instance(fixed_namespace or name)
             instance.data.update(source_data)
             instance.data["subset"] = ".".join(["animation",
-                                                namespace,
+                                                fixed_namespace,
                                                 name])
             instance[:] = animatables
             instance.data["outAnim"] = animatables
