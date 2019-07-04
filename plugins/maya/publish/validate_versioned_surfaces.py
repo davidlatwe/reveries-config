@@ -20,7 +20,9 @@ class ValidateVersionedSurfaces(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Has Versioned Surfaces"
     families = [
-        "reveries.imgseq",
+        # (NOTE) Exclude `reveries.imgseq` because this takes long time on
+        #        big scene when publishing render.
+        # "reveries.imgseq",
         "reveries.standin",
     ]
 
