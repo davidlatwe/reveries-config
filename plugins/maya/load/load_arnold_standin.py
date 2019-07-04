@@ -100,6 +100,10 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
 
         entry_path, use_sequence = self.retrive(representation)
 
+        if not entry_path.endswith(".ass"):
+            raise Exception("Not a Arnold Stand-In file, this is a bug: "
+                            "%s" % entry_path)
+
         cmds.setAttr(standin + ".dso", entry_path, type="string")
         cmds.setAttr(standin + ".useFrameExtension", use_sequence)
 
@@ -110,3 +114,6 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
                                   subset,
                                   version,
                                   representation)
+
+    def switch(self, container, representation):
+        self.update(container, representation)

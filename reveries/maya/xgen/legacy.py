@@ -1018,15 +1018,36 @@ def build_hair_system(palette):
 
     """
 
-    def exportCurvesMel(descName):
-        """
-        Replace original "exportCurvesMel", since "xgmNullRender" will fail
-        if scene is too large
-        """
-        # select guides
-        cmds.select(xg.descriptionGuides(descName), replace=True)
-        # guides to curves
-        pmc.mel.xgmCreateCurvesFromGuides(0, False)
+    def exportCurves(descName, fxmName):
+        # setup
+        value = xg.getAttr("exportDir", palette, descName, fxmName)
+        xg.setAttr("exportDir", str(value), palette, descName, fxmName)
+        xg.setAttr("exportCurves", "true", palette, descName, fxmName)
+
+        # Need to fill in the export faces to correct value
+        xg.setAttr("exportFaces", "", palette, descName, fxmName)
+
+        # export clumpCurves.mel
+        pmc.mel.xgmNullRender(descName, percent=0)
+
+        # get clumpCurves.mel file path
+        curvesMelPath = xg.getAttr("_fullExportDir",
+                                   palette,
+                                   descName,
+                                   fxmName)
+
+        # Remove clumpCurves.mel's last cmd : "xgmMakeCurvesDynamic;"
+        print("Reading curves mel. -> %s" % curvesMelPath)
+        with open(curvesMelPath, "r") as mel_script:
+            curvesMel = mel_script.readlines()
+        cmdIndex = curvesMel.index("xgmMakeCurvesDynamic;\n")
+        curvesMel[cmdIndex] = ""
+
+        # execute it, and we will run our MakeCurvesDynamic later
+        pmc.mel.eval("".join(curvesMel))
+        # restore
+        xg.setAttr("exportCurves", "false", palette, descName, fxmName)
+        xg.setAttr("exportFaces", "", palette, descName, fxmName)
 
     def xgmMakeCurvesDynamic(descHairSysName, collide):
         """
@@ -1066,7 +1087,7 @@ def build_hair_system(palette):
             intValue=["makeCurvesDynamicCollideWithMesh", int(collide)]
         )
         # MakeCurvesDynamic callback
-        mel.eval('makeCurvesDynamic 2 { "1", "1", "1", "1", "0"}')
+        mel.eval('makeCurvesDynamic 2 { "1", "0", "1", "1", "0"}')
 
         return meshPatch, hsys.name()
 
@@ -1172,7 +1193,7 @@ def build_hair_system(palette):
         fxm = animWireDict[desc]
         descHairSysName = get_hsys_name(desc)
 
-        exportCurvesMel(desc)
+        exportCurves(desc, fxm)
         # add patch to selection
         cmds.select(list_bound_geometry(desc), add=True)
         meshPatch, hsys = xgmMakeCurvesDynamic(descHairSysName, False)

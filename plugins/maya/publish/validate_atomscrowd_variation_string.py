@@ -16,6 +16,10 @@ class ValidateAtomsCrowdVariationStr(pyblish.api.InstancePlugin):
     def process(self, instance):
         variation_str = instance.data["variationStr"]
 
+        if not variation_str:
+            raise Exception("Atoms variation data not exists, "
+                            "possible corrupted.")
+
         try:
             variation = eval(variation_str)
         except SyntaxError:

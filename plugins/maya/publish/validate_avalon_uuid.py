@@ -21,14 +21,20 @@ from reveries.maya.utils import (
 
 class SelectMissing(MayaSelectInvalidInstanceAction):
 
-    label = "Select ID Missing"
+    label = "ID Missing"
     symptom = "missing"
 
 
 class SelectDuplicated(MayaSelectInvalidInstanceAction):
 
-    label = "Select ID Duplicated"
+    label = "ID Duplicated"
     symptom = "duplicated"
+
+
+class SelectMissMatchedAsset(MayaSelectInvalidInstanceAction):
+
+    label = "Invalid Asset ID"
+    symptom = "asset_id"
 
 
 class RepairIDMissing(RepairInstanceAction):
@@ -41,6 +47,12 @@ class RepairIDDuplicated(RepairInstanceAction):
 
     label = "Fix Duplicated ID"
     symptom = "duplicated"
+
+
+class RepairMissMatchedAsset(RepairInstanceAction):
+
+    label = "Fix Asset ID"
+    symptom = "asset_id"
 
 
 def ls_subset_groups():
@@ -61,24 +73,31 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Avalon UUID Assigned"
 
-    families = [
+    strict_uuid = [
         "reveries.model",
         "reveries.rig",
         "reveries.look",
-        "reveries.setdress",
+        "reveries.xgen",
         "reveries.camera",
         "reveries.lightset",
-        "reveries.mayashare",
-        "reveries.xgen",
     ]
+
+    loose_uuid = [
+        "reveries.setdress",
+        "reveries.mayashare",
+    ]
+
+    families = strict_uuid + loose_uuid
 
     actions = [
         pyblish.api.Category("Select"),
         SelectMissing,
         SelectDuplicated,
+        SelectMissMatchedAsset,
         pyblish.api.Category("Fix It"),
         RepairIDMissing,
         RepairIDDuplicated,
+        RepairMissMatchedAsset,
     ]
 
     @classmethod
@@ -101,33 +120,50 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
         return invalid
 
+    @classmethod
+    def get_invalid_asset_id(cls, instance, uuids=None):
+
+        if instance.data["family"] in cls.loose_uuid:
+            return
+
+        if uuids is None:
+            uuids = cls._get_avalon_uuid(instance)
+
+        invalid = uuids.get("missMatched", [])
+
+        return invalid
+
+    def echo(self, instance, invalid, cause):
+        self.log.error(
+            "'%s' %s on:\n%s" % (
+                instance,
+                cause,
+                ",\n".join("'" + member + "'" for member in invalid))
+        )
+
     def process(self, instance):
 
         uuids_dict = self._get_avalon_uuid(instance)
 
-        is_invalid = False
+        IS_INVALID = False
 
         invalid = self.get_invalid_missing(instance, uuids_dict)
         if invalid:
-            is_invalid = True
-            self.log.error(
-                "'%s' Missing ID attribute on:\n%s" % (
-                    instance,
-                    ",\n".join(
-                        "'" + member + "'" for member in invalid))
-            )
+            IS_INVALID = True
+            self.echo(instance, invalid, "Missing ID attribute")
 
         invalid = self.get_invalid_duplicated(instance, uuids_dict)
         if invalid:
-            is_invalid = True
-            self.log.error(
-                "'%s' Duplicated IDs on:\n%s" % (
-                    instance,
-                    ",\n".join(
-                        "'" + member + "'" for member in invalid))
-            )
+            IS_INVALID = True
+            self.echo(instance, invalid, "Duplicated IDs")
 
-        if is_invalid:
+        invalid = self.get_invalid_asset_id(instance, uuids_dict)
+        if invalid:
+            IS_INVALID = True
+            self.echo(instance, invalid, "Invalid Asset IDs")
+
+        # End
+        if IS_INVALID:
             raise Exception("%s <Avalon UUID> Failed." % instance)
 
     @classmethod
@@ -144,10 +180,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     def fix_invalid_duplicated(cls, instance):
         invalid = cls.get_invalid_duplicated(instance)
 
-        if instance.data["family"] in [
-            "reveries.setdress",
-            "reveries.mayashare",
-        ]:
+        if instance.data["family"] in cls.loose_uuid:
             # Do not renew id on these families
             update_id_verifiers(invalid)
         else:
@@ -158,9 +191,24 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                     upsert_id(node)
 
     @classmethod
+    def fix_invalid_asset_id(cls, instance):
+
+        if instance.data["family"] in cls.loose_uuid:
+            return
+
+        invalid = cls.get_invalid_asset_id(instance)
+
+        asset_id = str(instance.context.data["assetDoc"]["_id"])
+        with id_namespace(asset_id):
+            for node in invalid:
+                upsert_id(node, namespace_only=True)
+
+    @classmethod
     def _get_avalon_uuid(cls, instance):
         uuids = defaultdict(list)
         group_nodes = ls_subset_groups()
+
+        asset_id = str(instance.context.data["assetDoc"]["_id"])
 
         family = instance.data["family"]
         required_types = pipeline.uuid_required_node_types(family)
@@ -181,10 +229,14 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                 continue
 
             state = get_id_status(node)
-            if not get_id_namespace(node):
+            id_ns = get_id_namespace(node)
+            if not id_ns:
                 # Must have id namespace
                 state = Identifier.Untracked
 
             uuids[state].append(node)
+
+            if not id_ns == asset_id:
+                uuids["missMatched"].append(node)
 
         return uuids
