@@ -75,14 +75,14 @@ class ExtractAnimation(PackageExtractor):
                                "helpPictures=0;"
                                "useChannelBox=0;"
                                "controlPoints=1;"
-                               "shapes=1;"
+                               "shapes=0;"
 
                                "copyKeyCmd="
                                "-animation objects "
                                "-option keys "
                                "-hierarchy none "
                                "-controlPoints 1 "
-                               "-shape 1")
+                               "-shape 0")
                       )
 
         self.add_data({"entryFileName": entry_file,

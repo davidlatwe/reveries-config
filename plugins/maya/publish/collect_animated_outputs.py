@@ -6,7 +6,11 @@ from reveries.maya import lib, pipeline
 
 
 class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
-    """Collect out geometry data for instance.
+    """Collect transform animated nodes
+
+    This only collect and extract animated transform nodes,
+    shape node will not be included.
+
     """
 
     order = pyblish.api.CollectorOrder + 0.2
