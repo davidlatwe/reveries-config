@@ -2,8 +2,6 @@
 import os
 import avalon.api
 
-from reveries.maya import lib, pipeline
-from reveries.utils import get_representation_path_
 from reveries.maya.plugins import ReferenceLoader, ImportLoader
 
 
@@ -62,7 +60,6 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
             cmds.setAttr(standin + ".useFrameExtension", True)
             cmds.connectAttr("time1.outTime", standin + ".frameNumber")
 
-        lib.lock_transform(group)
         self[:] = [standin, transform, group]
 
     def retrive(self, representation):
@@ -88,6 +85,8 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
 
     def update(self, container, representation):
         import maya.cmds as cmds
+        from reveries.maya import pipeline
+        from reveries.utils import get_representation_path_
 
         members = cmds.sets(container["objectName"], query=True)
         standin = next(iter(cmds.ls(members, type="aiStandIn")), None)
