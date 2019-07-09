@@ -110,3 +110,13 @@ def apply_ai_attrs(relationships, namespace=None, target_namespaces=None):
 def create_standin(path):
     import mtoa
     return mtoa.core.createStandIn(path)
+
+
+def create_volume(path):
+    import mtoa
+    before = set(cmds.ls(type="aiVolume"))
+    mtoa.core.createVolume()  # Returns nothing...
+    after = set(cmds.ls(type="aiVolume"))
+    new_node = (after - before).pop()
+    cmds.setAttr(new_node + ".filename", path, type="string")
+    return new_node
