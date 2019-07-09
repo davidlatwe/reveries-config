@@ -4,6 +4,7 @@ from .utils import (
     get_arnold_aov_nodes,
     get_arnold_aov_names,
     create_standin,
+    create_volume,
 )
 
 # Requirement, obviously
@@ -14,4 +15,5 @@ __all__ = (
     "get_arnold_aov_nodes",
     "get_arnold_aov_names",
     "create_standin",
+    "create_volume",
 )

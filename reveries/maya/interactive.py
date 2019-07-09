@@ -51,10 +51,10 @@ def wipe_all_namespaces():
 def apply_avalon_uuid(*args):
     # (TODO): Implement GUI
     nodes = (set(cmds.ls(type="geometryShape", long=True)) -
-             set(cmds.ls(long=True, readOnly=True)) -
-             set(cmds.ls(long=True, lockedNodes=True)))
+             set(cmds.ls(readOnly=True, long=True)) -
+             set(cmds.ls(lockedNodes=True, long=True)))
 
-    transforms = cmds.listRelatives(list(nodes), parent=True) or list()
+    transforms = cmds.listRelatives(list(nodes), parent=True, long=True) or []
 
     # Add unique identifiers
     for node in transforms:
