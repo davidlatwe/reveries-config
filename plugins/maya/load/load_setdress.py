@@ -146,6 +146,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         import maya.cmds as cmds
         from reveries.lib import DEFAULT_MATRIX
         from reveries.maya.hierarchy import container_from_id_path
+        from reveries.maya.pipeline import get_group_from_container
 
         current_NS = cmds.namespaceInfo(currentNamespace=True,
                                         absoluteName=True)
@@ -162,8 +163,9 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 is_hidden = False
 
                 if address == "GROUP":
-                    name, matrix = sub_matrix[address].popitem()
-                    transform = full_NS + ":" + name
+                    _, matrix = sub_matrix[address].popitem()
+                    transform = get_group_from_container(container)
+
                 else:
                     transform = transform_id_map.get(address)
                     matrix = sub_matrix[address]
