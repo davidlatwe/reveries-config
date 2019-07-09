@@ -11,7 +11,7 @@ class ValidateCollectionProcesses(pyblish.api.ContextPlugin):
     """
 
     label = "Good Collecting"
-    order = pyblish.api.ValidatorOrder - 0.4999
+    order = pyblish.api.ValidatorOrder - 0.49999
 
     def process(self, context):
         assert all(result["success"] for result in context.data["results"]), (
