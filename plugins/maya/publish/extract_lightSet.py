@@ -34,33 +34,14 @@ class ExtractLightSet(PackageExtractor):
 
         self.log.info("Extracting lights..")
 
+        # From texture extractor
+        file_node_attrs = self.context.data.get("fileNodeAttrs", dict())
+
         with contextlib.nested(
             maya.maintained_selection(),
-            capsule.undo_chunk(),
+            capsule.attribute_values(file_node_attrs),
             capsule.no_refresh(),
         ):
-            # From texture extractor
-            file_node_path = self.context.data.get("fileNodePath")
-            if file_node_path is not None:
-                # Change texture path to published location
-                for file_node in cmds.ls(self.member, type="file"):
-                    attr_name = file_node + ".fileTextureName"
-                    color_attr = file_node + ".colorSpace"
-                    final_path = file_node_path[file_node]
-
-                    # Unlock colorspace
-                    color_space = cmds.getAttr(color_attr)
-                    cmds.setAttr(color_attr, lock=False)
-
-                    # Set texture file path to publish location
-                    cmds.setAttr(attr_name, final_path, type="string")
-
-                    # Lock colorspace
-                    cmds.setAttr(color_attr,
-                                 color_space,
-                                 lock=True,
-                                 type="string")
-
             # Select full shading network
             # If only select shadingGroups, and if there are any node
             # connected to Dag node (i.e. drivenKey), then the command
