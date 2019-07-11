@@ -33,7 +33,7 @@ def is_in_workspace(path, workdir):
 class ValidateWorkfileInWorkspace(pyblish.api.InstancePlugin):
     """Validate the workfile is inside workspace"""
 
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder - 0.49995
     label = "Workfile In Workspace"
     families = [
         "reveries.pointcache",
