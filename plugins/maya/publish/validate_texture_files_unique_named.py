@@ -200,8 +200,6 @@ class ValidateTextureFilesUniqueNamed(pyblish.api.InstancePlugin):
 
         invalid = self.get_invalid(instance)
 
-        # self.log.info(u"哈")
-
         if invalid:
             self.log.error(
                 "'%s' Duplicate file name on:\n%s" % (
