@@ -238,7 +238,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             os.makedirs(file_dir)
 
         try:
-            shutil.copyfile(src, dst)
+            shutil.copy2(src, dst)
         except OSError:
             msg = "An unexpected error occurred."
             self.log.critical(msg)

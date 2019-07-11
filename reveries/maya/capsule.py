@@ -1,5 +1,6 @@
 import contextlib
 from maya import cmds, mel
+from avalon.vendor.six import string_types
 from . import lib
 
 
@@ -512,3 +513,40 @@ def attr_unkeyable(attr_list):
         for attr in keyables:
             if cmds.objExists(attr):
                 cmds.setAttr(attr, keyable=True)
+
+
+@contextlib.contextmanager
+def attribute_values(attr_values):
+    """Remaps node attributes to values during context.
+
+    (NOTE) This will unlock attribute.
+
+    Arguments:
+        attr_values (dict): Dictionary with (attr, value)
+
+    """
+
+    original = [(attr, cmds.getAttr(attr)) for attr in attr_values]
+    try:
+        for attr, value in attr_values.items():
+            # Ensure it's unlock
+            cmds.setAttr(attr, lock=False)
+
+            if isinstance(value, string_types):
+                cmds.setAttr(attr, value, type="string")
+            else:
+                cmds.setAttr(attr, value)
+        yield
+
+    finally:
+        for attr, value in original:
+            if isinstance(value, string_types):
+                cmds.setAttr(attr, value, type="string")
+            elif value is None and cmds.getAttr(attr, type=True) == "string":
+                # In some cases the maya.cmds.getAttr command returns None
+                # for string attributes but this value cannot assigned.
+                # Note: After setting it once to "" it will then return ""
+                #       instead of None. So this would only happen once.
+                cmds.setAttr(attr, "", type="string")
+            else:
+                cmds.setAttr(attr, value)
