@@ -1,13 +1,52 @@
 
 import os
+from collections import OrderedDict
 
 import pyblish.api
 import avalon.api
 import avalon.io
 
+from reveries import utils, lib
 from reveries.plugins import PackageExtractor, skip_stage
 from reveries.maya.plugins import env_embedded_path
-from reveries.utils import hash_file
+
+
+def assemble_published_paths(previous_repr, previous_inventory):
+
+    previous_by_fpattern = dict()
+
+    if previous_inventory:
+
+        parents = avalon.io.parenthood(previous_repr)
+        _, subset, asset, project = parents
+
+        _repr_path_cache = dict()
+
+        for data in previous_inventory:
+            tmp_data = dict()
+            version_num = data["version"]
+
+            if version_num in _repr_path_cache:
+                repr_path = _repr_path_cache[version_num]
+
+            else:
+                version = {"name": version_num}
+                parents = (version, subset, asset, project)
+                repr_path = utils.get_representation_path_(previous_repr,
+                                                           parents)
+                _repr_path_cache[version_num] = repr_path
+
+            tmp_data["pathMap"] = {
+                fn: repr_path + "/" + fn for fn in data["fnames"]
+            }
+
+            fpattern = data["fpattern"]
+            if fpattern not in previous_by_fpattern:
+                previous_by_fpattern[fpattern] = list()
+
+            previous_by_fpattern[fpattern].append((data, tmp_data))
+
+    return previous_by_fpattern
 
 
 class ExtractTexture(PackageExtractor):
@@ -26,23 +65,23 @@ class ExtractTexture(PackageExtractor):
     @skip_stage
     def extract_TexturePack(self):
 
-        from maya import cmds
-        from maya.app.general.fileTexturePathResolver import (
-            getFilePatternString,
-            findAllFilesForPattern,
-        )
-
         package_path = self.create_package()
         package_path = env_embedded_path(package_path)
 
-        if "fileNodePath" not in self.context.data:
-            self.context.data["fileNodePath"] = dict()
+        # For storing calculated published file path for look or lightSet
+        # extractors to update file path.
+        if "fileNodeAttrs" not in self.context.data:
+            self.context.data["fileNodeAttrs"] = OrderedDict()
 
         # Extract textures
         #
         self.log.info("Extracting textures..")
 
-        # Get latest hashes
+        file_inventory = list()
+        previous_by_fpattern = dict()
+        current_by_fpattern = dict()
+
+        # Get previous files
         path = [
             avalon.api.Session["AVALON_PROJECT"],
             avalon.api.Session["AVALON_ASSET"],
@@ -50,92 +89,118 @@ class ExtractTexture(PackageExtractor):
             -1,  # latest version
             "TexturePack"
         ]
-        representation = avalon.io.locate(path)
-        if representation is None:
-            # Never been published
-            latest_hashes = dict()
-        else:
-            representation = avalon.io.find_one({"_id": representation})
-            latest_hashes = representation["data"]["hashes"]
+        representation_id = avalon.io.locate(path)
+        if representation_id is not None:
+            repr = avalon.io.find_one({"_id": representation_id})
 
-        processed_pattern = dict()
+            file_inventory = repr["data"].get("fileInventory", [])
+            previous_by_fpattern = assemble_published_paths(repr,
+                                                            file_inventory)
 
-        # Hash file to check which to copy and which to remain old link
-        for file_node in self.member:
-
-            tiling_mode = cmds.getAttr(file_node + ".uvTilingMode")
-            is_sequence = cmds.getAttr(file_node + ".useFrameExtension")
-            img_path = cmds.getAttr(file_node + ".fileTextureName",
-                                    expandEnvironmentVariables=True)
-
-            pattern = getFilePatternString(img_path, is_sequence, tiling_mode)
-            img_name = os.path.basename(img_path)
-
-            if pattern in processed_pattern:
-
-                final_pattern = processed_pattern[pattern]
-
-                dir_name = os.path.dirname(final_pattern)
-                final_path = os.path.join(dir_name, img_name)
-                SKIP = True
-
-            else:
-
-                paths = [package_path]
-                paths.append(os.path.basename(pattern))  # image pattern name
-
-                final_pattern = os.path.join(*paths)
-                processed_pattern[pattern] = final_pattern
-
-                paths.pop()  # Change to file path from fileNode
-                paths.append(img_name)
-                final_path = os.path.join(*paths)
-                SKIP = False
-
-            self.context.data["fileNodePath"][file_node] = final_path
-            self.log.info("FileNode: {!r}".format(file_node))
-            self.log.info("Texture Path: {!r}".format(final_pattern))
-
-            if SKIP:
-                self.log.info("Skipped.")
+        # Get current files
+        for data in self.data["fileData"]:
+            file_node = data["node"]
+            if file_node in self.data["fileNodesToIgnore"]:
                 continue
 
-            # Files to be transfered
-            curreent_files = findAllFilesForPattern(pattern, None) or [pattern]
-            self.log.debug("File count: {}".format(len(curreent_files)))
+            dir_name = data["dir"]
+            fnames = data["fnames"]
+            fpattern = data["fpattern"]
+            seq = data["seq"]
+            if seq:
+                fnames = [seq + "/" + fn for fn in fnames]
 
-            for file in curreent_files:
-                if not file:
-                    # (TODO) This should not happen. This is a hot-fix.
-                    continue
-                hash_value = hash_file(file)
+            current_by_fpattern[fpattern] = {
+                "node": data["node"],
+                "colorSpace": data["colorSpace"],
+                "fnames": fnames,
+                "pathMap": {fn: dir_name + "/" + fn for fn in fnames},
+            }
 
-                img_name = os.path.basename(file)
-                paths.pop()  # Change to resloved file path
-                paths.append(img_name)
-                final_path = os.path.join(*paths)
+        # To transfer
+        #
+        new_version = self.data["versionNext"]
 
-                try:
+        for fpattern, data in current_by_fpattern.items():
+            if not data["fnames"]:
+                raise RuntimeError("Empty file list, this is a bug.")
 
-                    published_file = latest_hashes[hash_value]
-                    _expand = os.path.expandvars(published_file)
-                    if not os.path.isfile(_expand):
-                        self.log.warning("Published file not exists, "
-                                         "copy new one. ({})"
-                                         "".format(_expand))
-                        # Jump to add file
-                        raise KeyError("Published file not exists.")
+            file_nodes = [dat["node"] for dat in self.data["fileData"]
+                          if dat["fpattern"] == fpattern]
 
-                except KeyError:
+            versioned_data = previous_by_fpattern.get(fpattern, list())
+            versioned_data.sort(key=lambda (data, tmp): data["version"],
+                                reverse=True)
 
-                    latest_hashes[hash_value] = final_path
-                    self.add_file(file, final_path)
-                    self.log.debug("File added: {0} -> {1}"
-                                   "".format(file, final_path))
+            current_color_space = data["colorSpace"]
+
+            for ver_data, tmp_data in versioned_data:
+
+                previous_files = tmp_data["pathMap"]
+
+                for file, abs_path in data["pathMap"].items():
+                    if file not in previous_files:
+                        # Possible different file pattern
+                        break  # Try previous version
+
+                    abs_previous = previous_files[file]
+
+                    if not os.path.isfile(abs_previous):
+                        # Previous file not exists (should not happen)
+                        break  # Try previous version
+
+                    # Checking on file size and modification time
+                    same_file = lib.file_cmp(abs_path, abs_previous)
+                    if not same_file:
+                        # Possible new files
+                        break  # Try previous version
 
                 else:
-                    self.add_hardlink(published_file, final_path)
-                    self.log.debug("Hardlink added: {0} -> {1}"
-                                   "".format(file, final_path))
+                    # Version matched, consider as same file
+                    pattern_path = abs_previous[:-len(file)] + fpattern
+                    pattern_path = env_embedded_path(pattern_path)
+                    self.update_file_node_attrs(file_nodes,
+                                                pattern_path,
+                                                current_color_space)
+                    # Update color space
+                    # * Although files may be the same, but color space may
+                    #   changed by artist.
+                    # * We only keep track the color space, not apply them
+                    #   from database.
+                    ver_data["colorSpace"] = current_color_space
 
-        self.add_data({"hashes": latest_hashes})
+                    # Proceed to next pattern
+                    break
+
+            else:
+                # Not match with any previous version, consider as new file
+                self.log.info("New texture collected from '%s': %s"
+                              "" % (data["node"], fpattern))
+
+                file_inventory.append({
+                    "fpattern": fpattern,
+                    "version": new_version,
+                    "colorSpace": current_color_space,
+                    "fnames": data["fnames"],
+                })
+
+                for file, abs_path in data["pathMap"].items():
+                    final_path = package_path + "/" + file
+                    self.add_file(abs_path, final_path)
+
+                pattern_path = package_path + "/" + fpattern
+                self.update_file_node_attrs(file_nodes,
+                                            pattern_path,
+                                            current_color_space)
+
+        self.add_data({"fileInventory": file_inventory})
+
+    def update_file_node_attrs(self, file_nodes, path, color_space):
+        for node in file_nodes:
+            attr = node + ".fileTextureName"
+            self.context.data["fileNodeAttrs"][attr] = path
+            # Preserve color space values (force value after filepath change)
+            # This will also trigger in the same order at end of context to
+            # ensure after context it's still the original value.
+            attr = node + ".colorSpace"
+            self.context.data["fileNodeAttrs"][attr] = color_space
