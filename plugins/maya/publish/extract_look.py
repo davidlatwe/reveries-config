@@ -72,7 +72,11 @@ class ExtractLook(PackageExtractor):
                       force=True,
                       exportSelected=True,
                       preserveReferences=False,
-                      constructionHistory=False)
+                      constructionHistory=False,
+                      channels=True,  # allow animation
+                      constraints=False,
+                      shader=True,
+                      expressions=True)
 
         # Serialise shaders relationships
         #

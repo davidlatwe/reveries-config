@@ -42,11 +42,6 @@ class ExtractLightSet(PackageExtractor):
             capsule.attribute_values(file_node_attrs),
             capsule.no_refresh(),
         ):
-            # Select full shading network
-            # If only select shadingGroups, and if there are any node
-            # connected to Dag node (i.e. drivenKey), then the command
-            # will not only export selected shadingGroups' shading network,
-            # but also export other related DAG nodes (i.e. full hierarchy)
             cmds.select(self.member,
                         replace=True,
                         noExpand=True)
@@ -57,7 +52,11 @@ class ExtractLightSet(PackageExtractor):
                       force=True,
                       exportSelected=True,
                       preserveReferences=False,
-                      constructionHistory=False)
+                      constructionHistory=False,
+                      channels=True,  # allow animation
+                      constraints=False,
+                      shader=False,
+                      expressions=True)
 
         self.add_data({
             "entryFileName": entry_file,
