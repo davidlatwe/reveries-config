@@ -45,6 +45,13 @@ work = "{root}/{project}/Avalon/{silo}/{asset}/work/{task}/{app}"
 publish = "{root}/{project}/Avalon/{silo}/{asset}/publish/{subset}/v{version:0>3}/{representation}"
 
 
+[[groups]]
+name = "Trash Bin"
+icon = "trash-o"
+color = "#C4CEDC"
+order = -99
+
+
 # Family name should be lower case
 
 [[families]]
@@ -58,6 +65,16 @@ label = "Image Sequence"
 icon = "film"
 
 [[families]]
+name = "reveries.imgseq.playblast"
+label = "Playblast"
+icon = "film"
+
+[[families]]
+name = "reveries.imgseq.render"
+label = "Renders"
+icon = "film"
+
+[[families]]
 name = "reveries.model"
 label = "Model"
 icon = "cubes"
@@ -66,6 +83,18 @@ icon = "cubes"
 name = "reveries.xgen"
 label = "XGen"
 icon = "paw"
+
+[[families]]
+name = "reveries.xgen.legacy"
+label = "XGen Legacy"
+icon = "paw"
+hideFilter = true
+
+[[families]]
+name = "reveries.xgen.interactive"
+label = "XGen Interactive"
+icon = "paw"
+hideFilter = true
 
 [[families]]
 name = "reveries.rig"
