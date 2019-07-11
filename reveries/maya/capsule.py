@@ -519,8 +519,6 @@ def attr_unkeyable(attr_list):
 def attribute_values(attr_values):
     """Remaps node attributes to values during context.
 
-    (NOTE) This will unlock attribute.
-
     Arguments:
         attr_values (dict): Dictionary with (attr, value)
 
@@ -529,9 +527,6 @@ def attribute_values(attr_values):
     original = [(attr, cmds.getAttr(attr)) for attr in attr_values]
     try:
         for attr, value in attr_values.items():
-            # Ensure it's unlock
-            cmds.setAttr(attr, lock=False)
-
             if isinstance(value, string_types):
                 cmds.setAttr(attr, value, type="string")
             else:
