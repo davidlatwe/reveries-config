@@ -72,12 +72,19 @@ class ExtractPointCache(DelegatablePackageExtractor):
                 result = lib.ls_duplicated_name(root)
                 duplicated = [n for m in result.values() for n in m]
                 if duplicated:
-                    # Create instance to avoid duplicated names
-                    instanced = cmds.instance(duplicated)
-                    # Instance nodes will be deleted after the export
-                    delete_bin.extend(instanced)
-                    # Update root nodes
-                    root = list(set(root) - set(duplicated)) + instanced
+                    # Duplicate it so we could have a unique named new node
+                    unique_named = list()
+                    for node in duplicated:
+                        new_nodes = cmds.duplicate(node,
+                                                   inputConnections=True,
+                                                   renameChildren=True)
+                        new_nodes = cmds.ls(new_nodes, long=True)
+                        unique_named.append(new_nodes[0])
+                        # New nodes will be deleted after the export
+                        delete_bin.extend(new_nodes)
+
+                    # Replace duplicat named nodes with unique named
+                    root = list(set(root) - set(duplicated)) + unique_named
 
                 io.export_alembic(
                     cache_path,
