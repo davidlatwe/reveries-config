@@ -516,6 +516,45 @@ def attr_unkeyable(attr_list):
 
 
 @contextlib.contextmanager
+def attribute_states(attrs, lock=None, keyable=None):
+    """Set node attributes' lock and keyable state during the context
+
+    Attribute state will be untouched if *lock*, *keyable* remain `None`.
+
+    Arguments:
+        attrs (list): List of attribute names
+        lock (bool): Attribute lock state, default None
+        keyable (bool): Attribute keyable state, default None
+
+    """
+    states = dict()
+    if lock is not None:
+        states["lock"] = lock
+    if keyable is not None:
+        states["keyable"] = keyable
+
+    original = [
+        (
+            attr,
+            {key: cmds.getAttr(attr, **{key: True}) for key in states},
+        )
+        for attr in attrs
+    ]
+
+    try:
+        for attr in attrs:
+            if cmds.objExists(attr):
+                cmds.setAttr(attr, **states)
+
+        yield
+
+    finally:
+        for attr, states in original:
+            if cmds.objExists(attr):
+                cmds.setAttr(attr, **states)
+
+
+@contextlib.contextmanager
 def attribute_values(attr_values):
     """Remaps node attributes to values during context.
 
