@@ -1,7 +1,10 @@
 
 import os
 import pyblish.api
-from reveries.plugins import SelectInvalidInstanceAction
+from reveries.plugins import (
+    SelectInvalidInstanceAction,
+    get_errored_instances_from_context,
+)
 from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
@@ -64,6 +67,106 @@ class SelectInvalidOnFilePathEditor(SelectInvalidInstanceAction):
             cmds.treeView(fpe_view, edit=True, clearSelection=True)
 
 
+HYP_BIN_LIST = "defaultRenderGlobals.hyperShadeBinList"
+
+PYBLISH_BIN_PREFIX = "pyb._."
+PYBLISH_BIN_SUFFIX = "._.PYBLISH_TEMP_BINS"
+
+
+def cleanup_bin_list(bin_list):
+    if not bin_list:
+        # No bin exists
+        return
+
+    new_bin_list = list()
+    has_pyblish_bin = False
+
+    for bin in bin_list.split(";"):
+        if (bin.startswith(PYBLISH_BIN_PREFIX) and
+                bin.endswith(PYBLISH_BIN_SUFFIX)):
+            has_pyblish_bin = True
+            continue
+
+        new_bin_list.append(bin)
+
+    return ";".join(new_bin_list) if has_pyblish_bin else None
+
+
+class GroupingInvalidWithBin(pyblish.api.Action):
+
+    label = "Hypershade Bins"
+    on = "failed"
+    icon = "tags"
+
+    def process(self, context, plugin):
+        errored_instances = get_errored_instances_from_context(context)
+
+        all_invalid = dict()
+
+        # Apply pyblish.logic to get the instances for the plug-in
+        instances = pyblish.api.instances_by_plugin(errored_instances, plugin)
+        for instance in instances:
+            all_invalid.update(plugin.get_invalid(instance))
+
+        if all_invalid:
+            self.group_with_bins(all_invalid)
+            self.show_hypershade_bins()
+        else:
+            self.cleanup()
+
+    def show_hypershade_bins(self):
+        from maya import mel
+        # Show Hypershade window & refresh Bins
+        mel.eval("""
+            HypershadeWindow;
+            evalDeferred(" \
+            HypershadeOpenBinsWindow; \
+            hypershadeOpenBinsWindow(`getFocusedHypershade`, true); \
+            $form = hyperShadeBinUIForm(`getFocusedHypershade`); \
+            refreshHyperShadeBinsUI($form, true); \
+            ");
+        """)
+
+    @staticmethod
+    def cleanup():
+        from maya import cmds
+
+        # Check Hypershade bins
+        bin_list = cmds.getAttr(HYP_BIN_LIST)
+        hyp_new_bin_list = cleanup_bin_list(bin_list)
+
+        if hyp_new_bin_list is None:
+            # Is clean
+            return
+
+        # Cleanup all file node's bin membership
+        for node in cmds.ls(type="file"):
+            attr = node + ".binMembership"
+            if not cmds.objExists(attr):
+                continue
+
+            bin_list = cmds.getAttr(attr)
+            new_bin_list = cleanup_bin_list(bin_list)
+            if new_bin_list is not None:
+                cmds.setAttr(attr, new_bin_list, type="string")
+
+        # Cleanup Hypershade bins
+        cmds.setAttr(HYP_BIN_LIST, hyp_new_bin_list, type="string")
+
+    def group_with_bins(self, invalid):
+        from maya import cmds
+        from collections import defaultdict
+
+        invalid_by_fpattern = defaultdict(list)
+
+        for node, fpattern in invalid.items():
+            invalid_by_fpattern[fpattern].append(node)
+
+        for fpattern, nodes in invalid_by_fpattern.items():
+            bin_name = PYBLISH_BIN_PREFIX + fpattern + PYBLISH_BIN_SUFFIX
+            cmds.binMembership(nodes, addToBin=bin_name)
+
+
 class ValidateTextureFilesUniqueNamed(pyblish.api.InstancePlugin):
     """Ensure texture file name unique
 
@@ -82,6 +185,7 @@ class ValidateTextureFilesUniqueNamed(pyblish.api.InstancePlugin):
         pyblish.api.Category("Select Invalid"),
         SelectInvalidFileNodes,
         SelectInvalidOnFilePathEditor,
+        GroupingInvalidWithBin,
     ]
 
     @classmethod
@@ -188,15 +292,20 @@ class ValidateTextureFilesUniqueNamed(pyblish.api.InstancePlugin):
         if len(consider_duplicated) == 0:
             return []
 
-        invalid = list()
+        invalid = dict()
 
         for data in instance.data["fileData"]:
-            if data["fpattern"] in consider_duplicated:
-                invalid.append(data["node"])
+            fpattern = data["fpattern"]
+            node = data["node"]
+
+            if fpattern in consider_duplicated:
+                invalid[node] = fpattern
 
         return invalid
 
     def process(self, instance):
+        # Cleanup hypershade bins if any..
+        GroupingInvalidWithBin.cleanup()
 
         invalid = self.get_invalid(instance)
 
