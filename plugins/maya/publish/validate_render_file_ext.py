@@ -17,7 +17,7 @@ class ValidateRenderFileExtension(pyblish.api.InstancePlugin):
         "reveries.imgseq.render",
     ]
 
-    extensions = ("exr", "png", "tif")
+    extensions = ("exr", "png", "tif", "jpg", "jpeg")
 
     @classmethod
     def get_invalid(cls, instance):
