@@ -54,7 +54,9 @@ def apply_avalon_uuid(*args):
              set(cmds.ls(readOnly=True, long=True)) -
              set(cmds.ls(lockedNodes=True, long=True)))
 
-    transforms = cmds.listRelatives(list(nodes), parent=True, long=True) or []
+    transforms = cmds.listRelatives(list(nodes),
+                                    parent=True,
+                                    fullPath=True) or []
 
     # Add unique identifiers
     for node in transforms:
