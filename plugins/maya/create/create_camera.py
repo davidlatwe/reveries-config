@@ -12,4 +12,7 @@ class CameraCreator(avalon.maya.Creator):
 
     def process(self):
         self.data["bakeStep"] = 1.0
+        # Apply Euler filter to rotations for Alembic
+        self.data["eulerFilter"] = False
+
         return put_instance_icon(super(CameraCreator, self).process())

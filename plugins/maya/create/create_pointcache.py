@@ -35,4 +35,7 @@ class PointCacheCreator(avalon.maya.Creator):
         self.data["deadlinePool"] = ["none"] + deadline["pool"]
         self.data["deadlineGroup"] = deadline["group"]
 
+        # Apply Euler filter to rotations for Alembic
+        self.data["eulerFilter"] = False
+
         return put_instance_icon(super(PointCacheCreator, self).process())

@@ -103,8 +103,13 @@ class ExtractCamera(PackageExtractor):
         package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
+        euler_filter = self.data.get("eulerFilter", False)
+
         with avalon.maya.maintained_selection():
-            io.export_alembic(entry_path, self.start, self.end)
+            io.export_alembic(entry_path,
+                              self.start,
+                              self.end,
+                              eulerFilter=euler_filter)
 
         self.add_data({
             "entryFileName": entry_file,

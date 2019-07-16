@@ -137,7 +137,7 @@ def export_alembic(file,
                    endFrame=None,
                    selection=True,
                    uvWrite=True,
-                   eulerFilter=True,
+                   eulerFilter=False,
                    writeVisibility=True,
                    dataFormat="ogawa",
                    verbose=False,
@@ -185,7 +185,7 @@ def export_alembic(file,
         eulerFilter (bool): When on, X, Y, and Z rotation data is filtered with
             an Euler filter. Euler filtering helps resolve irregularities in
             rotations especially if X, Y, and Z rotations exceed 360 degrees.
-            Defaults to True.
+            Defaults to False.
 
         writeVisibility (bool): If this flag is present, visibility state will
             be stored in the Alembic file.

@@ -59,6 +59,8 @@ class ExtractPointCache(DelegatablePackageExtractor):
         entry_path = os.path.join(package_path, entry_file)
         cache_path = os.path.join(package_path, cache_file)
 
+        euler_filter = self.data.get("eulerFilter", False)
+
         root = cmds.ls(sl=True, long=True)
 
         with capsule.maintained_selection():
@@ -94,6 +96,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
                     renderableOnly=True,
                     writeCreases=True,
                     worldSpace=True,
+                    eulerFilter=euler_filter,
                     root=root,
                     attr=[
                         lib.AVALON_ID_ATTR_LONG,
