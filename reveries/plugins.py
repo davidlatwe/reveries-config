@@ -655,7 +655,7 @@ class DelegatablePackageExtractor(PackageExtractor):
             self.extract()
 
 
-def _get_errored_instances_from_context(context, include_warning=False):
+def get_errored_instances_from_context(context, include_warning=False):
 
     instances = list()
     for result in context.data["results"]:
@@ -675,7 +675,7 @@ def _get_errored_instances_from_context(context, include_warning=False):
     return instances
 
 
-def _get_errored_plugins_from_data(context):
+def get_errored_plugins_from_data(context):
     """Get all failed validation plugins
 
     Args:
@@ -743,7 +743,7 @@ class RepairInstanceAction(OnSymptomAction):
 
         # Get the errored instances
         self.log.info("Finding failed instances..")
-        errored_instances = _get_errored_instances_from_context(context)
+        errored_instances = get_errored_instances_from_context(context)
 
         # Apply pyblish.logic to get the instances for the plug-in
         instances = pyblish.api.instances_by_plugin(errored_instances, plugin)
@@ -771,7 +771,7 @@ class RepairContextAction(OnSymptomAction):
 
         # Get the errored instances
         self.log.info("Finding failed instances..")
-        errored_plugins = _get_errored_plugins_from_data(context)
+        errored_plugins = get_errored_plugins_from_data(context)
 
         # Apply pyblish.logic to get the instances for the plug-in
         if plugin in errored_plugins:
@@ -797,7 +797,7 @@ class SelectInvalidInstanceAction(OnSymptomAction):
 
         action = self._get_action(plugin)
 
-        errored_instances = _get_errored_instances_from_context(
+        errored_instances = get_errored_instances_from_context(
             context, include_warning=True)
 
         # Apply pyblish.logic to get the instances for the plug-in
