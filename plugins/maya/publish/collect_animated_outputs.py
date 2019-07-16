@@ -51,7 +51,9 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
                 name = node.rsplit(":", 1)[-1][:-len(ANIM_SET)] or "Default"
                 self.log.info(name)
                 namespace = lib.get_ns(node)
-                animatables = cmds.ls(cmds.sets(node, query=True), long=True)
+                animatables = cmds.ls(cmds.sets(node, query=True),
+                                      type="transform",
+                                      long=True)
 
                 out_cache[namespace] = (name, animatables)
 

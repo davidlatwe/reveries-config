@@ -74,14 +74,14 @@ class ExtractAnimation(PackageExtractor):
                                "whichRange=1;"
                                "helpPictures=0;"
                                "useChannelBox=0;"
-                               "controlPoints=1;"
+                               "controlPoints=0;"
                                "shapes=0;"
 
                                "copyKeyCmd="
                                "-animation objects "
                                "-option keys "
                                "-hierarchy none "
-                               "-controlPoints 1 "
+                               "-controlPoints 0 "
                                "-shape 0")
                       )
 
