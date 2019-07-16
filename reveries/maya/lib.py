@@ -23,10 +23,6 @@ TRANSFORM_ATTRS = [
     "scaleX", "scaleY", "scaleZ",
 ]
 
-CAMERA_SHAPE_KEYABLES = [
-    "focalLength",
-]
-
 
 FPS_MAP = {
     2: "2fps",
@@ -669,37 +665,6 @@ def bake_to_world_space(nodes,
              shape=shape)
 
     return world_space_nodes
-
-
-def bake_camera(camera, startFrame, endFrame, step=1.0):
-    """Bake camera to worldspace
-
-    Returns:
-        str: A newly baked camera
-
-    """
-    shape = None
-    if cmds.objectType(camera) == "transform":
-        transform = camera
-        shape = (cmds.listRelatives(camera, shapes=True, fullPath=True) or
-                 [None])[0]
-    elif cmds.objectType(camera) == "camera":
-        transform = cmds.listRelatives(camera, parent=True, fullPath=True)[0]
-        shape = camera
-
-    if shape is None:
-        raise TypeError("{} is not a camera.".format(camera))
-
-    # make sure attrs all keyable
-    cmds.setAttr(transform + ".visibility", keyable=True, lock=False)
-    for attr in TRANSFORM_ATTRS:
-        cmds.setAttr(transform + "." + attr, keyable=True, lock=False)
-    for attr in CAMERA_SHAPE_KEYABLES:
-        cmds.setAttr(shape + "." + attr, keyable=True, lock=False)
-
-    return bake_to_world_space([transform],
-                               (startFrame, endFrame),
-                               step=step)[0]
 
 
 def lock_transform(node, additional=None):

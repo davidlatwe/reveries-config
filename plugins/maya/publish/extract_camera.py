@@ -11,19 +11,6 @@ from reveries.plugins import PackageExtractor
 from maya import cmds
 
 
-DO_NOT_BAKE_THESE = [
-    "motionBlurOverride",
-    "aiUseGlobalShutter",
-    "aiShutterStart",
-    "aiShutterEnd",
-    "aiShutterType",
-    "aiEnableDOF",
-    "aiFov",
-    "aiHorizontalFov",
-    "aiVerticalFov",
-]
-
-
 class ExtractCamera(PackageExtractor):
     """
     """
@@ -42,6 +29,24 @@ class ExtractCamera(PackageExtractor):
     ]
 
     def extract(self):
+
+        DO_NOT_BAKE_THESE = [
+            "motionBlurOverride",
+            "aiUseGlobalShutter",
+            "aiShutterStart",
+            "aiShutterEnd",
+            "aiShutterType",
+            "aiEnableDOF",
+            "aiFov",
+            "aiHorizontalFov",
+            "aiVerticalFov",
+        ]
+
+        DO_BAKE_THESE = [
+            "focalLength",
+        ]
+        DO_BAKE_THESE += lib.TRANSFORM_ATTRS
+
         context_data = self.context.data
         self.start = context_data.get("startFrame")
         self.end = context_data.get("endFrame")
@@ -50,26 +55,34 @@ class ExtractCamera(PackageExtractor):
 
         self.camera_uuid = utils.get_id(camera)
 
-        donot_bake = [camera + "." + attr for attr in DO_NOT_BAKE_THESE]
+        cam_transform = cmds.listRelatives(camera,
+                                           parent=True,
+                                           fullPath=True)[0]
+
+        donot_bake = [cam_transform + "." + attr for attr in DO_NOT_BAKE_THESE]
+        do_bake = [cam_transform + "." + attr for attr in DO_BAKE_THESE]
 
         with contextlib.nested(
             capsule.no_refresh(),
-            capsule.attr_unkeyable(donot_bake),
+            capsule.attribute_states(donot_bake, lock=False, keyable=False),
+            capsule.attribute_states(do_bake, lock=False, keyable=True),
             capsule.evaluation("off"),
-            capsule.undo_chunk(),
         ):
-            # bake to worldspace
-            baked_camera = lib.bake_camera(camera,
-                                           self.start,
-                                           self.end,
-                                           self.step)
+            with capsule.delete_after() as delete_bin:
 
-            cmds.select(baked_camera,
-                        hierarchy=True,  # With shape
-                        replace=True,
-                        noExpand=True)
+                # bake to worldspace
+                frame_range = (self.start, self.end)
+                baked_camera = lib.bake_to_world_space(cam_transform,
+                                                       frame_range,
+                                                       self.step)[0]
+                delete_bin.append(baked_camera)
 
-            super(ExtractCamera, self).extract()
+                cmds.select(baked_camera,
+                            hierarchy=True,  # With shape
+                            replace=True,
+                            noExpand=True)
+
+                super(ExtractCamera, self).extract()
 
     def extract_mayaAscii(self):
 
