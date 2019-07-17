@@ -64,11 +64,28 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         from reveries.maya import lib
         from avalon.maya.pipeline import AVALON_CONTAINER_ID, parse_container
 
-        # Assign to lambert1
         nodes = cmds.sets(container["objectName"], query=True)
         shaders = cmds.ls(nodes, type="shadingEngine")
         shaded = cmds.ls(cmds.sets(shaders, query=True), long=True)
-        cmds.sets(shaded, forceElement="initialShadingGroup")
+
+        # Collect current reference's placeholder connections
+        reference_node = self.get_reference_node(container)
+        placeholder_attr = reference_node + ".placeHolderList"
+        placeholder_conns = cmds.listConnections(placeholder_attr,
+                                                 source=True,
+                                                 destination=False,
+                                                 plugs=True,
+                                                 connections=True,
+                                                 shapes=True,
+                                                 type="surfaceShape") or []
+        placeholder_map = {
+            cmds.ls(src.split(".", 1), long=True)[0]: (src, dst)
+            for src, dst in
+            zip(placeholder_conns[1::2], placeholder_conns[::2])
+        }
+
+        shader_missing_nodes = set(placeholder_map.keys())
+        shader_missing_fixes = list()
 
         # Find shaded subsets from nodes
         shaded_subsets = list()
@@ -83,6 +100,34 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
             if shaded_nodes.intersection(content):
                 shaded_subsets.append(con)
 
+                for node in shader_missing_nodes.intersection(content):
+                    shader_missing_fixes.append(placeholder_map[node])
+
+        # Fix if missing
+        if shader_missing_fixes:
+            # Remove placeholder connections so the shader assignment
+            # could update properly.
+            self.log.warning("Reference placeholder connection found, "
+                             "possible shader connection missing from "
+                             "previous geometry update.")
+            self.log.warning("Performing auto fix..")
+
+            for src, dst in shader_missing_fixes:
+                if cmds.isConnected(src, dst):
+                    cmds.disconnectAttr(src, dst)
+
+        # Assign to lambert1
+        self.log.info("Fallback to lambert1..")
+
+        def force_element(elements):
+            try:
+                cmds.sets(elements, forceElement="initialShadingGroup")
+            except RuntimeError:
+                self.log.warning("Fallback failed, retrying...")
+                force_element(elements)
+
+        force_element(shaded)
+
         # Container node name may changed after update
         uuid = cmds.ls(container["objectName"], uuid=True)
 
@@ -90,7 +135,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         super(LookLoader, self).update(container, representation)
 
         if not shaded_subsets:
-            self.log.warning("Shader has no assignment.")
+            self.log.warning("Version updated, but shader has no assignment.")
             return
 
         # Updated container data and re-assign shaders
