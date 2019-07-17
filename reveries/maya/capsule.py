@@ -533,6 +533,8 @@ def attribute_states(attrs, lock=None, keyable=None):
     if keyable is not None:
         states["keyable"] = keyable
 
+    attrs = [attr for attr in attrs if cmds.objExists(attr)]
+
     original = [
         (
             attr,
@@ -543,8 +545,7 @@ def attribute_states(attrs, lock=None, keyable=None):
 
     try:
         for attr in attrs:
-            if cmds.objExists(attr):
-                cmds.setAttr(attr, **states)
+            cmds.setAttr(attr, **states)
 
         yield
 
