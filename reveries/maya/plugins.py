@@ -170,16 +170,22 @@ class ReferenceLoader(MayaBaseLoader):
 
         load_plugin(representation["name"])
 
-        # Representation that use `ReferenceLoader`, either "ma" or "mb"
-        file_type = representation["name"]
-        if file_type != "mayaBinary":
-            file_type = "mayaAscii"
-
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
 
         entry_path = self.file_path(representation)
         self.log.info("Reloading reference from: {!r}".format(entry_path))
+
+        # Representation that use `ReferenceLoader`, either "ma" or "mb"
+        file_type = representation["name"]
+
+        # (NOTE) This is a patch for the bad implemenation of Abc wrapping.
+        if file_type == "Alembic" and entry_path.endswith(".ma"):
+            file_type = "mayaAscii"
+
+        if file_type not in ("mayaBinary", "Alembic"):
+            file_type = "mayaAscii"
+
         cmds.file(entry_path,
                   loadReference=reference_node,
                   type=file_type,

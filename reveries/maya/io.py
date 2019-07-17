@@ -410,6 +410,8 @@ createNode gpuCache -n "{nodeName}Shape" -p "{nodeName}";
 def wrap_abc(wrapper_path, abc_files):
     """Wrapping Alembic caches into a MayaAscii file
 
+    (Deprecated)
+
     (NOTE) The file path of `abc_files` should be a relative path, relative to
         `wrapper_path`.
 

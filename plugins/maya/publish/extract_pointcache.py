@@ -53,11 +53,9 @@ class ExtractPointCache(DelegatablePackageExtractor):
 
     @skip_stage
     def extract_Alembic(self):
-        entry_file = self.file_name("ma")
-        cache_file = self.file_name("abc")
+        entry_file = self.file_name("abc")
         package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
-        cache_path = os.path.join(package_path, cache_file)
 
         euler_filter = self.data.get("eulerFilter", False)
 
@@ -89,7 +87,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
                     root = list(set(root) - set(duplicated)) + unique_named
 
                 io.export_alembic(
-                    cache_path,
+                    entry_path,
                     self.start_frame,
                     self.end_frame,
                     selection=False,
@@ -106,9 +104,10 @@ class ExtractPointCache(DelegatablePackageExtractor):
                     ],
                 )
 
-        io.wrap_abc(entry_path, [(cache_file, "ROOT")])
+        # (NOTE) Deprecated
+        # io.wrap_abc(entry_path, [(cache_file, "ROOT")])
 
-        self.add_data({"entryFileName": entry_file})
+        self.add_data({"entryFileName": entry_path})
         self.add_range_data()
 
     @skip_stage
