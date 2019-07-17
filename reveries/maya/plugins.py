@@ -133,16 +133,32 @@ class ReferenceLoader(MayaBaseLoader):
                                           group_name=group_name)
         return container
 
+    def _find_reference_node(self, container):
+        from maya import cmds
+
+        node = container["objectName"]
+        members = cmds.sets(node, query=True, nodesOnly=True)
+        reference_node = lib.get_highest_reference_node(members)
+        # cache it
+        container["referenceNode"] = reference_node
+
+        return reference_node
+
+    def get_reference_node(self, container):
+        reference_node = container.get("referenceNode",
+                                       self._find_reference_node(container))
+        if reference_node is None:
+            raise AssertionError("No reference node found in container")
+
+        return reference_node
+
     def update(self, container, representation):
         from maya import cmds
 
         node = container["objectName"]
 
-        # Get reference node from container members
-        members = cmds.sets(node, query=True, nodesOnly=True)
-        reference_node = lib.get_highest_reference_node(members)
-        if reference_node is None:
-            raise AssertionError("No reference node found in container")
+        # Get reference node from container
+        reference_node = self.get_reference_node(container)
 
         load_plugin(representation["name"])
 
@@ -195,11 +211,8 @@ class ReferenceLoader(MayaBaseLoader):
 
         node = container["objectName"]
 
-        # Get reference node from container members
-        members = cmds.sets(node, query=True, nodesOnly=True)
-        reference_node = lib.get_highest_reference_node(members)
-        if reference_node is None:
-            raise AssertionError("No reference node found in container")
+        # Get reference node from container
+        reference_node = self.get_reference_node(container)
 
         self.log.info("Removing '%s' from Maya.." % container["name"])
 
