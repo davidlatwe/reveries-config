@@ -590,6 +590,9 @@ def bake_to_world_space(nodes,
     world_space_nodes = []
     with delete_after() as delete_bin:
 
+        if isinstance(nodes, string_types):
+            nodes = [nodes]
+
         # Create the duplicate nodes that are in world-space connected to
         # the originals
         for node in nodes:
