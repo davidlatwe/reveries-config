@@ -133,32 +133,6 @@ class ReferenceLoader(MayaBaseLoader):
                                           group_name=group_name)
         return container
 
-    def _get_reference_node(self, members):
-        """Get the reference node from the container members
-        Args:
-            members: list of node names
-
-        Returns:
-            str: Reference node name.
-
-        """
-        # Collect the references without .placeHolderList[] attributes as
-        # unique entries (objects only) and skipping the sharedReferenceNode.
-        references = lib.get_reference_node(members)
-
-        assert references, "No reference node found in container"
-
-        # Get highest reference node (least parents)
-        highest = lib.get_highest_reference_node(references)
-
-        # Warn the user when we're taking the highest reference node
-        if len(references) > 1:
-            self.log.warning("More than one reference node found in "
-                             "container, using highest reference node: "
-                             "%s (in: %s)", highest, list(references))
-
-        return highest
-
     def update(self, container, representation):
         from maya import cmds
 
@@ -166,7 +140,9 @@ class ReferenceLoader(MayaBaseLoader):
 
         # Get reference node from container members
         members = cmds.sets(node, query=True, nodesOnly=True)
-        reference_node = self._get_reference_node(members)
+        reference_node = lib.get_highest_reference_node(members)
+        if reference_node is None:
+            raise AssertionError("No reference node found in container")
 
         load_plugin(representation["name"])
 
@@ -221,7 +197,9 @@ class ReferenceLoader(MayaBaseLoader):
 
         # Get reference node from container members
         members = cmds.sets(node, query=True, nodesOnly=True)
-        reference_node = self._get_reference_node(members)
+        reference_node = lib.get_highest_reference_node(members)
+        if reference_node is None:
+            raise AssertionError("No reference node found in container")
 
         self.log.info("Removing '%s' from Maya.." % container["name"])
 
