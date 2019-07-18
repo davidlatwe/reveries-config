@@ -118,15 +118,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         # Assign to lambert1
         self.log.info("Fallback to lambert1..")
-
-        def force_element(elements):
-            try:
-                cmds.sets(elements, forceElement="initialShadingGroup")
-            except RuntimeError:
-                self.log.warning("Fallback failed, retrying...")
-                force_element(elements)
-
-        force_element(shaded)
+        lib.force_element(shaded, "initialShadingGroup")
 
         # Container node name may changed after update
         uuid = cmds.ls(container["objectName"], uuid=True)

@@ -1643,3 +1643,17 @@ def ls_reference_node_parents(reference):
                                      referenceNode=True,
                                      parent=True)
     return parents
+
+
+def force_element(elements, set_name):
+    """Forces addition of the items to the set with retry
+
+    Will keep retry when hitting `RuntimeError`, until all elements has
+    been added to the set.
+
+    """
+    try:
+        cmds.sets(elements, edit=True, forceElement=set_name)
+    except RuntimeError:
+        log.warning("Force element addition failed, retrying...")
+        force_element(elements, set_name)
