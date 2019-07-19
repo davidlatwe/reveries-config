@@ -138,6 +138,7 @@ class ExtractTexture(PackageExtractor):
 
                 previous_files = tmp_data["pathMap"]
 
+                all_files = list()
                 for file, abs_path in data["pathMap"].items():
                     if file not in previous_files:
                         # Possible different file pattern
@@ -155,12 +156,15 @@ class ExtractTexture(PackageExtractor):
                         # Possible new files
                         break  # Try previous version
 
+                    all_files.append(file)
+
                 else:
                     # Version matched, consider as same file
-                    pattern_path = abs_previous[:-len(file)] + fpattern
-                    pattern_path = env_embedded_path(pattern_path)
+                    head_file = sorted(all_files)[0]
+                    resolved_path = abs_previous[:-len(file)] + head_file
+                    resolved_path = env_embedded_path(resolved_path)
                     self.update_file_node_attrs(file_nodes,
-                                                pattern_path,
+                                                resolved_path,
                                                 current_color_space)
                     # Update color space
                     # * Although files may be the same, but color space may
@@ -184,13 +188,16 @@ class ExtractTexture(PackageExtractor):
                     "fnames": data["fnames"],
                 })
 
+                all_files = list()
                 for file, abs_path in data["pathMap"].items():
                     final_path = package_path + "/" + file
                     self.add_file(abs_path, final_path)
+                    all_files.append(file)
 
-                pattern_path = package_path + "/" + fpattern
+                head_file = sorted(all_files)[0]
+                resolved_path = package_path + "/" + head_file
                 self.update_file_node_attrs(file_nodes,
-                                            pattern_path,
+                                            resolved_path,
                                             current_color_space)
 
         self.add_data({"fileInventory": file_inventory})
