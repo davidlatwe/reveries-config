@@ -133,53 +133,51 @@ class ReferenceLoader(MayaBaseLoader):
                                           group_name=group_name)
         return container
 
-    def _get_reference_node(self, members):
-        """Get the reference node from the container members
-        Args:
-            members: list of node names
+    def _find_reference_node(self, container):
+        from maya import cmds
 
-        Returns:
-            str: Reference node name.
+        node = container["objectName"]
+        members = cmds.sets(node, query=True, nodesOnly=True)
+        reference_node = lib.get_highest_reference_node(members)
+        # cache it
+        container["referenceNode"] = reference_node
 
-        """
-        # Collect the references without .placeHolderList[] attributes as
-        # unique entries (objects only) and skipping the sharedReferenceNode.
-        references = lib.get_reference_node(members)
+        return reference_node
 
-        assert references, "No reference node found in container"
+    def get_reference_node(self, container):
+        reference_node = container.get("referenceNode",
+                                       self._find_reference_node(container))
+        if reference_node is None:
+            raise AssertionError("No reference node found in container")
 
-        # Get highest reference node (least parents)
-        highest = lib.get_highest_reference_node(references)
-
-        # Warn the user when we're taking the highest reference node
-        if len(references) > 1:
-            self.log.warning("More than one reference node found in "
-                             "container, using highest reference node: "
-                             "%s (in: %s)", highest, list(references))
-
-        return highest
+        return reference_node
 
     def update(self, container, representation):
         from maya import cmds
 
         node = container["objectName"]
 
-        # Get reference node from container members
-        members = cmds.sets(node, query=True, nodesOnly=True)
-        reference_node = self._get_reference_node(members)
+        # Get reference node from container
+        reference_node = self.get_reference_node(container)
 
         load_plugin(representation["name"])
-
-        # Representation that use `ReferenceLoader`, either "ma" or "mb"
-        file_type = representation["name"]
-        if file_type != "mayaBinary":
-            file_type = "mayaAscii"
 
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
 
         entry_path = self.file_path(representation)
         self.log.info("Reloading reference from: {!r}".format(entry_path))
+
+        # Representation that use `ReferenceLoader`, either "ma" or "mb"
+        file_type = representation["name"]
+
+        # (NOTE) This is a patch for the bad implemenation of Abc wrapping.
+        if file_type == "Alembic" and entry_path.endswith(".ma"):
+            file_type = "mayaAscii"
+
+        if file_type not in ("mayaBinary", "Alembic"):
+            file_type = "mayaAscii"
+
         cmds.file(entry_path,
                   loadReference=reference_node,
                   type=file_type,
@@ -213,9 +211,8 @@ class ReferenceLoader(MayaBaseLoader):
 
         node = container["objectName"]
 
-        # Get reference node from container members
-        members = cmds.sets(node, query=True, nodesOnly=True)
-        reference_node = self._get_reference_node(members)
+        # Get reference node from container
+        reference_node = self.get_reference_node(container)
 
         self.log.info("Removing '%s' from Maya.." % container["name"])
 

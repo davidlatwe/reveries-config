@@ -47,34 +47,11 @@ class UnpackLoadedSubset(avalon.api.InventoryAction):
 
         return message_box_warning(title, msg, optional=True)
 
-    def _get_reference_node(self, members):
-        """Get the reference node from the container members
-        Args:
-            members: list of node names
-
-        Returns:
-            str: Reference node name.
-
-        """
-        from reveries.maya import lib
-
-        # Collect the references without .placeHolderList[] attributes as
-        # unique entries (objects only) and skipping the sharedReferenceNode.
-        references = lib.get_reference_node(members)
-
-        if not references:
-            return None
-
-        # Get highest reference node (least parents)
-        highest = lib.get_highest_reference_node(references)
-
-        return highest
-
     def process(self, containers):
         from maya import cmds
         from avalon.maya.pipeline import AVALON_CONTAINERS
         from avalon.tools import cbsceneinventory
-        from reveries.maya import hierarchy, pipeline
+        from reveries.maya import hierarchy, pipeline, lib
         from reveries.maya.vendor import sticker
         from reveries import REVERIES_ICONS
 
@@ -90,7 +67,7 @@ class UnpackLoadedSubset(avalon.api.InventoryAction):
             node = container["objectName"]
             members = cmds.sets(node, query=True) or []
 
-            reference_node = self._get_reference_node(members)
+            reference_node = lib.get_highest_reference_node(members)
             if reference_node is not None:
                 # Import Reference
                 cmds.file(importReference=True, referenceNode=reference_node)

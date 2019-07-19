@@ -282,11 +282,10 @@ def update_container(container, asset, subset, version, representation):
         representation (dict): representation document
 
     """
-    log.info("Updating container...")
-
     container_node = container["objectName"]
-
     namespace = container["namespace"]
+
+    log.info("Updating container '%s'..." % container_node)
 
     asset_changed = container["assetId"] != str(asset["_id"])
     version_changed = container["versionId"] != str(version["_id"])
@@ -335,6 +334,8 @@ def update_container(container, asset, subset, version, representation):
     # Rename container
     container_node = cmds.rename(
         container_node, container_naming(namespace, name, "CON"))
+
+    log.info("Container renamed to '%s'." % container_node)
 
     # Rename reference node
     reference_node = next((n for n in cmds.sets(container_node, query=True)

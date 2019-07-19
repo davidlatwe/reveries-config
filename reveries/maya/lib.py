@@ -590,6 +590,9 @@ def bake_to_world_space(nodes,
     world_space_nodes = []
     with delete_after() as delete_bin:
 
+        if isinstance(nodes, string_types):
+            nodes = [nodes]
+
         # Create the duplicate nodes that are in world-space connected to
         # the originals
         for node in nodes:
@@ -1546,7 +1549,7 @@ def polyConstraint(components, *args, **kwargs):
     return result
 
 
-def get_reference_node(nodes):
+def get_reference_nodes(nodes):
     """Get exact reference nodes from nodes
 
     Collect the references without .placeHolderList[] attributes as
@@ -1577,7 +1580,35 @@ def get_reference_node(nodes):
     return references
 
 
-def get_highest_reference_node(references):
+def get_highest_reference_node(nodes):
+    """Get the top reference node from nodes (container members)
+    Args:
+        nodes (list): list of node names
+
+    Returns:
+        str: Reference node name.
+
+    """
+    # Collect the references without .placeHolderList[] attributes as
+    # unique entries (objects only) and skipping the sharedReferenceNode.
+    references = get_reference_nodes(nodes)
+
+    if not references:
+        return None
+
+    # Get highest reference node (least parents)
+    highest = pick_highest_reference_from_references(references)
+
+    # Warn the user when we're taking the highest reference node
+    if len(references) > 1:
+        log.warning("More than one reference node found in "
+                    "container, using highest reference node: "
+                    "%s (in: %s)", highest, list(references))
+
+    return highest
+
+
+def pick_highest_reference_from_references(references):
     """Get highest reference node (least parents)
 
     Args:
@@ -1588,11 +1619,11 @@ def get_highest_reference_node(references):
 
     """
     highest = min(references,
-                  key=lambda x: len(get_reference_node_parents(x)))
+                  key=lambda x: len(ls_reference_node_parents(x)))
     return highest
 
 
-def get_reference_node_parents(reference):
+def ls_reference_node_parents(reference):
     """Return all parent reference nodes of reference node
 
     Args:
@@ -1612,3 +1643,17 @@ def get_reference_node_parents(reference):
                                      referenceNode=True,
                                      parent=True)
     return parents
+
+
+def force_element(elements, set_name):
+    """Forces addition of the items to the set with retry
+
+    Will keep retry when hitting `RuntimeError`, until all elements has
+    been added to the set.
+
+    """
+    try:
+        cmds.sets(elements, edit=True, forceElement=set_name)
+    except RuntimeError:
+        log.warning("Force element addition failed, retrying...")
+        force_element(elements, set_name)
