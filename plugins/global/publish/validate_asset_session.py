@@ -21,9 +21,12 @@ class ValidateAssetSession(pyblish.api.InstancePlugin):
         task_asset = avalon.api.Session["AVALON_ASSET"]
 
         if not asset == task_asset:
-            msg = ("Instance {name!r} is not belong to Asset {asset!r}. "
+            msg = ("Instance {name!r} has been set to be as part of "
+                   "Asset: {asset!r}, but the current publish session "
+                   "is Asset: {task_asset!r}. "
                    "Please check Context Manager."
-                   "".format(name=instance.data["name"],
-                             asset=task_asset))
+                   "".format(name=str(instance.data["name"]),
+                             asset=str(asset),
+                             task_asset=str(task_asset)))
             self.log.error(msg)
             raise AssertionError(msg)
