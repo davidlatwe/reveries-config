@@ -38,14 +38,26 @@ class CollectTextureFiles(pyblish.api.InstancePlugin):
             file_path = file_path.replace("\\", "/")
             dir_name = os.path.dirname(file_path)
 
-            pattern = getFilePatternString(file_path, is_sequence, tiling_mode)
-            all_files = [
-                os.path.basename(fpath) for fpath in
-                findAllFilesForPattern(pattern, frameNumber=None)
-            ]
+            if not (is_sequence or tiling_mode):
+                # (NOTE) If no sequence and no tiling, skip regex parsing
+                #        to avoid potential not-regex-friendly file name which
+                #        may lead to incorrect result.
+                pattern = file_path
+                all_files = [os.path.basename(pattern)]
+            else:
+                # (NOTE) When UV tiliing is enabled, if file name contains
+                #        characters like `[]`, which possible from Photoshop,
+                #        will make regex parse file name incorrectly.
+                pattern = getFilePatternString(file_path,
+                                               is_sequence,
+                                               tiling_mode)
+                all_files = [
+                    os.path.basename(fpath) for fpath in
+                    findAllFilesForPattern(pattern, frameNumber=None)
+                ]
 
             if not all_files:
-                self.log.warning("%s file not exists." % file_node)
+                self.log.error("%s file not exists." % file_node)
                 continue
 
             fpattern = os.path.basename(pattern)
