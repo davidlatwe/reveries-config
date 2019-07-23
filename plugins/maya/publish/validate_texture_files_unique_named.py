@@ -248,8 +248,6 @@ class ValidateTextureFilesUniqueNamed(pyblish.api.InstancePlugin):
 
             for data in dup_data:
                 dir_name = data["dir"]
-                if data["seq"]:
-                    dir_name += "/" + data["seq"]
 
                 feature_set = list()
 

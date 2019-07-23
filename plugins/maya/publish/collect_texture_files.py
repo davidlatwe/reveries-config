@@ -67,15 +67,13 @@ class CollectTextureFiles(pyblish.api.InstancePlugin):
                 # of the file pattern
                 dir_name, seq_dir = os.path.split(dir_name)
                 fpattern = seq_dir + "/" + fpattern
-            else:
-                seq_dir = None
+                all_files = [seq_dir + "/" + file for file in all_files]
 
             file_data.append({
                 "node": file_node,
                 "fpattern": fpattern,
                 "colorSpace": color_space,
                 "dir": dir_name,
-                "seq": seq_dir,
                 "fnames": all_files,
             })
 

@@ -106,9 +106,6 @@ class ExtractTexture(PackageExtractor):
             dir_name = data["dir"]
             fnames = data["fnames"]
             fpattern = data["fpattern"]
-            seq = data["seq"]
-            if seq:
-                fnames = [seq + "/" + fn for fn in fnames]
 
             current_by_fpattern[fpattern] = {
                 "node": data["node"],
