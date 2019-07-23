@@ -11,6 +11,10 @@ from reveries.plugins import PackageExtractor, skip_stage
 # from reveries.maya.plugins import env_embedded_path
 
 
+def to_tx(path):
+    return os.path.splitext(path)[0] + ".tx"
+
+
 def assemble_published_paths(previous_repr, previous_inventory):
 
     previous_by_fpattern = dict()
@@ -38,6 +42,12 @@ def assemble_published_paths(previous_repr, previous_inventory):
 
             tmp_data["pathMap"] = {
                 fn: repr_path + "/" + fn for fn in data["fnames"]
+            }
+            # In case someone using published .tx file which coming from
+            # loaded look...
+            tmp_data["pathMapTx"] = {
+                tx: repr_path + "/" + tx for tx in
+                (to_tx(fn) for fn in data["fnames"])
             }
 
             fpattern = data["fpattern"]
@@ -76,6 +86,8 @@ class ExtractTexture(PackageExtractor):
         # Extract textures
         #
         self.log.info("Extracting textures..")
+
+        self.use_tx = self.data.get("useTxMaps", False)
 
         file_inventory = list()
         previous_by_fpattern = dict()
@@ -134,14 +146,15 @@ class ExtractTexture(PackageExtractor):
             for ver_data, tmp_data in versioned_data:
 
                 previous_files = tmp_data["pathMap"]
+                previous_txs = tmp_data["pathMapTx"]
 
                 all_files = list()
                 for file, abs_path in data["pathMap"].items():
-                    if file not in previous_files:
+                    if not (file in previous_files or file in previous_txs):
                         # Possible different file pattern
                         break  # Try previous version
 
-                    abs_previous = previous_files[file]
+                    abs_previous = previous_files.get(file, previous_txs[file])
 
                     if not os.path.isfile(abs_previous):
                         # Previous file not exists (should not happen)
@@ -189,6 +202,13 @@ class ExtractTexture(PackageExtractor):
                 for file, abs_path in data["pathMap"].items():
                     final_path = package_path + "/" + file
                     self.add_file(abs_path, final_path)
+
+                    if self.use_tx:
+                        # Upload .tx file as well
+                        tx_abs_path = to_tx(abs_path)
+                        tx_final_path = to_tx(final_path)
+                        self.add_file(tx_abs_path, tx_final_path)
+
                     all_files.append(file)
 
                 head_file = sorted(all_files)[0]
@@ -201,6 +221,10 @@ class ExtractTexture(PackageExtractor):
 
     def update_file_node_attrs(self, file_nodes, path, color_space):
         from maya import cmds
+
+        if self.use_tx:
+            # Force downstream to use .tx map
+            path = to_tx(path)
 
         for node in file_nodes:
             attr = node + ".fileTextureName"
