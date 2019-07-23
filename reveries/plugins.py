@@ -236,7 +236,8 @@ def create_dependency_instance(dependent,
                                family,
                                members,
                                optional=False,
-                               category=None):
+                               category=None,
+                               data=None):
     """Create dependency instance from dependent instance
 
     Creating instance for unpublished or stray (not containerized) assets,
@@ -278,6 +279,9 @@ def create_dependency_instance(dependent,
     instance.data["futureDependencies"] = dict()
 
     instance.data["objectName"] = dependent.data["objectName"]
+
+    if data is not None:
+        instance.data.update(data)
 
     # Move to front, because dependency instance should be integrated before
     # dependent instance

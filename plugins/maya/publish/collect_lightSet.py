@@ -12,10 +12,13 @@ def create_texture_subset_from_lightSet(instance, textures):
     subset = instance.data["subset"]
     subset = "texture" + subset[0].upper() + subset[1:]
 
+    data = {"useTxMaps": True}
+
     plugins.create_dependency_instance(instance,
                                        subset,
                                        family,
-                                       textures)
+                                       textures,
+                                       data=data)
 
 
 class CollectLightSet(pyblish.api.InstancePlugin):
