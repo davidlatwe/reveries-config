@@ -26,6 +26,7 @@ class CollectTextureFiles(pyblish.api.InstancePlugin):
         )
 
         file_data = list()
+        file_count = 0
 
         for file_node in instance:
 
@@ -77,4 +78,9 @@ class CollectTextureFiles(pyblish.api.InstancePlugin):
                 "fnames": all_files,
             })
 
+            file_count += len(all_files)
+
         instance.data["fileData"] = file_data
+
+        self.log.info("Collected %d texture files from %s file node."
+                      "" % (file_count, len(file_data)))
