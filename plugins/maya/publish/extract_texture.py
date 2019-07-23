@@ -8,7 +8,7 @@ import avalon.io
 
 from reveries import utils, lib
 from reveries.plugins import PackageExtractor, skip_stage
-from reveries.maya.plugins import env_embedded_path
+# from reveries.maya.plugins import env_embedded_path
 
 
 def assemble_published_paths(previous_repr, previous_inventory):
@@ -66,7 +66,7 @@ class ExtractTexture(PackageExtractor):
     def extract_TexturePack(self):
 
         package_path = self.create_package()
-        package_path = env_embedded_path(package_path)
+        # package_path = env_embedded_path(package_path)
 
         # For storing calculated published file path for look or lightSet
         # extractors to update file path.
@@ -162,7 +162,7 @@ class ExtractTexture(PackageExtractor):
                     # Version matched, consider as same file
                     head_file = sorted(all_files)[0]
                     resolved_path = abs_previous[:-len(file)] + head_file
-                    resolved_path = env_embedded_path(resolved_path)
+                    # resolved_path = env_embedded_path(resolved_path)
                     self.update_file_node_attrs(file_nodes,
                                                 resolved_path,
                                                 current_color_space)
