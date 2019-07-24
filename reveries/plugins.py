@@ -585,9 +585,9 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             self.data["bareStaging"] = True
             pkg_dir = staging_dir
 
-        if os.path.isdir(pkg_dir) and os.listdir(pkg_dir):
-            self.log.warning("Representation dir existed, this should not "
-                             "happen. Files may overwritten.")
+        if os.path.isdir(pkg_dir):
+            if os.listdir(pkg_dir):
+                raise Exception("Staging dir is not empty: %s" % pkg_dir)
         else:
             os.makedirs(pkg_dir)
 
