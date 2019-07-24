@@ -549,7 +549,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
                                               suffix=suffix,
                                               ext=extension)
 
-    def create_package(self):
+    def create_package(self, representation_dir=True):
         """Create representation stage dir
 
         Register and create a staging directory for extraction usage later on.
@@ -560,8 +560,13 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         "pyblish_tmp_" prefix, but if the extraction method get decorated with
         `skip_stage`, the staging directory will be the publish directory.
 
+        Args:
+            representation_dir (bool): Whether to extend representation dir to
+                                       the end of the staging path.
+                                       Default True.
+
         Return:
-            repr_dir (str): staging directory
+            pkg_dir (str): staging directory
 
         """
         staging_dir = self.data.get("stagingDir", None)
@@ -574,15 +579,18 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
             self.data["stagingDir"] = staging_dir
 
-        repr_dir = os.path.join(staging_dir, self._current_representation)
+        if representation_dir:
+            pkg_dir = os.path.join(staging_dir, self._current_representation)
+        else:
+            pkg_dir = staging_dir
 
-        if os.path.isdir(repr_dir):
+        if os.path.isdir(pkg_dir) and os.listdir(pkg_dir):
             self.log.warning("Representation dir existed, this should not "
                              "happen. Files may overwritten.")
         else:
-            os.makedirs(repr_dir)
+            os.makedirs(pkg_dir)
 
-        return repr_dir
+        return pkg_dir
 
     def add_data(self, data):
         """Add(Update) data to representation

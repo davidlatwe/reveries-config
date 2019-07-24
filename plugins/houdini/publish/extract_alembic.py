@@ -36,12 +36,12 @@ class ExtractAlembic(PackageExtractor):
         # Set custom staging dir
         staging_dir = os.path.dirname(output)
         self.data["stagingDir"] = staging_dir
-        repr_dir = self.create_package()
+        pkg_dir = self.create_package(representation_dir=False)
 
         file_name = os.path.basename(output)
         self.log.info("Writing alembic '%s' to '%s'" % (file_name,
-                                                        repr_dir))
-        self.render(ropnode, repr_dir)
+                                                        pkg_dir))
+        self.render(ropnode, pkg_dir)
 
         self.add_data({
             "entryFileName": file_name,
@@ -56,12 +56,12 @@ class ExtractAlembic(PackageExtractor):
         # Set custom staging dir
         staging_dir = os.path.dirname(output)
         self.data["stagingDir"] = staging_dir
-        repr_dir = self.create_package()
+        pkg_dir = self.create_package(representation_dir=False)
 
         file_name = os.path.basename(output)
         self.log.info("Writing alembic '%s' to '%s'" % (file_name,
-                                                        repr_dir))
-        self.render(ropnode, repr_dir)
+                                                        pkg_dir))
+        self.render(ropnode, pkg_dir)
 
         self.add_data({
             "entryFileName": file_name,
@@ -80,10 +80,8 @@ class ExtractAlembic(PackageExtractor):
     def render(self, ropnode, output_dir):
         import hou
 
-        raw_path = ropnode.parm("filename").rawValue()
-        raw_file = os.path.basename(raw_path)
         try:
-            ropnode.render(output_file=output_dir + "/" + raw_file)
+            ropnode.render()
         except hou.Error as exc:
             # The hou.Error is not inherited from a Python Exception class,
             # so we explicitly capture the houdini error, otherwise pyblish

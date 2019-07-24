@@ -154,7 +154,8 @@ class ExtractTexture(PackageExtractor):
                         # Possible different file pattern
                         break  # Try previous version
 
-                    abs_previous = previous_files.get(file, previous_txs[file])
+                    _previous_tx = previous_txs.get(file)
+                    abs_previous = previous_files.get(file, _previous_tx)
 
                     if not os.path.isfile(abs_previous):
                         # Previous file not exists (should not happen)
