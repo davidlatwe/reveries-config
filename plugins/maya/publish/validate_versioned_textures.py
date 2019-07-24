@@ -9,10 +9,7 @@ class SelectInvalid(MayaSelectInvalidInstanceAction):
 
 
 class ValidateVersionedTextures(pyblish.api.InstancePlugin):
-    """All surface node in scene should be part of versioned subset
-
-    Should be containerized or instance that is going to be published
-
+    """
     """
 
     order = pyblish.api.ValidatorOrder
@@ -28,18 +25,28 @@ class ValidateVersionedTextures(pyblish.api.InstancePlugin):
     ]
 
     @classmethod
+    def is_versioned_path(cls, path):
+        import re
+
+        pattern = (
+            ".*[/\\\]publish"  # publish root
+            "[/\\\]texture.*"  # subset dir
+            "[/\\\]v[0-9]{3}"  # version dir
+            "[/\\\]TexturePack"  # representation dir
+        )
+
+        return bool(re.match(pattern, path))
+
+    @classmethod
     def get_invalid(cls, instance):
         from maya import cmds
 
         files = set(instance.data["fileNodes"])
-        root = instance.data["relativeRoot"]
 
         has_versioned = set()
         for node in files:
             file_path = cmds.getAttr(node + ".fileTextureName")
-            if all(key in file_path for key in root):
-                # As long as the texture file path starts with project
-                # env vars, consider it's been published.
+            if cls.is_versioned_path(file_path):
                 has_versioned.add(node)
 
         not_versioned = files - has_versioned
