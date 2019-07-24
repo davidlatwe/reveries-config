@@ -145,7 +145,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             }
             representations.append(representation)
 
-            src = os.path.join(stagingdir, package)
+            if instance.data.get("bareStaging"):
+                src = stagingdir
+            else:
+                src = os.path.join(stagingdir, package)
+
             dst = publish_path
 
             self.transfers["packages"].append([src, dst])

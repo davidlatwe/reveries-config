@@ -582,6 +582,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         if representation_dir:
             pkg_dir = os.path.join(staging_dir, self._current_representation)
         else:
+            self.data["bareStaging"] = True
             pkg_dir = staging_dir
 
         if os.path.isdir(pkg_dir) and os.listdir(pkg_dir):
