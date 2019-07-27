@@ -223,9 +223,11 @@ class ExtractTexture(PackageExtractor):
     def update_file_node_attrs(self, file_nodes, path, color_space):
         from maya import cmds
 
+        """Deprecated, .tx map may crash viewport 2.0 and hypershade material window
         if self.use_tx:
             # Force downstream to use .tx map
             path = to_tx(path)
+        """
 
         for node in file_nodes:
             attr = node + ".fileTextureName"
