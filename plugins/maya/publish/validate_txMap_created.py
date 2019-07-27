@@ -24,7 +24,8 @@ class ValidateTxMapCreated(pyblish.api.InstancePlugin):
     label = "Tx Map Created"
     hosts = ["maya"]
     families = [
-        "reveries.texture"
+        "reveries.texture",
+        "reveries.standin",
     ]
 
     def process(self, instance):

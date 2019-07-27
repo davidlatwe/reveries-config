@@ -10,6 +10,10 @@ from reveries.maya import capsule
 from maya import cmds
 
 
+def to_tx(path):
+    return os.path.splitext(path)[0] + ".tx"
+
+
 class ExtractArnoldStandIn(PackageExtractor):
     """
     """
@@ -34,11 +38,28 @@ class ExtractArnoldStandIn(PackageExtractor):
         cache_file = self.file_name("ass")
         cache_path = os.path.join(package_path, cache_file)
 
+        file_node_attrs = OrderedDict()
+        for node in self.data["fileNodes"]:
+            attr = node + ".fileTextureName"
+            path = cmds.getAttr(attr, expandEnvironmentVariables=True)
+            file_node_attrs[attr] = to_tx(path)
+
+            attr = node + ".colorSpace"
+            color_space = cmds.getAttr(attr)
+            file_node_attrs[attr] = color_space
+
         with contextlib.nested(
             capsule.no_undo(),
             capsule.no_refresh(),
             capsule.evaluation("off"),
             capsule.maintained_selection(),
+            capsule.ref_edit_unlock(),
+            # (NOTE) Force color space unlocked
+            #        Previously we used to lock color space in case
+            #        forgot to check it after changing file path.
+            capsule.attribute_states(file_node_attrs.keys(), lock=False),
+            # Change to .tx path
+            capsule.attribute_values(file_node_attrs),
         ):
             cmds.select(self.member, replace=True)
             asses = cmds.arnoldExportAss(filename=cache_path,

@@ -15,6 +15,7 @@ class CollectTextureFiles(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     families = [
         "reveries.texture",
+        "reveries.standin",
     ]
 
     def process(self, instance):
@@ -27,8 +28,10 @@ class CollectTextureFiles(pyblish.api.InstancePlugin):
 
         file_data = list()
         file_count = 0
+        file_nodes = instance.data.get("fileNodes",
+                                       cmds.ls(instance, type="file"))
 
-        for file_node in instance:
+        for file_node in file_nodes:
 
             color_space = cmds.getAttr(file_node + ".colorSpace")
             tiling_mode = cmds.getAttr(file_node + ".uvTilingMode")
