@@ -48,8 +48,8 @@ class ExtractPointCache(DelegatablePackageExtractor):
 
     def add_range_data(self):
         if not self.data.get("staticCache"):
-            self.add_data({"startFrame": self.start_frame,
-                           "endFrame": self.end_frame})
+            self.data["startFrame"] = self.start_frame
+            self.data["endFrame"] = self.end_frame
 
     @skip_stage
     def extract_Alembic(self):
