@@ -19,6 +19,19 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         "setPackage"
     ]
 
+    def has_input_connections(self, node):
+        import maya.cmds as cmds
+        from reveries.maya.lib import TRANSFORM_ATTRS
+
+        for attr in TRANSFORM_ATTRS:
+            conns = cmds.listConnections(node + "." + attr,
+                                         source=True,
+                                         destination=False,
+                                         plugs=False)
+            if conns:
+                return True
+        return False
+
     @contextlib.contextmanager
     def keep_scale_pivot(self, node):
         import maya.cmds as cmds
@@ -44,6 +57,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         for transform, sub_matrix, is_hidden in self.parse_sub_matrix(data):
             if not transform:
                 continue
+
             with self.keep_scale_pivot(transform):
                 cmds.xform(transform,
                            objectSpace=True,
@@ -69,7 +83,10 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
 
         if has_matrix_override and not force:
             self.log.warning("Matrix override preserved on %s",
-                             data_new["namespace"])
+                             assembly)
+        elif self.has_input_connections(assembly):
+                self.log.warning("Input connection preserved on %s",
+                                 assembly)
         else:
             new_matrix = data_new["matrix"]
             with self.keep_scale_pivot(assembly):
@@ -103,6 +120,9 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
 
             if has_matrix_override and not force:
                 self.log.warning("Sub-Matrix override preserved on %s",
+                                 transform)
+            elif self.has_input_connections(transform):
+                self.log.warning("Input connection preserved on %s",
                                  transform)
             else:
                 with self.keep_scale_pivot(transform):
