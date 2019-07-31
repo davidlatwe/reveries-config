@@ -15,7 +15,7 @@ class SelectInvalidOutNodes(MayaSelectInvalidInstanceAction):
 class ValidateRigOutSetMeshes(pyblish.api.InstancePlugin):
     """Ensure rig OutSet member node type correct
 
-    `OutSet` can only contain models
+    `OutSet` can only contain models, locators
 
     """
 
@@ -80,7 +80,7 @@ class ValidateRigOutSetMeshes(pyblish.api.InstancePlugin):
                 continue
 
             for chd in children:
-                if not cmds.ls(chd, type=("mesh", "constraint")):
+                if not cmds.ls(chd, type=("mesh", "locator", "constraint")):
                     invalid.append(node)
                     break
 
