@@ -58,9 +58,12 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 name = node.rsplit(":", 1)[-1][:-len("OutSet")] or "Default"
                 self.log.info(name)
                 namespace = lib.get_ns(node)
-                cacheables = lib.pick_cacheable(cmds.sets(node,
-                                                          query=True) or [])
+                set_member = cmds.sets(node, query=True) or []
+                cacheables = lib.pick_cacheable(set_member)
                 cacheables = self.cache_by_visibility(cacheables)
+
+                # Plus locator
+                cacheables += self.pick_locators(set_member)
 
                 out_cache[(namespace, name)] = cacheables
 
@@ -104,9 +107,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             cacheables = self.cache_by_visibility(cacheables)
 
             # Plus locator
-            for node in cmds.ls(members, type="locator"):
-                locators = cmds.listRelatives(node, parent=True, fullPath=True)
-                cacheables += locators
+            cacheables += self.pick_locators(members)
 
             instance[:] = cacheables
             instance.data["outCache"] = cacheables
@@ -119,6 +120,11 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             if not lib.is_visible(node, displayLayer=False):
                 cacheables.remove(node)
         return cacheables
+
+    def pick_locators(self, members):
+        return cmds.listRelatives(cmds.ls(members, type="locator"),
+                                  parent=True,
+                                  fullPath=True) or []
 
     def assign_contractor(self, instance):
         if instance.data["deadlineEnable"]:
