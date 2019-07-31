@@ -89,9 +89,9 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
         from reveries.utils import get_representation_path_
 
         members = cmds.sets(container["objectName"], query=True)
-        standin = next(iter(cmds.ls(members, type="aiStandIn")), None)
+        standins = cmds.ls(members, type="aiStandIn", long=True)
 
-        if not standin:
+        if not standins:
             raise Exception("No Arnold Stand-In node, this is a bug.")
 
         parents = avalon.io.parenthood(representation)
@@ -103,8 +103,10 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
             raise Exception("Not a Arnold Stand-In file, this is a bug: "
                             "%s" % entry_path)
 
-        cmds.setAttr(standin + ".dso", entry_path, type="string")
-        cmds.setAttr(standin + ".useFrameExtension", use_sequence)
+        for standin in standins:
+            # This would allow all copies getting updated together
+            cmds.setAttr(standin + ".dso", entry_path, type="string")
+            cmds.setAttr(standin + ".useFrameExtension", use_sequence)
 
         # Update container
         version, subset, asset, _ = parents

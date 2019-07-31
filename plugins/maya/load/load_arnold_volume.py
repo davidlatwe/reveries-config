@@ -44,9 +44,9 @@ class ArnoldVolumeLoader(ImportLoader, avalon.api.Loader):
         from reveries.utils import get_representation_path_
 
         members = cmds.sets(container["objectName"], query=True)
-        volume = next(iter(cmds.ls(members, type="aiVolume")), None)
+        volumes = cmds.ls(members, type="aiVolume", long=True)
 
-        if not volume:
+        if not volumes:
             raise Exception("No Arnold Volume node, this is a bug.")
 
         parents = avalon.io.parenthood(representation)
@@ -59,8 +59,10 @@ class ArnoldVolumeLoader(ImportLoader, avalon.api.Loader):
             raise Exception("Not a VDB file, this is a bug: "
                             "%s" % entry_path)
 
-        cmds.setAttr(volume + ".filename", entry_path, type="string")
-        cmds.setAttr(volume + ".useFrameExtension", use_sequence)
+        for volume in volumes:
+            # This would allow all copies getting updated together
+            cmds.setAttr(volume + ".filename", entry_path, type="string")
+            cmds.setAttr(volume + ".useFrameExtension", use_sequence)
 
         # Update container
         version, subset, asset, _ = parents
