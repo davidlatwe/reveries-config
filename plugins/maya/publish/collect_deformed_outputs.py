@@ -103,6 +103,11 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             cacheables = lib.pick_cacheable(members)
             cacheables = self.cache_by_visibility(cacheables)
 
+            # Plus locator
+            for node in cmds.ls(members, type="locator"):
+                locators = cmds.listRelatives(node, parent=True, fullPath=True)
+                cacheables += locators
+
             instance[:] = cacheables
             instance.data["outCache"] = cacheables
             instance.data["requireAvalonUUID"] = cacheables
