@@ -3,10 +3,13 @@ import os
 import getpass
 import platform
 import json
+import re
+import subprocess
 
 import avalon.api
 from avalon.vendor import requests
 from reveries.plugins import BaseContractor
+from reveries.utils import temp_dir
 
 
 def parse_output_paths(instance):
@@ -41,11 +44,32 @@ class ContractorDeadlineMayaRender(BaseContractor):
 
     def fulfill(self, context, instances):
 
-        assert "AVALON_DEADLINE" in avalon.api.Session, (
-            "Environment variable missing: 'AVALON_DEADLINE'"
-        )
+        cmd = None
+        url = None
+        auth = None
 
-        AVALON_DEADLINE = avalon.api.Session["AVALON_DEADLINE"]
+        if context.data.get("USE_DEADLINE_APP"):
+            AVALON_DEADLINE_APP = avalon.api.Session["AVALON_DEADLINE_APP"]
+
+            # E.g. C:/Program Files/Thinkbox/Deadline10/bin/deadlinecommand.exe
+            cmd = AVALON_DEADLINE_APP
+
+        else:
+            AVALON_DEADLINE = avalon.api.Session["AVALON_DEADLINE"]
+
+            # E.g. http://192.168.0.1:8082/api/jobs
+            url = "{}/api/jobs".format(AVALON_DEADLINE)
+            #
+            # Documentation about RESTful api
+            # https://docs.thinkboxsoftware.com/products/deadline/
+            # 10.0/1_User%20Manual/manual/rest-jobs.html#rest-jobs-ref-label
+            #
+            # Documentation for keys available at:
+            # https://docs.thinkboxsoftware.com
+            #    /products/deadline/8.0/1_User%20Manual/manual
+            #    /manual-submission.html#job-info-file-options
+
+            auth = os.environ["AVALON_DEADLINE_AUTH"].split(":")
 
         workspace = context.data["workspaceDir"]
         fpath = context.data["currentMaking"]
@@ -69,20 +93,6 @@ class ContractorDeadlineMayaRender(BaseContractor):
 
         has_renderlayer = context.data["hasRenderLayers"]
         use_rendersetup = context.data["usingRenderSetup"]
-
-        # E.g. http://192.168.0.1:8082/api/jobs
-        url = "{}/api/jobs".format(AVALON_DEADLINE)
-        #
-        # Documentation about RESTful api
-        # https://docs.thinkboxsoftware.com/products/deadline/
-        # 10.0/1_User%20Manual/manual/rest-jobs.html#rest-jobs-ref-label
-        #
-        # Documentation for keys available at:
-        # https://docs.thinkboxsoftware.com
-        #    /products/deadline/8.0/1_User%20Manual/manual
-        #    /manual-submission.html#job-info-file-options
-
-        auth = os.environ["AVALON_DEADLINE_AUTH"].split(":")
 
         for instance in instances:
 
@@ -167,20 +177,17 @@ class ContractorDeadlineMayaRender(BaseContractor):
             self.log.info(json.dumps(
                 payload, indent=4, sort_keys=True)
             )
-            response = requests.post(url, json=payload, auth=tuple(auth))
 
-            if response.ok:
-                jobid = eval(response.text)["_id"]
-                self.log.info("Success. JobID: %s" % jobid)
-                self.submit_publish_script(project, payload, jobid, url, auth)
+            if cmd:
+                jobid = self.via_command(cmd, payload)
             else:
-                msg = response.text
-                self.log.error(msg)
-                raise Exception("Submission failed...")
+                jobid = self.via_web_service(url, payload, auth)
+
+            self.submit_publish_script(project, payload, jobid, cmd, url, auth)
 
         self.log.info("Completed.")
 
-    def submit_publish_script(self, project, payload, jobid, url, auth):
+    def submit_publish_script(self, project, payload, jobid, cmd, url, auth):
         # Clean up
         for key in list(payload["JobInfo"].keys()):
             if (key.startswith("OutputDirectory") or
@@ -205,12 +212,49 @@ class ContractorDeadlineMayaRender(BaseContractor):
                                            "avalon_contractor_publish.py"),
         })
 
+        if cmd:
+            self.via_command(cmd, payload)
+        else:
+            self.via_web_service(url, payload, auth)
+
+    def via_web_service(self, url, payload, auth):
         response = requests.post(url, json=payload, auth=tuple(auth))
 
-        if response.ok:
-            jobid = eval(response.text)["_id"]
-            self.log.info("Success. JobID: %s" % jobid)
-        else:
+        if not response.ok:
             msg = response.text
             self.log.error(msg)
             raise Exception("Submission failed...")
+        else:
+            jobid = eval(response.text)["_id"]
+            self.log.info("Success. JobID: %s" % jobid)
+            return jobid
+
+    def via_command(self, cmd, payload):
+
+        def to_txt(document, out):
+            # Write dict to key-value txt file
+            with open(out, "w") as fp:
+                for key, val in document.items():
+                    fp.write("{key}={val}\n".format(key=key, val=val))
+
+        job_info = payload["JobInfo"]
+        plugin_info = payload["PluginInfo"]
+
+        info_dir = temp_dir(prefix="deadline_")
+        job_info_file = os.path.join(info_dir, "job_info.job")
+        plugin_info_file = os.path.join(info_dir, "plugin_info.job")
+
+        to_txt(job_info, job_info_file)
+        to_txt(plugin_info, plugin_info_file)
+
+        cmd += " %s %s" % (job_info_file, plugin_info_file)
+        output = subprocess.check_output(cmd)
+
+        output = output.decode("utf-8")
+        if "Result=Success" not in output.split():
+            raise Exception("Submission failed...")
+        else:
+            parts = re.split("[=\n\r]", output)
+            jobid = parts[parts.index("JobID") + 1]
+            self.log.info("Success. JobID: %s" % jobid)
+            return jobid

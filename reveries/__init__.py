@@ -32,6 +32,10 @@ REVERIES_ICONS = os.path.join("$REVERIES_PATH", "res", "icons")
 
 os.environ["REVERIES_PATH"] = os.path.dirname(PACKAGE_DIR)
 
+# Deadline command application path
+avalon.Session["AVALON_DEADLINE_APP"] = os.getenv("AVALON_DEADLINE_APP", "")
+
+
 __all__ = [
     "version",
     "version_info",
