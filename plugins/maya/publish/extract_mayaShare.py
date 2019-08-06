@@ -41,6 +41,7 @@ class ExtractMayaShare(PackageExtractor):
                       channels=True,
                       constraints=True,
                       expressions=True,
+                      shader=True,
                       constructionHistory=True)
 
         self.add_data({
