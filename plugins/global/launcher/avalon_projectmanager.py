@@ -17,10 +17,14 @@ class ProjectManagerAction(api.Action):
                               projection={"data.role.admin": True})
 
         if project is not None:
-            user = getpass.getuser().lower()
-            admin = project["data"].get("role", {}).get("admin", [user])
+            admin = project["data"].get("role", {}).get("admin", [])
+            if not admin:
+                # Allowe everyone to use
+                return True
 
+            user = getpass.getuser().lower()
             if user not in admin:
+                # Only admmin role could use
                 return False
 
         return "AVALON_PROJECT" in session
