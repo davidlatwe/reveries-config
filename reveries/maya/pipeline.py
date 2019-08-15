@@ -1,5 +1,6 @@
 
 import os
+import re
 import logging
 import avalon.maya
 import avalon.io
@@ -411,15 +412,21 @@ def put_instance_icon(instance):
 def find_stray_textures(instance):
     """Find file nodes that were not containerized
     """
+    def is_versioned_path(path):
+        pattern = (
+            ".*[/\\\]publish"  # publish root
+            "[/\\\]texture.*"  # subset dir
+            "[/\\\]v[0-9]{3}"  # version dir
+            "[/\\\]TexturePack"  # representation dir
+        )
+        return bool(re.match(pattern, path))
+
     stray = list()
-    containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
 
     for file_node in cmds.ls(instance, type="file"):
-        sets = cmds.listSets(object=file_node) or []
-        if any(s in containers for s in sets):
-            continue
-
-        stray.append(file_node)
+        file_path = cmds.getAttr(file_node + ".fileTextureName")
+        if file_path and not is_versioned_path(file_path):
+            stray.append(file_node)
 
     return stray
 
