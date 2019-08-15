@@ -84,11 +84,18 @@ def apply_ai_attrs(relationships, namespace=None, target_namespaces=None):
             continue
 
         for node in surfaces[id]:
+            shape = cmds.listRelatives(node,
+                                       shapes=True,
+                                       noIntermediate=True,
+                                       fullPath=True)
+            if shape is None:
+                cmds.warning("Mesh %s has no non-intermediate shape."
+                             "This should not happen." % node)
+                continue
+            else:
+                shape = shape[0]
+
             for attr, value in attrs.items():
-                shape = cmds.listRelatives(node,
-                                           shapes=True,
-                                           noIntermediate=True,
-                                           fullPath=True)[0]
                 attr_path = shape + "." + attr
                 try:
                     origin = cmds.getAttr(attr_path)
