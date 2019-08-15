@@ -409,8 +409,8 @@ def put_instance_icon(instance):
     return instance
 
 
-def find_stray_textures(instance):
-    """Find file nodes that were not containerized
+def find_stray_textures(nodes=None):
+    """Find file nodes which pointing files that were not in published space
     """
     def is_versioned_path(path):
         pattern = (
@@ -423,7 +423,8 @@ def find_stray_textures(instance):
 
     stray = list()
 
-    for file_node in cmds.ls(instance, type="file"):
+    args = (nodes, ) if nodes else ()
+    for file_node in cmds.ls(*args, type="file"):
         file_path = cmds.getAttr(file_node + ".fileTextureName")
         if file_path and not is_versioned_path(file_path):
             stray.append(file_node)
