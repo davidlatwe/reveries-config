@@ -138,8 +138,8 @@ class ExtractTexture(PackageExtractor):
                           if dat["fpattern"] == fpattern]
 
             versioned_data = previous_by_fpattern.get(fpattern, list())
-            versioned_data.sort(key=lambda (data, tmp): data["version"],
-                                reverse=True)
+            versioned_data.sort(key=lambda elem: elem[0]["version"],
+                                reverse=True)  # elem: (data, tmp_data)
 
             current_color_space = data["colorSpace"]
 
