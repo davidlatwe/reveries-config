@@ -25,28 +25,16 @@ class ValidateVersionedTextures(pyblish.api.InstancePlugin):
     ]
 
     @classmethod
-    def is_versioned_path(cls, path):
-        import re
-
-        pattern = (
-            ".*[/\\\]publish"  # publish root
-            "[/\\\]texture.*"  # subset dir
-            "[/\\\]v[0-9]{3}"  # version dir
-            "[/\\\]TexturePack"  # representation dir
-        )
-
-        return bool(re.match(pattern, path))
-
-    @classmethod
     def get_invalid(cls, instance):
         from maya import cmds
+        from reveries.maya.lib import is_versioned_texture_path
 
         files = set(instance.data["fileNodes"])
 
         has_versioned = set()
         for node in files:
             file_path = cmds.getAttr(node + ".fileTextureName")
-            if cls.is_versioned_path(file_path):
+            if is_versioned_texture_path(file_path):
                 has_versioned.add(node)
 
         not_versioned = files - has_versioned

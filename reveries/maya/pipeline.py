@@ -1,6 +1,5 @@
 
 import os
-import re
 import logging
 import avalon.maya
 import avalon.io
@@ -412,21 +411,12 @@ def put_instance_icon(instance):
 def find_stray_textures(nodes=None):
     """Find file nodes which pointing files that were not in published space
     """
-    def is_versioned_path(path):
-        pattern = (
-            ".*[/\\\]publish"  # publish root
-            "[/\\\]texture.*"  # subset dir
-            "[/\\\]v[0-9]{3}"  # version dir
-            "[/\\\]TexturePack"  # representation dir
-        )
-        return bool(re.match(pattern, path))
-
     stray = list()
 
     args = (nodes, ) if nodes else ()
     for file_node in cmds.ls(*args, type="file"):
         file_path = cmds.getAttr(file_node + ".fileTextureName")
-        if file_path and not is_versioned_path(file_path):
+        if file_path and not lib.is_versioned_texture_path(file_path):
             stray.append(file_node)
 
     return stray

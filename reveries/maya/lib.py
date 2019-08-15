@@ -1657,3 +1657,13 @@ def force_element(elements, set_name):
     except RuntimeError:
         log.warning("Force element addition failed, retrying...")
         force_element(elements, set_name)
+
+
+def is_versioned_texture_path(path):
+    pattern = (
+        ".*[/\\\]publish"  # publish root
+        "[/\\\]texture.*"  # subset dir
+        "[/\\\]v[0-9]{3}"  # version dir
+        "[/\\\]TexturePack"  # representation dir
+    )
+    return bool(re.match(pattern, path))
