@@ -319,6 +319,8 @@ class PackageLoader(object):
 
         package_path = template.format(**data)
         self.package_path = package_path
+        # Keep Avalon `api.Loader` default attribute `fname`
+        self.fname = package_path
 
     def file_path(self, file_name):
         return os.path.join(self.package_path, file_name)
