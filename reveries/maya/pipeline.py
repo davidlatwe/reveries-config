@@ -412,11 +412,19 @@ def find_stray_textures(nodes=None):
     """Find file nodes which pointing files that were not in published space
     """
     stray = list()
+    containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
 
     args = (nodes, ) if nodes else ()
     for file_node in cmds.ls(*args, type="file"):
+        # Not in published space
         file_path = cmds.getAttr(file_node + ".fileTextureName")
         if file_path and not lib.is_versioned_texture_path(file_path):
+            stray.append(file_node)
+            continue
+        # OR
+        # Not containerized
+        sets = cmds.listSets(object=file_node) or []
+        if not any(s in containers for s in sets):
             stray.append(file_node)
 
     return stray
