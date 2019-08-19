@@ -28,6 +28,10 @@ class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
         from maya import cmds
+
+        if instance.data.get("isDummy"):
+            return []
+
         invalid = list()
         nodes = cmds.ls(instance.data["requireAvalonUUID"], long=True)
         for node in nodes:

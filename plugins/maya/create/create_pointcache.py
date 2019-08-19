@@ -29,6 +29,7 @@ class PointCacheCreator(avalon.maya.Creator):
         self.data["extractType"] = cache_type[:]
 
         self.data["staticCache"] = False
+        self.data["isDummy"] = False
 
         self.data["deadlineEnable"] = False
         self.data["deadlinePriority"] = priority
