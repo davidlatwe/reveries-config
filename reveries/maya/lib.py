@@ -381,7 +381,7 @@ def is_visible(node,
     Roughly based on: http://ewertb.soundlinker.com/mel/mel.098.php
 
     Args:
-        ndoe (str): Node name string
+        node (str): Node name string
         displayLayer (bool): Check displayLayer, Default True
         intermediateObject (bool): Check 'intermediateObject', Default True
         parentHidden (bool): Check parent node, Default True

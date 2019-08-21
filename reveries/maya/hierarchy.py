@@ -286,10 +286,10 @@ def add_subset(data, namespace, root, on_update=None):
 def get_referenced_containers(container):
     """
     """
-    def get_ref_node(ndoe):
+    def get_ref_node(node):
         """Find one reference node in the members of objectSet"""
-        return next((ndoe for ndoe in cmds.sets(ndoe, query=True)
-                     if cmds.nodeType(ndoe) == "reference"), None)
+        return next((node for node in cmds.sets(node, query=True)
+                     if cmds.nodeType(node) == "reference"), None)
 
     def abort_alert():
         """Error message box"""
