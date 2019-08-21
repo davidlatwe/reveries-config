@@ -1549,7 +1549,7 @@ def polyConstraint(components, *args, **kwargs):
     return result
 
 
-def get_reference_nodes(nodes):
+def get_reference_nodes(nodes=None):
     """Get exact reference nodes from nodes
 
     Collect the references without .placeHolderList[] attributes as
@@ -1557,15 +1557,15 @@ def get_reference_nodes(nodes):
     and _UNKNOWN_REF_NODE_.
 
     Args:
-        nodes (list): list of node names
+        nodes (list, optional): list of node names
 
     Returns:
         set: A set of reference node names.
 
     """
     references = set()
-
-    for ref in cmds.ls(nodes, exactType="reference", objectsOnly=True):
+    args = (nodes, ) if nodes else ()
+    for ref in cmds.ls(*args, exactType="reference", objectsOnly=True):
 
         # Ignore any `:sharedReferenceNode`
         if ref.rsplit(":", 1)[-1].startswith("sharedReferenceNode"):
