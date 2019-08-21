@@ -408,13 +408,13 @@ def put_instance_icon(instance):
     return instance
 
 
-def find_stray_textures(nodes=None):
+def find_stray_textures(nodes=lib._no_val):
     """Find file nodes which pointing files that were not in published space
     """
     stray = list()
     containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
 
-    args = (nodes, ) if nodes else ()
+    args = (nodes, ) if nodes is not lib._no_val else ()
     for file_node in cmds.ls(*args, type="file"):
         # Not in published space
         file_path = cmds.getAttr(file_node + ".fileTextureName")

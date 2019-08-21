@@ -1549,7 +1549,16 @@ def polyConstraint(components, *args, **kwargs):
     return result
 
 
-def get_reference_nodes(nodes=None):
+class _NoVal(object):
+    def __repr__(self):
+        return "_NoVal()"
+    __solts__ = ()
+
+
+_no_val = _NoVal()
+
+
+def get_reference_nodes(nodes=_no_val):
     """Get exact reference nodes from nodes
 
     Collect the references without .placeHolderList[] attributes as
@@ -1557,14 +1566,16 @@ def get_reference_nodes(nodes=None):
     and _UNKNOWN_REF_NODE_.
 
     Args:
-        nodes (list, optional): list of node names
+        nodes (list, optional): list of node names. Scan entire scene
+            if no input. Return no nodes if input is `None`.
 
     Returns:
         list: A list of reference node names.
 
     """
     references = list()
-    args = (nodes, ) if nodes else ()
+
+    args = (nodes, ) if nodes is not _no_val else ()
     for ref in cmds.ls(*args, exactType="reference", objectsOnly=True):
 
         # Ignore any `:sharedReferenceNode`
