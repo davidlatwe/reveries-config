@@ -55,6 +55,7 @@ class ValidateRigNoPlaceholderInput(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
         from maya import cmds
+        from reveries.maya import lib
 
         invalid = dict()
 
@@ -65,7 +66,7 @@ class ValidateRigNoPlaceholderInput(pyblish.api.InstancePlugin):
         for mesh in mesh_nodes:
             attr = mesh + ".inMesh"
             history = cmds.listHistory(attr, pruneDagObjects=True)
-            reference = cmds.ls(history, type="reference")
+            reference = lib.get_reference_nodes(history)
             if reference:
                 reference = reference[0]
                 transform = cmds.listRelatives(mesh,

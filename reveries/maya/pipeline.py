@@ -338,8 +338,9 @@ def update_container(container, asset, subset, version, representation):
     log.info("Container renamed to '%s'." % container_node)
 
     # Rename reference node
-    reference_node = next((n for n in cmds.sets(container_node, query=True)
-                           if cmds.nodeType(n) == "reference"), None)
+    members = cmds.sets(container_node, query=True)
+    reference_node = next(iter(lib.get_reference_nodes(members)), None)
+
     if reference_node:
         with nodes_locker(reference_node, False, False, False):
             cmds.rename(reference_node, namespace + "RN")

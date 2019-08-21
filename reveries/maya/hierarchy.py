@@ -288,8 +288,8 @@ def get_referenced_containers(container):
     """
     def get_ref_node(node):
         """Find one reference node in the members of objectSet"""
-        return next((node for node in cmds.sets(node, query=True)
-                     if cmds.nodeType(node) == "reference"), None)
+        members = cmds.sets(node, query=True)
+        return next(iter(lib.get_reference_nodes(members)), None)
 
     def abort_alert():
         """Error message box"""

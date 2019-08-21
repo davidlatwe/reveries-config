@@ -1468,7 +1468,7 @@ def reference_node_by_namespace(namespace):
         (str or None): Reference node name or None if not found
 
     """
-    return next((ref for ref in cmds.ls(type="reference")
+    return next((ref for ref in get_reference_nodes()
                  if cmds.referenceQuery(ref, namespace=True) == namespace),
                 None)
 

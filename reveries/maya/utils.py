@@ -767,8 +767,8 @@ def update_dependency(container):
     cmds.setAttr(container + ".versionId", str(version["_id"]), type="string")
 
     # Update Reference path
-    reference_node = next(iter(cmds.ls(cmds.sets(container, query=True),
-                                       type="reference")), None)
+    members = cmds.sets(container, query=True)
+    reference_node = next(iter(lib.get_reference_nodes(members)), None)
 
     if reference_node is None:
         # No reference to update
