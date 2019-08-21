@@ -1560,10 +1560,10 @@ def get_reference_nodes(nodes=None):
         nodes (list, optional): list of node names
 
     Returns:
-        set: A set of reference node names.
+        list: A list of reference node names.
 
     """
-    references = set()
+    references = list()
     args = (nodes, ) if nodes else ()
     for ref in cmds.ls(*args, exactType="reference", objectsOnly=True):
 
@@ -1575,7 +1575,8 @@ def get_reference_nodes(nodes=None):
         if ref.rsplit(":", 1)[-1].startswith("_UNKNOWN_REF_NODE_"):
             continue
 
-        references.add(ref)
+        if ref not in references:
+            references.append(ref)
 
     return references
 
@@ -1603,7 +1604,7 @@ def get_highest_reference_node(nodes):
     if len(references) > 1:
         log.warning("More than one reference node found in "
                     "container, using highest reference node: "
-                    "%s (in: %s)", highest, list(references))
+                    "%s (in: %s)", highest, references)
 
     return highest
 
