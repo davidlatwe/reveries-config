@@ -169,7 +169,7 @@ def container_from_id_path(container_id_path, parent_namespace):
     if not len(walkers):
         raise RuntimeError("Container not found, this is a bug.")
 
-    container = list(walkers.keys())[0]
+    container = next(iter(walkers.keys()))
 
     return container
 
