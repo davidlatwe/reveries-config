@@ -381,7 +381,7 @@ def is_visible(node,
     Roughly based on: http://ewertb.soundlinker.com/mel/mel.098.php
 
     Args:
-        ndoe (str): Node name string
+        node (str): Node name string
         displayLayer (bool): Check displayLayer, Default True
         intermediateObject (bool): Check 'intermediateObject', Default True
         parentHidden (bool): Check parent node, Default True
@@ -1468,7 +1468,7 @@ def reference_node_by_namespace(namespace):
         (str or None): Reference node name or None if not found
 
     """
-    return next((ref for ref in cmds.ls(type="reference")
+    return next((ref for ref in get_reference_nodes()
                  if cmds.referenceQuery(ref, namespace=True) == namespace),
                 None)
 
@@ -1549,7 +1549,16 @@ def polyConstraint(components, *args, **kwargs):
     return result
 
 
-def get_reference_nodes(nodes):
+class _NoVal(object):
+    def __repr__(self):
+        return "_NoVal()"
+    __solts__ = ()
+
+
+_no_val = _NoVal()
+
+
+def get_reference_nodes(nodes=_no_val):
     """Get exact reference nodes from nodes
 
     Collect the references without .placeHolderList[] attributes as
@@ -1557,15 +1566,17 @@ def get_reference_nodes(nodes):
     and _UNKNOWN_REF_NODE_.
 
     Args:
-        nodes (list): list of node names
+        nodes (list, optional): list of node names. Scan entire scene
+            if no input. Return no nodes if input is `None`.
 
     Returns:
-        set: A set of reference node names.
+        list: A list of reference node names.
 
     """
-    references = set()
+    references = list()
 
-    for ref in cmds.ls(nodes, exactType="reference", objectsOnly=True):
+    args = (nodes, ) if nodes is not _no_val else ()
+    for ref in cmds.ls(*args, exactType="reference", objectsOnly=True):
 
         # Ignore any `:sharedReferenceNode`
         if ref.rsplit(":", 1)[-1].startswith("sharedReferenceNode"):
@@ -1575,7 +1586,8 @@ def get_reference_nodes(nodes):
         if ref.rsplit(":", 1)[-1].startswith("_UNKNOWN_REF_NODE_"):
             continue
 
-        references.add(ref)
+        if ref not in references:
+            references.append(ref)
 
     return references
 
@@ -1603,7 +1615,7 @@ def get_highest_reference_node(nodes):
     if len(references) > 1:
         log.warning("More than one reference node found in "
                     "container, using highest reference node: "
-                    "%s (in: %s)", highest, list(references))
+                    "%s (in: %s)", highest, references)
 
     return highest
 

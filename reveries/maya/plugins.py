@@ -560,6 +560,7 @@ class HierarchicalLoader(MayaBaseLoader):
         """
         """
         import maya.cmds as cmds
+        from reveries.maya import lib
 
         # Remove all members
         sub_containers = parse_sub_containers(container)
@@ -570,7 +571,7 @@ class HierarchicalLoader(MayaBaseLoader):
         # Remove alembic hierarchy reference
         # TODO: Check whether removing all contained references is safe enough
         members = cmds.sets(container["objectName"], query=True) or []
-        references = cmds.ls(members, type="reference")
+        references = lib.get_reference_nodes(members)
         for reference in references:
             self.log.info("Removing %s", reference)
             fname = cmds.referenceQuery(reference, filename=True)

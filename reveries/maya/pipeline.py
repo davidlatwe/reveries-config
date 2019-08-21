@@ -338,8 +338,9 @@ def update_container(container, asset, subset, version, representation):
     log.info("Container renamed to '%s'." % container_node)
 
     # Rename reference node
-    reference_node = next((n for n in cmds.sets(container_node, query=True)
-                           if cmds.nodeType(n) == "reference"), None)
+    members = cmds.sets(container_node, query=True)
+    reference_node = next(iter(lib.get_reference_nodes(members)), None)
+
     if reference_node:
         with nodes_locker(reference_node, False, False, False):
             cmds.rename(reference_node, namespace + "RN")
@@ -408,13 +409,13 @@ def put_instance_icon(instance):
     return instance
 
 
-def find_stray_textures(nodes=None):
+def find_stray_textures(nodes=lib._no_val):
     """Find file nodes which pointing files that were not in published space
     """
     stray = list()
     containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
 
-    args = (nodes, ) if nodes else ()
+    args = (nodes, ) if nodes is not lib._no_val else ()
     for file_node in cmds.ls(*args, type="file"):
         # Not in published space
         file_path = cmds.getAttr(file_node + ".fileTextureName")

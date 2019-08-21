@@ -28,6 +28,7 @@ class CollectReferencedNamespaces(pyblish.api.InstancePlugin):
     @context_process
     def process(self, context):
         from maya import cmds
+        from reveries.maya import lib
 
         referenced_namespace = set()
         referenced_content = set()
@@ -40,7 +41,7 @@ class CollectReferencedNamespaces(pyblish.api.InstancePlugin):
 
             members = cmds.sets(container["objectName"], query=True)
 
-            references = cmds.ls(members, type="reference")
+            references = lib.get_reference_nodes(members)
             if not references:
                 # Imported
                 continue
