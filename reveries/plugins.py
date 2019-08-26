@@ -64,7 +64,7 @@ class BaseContractor(object):
             context (pyblish.api.Context): context object
             instances (list): A list of delegated instances
         """
-        raise NotImplementedError
+        raise NotImplementedError("Should be implemented in subclass.")
 
     def _parse_context(self, context):
         if self.__cached_context is not None:
@@ -843,10 +843,10 @@ class SelectInvalidInstanceAction(OnSymptomAction):
             self.deselect()
 
     def select(self, invalid):
-        raise NotImplementedError
+        raise NotImplementedError("Should be implemented in subclass.")
 
     def deselect(self):
-        raise NotImplementedError
+        raise NotImplementedError("Should be implemented in subclass.")
 
 
 class SelectInvalidContextAction(OnSymptomAction):
@@ -888,7 +888,7 @@ class SelectInvalidContextAction(OnSymptomAction):
             self.deselect()
 
     def select(self, invalid):
-        raise NotImplementedError
+        raise NotImplementedError("Should be implemented in subclass.")
 
     def deselect(self):
-        raise NotImplementedError
+        raise NotImplementedError("Should be implemented in subclass.")
