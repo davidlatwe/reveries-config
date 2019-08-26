@@ -1,15 +1,11 @@
 
 import os
-import logging
 import shutil
 
 import errno
 import pyblish.api
 from avalon import api, io
 from avalon.vendor import filelink
-
-
-log = logging.getLogger(__name__)
 
 
 class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
@@ -24,6 +20,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     The order of families is important, when working with lookdev you want to
     first publish the texture, update the texture paths in the nodes and then
     publish the shading network. Same goes for file dependent assets.
+
+    (NOTE) No database write happens here, only file transfer.
 
     """
 
@@ -47,26 +45,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         # Assemble data and create version, representations
         subset, version, representations = self.register(instance)
 
+        instance.data["toDatabase"] = (subset, version, representations)
+
         # Integrate representations' files to shareable space
         self.log.info("Integrating representations to shareable space ...")
         self.integrate()
-
-        existed = io.find_one({"parent": subset["_id"],
-                               "name": version["name"]})
-        if existed is not None:
-            self.log.info("Version existed, representation file has been "
-                          "overwritten.")
-            filter_ = {"_id": existed["_id"]}
-            update = {"$set": {"data.time": instance.context.data["time"]}}
-            io.update_many(filter_, update)
-            return
-
-        # Write version and representations to database
-        version_id = self.write_database(instance, version, representations)
-        instance.data["insertedVersionId"] = version_id
-
-        # Update dependent
-        self.update_dependent(instance, version_id)
 
     def register(self, instance):
 
@@ -262,34 +245,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         filelink.create(src, dst, filelink.HARDLINK)
 
-    def write_database(self, instance, version, representations):
-        """Write version and representations to database
-
-        Should write version documents until files collecting passed
-        without error.
-
-        """
-        # Write version
-        #
-        self.log.info("Registering version {} to database ..."
-                      "".format(version["name"]))
-
-        if "pregeneratedVersionId" in instance.data:
-            version["_id"] = instance.data["pregeneratedVersionId"]
-
-        version_id = io.insert_one(version).inserted_id
-
-        # Write representations
-        #
-        self.log.info("Registering {} representations ..."
-                      "".format(len(representations)))
-        for representation in representations:
-            representation["parent"] = version_id
-
-        io.insert_many(representations)
-
-        return version_id
-
     def get_subset(self, instance):
 
         asset_id = instance.context.data["assetDoc"]["_id"]
@@ -302,15 +257,14 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             subset_name = instance.data["subset"]
             self.log.info("Subset '%s' not found, creating.." % subset_name)
 
-            _id = io.insert_one({
+            subset = {
+                "_id": io.ObjectId(),  # Pre-generate subset id
                 "schema": "avalon-core:subset-2.0",
                 "type": "subset",
                 "name": subset_name,
                 "data": {},
-                "parent": asset_id
-            }).inserted_id
-
-            subset = io.find_one({"_id": _id})
+                "parent": asset_id,
+            }
 
         return subset
 
@@ -392,13 +346,3 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 version_data[key] = instance.data[key]
 
         return version_data
-
-    def update_dependent(self, instance, version_id):
-
-        version_id = str(version_id)
-        field = "data.dependents." + version_id
-
-        for version_id_, data in instance.data["dependencies"].items():
-            filter_ = {"_id": io.ObjectId(version_id_)}
-            update = {"$set": {field: {"count": data["count"]}}}
-            io.update_many(filter_, update)
