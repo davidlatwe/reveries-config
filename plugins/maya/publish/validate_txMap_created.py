@@ -1,6 +1,7 @@
 
 import os
 import pyblish.api
+from reveries.maya.plugins import MayaSelectInvalidContextAction
 
 
 class ValidateTxMapCreated(pyblish.api.InstancePlugin):
@@ -27,18 +28,43 @@ class ValidateTxMapCreated(pyblish.api.InstancePlugin):
         "reveries.texture",
         "reveries.standin",
     ]
+    actions = [
+        pyblish.api.Category("Select"),
+        MayaSelectInvalidContextAction,
+    ]
 
     def process(self, instance):
         if not instance.data.get("useTxMaps"):
             self.log.debug("No .tx map needed.")
             return
 
-        for data in instance.data["fileData"]:
+        invalid = self.get_invalid(instance)
+        if invalid:
+            raise Exception("Not all texture have .tx map created, "
+                            "please use 'Tx Manager' or create them "
+                            "with a render.")
+
+    @classmethod
+    def get_invalid(cls, instance):
+        invalid = list()
+        for data in instance.data.get("fileData", []):
+            node = data["node"]
             for file in data["fnames"]:
                 file_path = os.path.join(data["dir"], file)
+                if not os.path.isfile(file_path):
+                    cls.log.warning("File node '%s' map not exists, "
+                                    "TX validation skip." % node)
+                    continue
 
                 tx_path = os.path.splitext(file_path)[0] + ".tx"
                 if not os.path.isfile(tx_path):
-                    raise Exception("Not all texture have .tx map created, "
-                                    "please use 'Tx Manager' or create them "
-                                    "with a render.")
+                    cls.log.error(file_path)
+                    invalid.append(node)
+                    break
+
+        return invalid
+
+    @classmethod
+    def fix_invalid(cls, instance):
+        # (TODO) maketx for sequence
+        pass
