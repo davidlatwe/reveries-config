@@ -36,22 +36,24 @@ class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
         if io.find_one(filter) is None:
             io.insert_one(subset)
 
-        version = io.find_one({"parent": subset["_id"],
-                               "name": version["name"]})
-        if version is not None:
+        # Write version if not exists
+        filter = {"parent": subset["_id"], "name": version["name"]}
+        if io.find_one(filter) is None:
+            # Write version and representations to database
+            version_id = self.write_database(instance,
+                                             version,
+                                             representations)
+            instance.data["insertedVersionId"] = version_id
+
+            # Update dependent
+            self.update_dependent(instance, version_id)
+
+        else:
             self.log.info("Version existed, representation file has been "
                           "overwritten.")
             filter_ = {"_id": version["_id"]}
             update = {"$set": {"data.time": context.data["time"]}}
             io.update_many(filter_, update)
-            return
-
-        # Write version and representations to database
-        version_id = self.write_database(instance, version, representations)
-        instance.data["insertedVersionId"] = version_id
-
-        # Update dependent
-        self.update_dependent(instance, version_id)
 
     def write_database(self, instance, version, representations):
         """Write version and representations to database
