@@ -1,5 +1,8 @@
 
+import os
 import pyblish.api
+
+from reveries.maya import plugins
 
 
 class OpenFilePathEditor(pyblish.api.Action):
@@ -23,27 +26,31 @@ class ValidateTextureFilesExists(pyblish.api.InstancePlugin):
         "reveries.texture",
     ]
     actions = [
+        pyblish.api.Category("Select"),
+        plugins.MayaSelectInvalidInstanceAction,
         pyblish.api.Category("Helper"),
         OpenFilePathEditor,
     ]
 
     @classmethod
     def get_invalid(cls, instance):
-        from maya import cmds
+        invalid = dict()
 
-        invalid = list()
+        for data in instance.data.get("fileData", []):
+            node = data["node"]
+            for file in data["fnames"]:
+                file_path = os.path.join(data["dir"], file)
 
-        cmds.filePathEditor(refresh=True)
-        unresloved = (cmds.filePathEditor(query=True,
-                                          listFiles="",
-                                          withAttribute=True,
-                                          byType="file",
-                                          unresolved=True) or [])
+                if not os.path.isfile(file_path):
+                    if node not in invalid:
+                        invalid[node] = [file_path]
+                    else:
+                        invalid[node].append(file_path)
 
-        for map_attr in unresloved[1::2]:
-            file_node = map_attr.split(".", 1)[0]
-            if file_node in instance:
-                invalid.append(file_node)
+            if node in invalid:
+                count = len(invalid[node])
+                cls.log.error("File node '%s' has %d missing map."
+                              % (node, count))
 
         return invalid
 
