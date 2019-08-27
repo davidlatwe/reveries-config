@@ -495,6 +495,11 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         This should NOT be re-implemented.
 
         """
+        context = instance.context
+        # If any error occurred, skip extraction.
+        assert all(result["success"] for result in context.data["results"]), (
+            "Atomicity not held, aborting.")
+
         self._process(instance)
         self.extract()
 
