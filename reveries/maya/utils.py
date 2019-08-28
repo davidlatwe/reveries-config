@@ -31,6 +31,43 @@ from . import lib, capsule
 log = logging.getLogger(__name__)
 
 
+def texture_path_expand(nodes=lib._no_val):
+    """Expand file nodes' file path that has environment variable embedded
+
+    Args:
+        nodes (list, optional): List of nodes, process all nodes if not
+                                provided.
+
+    """
+    args = (nodes, ) if nodes is not lib._no_val else ()
+
+    for node in cmds.ls(*args, type="file"):
+        attr = node + ".fileTextureName"
+        path = cmds.getAttr(attr, expandEnvironmentVariables=True)
+        cmds.setAttr(attr, path, type="string")
+
+
+def texture_path_embed(nodes=lib._no_val):
+    """Embed environment variables into file nodes' file path
+
+    Environment variables that will be embedded:
+        * AVALON_PROJECTS
+        * AVALON_PROJECT
+
+    Args:
+        nodes (list, optional): List of nodes, process all nodes if not
+                                provided.
+
+    """
+    args = (nodes, ) if nodes is not lib._no_val else ()
+
+    for node in cmds.ls(*args, type="file"):
+        attr = node + ".fileTextureName"
+        path = cmds.getAttr(attr, expandEnvironmentVariables=True)
+        embedded_path = env_embedded_path(path)
+        cmds.setAttr(attr, embedded_path, type="string")
+
+
 def _hash_MPoint(x, y, z, w):
     x = (x + 1) * 233
     y = (y + x) * 239
