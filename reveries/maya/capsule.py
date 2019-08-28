@@ -1,7 +1,10 @@
+
+import os
 import contextlib
 from maya import cmds, mel
 from avalon.vendor.six import string_types
 from . import lib
+from .. import utils
 
 
 @contextlib.contextmanager
@@ -585,3 +588,33 @@ def attribute_values(attr_values):
                 cmds.setAttr(attr, "", type="string")
             else:
                 cmds.setAttr(attr, value)
+
+
+@contextlib.contextmanager
+def record_history(recorder):
+    """Record Maya logs during the context
+
+    Enable Maya Script Editor's write-history feature and read history file
+    lines to a list on context exit.
+
+    Args:
+        recorder (list): An empty list for storing logs on context exit
+
+    """
+    tmp = utils.temp_dir(prefix="mayalog_") + "/mayalog.txt"
+
+    try:
+        cmds.scriptEditorInfo(historyFilename=tmp, writeHistory=True)
+        yield
+
+    finally:
+        cmds.scriptEditorInfo(writeHistory=False)
+
+        if not os.path.isfile(tmp):
+            cmds.warning("History file not exists, this is a bug.")
+            return
+
+        with open(tmp, "r") as history:
+            recorder[:] = list(history.readlines())
+
+        os.remove(tmp)
