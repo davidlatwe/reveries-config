@@ -13,14 +13,17 @@ except ImportError:
 
 from datetime import datetime
 
-from avalon import io
+from avalon import api, io
 from avalon.maya.pipeline import AVALON_CONTAINERS
+
+import avalon_sftpc
 
 from maya import cmds, mel
 from maya.api import OpenMaya as om
 from ..vendor import six
 from ..utils import _C4Hasher, get_representation_path_
 from .pipeline import (
+    find_stray_textures,
     env_embedded_path,
     get_container_from_namespace,
     AVALON_GROUP_ATTR,
@@ -924,3 +927,121 @@ def drop_interface():
             cmds.sets(container, addElement=CONTAINERS)
 
         cmds.delete(interface)
+
+
+class MayaSFTPCJobExporter(avalon_sftpc.util.JobExporter):
+    """Avalon SFTPC job file exporter with dependency helper implemented
+    """
+
+    def force_file_save(self):
+        cmds.file(save=True, force=True)
+
+    def parse_containers(self):
+        """
+
+        NOTE: This is the additional job for workfile
+
+        """
+        def texture_lookup(version_id):
+            representations = set()
+
+            dependent = "data.dependents.%s" % version_id
+            filter = {
+                "type": "version",
+                "data.families": "reveries.texture",
+                dependent: {"$exists": True},
+            }
+            version = io.find_one(filter)
+
+            if version is not None:
+                representation = io.find_one({"parent": version["_id"]})
+                representations.add(str(representation["_id"]))
+                # Patching textures
+                for pre_version in io.find({"parent": version["parent"],
+                                            "name": {"$lt": version["name"]}},
+                                           sort=[("name", -1)]):
+
+                    pre_repr = io.find_one({"parent": pre_version["_id"]})
+
+                    if "fileInventory" in pre_repr["data"]:
+                        representations.add(str(pre_repr["_id"]))
+                    else:
+                        break
+
+            return representations
+
+        # Start
+
+        representations = set()
+        versions = set()
+        for container in api.registered_host().ls():
+            representations.add(container["representation"])
+            versions.add(container["versionId"])
+
+        for id in versions:
+            representations.update(texture_lookup(id))
+
+        for id in representations:
+            self.from_representation(id)
+
+    def parse_stray_textures(self):
+        """Find file nodes which pointing files that were not in published space
+
+        If there are any texture files that has not been published...
+
+        NOTE: This is the additional job for workfile
+
+        """
+        session = api.Session
+        host = api.registered_host()
+        workfile = host.current_file()
+        project = session["AVALON_PROJECT"]
+
+        jobs = list()
+
+        for file_node in find_stray_textures():
+            file_path = cmds.getAttr(file_node + ".fileTextureName",
+                                     expandEnvironmentVariables=True)
+
+            if project in file_path:
+                head, tail = file_path.split(project, maxsplit=1)
+                # Replace root
+                remote_path = self.remote_root + os.sep + project + tail
+
+                file_path = os.path.normpath(file_path)
+                remote_path = os.path.normpath(remote_path)
+
+                jobs.append((file_path, remote_path))
+
+        if not jobs:
+            return
+
+        self.add_job(files=jobs,
+                     type="Stray Textures",
+                     description="%s - %s" % (session["AVALON_ASSET"],
+                                              os.path.basename(workfile)))
+
+
+def export_sftpc_job_from_scene(remote_root, remote_user, site):
+    """Export Avalon SFTPC job file from Maya scene
+
+    Args:
+        remote_root (str): Projects root at remote site
+        remote_user (str): SFTP server username
+        site (str): SFTP server connection config name
+
+    Returns:
+        str: Job file output path
+
+    """
+    exporter = MayaSFTPCJobExporter(remote_root=remote_root,
+                                    remote_user=remote_user,
+                                    site=site)
+    additional_jobs = [
+        exporter.parse_stray_textures,
+        exporter.parse_containers,
+        exporter.force_file_save,
+    ]
+    exporter.from_workfile(additional_jobs)
+
+    return exporter.export()
