@@ -65,7 +65,39 @@ def texture_path_embed(nodes=lib._no_val):
         attr = node + ".fileTextureName"
         path = cmds.getAttr(attr, expandEnvironmentVariables=True)
         embedded_path = env_embedded_path(path)
-        cmds.setAttr(attr, embedded_path, type="string")
+
+        if not embedded_path == path:
+            cmds.setAttr(attr, embedded_path, type="string")
+
+
+def fix_texture_file_nodes():
+    """Fixing previous bad implementations on texture management
+    """
+    with capsule.ref_edit_unlock():
+        # This context is for unlocking colorSpace
+        for node in cmds.ls(type="file"):
+            if cmds.getAttr(node + ".colorSpace", lock=True):
+                cmds.setAttr(node + ".colorSpace", lock=False)
+
+            if not cmds.getAttr(node + ".ignoreColorSpaceFileRules"):
+                cmds.setAttr(node + ".ignoreColorSpaceFileRules", True)
+
+            # Resolve TX map update issues
+            if (lib.hasAttr(node, "aiAutoTx") and
+                    cmds.getAttr(node + ".aiAutoTx")):
+                cmds.setAttr(node + ".aiAutoTx", False)
+
+            # Fix env var embed texture path
+            # This is for after solving Avalon Launcher root `realpath` *bug*
+            bug = "$AVALON_PROJECTS$AVALON_PROJECT"
+            fix = "$AVALON_PROJECTS/$AVALON_PROJECT"
+            path = cmds.getAttr(node + ".fileTextureName")
+            if path.startswith(bug):
+                fix = path.replace(bug, fix)
+                cmds.setAttr(node + ".fileTextureName", fix, type="string")
+
+            # Embed environment variables into file path
+            texture_path_embed()
 
 
 def _hash_MPoint(x, y, z, w):
