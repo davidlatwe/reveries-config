@@ -39,13 +39,19 @@ class CollectLook(pyblish.api.InstancePlugin):
         shaders = cmds.listConnections(surfaces, type="shadingEngine")
         shaders = list(set(shaders))
         try:
-            _history = cmds.listHistory(shaders)
+            # (NOTE): The flag `pruneDagObjects` will also filter out
+            #         `place3dTexture` type node.
+            # (NOTE): Without flag `allConnections`, upstream nodes before
+            #         `aiColorCorrect` may not be tracked if only `outAlpha`
+            #         is connected to downstream node.
+            #         This might be a bug of Arnold since other Maya node
+            #         does not have this issue, not fully tested so not
+            #         sure. MtoA version: 3.1.2.1
+            _history = cmds.listHistory(shaders, allConnections=True)
             _history = list(set(_history))
         except RuntimeError:
             _history = []  # Found no items to list the history for.
         upstream_nodes = cmds.ls(_history, long=True)
-        # (NOTE): The flag `pruneDagObjects` will also filter out
-        # `place3dTexture` type node.
 
         # Remove unwanted types
         unwanted_types = ("groupId", "groupParts", "surfaceShape")
