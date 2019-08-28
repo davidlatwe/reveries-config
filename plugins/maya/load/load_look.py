@@ -64,6 +64,10 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         from reveries.maya import lib
         from avalon.maya.pipeline import AVALON_CONTAINER_ID, parse_container
 
+        # Flag `_preserveRefEdit` from `container` is a workaround
+        # should coming from `options`
+        preserve_edit = container.pop("_preserveRefEdit", False)
+
         nodes = cmds.sets(container["objectName"], query=True)
         shaders = cmds.ls(nodes, type="shadingEngine")
         shaded = cmds.ls(cmds.sets(shaders, query=True), long=True)
@@ -124,6 +128,8 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         uuid = cmds.ls(container["objectName"], uuid=True)
 
         # Update
+        if not preserve_edit:
+            container["_dropRefEdit"] = True
         super(LookLoader, self).update(container, representation)
 
         if not shaded_subsets:
