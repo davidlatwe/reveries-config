@@ -60,11 +60,9 @@ class ExtractArnoldStandIn(PackageExtractor):
             capsule.evaluation("off"),
             capsule.maintained_selection(),
             capsule.ref_edit_unlock(),
-            # (NOTE) Force color space unlocked
-            #        Previously we used to lock color space in case
-            #        forgot to check it after changing file path.
+            # (NOTE) Ensure attribute unlock
             capsule.attribute_states(file_node_attrs.keys(), lock=False),
-            # Change to .tx path
+            # Change to environment var embedded path
             capsule.attribute_values(file_node_attrs),
         ):
             cmds.select(self.member, replace=True)

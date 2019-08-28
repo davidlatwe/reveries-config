@@ -221,24 +221,24 @@ class ExtractTexture(PackageExtractor):
         self.add_data({"fileInventory": file_inventory})
 
     def update_file_node_attrs(self, file_nodes, path, color_space):
-        from maya import cmds
-
-        """Deprecated, .tx map may crash viewport 2.0 and hypershade material window
-        if self.use_tx:
-            # Force downstream to use .tx map
-            path = to_tx(path)
-        """
+        from reveries.maya import lib
 
         for node in file_nodes:
             attr = node + ".fileTextureName"
-            self.context.data["fileNodeAttrs"][attr] = path
+            self.data["fileNodeAttrs"][attr] = path
             # Preserve color space values (force value after filepath change)
             # This will also trigger in the same order at end of context to
             # ensure after context it's still the original value.
             attr = node + ".colorSpace"
-            self.context.data["fileNodeAttrs"][attr] = color_space
+            self.data["fileNodeAttrs"][attr] = color_space
 
-            # (NOTE) Force color space unlocked
-            #        Previously we used to lock color space in case
-            #        forgot to check it after changing file path.
-            cmds.setAttr(attr, lock=False)
+            attr = node + ".ignoreColorSpaceFileRules"
+            self.data["fileNodeAttrs"][attr] = True
+
+            if lib.hasAttr(node, "aiAutoTx"):
+                # Although we ensured the tx update, but the file modification
+                # time still may loose during file transfer and trigger another
+                # tx update later on. So we force disable it on each published
+                # file node.
+                attr = node + ".aiAutoTx"
+                self.data["fileNodeAttrs"][attr] = False

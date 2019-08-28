@@ -34,6 +34,7 @@ class ExtractTxMapUpdate(pyblish.api.InstancePlugin):
 
     def update_tx(self):
         from maya import cmds
+        from reveries.maya import capsule
 
         if cmds.pluginInfo("mtoa", query=True, loaded=True):
             import mtoa.core as core
@@ -43,8 +44,16 @@ class ExtractTxMapUpdate(pyblish.api.InstancePlugin):
             return
 
         self.log.info("Ensuring all .tx files updated..")
-        # (NOTE) This was from the Arnold's utilities menu tool
-        #        "Update TX Files". The command will not re-create .tx file
-        #        if updated.
+
         core.createOptions()
-        cmds.arnoldUpdateTx()
+        recorder = list()
+
+        with capsule.record_history(recorder):
+            # (NOTE) This was from the Arnold's utilities menu tool
+            #        "Update TX Files". The command will not re-create .tx file
+            #        if updated.
+            cmds.arnoldUpdateTx()
+
+        # Check history for update output
+        if any(line.startswith("# Error:") for line in recorder):
+            raise Exception("Error occurred during tx map update.")
