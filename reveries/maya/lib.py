@@ -1,13 +1,21 @@
 
+import os
 import re
 import logging
 from collections import defaultdict
 from maya import cmds, mel
 from maya.api import OpenMaya as om
+from maya.app.general.fileTexturePathResolver import (
+    getFilePatternString,
+    findAllFilesForPattern,
+)
+
+from avalon import io
 
 from .. import lib
 from ..vendor.six import string_types
 from .vendor import capture
+from ..utils import get_representation_path_
 
 
 log = logging.getLogger(__name__)
@@ -1679,3 +1687,102 @@ def is_versioned_texture_path(path):
         "[/\\\]TexturePack"  # representation dir
     )
     return bool(re.match(pattern, path))
+
+
+def profiling_file_nodes(file_nodes):
+    """Collect texture file data from node for publish use
+    """
+    file_data = list()
+    file_count = 0
+
+    for file_node in file_nodes:
+
+        color_space = cmds.getAttr(file_node + ".colorSpace")
+        tiling_mode = cmds.getAttr(file_node + ".uvTilingMode")
+        is_sequence = cmds.getAttr(file_node + ".useFrameExtension")
+        file_path = cmds.getAttr(file_node + ".fileTextureName",
+                                 expandEnvironmentVariables=True)
+
+        file_path = file_path.replace("\\", "/")
+        dir_name = os.path.dirname(file_path)
+
+        if not (is_sequence or tiling_mode):
+            # (NOTE) If no sequence and no tiling, skip regex parsing
+            #        to avoid potential not-regex-friendly file name which
+            #        may lead to incorrect result.
+            pattern = file_path
+            all_files = [os.path.basename(pattern)]
+        else:
+            # (NOTE) When UV tiliing is enabled, if file name contains
+            #        characters like `[]`, which possible from Photoshop,
+            #        will make regex parse file name incorrectly.
+            pattern = getFilePatternString(file_path,
+                                           is_sequence,
+                                           tiling_mode)
+            all_files = [
+                os.path.basename(fpath) for fpath in
+                findAllFilesForPattern(pattern, frameNumber=None)
+            ]
+
+        if not all_files:
+            log.error("%s file not exists." % file_node)
+            continue
+
+        fpattern = os.path.basename(pattern)
+
+        if len(all_files) > 1:
+            # If it's a sequence, include the dir name as the prefix
+            # of the file pattern
+            dir_name, seq_dir = os.path.split(dir_name)
+            fpattern = seq_dir + "/" + fpattern
+            all_files = [seq_dir + "/" + file for file in all_files]
+
+        file_data.append({
+            "node": file_node,
+            "fpattern": fpattern,
+            "colorSpace": color_space,
+            "dir": dir_name,
+            "fnames": all_files,
+        })
+
+        file_count += len(all_files)
+
+    return file_count, file_data
+
+
+def resolve_file_profile(representation, file_inventory):
+    """Resolve texture file abs path from representation
+    """
+    resolved_by_fpattern = dict()
+
+    if file_inventory:
+
+        parents = io.parenthood(representation)
+        _, subset, asset, project = parents
+
+        _repr_path_cache = dict()
+
+        for data in file_inventory:
+            resolved = dict()
+            version_num = data["version"]
+
+            if version_num in _repr_path_cache:
+                repr_path = _repr_path_cache[version_num]
+
+            else:
+                version = {"name": version_num}
+                parents = (version, subset, asset, project)
+                repr_path = get_representation_path_(representation,
+                                                     parents)
+                _repr_path_cache[version_num] = repr_path
+
+            resolved["pathMap"] = {
+                fn: repr_path + "/" + fn for fn in data["fnames"]
+            }
+
+            fpattern = data["fpattern"]
+            if fpattern not in resolved_by_fpattern:
+                resolved_by_fpattern[fpattern] = list()
+            resolved_by_fpattern[fpattern].append((data, resolved))
+
+    return resolved_by_fpattern

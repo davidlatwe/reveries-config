@@ -6,57 +6,14 @@ import pyblish.api
 import avalon.api
 import avalon.io
 
-from reveries import utils, lib
+from reveries import lib
 from reveries.plugins import PackageExtractor, skip_stage
 from reveries.maya.plugins import env_embedded_path
+from reveries.maya import lib as maya_lib
 
 
 def to_tx(path):
     return os.path.splitext(path)[0] + ".tx"
-
-
-def assemble_published_paths(previous_repr, previous_inventory):
-
-    previous_by_fpattern = dict()
-
-    if previous_inventory:
-
-        parents = avalon.io.parenthood(previous_repr)
-        _, subset, asset, project = parents
-
-        _repr_path_cache = dict()
-
-        for data in previous_inventory:
-            tmp_data = dict()
-            version_num = data["version"]
-
-            if version_num in _repr_path_cache:
-                repr_path = _repr_path_cache[version_num]
-
-            else:
-                version = {"name": version_num}
-                parents = (version, subset, asset, project)
-                repr_path = utils.get_representation_path_(previous_repr,
-                                                           parents)
-                _repr_path_cache[version_num] = repr_path
-
-            tmp_data["pathMap"] = {
-                fn: repr_path + "/" + fn for fn in data["fnames"]
-            }
-            # In case someone using published .tx file which coming from
-            # loaded look...
-            tmp_data["pathMapTx"] = {
-                tx: repr_path + "/" + tx for tx in
-                (to_tx(fn) for fn in data["fnames"])
-            }
-
-            fpattern = data["fpattern"]
-            if fpattern not in previous_by_fpattern:
-                previous_by_fpattern[fpattern] = list()
-
-            previous_by_fpattern[fpattern].append((data, tmp_data))
-
-    return previous_by_fpattern
 
 
 class ExtractTexture(PackageExtractor):
@@ -106,8 +63,8 @@ class ExtractTexture(PackageExtractor):
             repr = avalon.io.find_one({"_id": representation_id})
 
             file_inventory = repr["data"].get("fileInventory", [])
-            previous_by_fpattern = assemble_published_paths(repr,
-                                                            file_inventory)
+            _ = maya_lib.resolve_file_profile(repr, file_inventory)
+            previous_by_fpattern = _
 
         # Get current files
         for data in self.data["fileData"]:
