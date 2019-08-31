@@ -46,14 +46,15 @@ class ExtractTxMapUpdate(pyblish.api.InstancePlugin):
         self.log.info("Ensuring all .tx files updated..")
 
         core.createOptions()
-        recorder = list()
 
-        with capsule.record_history(recorder):
+        with capsule.OutputDeque() as recorder:
             # (NOTE) This was from the Arnold's utilities menu tool
             #        "Update TX Files". The command will not re-create .tx file
             #        if updated.
             cmds.arnoldUpdateTx()
 
         # Check history for update output
-        if any(line.startswith("# Error:") for line in recorder):
-            raise Exception("Error occurred during tx map update.")
+        while recorder:
+            log = recorder.pop()
+            if "could not be updated" in log:
+                raise Exception("Error occurred during tx map update.")
