@@ -10,7 +10,7 @@ class AvalonCheckSceneReady(pyblish.api.ContextPlugin):
 
     """
 
-    order = pyblish.api.ValidatorOrder - 0.499999
+    order = pyblish.api.ValidatorOrder - 0.49998
     label = "Is Scene Ready"
     hosts = ["maya"]
 
@@ -21,13 +21,16 @@ class AvalonCheckSceneReady(pyblish.api.ContextPlugin):
         if not cmds.undoInfo(query=True, state=True):
             raise Exception("Undo queue is not open, please reset.")
 
+        undo_count = context.data["_undoCount"]
+        # self.log.debug(undo_count)
+
         with capsule.OutputDeque(format=lambda l: l.split(": ", 1)[-1].strip(),
-                                 skip=context.data["_undoCount"],
+                                 skip=undo_count,
                                  ) as undo_list:
             cmds.undoInfo(query=True, printQueue=True)
 
         while undo_list:
-            history = undo_list.popleft()
+            history = undo_list.pop()
             # self.log.debug(history)
 
             if history.startswith("select"):

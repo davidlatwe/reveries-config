@@ -624,7 +624,7 @@ class OutputDeque(collections.deque):
 
         def catch_output(msg, *args):
             self.__count += 1
-            if self.__count < self.skip:
+            if self.__count <= self.skip:
                 return
 
             formatted = self.format(msg)
