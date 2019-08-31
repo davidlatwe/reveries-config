@@ -103,16 +103,14 @@ class ExtractTexture(PackageExtractor):
             for ver_data, tmp_data in versioned_data:
 
                 previous_files = tmp_data["pathMap"]
-                previous_txs = tmp_data["pathMapTx"]
 
                 all_files = list()
                 for file, abs_path in data["pathMap"].items():
-                    if not (file in previous_files or file in previous_txs):
+                    if file not in previous_files:
                         # Possible different file pattern
                         break  # Try previous version
 
-                    _previous_tx = previous_txs.get(file)
-                    abs_previous = previous_files.get(file, _previous_tx)
+                    abs_previous = previous_files.get(file, "")
 
                     if not os.path.isfile(abs_previous):
                         # Previous file not exists (should not happen)
