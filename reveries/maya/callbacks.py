@@ -101,11 +101,18 @@ def on_open(_):
                       "callbacks._outliner_hide_set_member()")
 
     # (Medicine)
+    #
     maya_utils.drop_interface()
-    maya_utils.fix_texture_file_nodes()
+    # Only fix containerized file nodes
+    nodes = set()
+    for container in maya.ls():
+        nodes.update(cmds.ls(cmds.sets(container["objectName"], query=True),
+                             type="file"))
+    maya_utils.fix_texture_file_nodes(list(nodes))
 
+    # For log reading and debug
+    #
     if cmds.about(batch=True):
-        # For log reading and debug
         print("Maya API version: %s" % cmds.about(api=True))
         if cmds.pluginInfo("mtoa", q=True, loaded=True):
             version = cmds.pluginInfo("mtoa", q=True, version=True)
