@@ -35,7 +35,11 @@ class ExtractLightSet(PackageExtractor):
         self.log.info("Extracting lights..")
 
         # From texture extractor
-        file_node_attrs = self.context.data.get("fileNodeAttrs", dict())
+        texture = self.data.get("textureInstance")
+        if texture is not None:
+            file_node_attrs = texture.data.get("fileNodeAttrs", dict())
+        else:
+            file_node_attrs = dict()
 
         with contextlib.nested(
             maya.maintained_selection(),

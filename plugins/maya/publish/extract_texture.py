@@ -37,8 +37,8 @@ class ExtractTexture(PackageExtractor):
 
         # For storing calculated published file path for look or lightSet
         # extractors to update file path.
-        if "fileNodeAttrs" not in self.context.data:
-            self.context.data["fileNodeAttrs"] = OrderedDict()
+        if "fileNodeAttrs" not in self.data:
+            self.data["fileNodeAttrs"] = OrderedDict()
 
         # Extract textures
         #
