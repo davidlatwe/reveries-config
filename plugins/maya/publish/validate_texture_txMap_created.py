@@ -1,10 +1,10 @@
 
 import os
 import pyblish.api
-from reveries.maya.plugins import MayaSelectInvalidContextAction
+from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
-class ValidateTxMapCreated(pyblish.api.InstancePlugin):
+class ValidateTextureTxMapCreated(pyblish.api.InstancePlugin):
     """Ensure all texture file have .tx map created
 
     If you got error from this validation, please use Arnold's 'Tx Manager'
@@ -30,7 +30,7 @@ class ValidateTxMapCreated(pyblish.api.InstancePlugin):
     ]
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidContextAction,
+        MayaSelectInvalidInstanceAction,
     ]
 
     def process(self, instance):
