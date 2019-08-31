@@ -20,6 +20,7 @@ import avalon_sftpc
 
 from maya import cmds, mel
 from maya.api import OpenMaya as om
+
 from ..vendor import six
 from ..utils import _C4Hasher, get_representation_path_
 from .pipeline import (
@@ -70,15 +71,125 @@ def texture_path_embed(nodes=lib._no_val):
         embedded_path = env_embedded_path(path)
 
         if not embedded_path == path:
-            cmds.setAttr(attr, embedded_path, type="string")
+            try:
+                cmds.setAttr(attr, embedded_path, type="string")
+            except RuntimeError:
+                print(attr)
+                print(path)
+                print(embedded_path)
 
 
-def fix_texture_file_nodes():
-    """Fixing previous bad implementations on texture management
+def remap_to_published_texture(nodes, representation_id, dry_run=False):
+    """For fixing previous bad implementations on texture management
+
+    This is for remapping texture file path from arbitrarily work path
+    to previous published path in published looks.
+
+    For some reason, some texture path may not changed to published path
+    after extraction. This is a fixing helper for the issue.
+
+    (NOTE) The issue should be resolved in following commits. :')
+
     """
+    file_nodes = cmds.ls(nodes, type="file")
+    count, file_data = lib.profiling_file_nodes(file_nodes)
+    if not count:
+        return
+
+    node_by_fpattern = dict()
+
+    for data in file_data:
+        data["pathMap"] = {
+            fn: data["dir"] + "/" + fn for fn in data["fnames"]
+        }
+
+        fpattern = data["fpattern"]
+        if fpattern not in node_by_fpattern:
+            node_by_fpattern[fpattern] = list()
+        node_by_fpattern[fpattern].append(data)
+
+    repr = io.find_one({"_id": io.ObjectId(representation_id)})
+    file_inventory = repr["data"].get("fileInventory")
+    if not file_inventory:
+        return
+
+    resolved_by_fpattern = lib.resolve_file_profile(repr, file_inventory)
+
+    # MAPPING
+
+    for fpattern, file_datas in node_by_fpattern.items():
+        if fpattern not in resolved_by_fpattern:
+            fpattern_ = fpattern.rsplit(".", 1)[0]
+            for resolved_fpattern in resolved_by_fpattern:
+                if fpattern_ == resolved_fpattern.rsplit(".", 1)[0]:
+                    versioned_data = resolved_by_fpattern[resolved_fpattern]
+                    break
+            else:
+                continue
+        else:
+            versioned_data = resolved_by_fpattern[fpattern]
+
+        data = file_datas[0]
+        file_nodes = [dat["node"] for dat in file_datas]
+        versioned_data.sort(key=lambda elem: elem[0]["version"],
+                            reverse=True)  # elem: (data, tmp_data)
+
+        for ver_data, resolved in versioned_data:
+
+            previous_files = resolved["pathMap"]
+
+            for file, abs_path in data["pathMap"].items():
+                if file not in previous_files:
+                    file = file.rsplit(".", 1)[0]
+                    for pre_file in previous_files:
+                        if file == pre_file.rsplit(".", 1)[0]:
+                            file = pre_file
+                            abs_previous = previous_files[pre_file]
+                            ext = pre_file.rsplit(".", 1)[1]
+                            abs_path = abs_path.rsplit(".", 1)[0] + "." + ext
+                            if not os.path.isfile(abs_path):
+                                continue
+                            else:
+                                break
+                    else:
+                        # Possible different file pattern
+                        break  # Try previous version
+                else:
+                    abs_previous = previous_files[file]
+
+                if not os.path.isfile(abs_previous):
+                    # Previous file not exists (should not happen)
+                    break  # Try previous version
+
+                # (NOTE) We don't need to check on file size and modification
+                #        time here since we are trying to map file to latest
+                #        version of published one.
+
+            else:
+                # Version matched, consider as same file
+                head_file = sorted(previous_files)[0]
+                resolved_path = abs_previous[:-len(file)] + head_file
+                embedded_path = env_embedded_path(resolved_path)
+                fix_texture_file_nodes(file_nodes, embedded_path, dry_run)
+
+                # Proceed to next pattern
+                break
+
+        else:
+            # Not match with any previous version, this should not happen
+            log.warning("No version matched.")
+            with open(dry_run, "a") as path_log:
+                path_log.write("\n * " + data["dir"] + "/" + fpattern + "\n\n")
+
+
+def fix_texture_file_nodes(nodes=lib._no_val, file_path=None, dry_run=False):
+    """For fixing previous bad implementations on texture management
+    """
+    args = (nodes, ) if nodes is not lib._no_val else ()
+
     with capsule.ref_edit_unlock():
         # This context is for unlocking colorSpace
-        for node in cmds.ls(type="file"):
+        for node in cmds.ls(*args, type="file"):
             if cmds.getAttr(node + ".colorSpace", lock=True):
                 cmds.setAttr(node + ".colorSpace", lock=False)
 
@@ -90,17 +201,37 @@ def fix_texture_file_nodes():
                     cmds.getAttr(node + ".aiAutoTx")):
                 cmds.setAttr(node + ".aiAutoTx", False)
 
-            # Fix env var embed texture path
-            # This is for after solving Avalon Launcher root `realpath` *bug*
-            bug = "$AVALON_PROJECTS$AVALON_PROJECT"
-            fix = "$AVALON_PROJECTS/$AVALON_PROJECT"
-            path = cmds.getAttr(node + ".fileTextureName")
-            if path.startswith(bug):
-                fix = path.replace(bug, fix)
-                cmds.setAttr(node + ".fileTextureName", fix, type="string")
+            if file_path:
+                if dry_run:
+                    origin = cmds.getAttr(node + ".fileTextureName")
 
-            # Embed environment variables into file path
-            texture_path_embed()
+                    if isinstance(dry_run, six.string_types):
+                        with open(dry_run, "a") as path_log:
+                            path_log.write(" : " + origin + "\n")
+                            path_log.write(">: " + file_path + "\n\n")
+                    else:
+                        log.info(" : " + origin)
+                        log.info(">: " + file_path)
+                else:
+                    cmds.setAttr(node + ".fileTextureName",
+                                 file_path,
+                                 type="string")
+            else:
+                # Fix env var embed texture path
+                # For after solving Avalon Launcher root `realpath` *bug*
+                bug = "$AVALON_PROJECTS$AVALON_PROJECT"
+                fix = "$AVALON_PROJECTS/$AVALON_PROJECT"
+                path = cmds.getAttr(node + ".fileTextureName")
+                if path.startswith(bug):
+                    fix = path.replace(bug, fix)
+                    cmds.setAttr(node + ".fileTextureName", fix, type="string")
+                else:
+                    # Embed environment variables into file path
+                    texture_path_embed()
+
+
+# TODO: Objectize texture file data
+#       implement __eq__ to compare files
 
 
 def _hash_MPoint(x, y, z, w):
