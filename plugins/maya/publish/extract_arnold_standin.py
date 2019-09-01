@@ -4,14 +4,11 @@ import contextlib
 from collections import OrderedDict
 
 import pyblish.api
+import avalon.api
 from reveries.plugins import PackageExtractor, skip_stage
 from reveries.maya import capsule
 
 from maya import cmds
-
-
-def to_tx(path):
-    return os.path.splitext(path)[0] + ".tx"
 
 
 class ExtractArnoldStandIn(PackageExtractor):
@@ -38,12 +35,21 @@ class ExtractArnoldStandIn(PackageExtractor):
         cache_file = self.file_name("ass")
         cache_path = os.path.join(package_path, cache_file)
 
+        root = avalon.api.registered_root()
+        project = avalon.api.Session["AVALON_PORJECT"]
+
         file_node_attrs = OrderedDict()
         for node in self.data["fileNodes"]:
+            # Embedding env var into file path
             attr = node + ".fileTextureName"
             path = cmds.getAttr(attr, expandEnvironmentVariables=True)
-            file_node_attrs[attr] = to_tx(path)
+            if path.startswith(root):
+                path = path.replace(root, "[AVALON_PROJECTS]", 1)
+            if project in path:
+                path = path.replace(project, "[AVALON_PROJECT]", 1)
+            file_node_attrs[attr] = path
 
+            # Preserve color space
             attr = node + ".colorSpace"
             color_space = cmds.getAttr(attr)
             file_node_attrs[attr] = color_space
@@ -54,11 +60,9 @@ class ExtractArnoldStandIn(PackageExtractor):
             capsule.evaluation("off"),
             capsule.maintained_selection(),
             capsule.ref_edit_unlock(),
-            # (NOTE) Force color space unlocked
-            #        Previously we used to lock color space in case
-            #        forgot to check it after changing file path.
+            # (NOTE) Ensure attribute unlock
             capsule.attribute_states(file_node_attrs.keys(), lock=False),
-            # Change to .tx path
+            # Change to environment var embedded path
             capsule.attribute_values(file_node_attrs),
         ):
             cmds.select(self.member, replace=True)

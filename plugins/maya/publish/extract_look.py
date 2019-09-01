@@ -50,10 +50,18 @@ class ExtractLook(PackageExtractor):
 
         self.log.info("Extracting shaders..")
 
-        file_node_attrs = self.context.data.get("fileNodeAttrs", dict())
+        texture = self.data.get("textureInstance")
+        if texture is not None:
+            file_node_attrs = texture.data.get("fileNodeAttrs", dict())
+        else:
+            file_node_attrs = dict()
 
         with contextlib.nested(
             maya.maintained_selection(),
+            capsule.ref_edit_unlock(),
+            # (NOTE) Ensure attribute unlock
+            capsule.attribute_states(file_node_attrs.keys(), lock=False),
+            # Change to published path
             capsule.attribute_values(file_node_attrs),
             capsule.no_refresh(),
         ):

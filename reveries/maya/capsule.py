@@ -1,4 +1,8 @@
+
 import contextlib
+import collections
+
+import maya.OpenMaya as om
 from maya import cmds, mel
 from avalon.vendor.six import string_types
 from . import lib
@@ -585,3 +589,51 @@ def attribute_values(attr_values):
                 cmds.setAttr(attr, "", type="string")
             else:
                 cmds.setAttr(attr, value)
+
+
+class OutputDeque(collections.deque):
+    """Record Maya command output during the context
+
+    A context manager, subclass of `collections.deque`.
+    Maya command output will be added into this deque during the context.
+
+    Args:
+        ignore_empty (bool, optional): Whether to ignore empty formatted
+            output line. Default True.
+        format (callable, optional): Function for formatting output.
+        skip (int, optional): Skip first numbers of outputs.
+        max (int, optional): Max length of the deque.
+
+    """
+
+    def __init__(self,
+                 ignore_empty=True,
+                 format=None,
+                 skip=0,
+                 max=None):
+        self.ignore_empty = ignore_empty
+        self.format = format or (lambda line: line)
+        self.skip = skip
+
+        self.__callback_id = None
+        self.__count = 0
+        super(OutputDeque, self).__init__(maxlen=max)
+
+    def __enter__(self):
+        add_callback = om.MCommandMessage.addCommandOutputCallback
+
+        def catch_output(msg, *args):
+            self.__count += 1
+            if self.__count <= self.skip:
+                return
+
+            formatted = self.format(msg)
+            if formatted or not self.ignore_empty:
+                self.append(formatted)
+
+        self.__callback_id = add_callback(catch_output)
+
+        return self
+
+    def __exit__(self, *args):
+        om.MCommandMessage.removeCallback(self.__callback_id)

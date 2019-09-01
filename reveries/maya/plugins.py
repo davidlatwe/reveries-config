@@ -155,6 +155,10 @@ class ReferenceLoader(MayaBaseLoader):
     def update(self, container, representation):
         from maya import cmds
 
+        # Flag `_dropRefEdit` from `container` is a workaround
+        # should coming from `options`
+        drop_edit = container.pop("_dropRefEdit", False)
+
         node = container["objectName"]
 
         # Get reference node from container
@@ -177,6 +181,10 @@ class ReferenceLoader(MayaBaseLoader):
 
         if file_type not in ("mayaBinary", "Alembic"):
             file_type = "mayaAscii"
+
+        if drop_edit:
+            cmds.file(unloadReference=reference_node)
+            cmds.file(cleanReference=reference_node, editCommand="setAttr")
 
         cmds.file(entry_path,
                   loadReference=reference_node,

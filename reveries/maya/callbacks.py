@@ -1,6 +1,7 @@
 
 import os
 import importlib
+from maya.api import OpenMaya as om  # API 2.0
 from maya import cmds, OpenMaya
 from avalon import maya, api as avalon
 
@@ -72,6 +73,13 @@ def on_init(_):
         before_import_reference
     )
 
+    avalon.logger.info("Installing callbacks on reference..")
+
+    # API 2.0
+    om.MSceneMessage.addCheckFileCallback(
+        om.MSceneMessage.kBeforeCreateReferenceCheck,
+        before_create_reference
+    )
     cmds.evalDeferred("from reveries.maya import callbacks;"
                       "callbacks._outliner_hide_set_member()")
 
@@ -92,7 +100,23 @@ def on_open(_):
     cmds.evalDeferred("from reveries.maya import callbacks;"
                       "callbacks._outliner_hide_set_member()")
 
+    # (Medicine)
+    #
     maya_utils.drop_interface()
+    # Only fix containerized file nodes
+    nodes = set()
+    for container in maya.ls():
+        nodes.update(cmds.ls(cmds.sets(container["objectName"], query=True),
+                             type="file"))
+    maya_utils.fix_texture_file_nodes(list(nodes))
+
+    # For log reading and debug
+    #
+    if cmds.about(batch=True):
+        print("Maya API version: %s" % cmds.about(api=True))
+        if cmds.pluginInfo("mtoa", q=True, loaded=True):
+            version = cmds.pluginInfo("mtoa", q=True, version=True)
+            print("MtoA version: %s" % version)
 
 
 def on_save(_):
@@ -155,3 +179,20 @@ def on_import_reference(_):
     imported_nodes = list(before_nodes - after_nodes)
     maya_utils.update_id_verifiers(imported_nodes)
     _nodes["_"] = None
+
+
+def before_create_reference(reference_node,
+                            referenced_file,
+                            clientData=None):
+    """Using API 2.0"""
+    avalon.logger.info("Running callback before create reference..")
+
+    # (Medicine) Patch bad env var embedded path.
+    bug = "$AVALON_PROJECTS$AVALON_PROJECT"
+    fix = "$AVALON_PROJECTS/$AVALON_PROJECT"
+    path = reference_node.rawFullName()
+    if path.startswith(bug):
+        path = path.replace(bug, fix)
+        reference_node.setRawFullName(path)
+
+    return True

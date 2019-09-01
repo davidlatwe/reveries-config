@@ -751,7 +751,7 @@ Resolution: {width}px * {height}px
         # Put resized original image into new image that has clipinfo
         # overlaied
         im.paste(background.resize((scaled_w, scaled_h),
-                 resample=Image.BICUBIC),
+                                   resample=Image.BICUBIC),
                  box=box)
 
     # save over to original image

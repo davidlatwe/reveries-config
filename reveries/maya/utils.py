@@ -13,14 +13,18 @@ except ImportError:
 
 from datetime import datetime
 
-from avalon import io
+from avalon import api, io
 from avalon.maya.pipeline import AVALON_CONTAINERS
+
+import avalon_sftpc
 
 from maya import cmds, mel
 from maya.api import OpenMaya as om
+
 from ..vendor import six
 from ..utils import _C4Hasher, get_representation_path_
 from .pipeline import (
+    find_stray_textures,
     env_embedded_path,
     get_container_from_namespace,
     AVALON_GROUP_ATTR,
@@ -29,6 +33,205 @@ from . import lib, capsule
 
 
 log = logging.getLogger(__name__)
+
+
+def texture_path_expand(nodes=lib._no_val):
+    """Expand file nodes' file path that has environment variable embedded
+
+    Args:
+        nodes (list, optional): List of nodes, process all nodes if not
+                                provided.
+
+    """
+    args = (nodes, ) if nodes is not lib._no_val else ()
+
+    for node in cmds.ls(*args, type="file"):
+        attr = node + ".fileTextureName"
+        path = cmds.getAttr(attr, expandEnvironmentVariables=True)
+        cmds.setAttr(attr, path, type="string")
+
+
+def texture_path_embed(nodes=lib._no_val):
+    """Embed environment variables into file nodes' file path
+
+    Environment variables that will be embedded:
+        * AVALON_PROJECTS
+        * AVALON_PROJECT
+
+    Args:
+        nodes (list, optional): List of nodes, process all nodes if not
+                                provided.
+
+    """
+    args = (nodes, ) if nodes is not lib._no_val else ()
+
+    for node in cmds.ls(*args, type="file"):
+        attr = node + ".fileTextureName"
+        path = cmds.getAttr(attr, expandEnvironmentVariables=True)
+        embedded_path = env_embedded_path(path)
+
+        if not embedded_path == path:
+            try:
+                cmds.setAttr(attr, embedded_path, type="string")
+            except RuntimeError:
+                print(attr)
+                print(path)
+                print(embedded_path)
+
+
+def remap_to_published_texture(nodes, representation_id, dry_run=False):
+    """For fixing previous bad implementations on texture management
+
+    This is for remapping texture file path from arbitrarily work path
+    to previous published path in published looks.
+
+    For some reason, some texture path may not changed to published path
+    after extraction. This is a fixing helper for the issue.
+
+    (NOTE) The issue should be resolved in following commits. :')
+
+    """
+    file_nodes = cmds.ls(nodes, type="file")
+    count, file_data = lib.profiling_file_nodes(file_nodes)
+    if not count:
+        return
+
+    node_by_fpattern = dict()
+
+    for data in file_data:
+        data["pathMap"] = {
+            fn: data["dir"] + "/" + fn for fn in data["fnames"]
+        }
+
+        fpattern = data["fpattern"]
+        if fpattern not in node_by_fpattern:
+            node_by_fpattern[fpattern] = list()
+        node_by_fpattern[fpattern].append(data)
+
+    repr = io.find_one({"_id": io.ObjectId(representation_id)})
+    file_inventory = repr["data"].get("fileInventory")
+    if not file_inventory:
+        return
+
+    resolved_by_fpattern = lib.resolve_file_profile(repr, file_inventory)
+
+    # MAPPING
+
+    for fpattern, file_datas in node_by_fpattern.items():
+        if fpattern not in resolved_by_fpattern:
+            fpattern_ = fpattern.rsplit(".", 1)[0]
+            for resolved_fpattern in resolved_by_fpattern:
+                if fpattern_ == resolved_fpattern.rsplit(".", 1)[0]:
+                    versioned_data = resolved_by_fpattern[resolved_fpattern]
+                    break
+            else:
+                continue
+        else:
+            versioned_data = resolved_by_fpattern[fpattern]
+
+        data = file_datas[0]
+        file_nodes = [dat["node"] for dat in file_datas]
+        versioned_data.sort(key=lambda elem: elem[0]["version"],
+                            reverse=True)  # elem: (data, tmp_data)
+
+        for ver_data, resolved in versioned_data:
+
+            previous_files = resolved["pathMap"]
+
+            for file, abs_path in data["pathMap"].items():
+                if file not in previous_files:
+                    file = file.rsplit(".", 1)[0]
+                    for pre_file in previous_files:
+                        if file == pre_file.rsplit(".", 1)[0]:
+                            file = pre_file
+                            abs_previous = previous_files[pre_file]
+                            ext = pre_file.rsplit(".", 1)[1]
+                            abs_path = abs_path.rsplit(".", 1)[0] + "." + ext
+                            if not os.path.isfile(abs_path):
+                                continue
+                            else:
+                                break
+                    else:
+                        # Possible different file pattern
+                        break  # Try previous version
+                else:
+                    abs_previous = previous_files[file]
+
+                if not os.path.isfile(abs_previous):
+                    # Previous file not exists (should not happen)
+                    break  # Try previous version
+
+                # (NOTE) We don't need to check on file size and modification
+                #        time here since we are trying to map file to latest
+                #        version of published one.
+
+            else:
+                # Version matched, consider as same file
+                head_file = sorted(previous_files)[0]
+                resolved_path = abs_previous[:-len(file)] + head_file
+                embedded_path = env_embedded_path(resolved_path)
+                fix_texture_file_nodes(file_nodes, embedded_path, dry_run)
+
+                # Proceed to next pattern
+                break
+
+        else:
+            # Not match with any previous version, this should not happen
+            log.warning("No version matched.")
+            with open(dry_run, "a") as path_log:
+                path_log.write("\n * " + data["dir"] + "/" + fpattern + "\n\n")
+
+
+def fix_texture_file_nodes(nodes=lib._no_val, file_path=None, dry_run=False):
+    """For fixing previous bad implementations on texture management
+    """
+    args = (nodes, ) if nodes is not lib._no_val else ()
+
+    with capsule.ref_edit_unlock():
+        # This context is for unlocking colorSpace
+        for node in cmds.ls(*args, type="file"):
+            if cmds.getAttr(node + ".colorSpace", lock=True):
+                cmds.setAttr(node + ".colorSpace", lock=False)
+
+            if not cmds.getAttr(node + ".ignoreColorSpaceFileRules"):
+                cmds.setAttr(node + ".ignoreColorSpaceFileRules", True)
+
+            # Resolve TX map update issues
+            if (lib.hasAttr(node, "aiAutoTx") and
+                    cmds.getAttr(node + ".aiAutoTx")):
+                cmds.setAttr(node + ".aiAutoTx", False)
+
+            if file_path:
+                if dry_run:
+                    origin = cmds.getAttr(node + ".fileTextureName")
+
+                    if isinstance(dry_run, six.string_types):
+                        with open(dry_run, "a") as path_log:
+                            path_log.write(" : " + origin + "\n")
+                            path_log.write(">: " + file_path + "\n\n")
+                    else:
+                        log.info(" : " + origin)
+                        log.info(">: " + file_path)
+                else:
+                    cmds.setAttr(node + ".fileTextureName",
+                                 file_path,
+                                 type="string")
+            else:
+                # Fix env var embed texture path
+                # For after solving Avalon Launcher root `realpath` *bug*
+                bug = "$AVALON_PROJECTS$AVALON_PROJECT"
+                fix = "$AVALON_PROJECTS/$AVALON_PROJECT"
+                path = cmds.getAttr(node + ".fileTextureName")
+                if path.startswith(bug):
+                    fix = path.replace(bug, fix)
+                    cmds.setAttr(node + ".fileTextureName", fix, type="string")
+                else:
+                    # Embed environment variables into file path
+                    texture_path_embed()
+
+
+# TODO: Objectize texture file data
+#       implement __eq__ to compare files
 
 
 def _hash_MPoint(x, y, z, w):
@@ -855,3 +1058,121 @@ def drop_interface():
             cmds.sets(container, addElement=CONTAINERS)
 
         cmds.delete(interface)
+
+
+class MayaSFTPCJobExporter(avalon_sftpc.util.JobExporter):
+    """Avalon SFTPC job file exporter with dependency helper implemented
+    """
+
+    def force_file_save(self):
+        cmds.file(save=True, force=True)
+
+    def parse_containers(self):
+        """
+
+        NOTE: This is the additional job for workfile
+
+        """
+        def texture_lookup(version_id):
+            representations = set()
+
+            dependent = "data.dependents.%s" % version_id
+            filter = {
+                "type": "version",
+                "data.families": "reveries.texture",
+                dependent: {"$exists": True},
+            }
+            version = io.find_one(filter)
+
+            if version is not None:
+                representation = io.find_one({"parent": version["_id"]})
+                representations.add(str(representation["_id"]))
+                # Patching textures
+                for pre_version in io.find({"parent": version["parent"],
+                                            "name": {"$lt": version["name"]}},
+                                           sort=[("name", -1)]):
+
+                    pre_repr = io.find_one({"parent": pre_version["_id"]})
+
+                    if "fileInventory" in pre_repr["data"]:
+                        representations.add(str(pre_repr["_id"]))
+                    else:
+                        break
+
+            return representations
+
+        # Start
+
+        representations = set()
+        versions = set()
+        for container in api.registered_host().ls():
+            representations.add(container["representation"])
+            versions.add(container["versionId"])
+
+        for id in versions:
+            representations.update(texture_lookup(id))
+
+        for id in representations:
+            self.from_representation(id)
+
+    def parse_stray_textures(self):
+        """Find file nodes which pointing files that were not in published space
+
+        If there are any texture files that has not been published...
+
+        NOTE: This is the additional job for workfile
+
+        """
+        session = api.Session
+        host = api.registered_host()
+        workfile = host.current_file()
+        project = session["AVALON_PROJECT"]
+
+        jobs = list()
+
+        for file_node in find_stray_textures():
+            file_path = cmds.getAttr(file_node + ".fileTextureName",
+                                     expandEnvironmentVariables=True)
+
+            if project in file_path:
+                head, tail = file_path.split(project, maxsplit=1)
+                # Replace root
+                remote_path = self.remote_root + os.sep + project + tail
+
+                file_path = os.path.normpath(file_path)
+                remote_path = os.path.normpath(remote_path)
+
+                jobs.append((file_path, remote_path))
+
+        if not jobs:
+            return
+
+        self.add_job(files=jobs,
+                     type="Stray Textures",
+                     description="%s - %s" % (session["AVALON_ASSET"],
+                                              os.path.basename(workfile)))
+
+
+def export_sftpc_job_from_scene(remote_root, remote_user, site):
+    """Export Avalon SFTPC job file from Maya scene
+
+    Args:
+        remote_root (str): Projects root at remote site
+        remote_user (str): SFTP server username
+        site (str): SFTP server connection config name
+
+    Returns:
+        str: Job file output path
+
+    """
+    exporter = MayaSFTPCJobExporter(remote_root=remote_root,
+                                    remote_user=remote_user,
+                                    site=site)
+    additional_jobs = [
+        exporter.parse_stray_textures,
+        exporter.parse_containers,
+        exporter.force_file_save,
+    ]
+    exporter.from_workfile(additional_jobs)
+
+    return exporter.export()

@@ -6,57 +6,14 @@ import pyblish.api
 import avalon.api
 import avalon.io
 
-from reveries import utils, lib
+from reveries import lib
 from reveries.plugins import PackageExtractor, skip_stage
-# from reveries.maya.plugins import env_embedded_path
+from reveries.maya.plugins import env_embedded_path
+from reveries.maya import lib as maya_lib
 
 
 def to_tx(path):
     return os.path.splitext(path)[0] + ".tx"
-
-
-def assemble_published_paths(previous_repr, previous_inventory):
-
-    previous_by_fpattern = dict()
-
-    if previous_inventory:
-
-        parents = avalon.io.parenthood(previous_repr)
-        _, subset, asset, project = parents
-
-        _repr_path_cache = dict()
-
-        for data in previous_inventory:
-            tmp_data = dict()
-            version_num = data["version"]
-
-            if version_num in _repr_path_cache:
-                repr_path = _repr_path_cache[version_num]
-
-            else:
-                version = {"name": version_num}
-                parents = (version, subset, asset, project)
-                repr_path = utils.get_representation_path_(previous_repr,
-                                                           parents)
-                _repr_path_cache[version_num] = repr_path
-
-            tmp_data["pathMap"] = {
-                fn: repr_path + "/" + fn for fn in data["fnames"]
-            }
-            # In case someone using published .tx file which coming from
-            # loaded look...
-            tmp_data["pathMapTx"] = {
-                tx: repr_path + "/" + tx for tx in
-                (to_tx(fn) for fn in data["fnames"])
-            }
-
-            fpattern = data["fpattern"]
-            if fpattern not in previous_by_fpattern:
-                previous_by_fpattern[fpattern] = list()
-
-            previous_by_fpattern[fpattern].append((data, tmp_data))
-
-    return previous_by_fpattern
 
 
 class ExtractTexture(PackageExtractor):
@@ -76,12 +33,12 @@ class ExtractTexture(PackageExtractor):
     def extract_TexturePack(self):
 
         package_path = self.create_package()
-        # package_path = env_embedded_path(package_path)
+        package_path = env_embedded_path(package_path)
 
         # For storing calculated published file path for look or lightSet
         # extractors to update file path.
-        if "fileNodeAttrs" not in self.context.data:
-            self.context.data["fileNodeAttrs"] = OrderedDict()
+        if "fileNodeAttrs" not in self.data:
+            self.data["fileNodeAttrs"] = OrderedDict()
 
         # Extract textures
         #
@@ -106,8 +63,8 @@ class ExtractTexture(PackageExtractor):
             repr = avalon.io.find_one({"_id": representation_id})
 
             file_inventory = repr["data"].get("fileInventory", [])
-            previous_by_fpattern = assemble_published_paths(repr,
-                                                            file_inventory)
+            _ = maya_lib.resolve_file_profile(repr, file_inventory)
+            previous_by_fpattern = _
 
         # Get current files
         for data in self.data["fileData"]:
@@ -146,16 +103,14 @@ class ExtractTexture(PackageExtractor):
             for ver_data, tmp_data in versioned_data:
 
                 previous_files = tmp_data["pathMap"]
-                previous_txs = tmp_data["pathMapTx"]
 
                 all_files = list()
                 for file, abs_path in data["pathMap"].items():
-                    if not (file in previous_files or file in previous_txs):
+                    if file not in previous_files:
                         # Possible different file pattern
                         break  # Try previous version
 
-                    _previous_tx = previous_txs.get(file)
-                    abs_previous = previous_files.get(file, _previous_tx)
+                    abs_previous = previous_files.get(file, "")
 
                     if not os.path.isfile(abs_previous):
                         # Previous file not exists (should not happen)
@@ -173,7 +128,7 @@ class ExtractTexture(PackageExtractor):
                     # Version matched, consider as same file
                     head_file = sorted(all_files)[0]
                     resolved_path = abs_previous[:-len(file)] + head_file
-                    # resolved_path = env_embedded_path(resolved_path)
+                    resolved_path = env_embedded_path(resolved_path)
                     self.update_file_node_attrs(file_nodes,
                                                 resolved_path,
                                                 current_color_space)
@@ -221,24 +176,24 @@ class ExtractTexture(PackageExtractor):
         self.add_data({"fileInventory": file_inventory})
 
     def update_file_node_attrs(self, file_nodes, path, color_space):
-        from maya import cmds
-
-        """Deprecated, .tx map may crash viewport 2.0 and hypershade material window
-        if self.use_tx:
-            # Force downstream to use .tx map
-            path = to_tx(path)
-        """
+        from reveries.maya import lib
 
         for node in file_nodes:
             attr = node + ".fileTextureName"
-            self.context.data["fileNodeAttrs"][attr] = path
+            self.data["fileNodeAttrs"][attr] = path
             # Preserve color space values (force value after filepath change)
             # This will also trigger in the same order at end of context to
             # ensure after context it's still the original value.
             attr = node + ".colorSpace"
-            self.context.data["fileNodeAttrs"][attr] = color_space
+            self.data["fileNodeAttrs"][attr] = color_space
 
-            # (NOTE) Force color space unlocked
-            #        Previously we used to lock color space in case
-            #        forgot to check it after changing file path.
-            cmds.setAttr(attr, lock=False)
+            attr = node + ".ignoreColorSpaceFileRules"
+            self.data["fileNodeAttrs"][attr] = True
+
+            if lib.hasAttr(node, "aiAutoTx"):
+                # Although we ensured the tx update, but the file modification
+                # time still may loose during file transfer and trigger another
+                # tx update later on. So we force disable it on each published
+                # file node.
+                attr = node + ".aiAutoTx"
+                self.data["fileNodeAttrs"][attr] = False
