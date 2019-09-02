@@ -1135,7 +1135,7 @@ class MayaSFTPCJobExporter(avalon_sftpc.util.JobExporter):
                                      expandEnvironmentVariables=True)
 
             if project in file_path:
-                head, tail = file_path.split(project, maxsplit=1)
+                head, tail = file_path.split(project, 1)
                 # Replace root
                 remote_path = self.remote_root + os.sep + project + tail
 
