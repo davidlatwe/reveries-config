@@ -36,7 +36,7 @@ class ExtractArnoldStandIn(PackageExtractor):
         cache_path = os.path.join(package_path, cache_file)
 
         root = avalon.api.registered_root()
-        project = avalon.api.Session["AVALON_PORJECT"]
+        project = avalon.api.Session["AVALON_PROJECT"]
 
         file_node_attrs = OrderedDict()
         for node in self.data["fileNodes"]:
