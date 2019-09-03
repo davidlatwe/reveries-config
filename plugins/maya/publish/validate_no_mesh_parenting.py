@@ -32,6 +32,7 @@ class ValidateNoMeshParenting(pyblish.api.InstancePlugin):
     families = [
         "reveries.model",
         "reveries.rig",
+        "reveries.pointcache",
     ]
 
     actions = [
