@@ -40,8 +40,18 @@ class CollectLook(pyblish.api.InstancePlugin):
                             "Possible empty group ?")
 
         # Collect shading networks
-        shaders = cmds.listConnections(surfaces, type="shadingEngine")
+        shaders = cmds.listConnections(surfaces, type="shadingEngine") or []
         shaders = list(set(shaders))
+
+        # Filter out dag set members before collecting history
+        _dags = cmds.listConnections([s + ".dagSetMembers" for s in shaders],
+                                     destination=False,
+                                     source=True) or []
+        _srcs = cmds.listConnections(shaders,
+                                     destination=False,
+                                     source=True) or []
+        sources = list(set(_srcs) - set(_dags))
+
         try:
             # (NOTE): The flag `pruneDagObjects` will also filter out
             #         `place3dTexture` type node.
@@ -51,14 +61,16 @@ class CollectLook(pyblish.api.InstancePlugin):
             #         This might be a bug of Arnold since other Maya node
             #         does not have this issue, not fully tested so not
             #         sure. MtoA version: 3.1.2.1
-            _history = cmds.listHistory(shaders, allConnections=True)
-            _history = list(set(_history))
+            _history = cmds.listHistory(sources, allConnections=True)
         except RuntimeError:
             _history = []  # Found no items to list the history for.
+        else:
+            _history = list(set(_history))
+
         upstream_nodes = cmds.ls(_history, long=True)
 
         # Remove unwanted types
-        unwanted_types = ("groupId", "groupParts", "surfaceShape")
+        unwanted_types = ("groupId", "groupParts")
         unwanted = set(cmds.ls(upstream_nodes, type=unwanted_types, long=True))
         upstream_nodes = list(set(upstream_nodes) - unwanted)
 
