@@ -35,24 +35,18 @@ class ExtractArnoldStandIn(PackageExtractor):
         cache_file = self.file_name("ass")
         cache_path = os.path.join(package_path, cache_file)
 
-        root = avalon.api.registered_root()
-        project = avalon.api.Session["AVALON_PROJECT"]
+        self.log.info("Extracting shaders..")
 
-        file_node_attrs = OrderedDict()
-        for node in self.data["fileNodes"]:
-            # Embedding env var into file path
-            attr = node + ".fileTextureName"
-            path = cmds.getAttr(attr, expandEnvironmentVariables=True)
-            if path.startswith(root):
-                path = path.replace(root, "[AVALON_PROJECTS]", 1)
-            if project in path:
-                path = path.replace(project, "[AVALON_PROJECT]", 1)
-            file_node_attrs[attr] = path
+        texture = self.data.get("textureInstance")
+        if texture is not None:
+            file_node_attrs = texture.data.get("fileNodeAttrs", dict())
+        else:
+            file_node_attrs = dict()
 
-            # Preserve color space
-            attr = node + ".colorSpace"
-            color_space = cmds.getAttr(attr)
-            file_node_attrs[attr] = color_space
+        arnold_tx_settings = {
+            "defaultArnoldRenderOptions.autotx": False,
+            "defaultArnoldRenderOptions.use_existing_tiled_textures": True,
+        }
 
         with contextlib.nested(
             capsule.no_undo(),
@@ -62,8 +56,10 @@ class ExtractArnoldStandIn(PackageExtractor):
             capsule.ref_edit_unlock(),
             # (NOTE) Ensure attribute unlock
             capsule.attribute_states(file_node_attrs.keys(), lock=False),
-            # Change to environment var embedded path
+            # Change to published path
             capsule.attribute_values(file_node_attrs),
+            # Disable Auto TX update and enable to use existing TX
+            capsule.attribute_values(arnold_tx_settings),
         ):
             cmds.select(self.member, replace=True)
             asses = cmds.arnoldExportAss(filename=cache_path,
@@ -71,10 +67,34 @@ class ExtractArnoldStandIn(PackageExtractor):
                                          startFrame=self.data["startFrame"],
                                          endFrame=self.data["endFrame"],
                                          frameStep=self.data["byFrameStep"],
-                                         shadowLinks=1,
-                                         lightLinks=1,
                                          expandProcedurals=True,
-                                         mask=24)
+                                         boundingBox=True,
+                                         # Mask:
+                                         #      Shapes,
+                                         #      Shaders,
+                                         #      Override Nodes,
+                                         #      Operators,
+                                         #      Color Manager,
+                                         mask=6200)
+
+            # Change to environment var embedded path
+            root = avalon.api.registered_root().replace("\\", "/")
+            project = avalon.api.Session["AVALON_PROJECT"]
+
+            for ass in asses:
+                lines = list()
+                has_change = False
+                with open(ass, "r") as assf:
+                    for line in assf.readlines():
+                        if line.startswith(" filename "):
+                            line = line.replace(root, "[AVALON_PROJECTS]", 1)
+                            line = line.replace(project, "[AVALON_PROJECT]", 1)
+                            has_change = True
+                        lines.append(line)
+
+                if has_change:
+                    with open(ass, "w") as assf:
+                        assf.write("".join(lines))
 
         use_sequence = self.data["startFrame"] != self.data["endFrame"]
         entry_file = os.path.basename(asses[0])

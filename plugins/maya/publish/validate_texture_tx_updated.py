@@ -4,25 +4,17 @@ import pyblish.api
 from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
-class ValidateTextureTxMapCreated(pyblish.api.InstancePlugin):
-    """Ensure all texture file have .tx map created
+class ValidateTextureTxMapUpdated(pyblish.api.InstancePlugin):
+    """Ensure all texture file have .tx map updated
 
     If you got error from this validation, please use Arnold's 'Tx Manager'
     to check missing .tx maps, or rendering with 'Auto-convert Textures to TX'
     option enabled.
 
-    (NOTE): This could not 100% sure that all .tx maps were update-to-date, but
-            at least we could ensure each of them has a .tx version of itself.
-
-            To really ensure all .tx map updated, we have a pluging called "En-
-            sure Tx Updated" at extraction phase to do this task. This design
-            should be able to give more chances for human eyes checking and
-            reduce the chances that blindly creating .tx files at extracting.
-
     """
 
     order = pyblish.api.ValidatorOrder
-    label = "Tx Map Created"
+    label = "Tx Map Updated"
     hosts = ["maya"]
     families = [
         "reveries.texture",
@@ -40,12 +32,14 @@ class ValidateTextureTxMapCreated(pyblish.api.InstancePlugin):
 
         invalid = self.get_invalid(instance)
         if invalid:
-            raise Exception("Not all texture have .tx map created, "
-                            "please use 'Tx Manager' or create them "
+            raise Exception("Not all texture have .tx map updated, "
+                            "please use 'Tx Manager' or update them "
                             "with a render.")
 
     @classmethod
     def get_invalid(cls, instance):
+        from reveries import lib
+
         invalid = list()
         for data in instance.data.get("fileData", []):
             node = data["node"]
@@ -58,6 +52,11 @@ class ValidateTextureTxMapCreated(pyblish.api.InstancePlugin):
 
                 tx_path = os.path.splitext(file_path)[0] + ".tx"
                 if not os.path.isfile(tx_path):
+                    cls.log.error(file_path)
+                    invalid.append(node)
+                    break
+
+                if not lib.file_cmp(file_path, tx_path):
                     cls.log.error(file_path)
                     invalid.append(node)
                     break
