@@ -1,6 +1,24 @@
 
 import pyblish.api
 from maya import cmds
+from reveries import plugins
+
+
+def create_texture_subset_from_standin(instance, textures):
+    """
+    """
+    family = "reveries.texture"
+    subset = instance.data["subset"]
+    subset = "texture" + subset[0].upper() + subset[1:]
+
+    data = {"useTxMaps": True}
+
+    child = plugins.create_dependency_instance(instance,
+                                               subset,
+                                               family,
+                                               textures,
+                                               data=data)
+    instance.data["textureInstance"] = child
 
 
 class CollectArnoldStandIn(pyblish.api.InstancePlugin):
@@ -30,3 +48,9 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
             instance.data["endFrame"] = get({"maxTime": True})
 
         instance.data["byFrameStep"] = 1
+
+        stray = pipeline.find_stray_textures(instance)
+        if stray:
+            self.log.warning("Found not versioned textures, creating "
+                             "instance for publish.")
+            create_texture_subset_from_standin(instance, stray)
