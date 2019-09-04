@@ -15,18 +15,9 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        surfaces = cmds.ls(instance,
-                           noIntermediate=True,
-                           type="surfaceShape")
+        from reveries.maya import pipeline
 
-        # Collect shading networks
-        shaders = cmds.listConnections(surfaces, type="shadingEngine")
-        try:
-            _history = cmds.listHistory(shaders)
-        except RuntimeError:
-            _history = []  # Found no items to list the history for.
-        upstream_nodes = cmds.ls(_history, long=True)
-
+        upstream_nodes = instance.data.get("shadingNetwork", [])
         instance.data["fileNodes"] = cmds.ls(upstream_nodes, type="file")
 
         # Frame range
