@@ -68,19 +68,12 @@ class ValidateVersionedSurfaces(pyblish.api.InstancePlugin):
         # Or hidden ?
         start = instance.data["startFrame"]
         end = instance.data["endFrame"]
-        step = instance.data["byFrameStep"]
 
-        not_versioned_visible = set()
         not_versioned = transforms - has_versioned
-        for node in not_versioned:
-            frame = start
-            while frame < end:
-                if lib.is_visible(node, time=frame):
-                    not_versioned_visible.add(node)
-                    break
-                frame += step
-
-        return list(not_versioned_visible)
+        not_versioned_visible = lib.get_visible_in_frame_range(not_versioned,
+                                                               int(start),
+                                                               int(end))
+        return not_versioned_visible
 
     def process(self, instance):
         invalid = self.get_invalid(instance)

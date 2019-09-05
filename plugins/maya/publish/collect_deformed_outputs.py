@@ -38,6 +38,15 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
         variant = instance.data["subset"][len("pointcache"):].lower()
         members = instance[:]
 
+        # Frame range
+        if instance.data["staticCache"]:
+            start_frame = cmds.currentTime(query=True)
+            end_frame = cmds.currentTime(query=True)
+        else:
+            get = (lambda f: cmds.playbackOptions(query=True, **f))
+            start_frame = get({"minTime": True})
+            end_frame = get({"maxTime": True})
+
         if variant == "default":
             # Collect cacheable nodes from OutSet of loaded subset
             out_cache = dict()
@@ -60,8 +69,9 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 namespace = lib.get_ns(node)
                 set_member = cmds.sets(node, query=True) or []
                 cacheables = lib.pick_cacheable(set_member)
-                cacheables = self.cache_by_visibility(cacheables)
-
+                cacheables = lib.get_visible_in_frame_range(cacheables,
+                                                            int(start_frame),
+                                                            int(end_frame))
                 # Plus locator
                 cacheables += self.pick_locators(set_member)
 
@@ -93,6 +103,8 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance[:] = cacheables
                 instance.data["outCache"] = cacheables
                 instance.data["requireAvalonUUID"] = cacheables
+                instance.data["startFrame"] = start_frame
+                instance.data["endFrame"] = end_frame
 
                 self.assign_contractor(instance)
 
@@ -104,22 +116,19 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
         else:
             # Collect cacheable nodes from instance member
             cacheables = lib.pick_cacheable(members)
-            cacheables = self.cache_by_visibility(cacheables)
-
+            cacheables = lib.get_visible_in_frame_range(cacheables,
+                                                        int(start_frame),
+                                                        int(end_frame))
             # Plus locator
             cacheables += self.pick_locators(members)
 
             instance[:] = cacheables
             instance.data["outCache"] = cacheables
             instance.data["requireAvalonUUID"] = cacheables
+            instance.data["startFrame"] = start_frame
+            instance.data["endFrame"] = end_frame
 
             self.assign_contractor(instance)
-
-    def cache_by_visibility(self, cacheables):
-        for node in list(cacheables):
-            if not lib.is_visible(node, displayLayer=False):
-                cacheables.remove(node)
-        return cacheables
 
     def pick_locators(self, members):
         return cmds.listRelatives(cmds.ls(members, type="locator"),

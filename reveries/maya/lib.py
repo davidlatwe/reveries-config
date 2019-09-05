@@ -373,8 +373,7 @@ def is_visible(node,
                displayLayer=True,
                intermediateObject=True,
                parentHidden=True,
-               visibility=True,
-               time=None):
+               visibility=True):
     """Is `node` visible?
 
     Returns whether a node is hidden by one of the following methods:
@@ -384,7 +383,6 @@ def is_visible(node,
     - The node is set as intermediate Object.
     - The node is in a disabled displayLayer.
     - Whether any of its parent nodes is hidden.
-    - Whether it's visible at the given time.
 
     Roughly based on: http://ewertb.soundlinker.com/mel/mel.098.php
 
@@ -394,22 +392,11 @@ def is_visible(node,
         intermediateObject (bool): Check 'intermediateObject', Default True
         parentHidden (bool): Check parent node, Default True
         visibility (bool): Check atttribute 'visibility', Default True
-        time (int or float, optional): Evaluate the visible state at the given
-            time instead of the current time. Default current time.
 
     Returns:
         bool: Whether the node is visible in the scene
 
     """
-    time = cmds.currentTime(query=True) if time is None else time
-    kwargs = dict()
-    if cmds.listConnections('{0}.visibility'.format(node),
-                            source=True,
-                            destination=False,
-                            connections=False):
-        # `time` flag may return incorrect value sometimes if the attribute
-        # did not have any input connections. Reason unknow.
-        kwargs = {"time": time}
 
     # Only existing objects can be visible
     if not cmds.objExists(node):
@@ -420,20 +407,18 @@ def is_visible(node,
         return False
 
     if visibility:
-        if not cmds.getAttr('{0}.visibility'.format(node), **kwargs):
+        if not cmds.getAttr('{0}.visibility'.format(node)):
             return False
 
     if intermediateObject and cmds.objectType(node, isAType='shape'):
-        if cmds.getAttr('{0}.intermediateObject'.format(node), **kwargs):
+        if cmds.getAttr("{0}.intermediateObject".format(node)):
             return False
 
     if displayLayer:
         # Display layers set overrideEnabled and overrideVisibility on members
-        if cmds.attributeQuery('overrideEnabled', node=node, exists=True):
-            override_enabled = cmds.getAttr('{}.overrideEnabled'.format(node),
-                                            **kwargs)
-            override_visibility = cmds.getAttr(
-                '{}.overrideVisibility'.format(node), **kwargs)
+        if cmds.attributeQuery("overrideEnabled", node=node, exists=True):
+            override_enabled = cmds.getAttr(node + ".overrideEnabled")
+            override_visibility = cmds.getAttr(node + ".overrideVisibility")
             if override_enabled and not override_visibility:
                 return False
 
@@ -445,11 +430,210 @@ def is_visible(node,
                               displayLayer=displayLayer,
                               intermediateObject=False,
                               parentHidden=parentHidden,
-                              visibility=visibility,
-                              **kwargs):
+                              visibility=visibility):
                 return False
 
     return True
+
+
+def memodict(f):
+    """Memoization decorator for a function taking a single argument"""
+    class memodict(dict):
+        def __missing__(self, key):
+            ret = self[key] = f(key)
+            return ret
+    return memodict().__getitem__
+
+
+def get_visible_in_frame_range(nodes, start, end):
+    """Return nodes that are visible in start-end frame range.
+
+    - Ignores intermediateObjects completely.
+    - Considers animated visibility attributes + upstream visibilities.
+
+    This is optimized for large scenes where some nodes in the parent
+    hierarchy might have some input connections to the visibilities,
+    e.g. key, driven keys, connections to other attributes, etc.
+
+    This only does a single time step to `start` if current frame is
+    not inside frame range since the assumption is made that changing
+    a frame isn't so slow that it beats querying all visibility
+    plugs through MDGContext on another frame.
+
+    Args:
+        nodes (list): List of node names to consider.
+        start (int): Start frame.
+        end (int): End frame.
+
+    Returns:
+        list: List of node names. These will be long full path names so
+            might have a longer name than the input nodes.
+
+    """
+    from . import capsule  # Avoid circular import
+
+    # States we consider per node
+    VISIBLE = 1  # always visible
+    INVISIBLE = 0  # always invisible
+    ANIMATED = -1  # animated visibility
+
+    # Consider only non-intermediate dag nodes and use the "long" names.
+    nodes = cmds.ls(nodes, long=True, noIntermediate=True, type="dagNode")
+    if not nodes:
+        return []
+
+    with capsule.maintained_time():
+        # Go to first frame of the range if we current time is outside of
+        # the queried range. This is to do a single query on which are at
+        # least visible at a time inside the range, (e.g those that are
+        # always visible)
+        current_time = cmds.currentTime(query=True)
+        if not (start <= current_time <= end):
+            cmds.currentTime(start)
+
+        visible = cmds.ls(nodes, long=True, visible=True)
+        if len(visible) == len(nodes) or start == end:
+            # All are visible on frame one, so they are at least visible once
+            # inside the frame range.
+            return visible
+
+    # For the invisible ones check whether its visibility and/or
+    # any of its parents visibility attributes are animated. If so, it might
+    # get visible on other frames in the range.
+    @memodict
+    def get_state(node):
+        plug = node + ".visibility"
+        connections = cmds.listConnections(plug,
+                                           source=True,
+                                           destination=False)
+        if connections:
+            return ANIMATED
+        else:
+            if cmds.getAttr(plug):
+                # DisplayLayers set overrideEnabled and overrideVisibility
+                # on members
+                if cmds.attributeQuery("overrideEnabled",
+                                       node=node,
+                                       exists=True):
+                    override_enabled = cmds.getAttr(node + ".overrideEnabled")
+                    override_vis = cmds.getAttr(node + ".overrideVisibility")
+                    if override_enabled and not override_vis:
+                        return INVISIBLE
+                return VISIBLE
+            else:
+                return INVISIBLE
+
+    visible = set(visible)
+    invisible = [node for node in nodes if node not in visible]
+    always_invisible = set()
+    # Iterate over the nodes by short to long names, so we iterate the highest
+    # in hierarcy nodes first. So the collected data can be used from the
+    # cache for parent queries in next iterations.
+    node_dependencies = dict()
+    for node in sorted(invisible, key=len):
+
+        state = get_state(node)
+        if state == INVISIBLE:
+            always_invisible.add(node)
+            continue
+
+        # If not always invisible by itself we should go through and check
+        # the parents to see if any of them are always invisible. For those
+        # that are "ANIMATED" we consider that this node is dependent on
+        # that attribute, we store them as dependency.
+        dependencies = set()
+        if state == ANIMATED:
+            dependencies.add(node)
+
+        traversed_parents = list()
+        for parent in lib.iter_uri(node, "|"):
+
+            if not parent:
+                # Workaround bug in iter_parents (iter_uri)
+                continue
+
+            if parent in always_invisible or get_state(parent) == INVISIBLE:
+                # When parent is always invisible then consider this parent,
+                # this node we started from and any of the parents we
+                # have traversed in-between to be *always invisible*
+                always_invisible.add(parent)
+                always_invisible.add(node)
+                always_invisible.update(traversed_parents)
+                break
+
+            # If we have traversed the parent before and its visibility
+            # was dependent on animated visibilities then we can just extend
+            # its dependencies for to those for this node and break further
+            # iteration upwards.
+            parent_dependencies = node_dependencies.get(parent, None)
+            if parent_dependencies is not None:
+                dependencies.update(parent_dependencies)
+                break
+
+            state = get_state(parent)
+            if state == ANIMATED:
+                dependencies.add(parent)
+
+            traversed_parents.append(parent)
+
+        if node not in always_invisible and dependencies:
+            node_dependencies[node] = dependencies
+
+    if not node_dependencies:
+        return list(visible)
+
+    # Now we only have to check the visibilities for nodes that have animated
+    # visibility dependencies upstream. The fastest way to check these
+    # visibility attributes across different frames is with Python api 2.0
+    # so we do that.
+    @memodict
+    def get_visibility_mplug(node):
+        """Return api 2.0 MPlug with cached memoize decorator"""
+        sel = om.MSelectionList()
+        sel.add(node)
+        dag = sel.getDagPath(0)
+        return om.MFnDagNode(dag).findPlug("visibility", True)
+
+    # We skip the first frame as we already used that frame to check for
+    # overall visibilities. And end+1 to include the end frame.
+    scene_units = om.MTime.uiUnit()
+    for frame in range(start + 1, end + 1):
+
+        mtime = om.MTime(frame, unit=scene_units)
+        context = om.MDGContext(mtime)
+
+        # Build little cache so we don't query the same MPlug's value
+        # again if it was checked on this frame and also is a dependency
+        # for another node
+        frame_visibilities = {}
+
+        for node, dependencies in node_dependencies.items():
+
+            for dependency in dependencies:
+
+                dependency_visible = frame_visibilities.get(dependency, None)
+                if dependency_visible is None:
+                    mplug = get_visibility_mplug(dependency)
+                    dependency_visible = mplug.asBool(context)
+                    frame_visibilities[dependency] = dependency_visible
+
+                if not dependency_visible:
+                    # One dependency is not visible, thus the
+                    # node is not visible.
+                    break
+
+            else:
+                # All dependencies are visible.
+                visible.add(node)
+                # Remove node with dependencies for next iterations
+                # because it was visible at least once.
+                node_dependencies.pop(node)
+
+        # If no more nodes to process break the frame iterations..
+        if not node_dependencies:
+            break
+
+    return list(visible)
 
 
 def bake_hierarchy_visibility(nodes, start_frame, end_frame, step=1):
