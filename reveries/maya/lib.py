@@ -420,16 +420,16 @@ def is_visible(node,
         return False
 
     if visibility:
-        if not cmds.getAttr('{0}.visibility'.format(node), **kwargs):
+        if not cmds.getAttr('{0}.visibility'.format(node)):
             return False
 
     if intermediateObject and cmds.objectType(node, isAType='shape'):
-        if cmds.getAttr('{0}.intermediateObject'.format(node), **kwargs):
+        if cmds.getAttr("{0}.intermediateObject".format(node)):
             return False
 
     if displayLayer:
         # Display layers set overrideEnabled and overrideVisibility on members
-        if cmds.attributeQuery('overrideEnabled', node=node, exists=True):
+        if cmds.attributeQuery("overrideEnabled", node=node, exists=True):
             override_enabled = cmds.getAttr('{}.overrideEnabled'.format(node),
                                             **kwargs)
             override_visibility = cmds.getAttr(

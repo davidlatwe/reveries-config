@@ -41,7 +41,7 @@ class ValidateTransformDisplay(pyblish.api.InstancePlugin):
             # Ensure transform shape is not hidden
             not_hidden = (
                 all([cmds.getAttr(node + attr) is display_attrs[attr]
-                    for attr in display_attrs.keys()])
+                     for attr in display_attrs.keys()])
             )
 
             not_hidden = lib.is_visible(node) and not_hidden
