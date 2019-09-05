@@ -69,7 +69,7 @@ class ValidateVersionedSurfaces(pyblish.api.InstancePlugin):
         start = instance.data["startFrame"]
         end = instance.data["endFrame"]
 
-        not_versioned = transforms - has_versioned
+        not_versioned = list(transforms - has_versioned)
         not_versioned_visible = lib.get_visible_in_frame_range(not_versioned,
                                                                int(start),
                                                                int(end))
