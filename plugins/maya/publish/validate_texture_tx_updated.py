@@ -4,6 +4,12 @@ import pyblish.api
 from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 
+def tx_updated(source, tx):
+    # TX map's modification time takes no decimal places.
+    int_mtime = (lambda f: int(os.path.getmtime(f)))
+    return int_mtime(source) == int_mtime(tx)
+
+
 class ValidateTextureTxMapUpdated(pyblish.api.InstancePlugin):
     """Ensure all texture file have .tx map updated
 
@@ -38,8 +44,6 @@ class ValidateTextureTxMapUpdated(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
-        from reveries import lib
-
         invalid = list()
         for data in instance.data.get("fileData", []):
             node = data["node"]
@@ -56,7 +60,7 @@ class ValidateTextureTxMapUpdated(pyblish.api.InstancePlugin):
                     invalid.append(node)
                     break
 
-                if not lib.file_cmp(file_path, tx_path):
+                if not tx_updated(file_path, tx_path):
                     cls.log.error(file_path)
                     invalid.append(node)
                     break
