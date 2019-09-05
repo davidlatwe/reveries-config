@@ -637,3 +637,12 @@ class OutputDeque(collections.deque):
 
     def __exit__(self, *args):
         om.MCommandMessage.removeCallback(self.__callback_id)
+
+
+@contextlib.contextmanager
+def maintained_time():
+    ct = cmds.currentTime(query=True)
+    try:
+        yield
+    finally:
+        cmds.currentTime(ct, edit=True)
