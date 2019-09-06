@@ -111,6 +111,8 @@ class ReferenceLoader(MayaBaseLoader):
 
         group_name = self.group_name(namespace, name)
 
+        options = options or dict()
+
         self.process_reference(context=context,
                                name=name,
                                namespace=namespace,
@@ -262,6 +264,8 @@ class ImportLoader(MayaBaseLoader):
 
         group_name = self.group_name(namespace, name)
 
+        options = options or dict()
+
         self.process_import(context=context,
                             name=name,
                             namespace=namespace,
@@ -366,6 +370,8 @@ class HierarchicalLoader(MayaBaseLoader):
 
         # Load members data
         members = _parse_members_data(entry_path)
+
+        options = options or dict()
 
         if "containerId" in options:
             container_id = options["containerId"]
