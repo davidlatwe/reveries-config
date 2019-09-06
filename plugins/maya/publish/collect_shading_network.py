@@ -22,21 +22,12 @@ class CollectShadingNetwork(pyblish.api.InstancePlugin):
                            long=True,
                            type="surfaceShape")
 
-        # Collect geometry from instancers
-        # for publishing stand-in
-        instancers = cmds.ls(instance, type="instancer")
-        for instancer in instancers:
-            input_hierarchy = instancer + ".inputHierarchy"
-            for hierarchy in cmds.listConnections(input_hierarchy,
-                                                  source=True,
-                                                  destination=False):
-                descendents = cmds.listRelatives(hierarchy,
-                                                 allDescendents=True,
-                                                 fullPath=True) or []
-                surfaces += cmds.ls(descendents,
-                                    noIntermediate=True,
-                                    long=True,
-                                    type="surfaceShape")
+        # Collect geometry from Maya instancers
+        for hierarchy in instance.data["instancedHierarchies"].values():
+            surfaces += cmds.ls(hierarchy,
+                                noIntermediate=True,
+                                long=True,
+                                type="surfaceShape")
 
         surfaces = list(set(surfaces))
         if not surfaces:
