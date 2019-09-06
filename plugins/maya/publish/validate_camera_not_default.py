@@ -6,14 +6,14 @@ from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 class SelectInvalid(MayaSelectInvalidInstanceAction):
 
-    label = "Select Invalid Cameras"
+    label = "Select Invalid Camera"
 
 
-class ValidateCamerasNoDefault(pyblish.api.InstancePlugin):
-    """Ensure no default (startup) cameras"""
+class ValidateCameraNotDefault(pyblish.api.InstancePlugin):
+    """Ensure no default (startup) camera"""
 
     order = pyblish.api.ValidatorOrder
-    label = "No Default Cameras"
+    label = "Not Default Camera"
     hosts = ["maya"]
     families = [
         "reveries.camera",

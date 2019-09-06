@@ -9,13 +9,13 @@ class SelectInvalid(MayaSelectInvalidInstanceAction):
     label = "Select Not Versioned"
 
 
-class ValidateVersionedCameras(pyblish.api.InstancePlugin):
+class ValidateCameraVersioned(pyblish.api.InstancePlugin):
     """Camera must be versioned or being published
     """
 
     order = pyblish.api.ValidatorOrder
     hosts = ["maya"]
-    label = "Has Versioned Camera"
+    label = "Is Versioned Camera"
     families = [
         "reveries.imgseq",
     ]
