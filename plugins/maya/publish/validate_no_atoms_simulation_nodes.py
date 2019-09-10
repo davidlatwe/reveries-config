@@ -1,6 +1,19 @@
 
 import pyblish.api
 
+from reveries import plugins
+from reveries.maya import plugins as maya_plugins
+
+
+class SelectAtomsSimNodes(maya_plugins.MayaSelectInvalidInstanceAction):
+
+    label = "Select Atoms Sim Nodes"
+
+
+class DeleteAtomsSimNodes(plugins.RepairInstanceAction):
+
+    label = "Clean Up"
+
 
 class ValidateNoAtomsSimulationNodes(pyblish.api.InstancePlugin):
     """
@@ -12,6 +25,21 @@ class ValidateNoAtomsSimulationNodes(pyblish.api.InstancePlugin):
     families = [
         "reveries.imgseq",
     ]
+    actions = [
+        pyblish.api.Category("Select"),
+        SelectAtomsSimNodes,
+        pyblish.api.Category("Fix It"),
+        DeleteAtomsSimNodes,
+    ]
+
+    @classmethod
+    def get_invalid(cls, instance):
+        invalid = list()
+
+        invalid += instance.data["AtomsNodes"]
+        invalid += instance.data["AtomsAgentGroups"]
+
+        return invalid
 
     def process(self, instance):
         if not instance.data["deadlineEnable"]:
@@ -19,8 +47,14 @@ class ValidateNoAtomsSimulationNodes(pyblish.api.InstancePlugin):
             self.log.info("Not using Deadline, skip validation.")
             return
 
-        has_atoms = bool(instance.data["AtomsNodes"])
-        has_group = bool(instance.data["AtomsAgentGroups"])
+        invalid = self.get_invalid(instance)
+        if invalid:
+            raise Exception("Should not render with Atoms Simulation nodes.")
 
-        message = "Should not render with Atoms Simulation nodes."
-        assert not (has_atoms or has_group), message
+    @classmethod
+    def fix_invalid(cls, instance):
+        """Delete unknown nodes"""
+        from maya import cmds
+
+        for node in cls.get_invalid(instance):
+            cmds.delete(node)
