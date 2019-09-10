@@ -1,7 +1,6 @@
 
 import os
 import contextlib
-from collections import OrderedDict
 
 import pyblish.api
 import avalon.api
@@ -28,8 +27,10 @@ class ExtractArnoldStandIn(PackageExtractor):
 
     @skip_stage
     def extract_Ass(self):
-        # Ensure mtoa loaded
-        cmds.loadPlugin("mtoa", quiet=True)
+        from reveries.maya import arnold
+
+        # Ensure option created
+        arnold.utils.create_options()
 
         package_path = self.create_package()
         cache_file = self.file_name("ass")
