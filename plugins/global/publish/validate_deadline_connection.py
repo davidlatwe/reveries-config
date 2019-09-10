@@ -33,16 +33,19 @@ class ValidateDeadlineConnection(pyblish.api.InstancePlugin):
                           "".format(AVALON_DEADLINE))
 
             # Check response
-            response = requests.get(AVALON_DEADLINE)
-
-            if (response.ok and
-                    response.text.startswith("Deadline Web Service ")):
-                self.log.info("Deadline Web Service on-line.")
-
-                return
-
+            try:
+                response = requests.get(AVALON_DEADLINE)
+            except requests.ConnectionError:
+                self.log.warning("Fail to connect Deadline Web Service.")
             else:
-                self.log.warning("Web service did not respond.")
+                if (response.ok and
+                        response.text.startswith("Deadline Web Service ")):
+                    self.log.info("Deadline Web Service on-line.")
+
+                    return
+
+                else:
+                    self.log.warning("Web service did not respond.")
         else:
             self.log.warning("No available Deadline Web Service.")
 
