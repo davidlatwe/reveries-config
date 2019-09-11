@@ -21,10 +21,8 @@ class CollectAvalonContainers(pyblish.api.ContextPlugin):
 
             if container.get("parent"):
                 sub_containers[key] = container
-                self.log.debug("Sub Container: {}".format(key))
             else:
                 root_containers[key] = container
-                self.log.info("Root Container: {}".format(key))
 
         context.data["RootContainers"] = root_containers
         context.data["SubContainers"] = sub_containers

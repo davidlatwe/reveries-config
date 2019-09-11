@@ -32,8 +32,6 @@ class CollectHierarchyData(pyblish.api.InstancePlugin):
                                   "".format(subset_group))
                     continue
 
-                self.log.info("Collecting {!r} ..".format(subset_group))
-
                 # The namespace stored in container was absolute name,
                 # need to save as relative name.
                 # e.g. ":awesome" -> "awesome"
