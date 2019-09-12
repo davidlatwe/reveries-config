@@ -1,14 +1,14 @@
 from collections import defaultdict
-from avalon.tools.cbsceneinventory import model
+from avalon.tools import models
 
 from avalon.vendor.Qt import QtCore
 from avalon.vendor import qtawesome
 from avalon.style import colors
 
 
-class AssetModel(model.TreeModel):
+class AssetModel(models.TreeModel):
 
-    COLUMNS = ["label", "subset"]
+    Columns = ["label", "subset"]
 
     def add_items(self, items):
         """
@@ -27,14 +27,14 @@ class AssetModel(model.TreeModel):
 
         for item in sorted(items, key=sorter):
 
-            asset_item = model.Node()
+            asset_item = models.Item()
             asset_item.update(item)
             asset_item["icon"] = "folder"
 
             # Add namespace children
             namespaces = item["namespaces"]
             for namespace in sorted(namespaces):
-                child = model.Node()
+                child = models.Item()
                 child.update(item)
                 child.update({
                     "label": (namespace if namespace != ":"
@@ -55,7 +55,7 @@ class AssetModel(model.TreeModel):
         if not index.isValid():
             return
 
-        if role == model.TreeModel.NodeRole:
+        if role == self.ItemRole:
             node = index.internalPointer()
             return node
 
@@ -75,10 +75,10 @@ class AssetModel(model.TreeModel):
         return super(AssetModel, self).data(index, role)
 
 
-class LookModel(model.TreeModel):
+class LookModel(models.TreeModel):
     """Model displaying a list of looks and matches for assets"""
 
-    COLUMNS = ["label", "version", "match"]
+    Columns = ["label", "version", "match"]
 
     def add_items(self, items):
         """Add items to model with needed data
@@ -111,7 +111,7 @@ class LookModel(model.TreeModel):
             # Define nice label without "look" prefix for readability
             label = subset if not subset.startswith("look") else subset[4:]
 
-            item_node = model.Node()
+            item_node = models.Item()
             item_node["label"] = label
             item_node["subset"] = subset
             item_node["version"] = str(version)
@@ -127,10 +127,10 @@ class LookModel(model.TreeModel):
         self.endResetModel()
 
 
-class LoadedLookModel(model.TreeModel):
+class LoadedLookModel(models.TreeModel):
     """Model displaying a list of loaded looks and matches for assets"""
 
-    COLUMNS = ["label", "No.", "match"]
+    Columns = ["label", "No.", "match"]
 
     def add_items(self, items):
 
@@ -149,7 +149,7 @@ class LoadedLookModel(model.TreeModel):
             # Define nice label without "look" prefix for readability
             label = subset if not subset.startswith("look") else subset[4:]
 
-            item_node = model.Node()
+            item_node = models.Item()
             item_node["label"] = label
             item_node["subset"] = subset
             item_node["No."] = num
