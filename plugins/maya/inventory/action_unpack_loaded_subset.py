@@ -50,7 +50,7 @@ class UnpackLoadedSubset(avalon.api.InventoryAction):
     def process(self, containers):
         from maya import cmds
         from avalon.maya.pipeline import AVALON_CONTAINERS
-        from avalon.tools import cbsceneinventory
+        from avalon.tools import sceneinventory
         from reveries.maya import hierarchy, pipeline, lib
         from reveries.maya.vendor import sticker
         from reveries import REVERIES_ICONS
@@ -95,7 +95,7 @@ class UnpackLoadedSubset(avalon.api.InventoryAction):
             cmds.delete(node)
 
         # Refresh GUI
-        cbsceneinventory.app.window.refresh()
+        sceneinventory.app.window.refresh()
 
         # Update Icon
         sticker.reveal()
