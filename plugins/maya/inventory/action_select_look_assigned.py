@@ -35,7 +35,7 @@ class SelectAssigned(avalon.api.InventoryAction):
             container_names = set(c["objectName"] for c in containers)
 
             selected_items = set()
-            for node in cmds.ls(sl=True):
+            for node in cmds.ls(sl=True, objectsOnly=True):
                 objsets = cmds.listSets(object=node) or []
                 for objset in objsets:
                     if objset in container_names:
