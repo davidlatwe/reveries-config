@@ -293,7 +293,13 @@ def update_container(container, asset, subset, version, representation):
     if version_changed:
         origin_version = avalon.io.find_one(
             {"_id": avalon.io.ObjectId(container["versionId"])})
-        origin_family = origin_version["data"]["families"][0]
+
+        if subset["schema"] == "avalon-core:subset-3.0":
+            families = subset["data"]["families"]
+        else:
+            families = origin_version["data"]["families"]
+
+        origin_family = families[0]
         new_family = version["data"]["families"][0]
         family_changed = origin_family != new_family
 
@@ -303,7 +309,13 @@ def update_container(container, asset, subset, version, representation):
         with namespaced(parent_namespace, new=False) as parent_namespace:
             parent_namespace = parent_namespace[1:]
             asset_name = asset["data"].get("shortName", asset["name"])
-            family_name = version["data"]["families"][0].split(".")[-1]
+
+            if subset["schema"] == "avalon-core:subset-3.0":
+                families = subset["data"]["families"]
+            else:
+                families = version["data"]["families"]
+
+            family_name = families[0].split(".")[-1]
             new_namespace = unique_root_namespace(asset_name,
                                                   family_name,
                                                   parent_namespace)

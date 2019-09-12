@@ -257,12 +257,22 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             subset_name = instance.data["subset"]
             self.log.info("Subset '%s' not found, creating.." % subset_name)
 
+            families = []
+            current_families = instance.data.get("families", list())
+            instance_family = instance.data.get("family", None)
+
+            if instance_family is not None:
+                families.append(instance_family)
+            families += current_families
+
             subset = {
                 "_id": io.ObjectId(),  # Pre-generate subset id
-                "schema": "avalon-core:subset-2.0",
+                "schema": "avalon-core:subset-3.0",
                 "type": "subset",
                 "name": subset_name,
-                "data": {},
+                "data": {
+                    "families": families,
+                },
                 "parent": asset_id,
             }
 
@@ -283,7 +293,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         version_locations = [location for location in locations if
                              location is not None]
 
-        return {"schema": "avalon-core:version-2.0",
+        return {"schema": "avalon-core:version-3.0",
                 "type": "version",
                 "parent": subset["_id"],
                 "name": version_number,
@@ -300,15 +310,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         Returns:
             dict: the required information with instance.data as key
         """
-
-        families = []
-        current_families = instance.data.get("families", list())
-        instance_family = instance.data.get("family", None)
-
-        if instance_family is not None:
-            families.append(instance_family)
-        families += current_families
-
         # create relative source path for DB
         source = context.data["currentMaking"]
         source = source.replace(api.registered_root(), "{root}")
@@ -321,7 +322,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         hash_val = context.data["sourceFingerprint"]["currentHash"]
 
         version_data = {
-            "families": families,
             "time": context.data["time"],
             "author": context.data["user"],
             "task": api.Session.get("AVALON_TASK"),
