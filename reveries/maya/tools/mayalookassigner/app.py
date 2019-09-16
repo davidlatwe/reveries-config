@@ -243,7 +243,7 @@ class App(QtWidgets.QWidget):
             # Assign the first matching look relevant for this asset
             # (since assigning multiple to the same nodes makes no sense)
             assign_look = next((subset for subset in item[look_key]
-                               if subset[match_key] in looks), None)
+                                if subset[match_key] in looks), None)
             if not assign_look:
                 self.echo("{} No matching selected "
                           "look for {}".format(prefix, asset))

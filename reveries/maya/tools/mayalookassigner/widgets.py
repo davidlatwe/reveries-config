@@ -2,19 +2,11 @@ import logging
 
 from avalon.vendor.Qt import QtWidgets, QtCore
 
-# TODO: expose this better in avalon core
-from avalon.tools.projectmanager.widget import (
-    preserve_selection,
-    preserve_expanded_rows
-)
+from avalon.tools import lib
 
 from . import models
 from . import commands
 from . import views
-
-
-NODEROLE = QtCore.Qt.UserRole + 1
-MODELINDEX = QtCore.QModelIndex()
 
 
 class AssetOutliner(QtWidgets.QWidget):
@@ -82,7 +74,7 @@ class AssetOutliner(QtWidgets.QWidget):
         """
 
         selection_model = self.view.selectionModel()
-        items = [row.data(NODEROLE) for row in
+        items = [row.data(self.model.ItemRole) for row in
                  selection_model.selectedRows(0)]
 
         return items
@@ -90,8 +82,8 @@ class AssetOutliner(QtWidgets.QWidget):
     def get_all_assets(self):
         """Add all items from the current scene"""
 
-        with preserve_expanded_rows(self.view):
-            with preserve_selection(self.view):
+        with lib.preserve_expanded_rows(self.view):
+            with lib.preserve_selection(self.view):
                 self.clear()
                 nodes = commands.get_all_asset_nodes()
                 items = commands.create_items_from_nodes(nodes)
@@ -102,8 +94,8 @@ class AssetOutliner(QtWidgets.QWidget):
     def get_selected_assets(self):
         """Add all selected items from the current scene"""
 
-        with preserve_expanded_rows(self.view):
-            with preserve_selection(self.view):
+        with lib.preserve_expanded_rows(self.view):
+            with lib.preserve_selection(self.view):
                 self.clear()
                 nodes = commands.get_selected_nodes()
                 items = commands.create_items_from_nodes(nodes)
@@ -231,7 +223,7 @@ class LookOutliner(QtWidgets.QWidget):
             list: list of dictionaries
         """
 
-        datas = [i.data(NODEROLE) for i in self.view.get_indices()]
+        datas = [i.data(self.model.ItemRole) for i in self.view.get_indices()]
         items = [d for d in datas if d is not None]  # filter Nones
 
         return items
