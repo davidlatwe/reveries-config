@@ -1,7 +1,7 @@
 
 import avalon.api
 
-from avalon.tools.cbsceneinventory import app
+from avalon.tools.sceneinventory import app
 
 
 class ForceUpdateHierarchy(avalon.api.InventoryAction):
