@@ -90,14 +90,23 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #       |
         #
 
+        # Assemble families
+        families = []
+        current_families = instance.data.get("families", list())
+        instance_family = instance.data.get("family", None)
+        if instance_family is not None:
+            families.append(instance_family)
+        families += current_families
+
         # It's okay to create subset before integration complete if not exists
-        subset = self.get_subset(instance)
+        subset = self.get_subset(instance, families)
 
         # get next version
         next_version = instance.data["versionNext"]
         version_data = self.create_version_data(context, instance)
         locations = [api.Session["AVALON_LOCATION"]]
         version = self.create_version(subset=subset,
+                                      families=families,
                                       version_number=next_version,
                                       locations=locations,
                                       data=version_data)
@@ -245,7 +254,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         filelink.create(src, dst, filelink.HARDLINK)
 
-    def get_subset(self, instance):
+    def get_subset(self, instance, families):
 
         asset_id = instance.context.data["assetDoc"]["_id"]
 
@@ -259,16 +268,23 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
             subset = {
                 "_id": io.ObjectId(),  # Pre-generate subset id
-                "schema": "avalon-core:subset-2.0",
+                "schema": "avalon-core:subset-3.0",
                 "type": "subset",
                 "name": subset_name,
-                "data": {},
+                "data": {
+                    "families": families,
+                },
                 "parent": asset_id,
             }
 
         return subset
 
-    def create_version(self, subset, version_number, locations, data=None):
+    def create_version(self,
+                       subset,
+                       families,
+                       version_number,
+                       locations,
+                       data=None):
         """ Copy given source to destination
 
         Args:
@@ -283,12 +299,21 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         version_locations = [location for location in locations if
                              location is not None]
 
-        return {"schema": "avalon-core:version-2.0",
-                "type": "version",
-                "parent": subset["_id"],
-                "name": version_number,
-                "locations": version_locations,
-                "data": data}
+        version = {
+            "type": "version",
+            "parent": subset["_id"],
+            "name": version_number,
+            "locations": version_locations,
+            "data": data
+        }
+
+        if subset["schema"] == "avalon-core:subset-3.0":
+            version["schema"] = "avalon-core:version-3.0"
+        else:
+            version["schema"] = "avalon-core:version-2.0"
+            version["data"]["families"] = families
+
+        return version
 
     def create_version_data(self, context, instance):
         """Create the data collection for the version
@@ -300,15 +325,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         Returns:
             dict: the required information with instance.data as key
         """
-
-        families = []
-        current_families = instance.data.get("families", list())
-        instance_family = instance.data.get("family", None)
-
-        if instance_family is not None:
-            families.append(instance_family)
-        families += current_families
-
         # create relative source path for DB
         source = context.data["currentMaking"]
         source = source.replace(api.registered_root(), "{root}")
@@ -321,7 +337,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         hash_val = context.data["sourceFingerprint"]["currentHash"]
 
         version_data = {
-            "families": families,
             "time": context.data["time"],
             "author": context.data["user"],
             "task": api.Session.get("AVALON_TASK"),
