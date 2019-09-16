@@ -284,43 +284,35 @@ def update_container(container, asset, subset, version, representation):
     """
     container_node = container["objectName"]
     namespace = container["namespace"]
+    child_namespace = namespace.rsplit(":", 1)[-1]
+
+    # This rely on unique namespace's naming rule
+    origin_family = child_namespace.rsplit("_", 3)[1]
+
+    if subset["schema"] == "avalon-core:subset-3.0":
+        family = subset["data"]["families"][0]
+    else:
+        family = version["data"]["families"][0]
+    family_name = family.split(".")[-1]
 
     log.info("Updating container '%s'..." % container_node)
 
+    # Update namespace
     asset_changed = container["assetId"] != str(asset["_id"])
-    version_changed = container["versionId"] != str(version["_id"])
-    family_changed = False
-    if version_changed:
-        origin_version = avalon.io.find_one(
-            {"_id": avalon.io.ObjectId(container["versionId"])})
-
-        if subset["schema"] == "avalon-core:subset-3.0":
-            families = subset["data"]["families"]
-        else:
-            families = origin_version["data"]["families"]
-
-        origin_family = families[0]
-        new_family = version["data"]["families"][0]
-        family_changed = origin_family != new_family
+    family_changed = origin_family != family_name
 
     if (asset_changed or family_changed):
-        # Update namespace
+
         parent_namespace = namespace.rsplit(":", 1)[0] + ":"
         with namespaced(parent_namespace, new=False) as parent_namespace:
             parent_namespace = parent_namespace[1:]
             asset_name = asset["data"].get("shortName", asset["name"])
 
-            if subset["schema"] == "avalon-core:subset-3.0":
-                families = subset["data"]["families"]
-            else:
-                families = version["data"]["families"]
-
-            family_name = families[0].split(".")[-1]
             new_namespace = unique_root_namespace(asset_name,
                                                   family_name,
                                                   parent_namespace)
             cmds.namespace(parent=":" + parent_namespace,
-                           rename=(namespace.rsplit(":", 1)[-1],
+                           rename=(child_namespace,
                                    new_namespace[1:].rsplit(":", 1)[-1]))
 
         namespace = new_namespace
