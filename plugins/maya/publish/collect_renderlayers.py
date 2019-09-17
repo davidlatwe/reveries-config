@@ -59,9 +59,10 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         collected = False
         for layer in renderlayers:
 
-            render_cams = lib.ls_renderable_cameras(layer)
+            all_render_cams = lib.ls_renderable_cameras(layer)
+            render_cams = list(set(cameras).intersection(set(all_render_cams)))
 
-            if not set(cameras).intersection(set(render_cams)):
+            if not render_cams:
                 continue
             collected = True
 
@@ -93,7 +94,7 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                 "renderer": renderer,
                 "fileNamePrefix": utils.get_render_filename_prefix(layer),
                 "fileExt": ext,
-                "renderCam": cameras,
+                "renderCam": render_cams,
             }
 
             data.update(original.data)
