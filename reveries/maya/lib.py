@@ -297,6 +297,7 @@ def query_by_setuplayer(node, attr, layer):
 
     # Locate leaf collection and get overrides from there
 
+    in_selection = None
     overrides = []
 
     for item in walk_hierarchy(highest_col[0]):
@@ -304,16 +305,18 @@ def query_by_setuplayer(node, attr, layer):
             selector = cmds.listConnections(item + ".selector")[0]
         except ValueError:
             # Is an override
-            if item in enabled_overrides:
+            if in_selection and item in enabled_overrides:
                 overrides.append(item)
 
         else:
             # Is a collection
+            in_selection = False
             if is_selected_by(selector):
                 if not cmds.getAttr(item + ".selfEnabled"):
                     # Collection not enabled, not a member
                     return original_value()
 
+                in_selection = True
                 overrides = []
 
     if not overrides:
