@@ -333,7 +333,7 @@ def update_container(container, asset, subset, version, representation):
     # Rename group node
     group = get_group_from_container(container_node)
     new_name = subset_group_name(namespace, name)
-    if group != new_name and cmds.objExists(group):
+    if group and group != new_name and cmds.objExists(group):
         group = cmds.rename(group, new_name)
 
         log.info("Subset group renamed to '%s'." % group)
