@@ -109,7 +109,24 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         if uuids is None:
             uuids = cls._get_avalon_uuid(instance)
 
-        invalid = uuids.get(utils.Identifier.Duplicated, [])
+        if instance.data["family"] in cls.loose_uuid:
+            invalid = uuids.get(utils.Identifier.Duplicated, [])
+        else:
+            invalid = list()
+            nodes = list()
+            for member in uuids.values():
+                nodes += member
+
+            ids = set()
+            for node in nodes:
+                id = utils.get_id(node)
+                if id not in ids:
+                    ids.add(id)
+                else:
+                    invalid.append(node)
+                    # Wipe out invalid Id's verifier so to force Id renew
+                    varifier = node + "." + utils.Identifier.ATTR_VERIFIER
+                    cmds.setAttr(varifier, "", type="string")
 
         return invalid
 
