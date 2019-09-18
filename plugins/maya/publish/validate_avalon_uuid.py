@@ -9,14 +9,7 @@ from avalon.maya.pipeline import AVALON_CONTAINER_ID
 from reveries.maya import lib, pipeline
 from reveries.plugins import RepairInstanceAction
 from reveries.maya.plugins import MayaSelectInvalidInstanceAction
-from reveries.maya.utils import (
-    Identifier,
-    get_id_status,
-    get_id_namespace,
-    upsert_id,
-    update_id_verifiers,
-    id_namespace,
-)
+from reveries.maya import utils
 
 
 class SelectMissing(MayaSelectInvalidInstanceAction):
@@ -106,7 +99,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         if uuids is None:
             uuids = cls._get_avalon_uuid(instance)
 
-        invalid = uuids.get(Identifier.Untracked, [])
+        invalid = uuids.get(utils.Identifier.Untracked, [])
 
         return invalid
 
@@ -116,7 +109,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         if uuids is None:
             uuids = cls._get_avalon_uuid(instance)
 
-        invalid = uuids.get(Identifier.Duplicated, [])
+        invalid = uuids.get(utils.Identifier.Duplicated, [])
 
         return invalid
 
@@ -169,12 +162,12 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     @classmethod
     def fix_invalid_missing(cls, instance):
         asset_id = str(instance.context.data["assetDoc"]["_id"])
-        with id_namespace(asset_id):
+        with utils.id_namespace(asset_id):
             for node in cls.get_invalid_missing(instance):
-                if get_id_status(node) == Identifier.Clean:
-                    upsert_id(node, namespace_only=True)
+                if utils.get_id_status(node) == utils.Identifier.Clean:
+                    utils.upsert_id(node, namespace_only=True)
                 else:
-                    upsert_id(node)
+                    utils.upsert_id(node)
 
     @classmethod
     def fix_invalid_duplicated(cls, instance):
@@ -182,13 +175,13 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
         if instance.data["family"] in cls.loose_uuid:
             # Do not renew id on these families
-            update_id_verifiers(invalid)
+            utils.update_id_verifiers(invalid)
         else:
             # Re-assign unique id on duplicated
             asset_id = str(instance.context.data["assetDoc"]["_id"])
-            with id_namespace(asset_id):
+            with utils.id_namespace(asset_id):
                 for node in invalid:
-                    upsert_id(node)
+                    utils.upsert_id(node)
 
     @classmethod
     def fix_invalid_asset_id(cls, instance):
@@ -199,9 +192,9 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         invalid = cls.get_invalid_asset_id(instance)
 
         asset_id = str(instance.context.data["assetDoc"]["_id"])
-        with id_namespace(asset_id):
+        with utils.id_namespace(asset_id):
             for node in invalid:
-                upsert_id(node, namespace_only=True)
+                utils.upsert_id(node, namespace_only=True)
 
     @classmethod
     def _get_avalon_uuid(cls, instance):
@@ -228,11 +221,11 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                 # to have id.
                 continue
 
-            state = get_id_status(node)
-            id_ns = get_id_namespace(node)
+            state = utils.get_id_status(node)
+            id_ns = utils.get_id_namespace(node)
             if not id_ns:
                 # Must have id namespace
-                state = Identifier.Untracked
+                state = utils.Identifier.Untracked
 
             uuids[state].append(node)
 
