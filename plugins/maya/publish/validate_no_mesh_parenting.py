@@ -49,10 +49,12 @@ class ValidateNoMeshParenting(pyblish.api.InstancePlugin):
                                        shapes=True,
                                        noIntermediate=True,
                                        fullPath=True)
+            node_type = "deformableShape"
         else:
             nodes = instance[:]
+            node_type = "mesh"
 
-        for shape in cmds.ls(nodes, long=True, type="deformableShape"):
+        for shape in cmds.ls(nodes, long=True, type=node_type):
             if shape in checked:
                 continue
 
