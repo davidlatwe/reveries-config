@@ -8,7 +8,6 @@ from reveries.maya.plugins import MayaSelectInvalidInstanceAction
 
 class SelectInvalid(MayaSelectInvalidInstanceAction):
 
-    on = "processed"
     label = "Select Invalided"
 
 
@@ -44,11 +43,20 @@ class ValidateNoMeshParenting(pyblish.api.InstancePlugin):
     def get_invalid(cls, instance):
         invalid = list()
         checked = list()
-        for mesh in cmds.ls(instance, long=True, type="mesh"):
-            if mesh in checked:
+
+        if "outCache" in instance.data:  # pointcache
+            nodes = cmds.listRelatives(instance.data["outCache"],
+                                       shapes=True,
+                                       noIntermediate=True,
+                                       fullPath=True)
+        else:
+            nodes = instance[:]
+
+        for shape in cmds.ls(nodes, long=True, type="deformableShape"):
+            if shape in checked:
                 continue
 
-            parent = cmds.listRelatives(mesh, parent=True, fullPath=True)
+            parent = cmds.listRelatives(shape, parent=True, fullPath=True)
             children = cmds.listRelatives(parent, children=True, fullPath=True)
 
             for node in cmds.ls(children, type="transform", long=True):
@@ -68,6 +76,14 @@ class ValidateNoMeshParenting(pyblish.api.InstancePlugin):
         invalid = self.get_invalid(instance)
 
         if invalid:
-            for node in invalid:
+            max_prompt = 10
+            total = len(invalid)
+
+            for node in invalid[:max_prompt]:
                 self.log.error("Mesh parenting found: {0}".format(node))
+
+            if total > max_prompt:
+                self.log.warning("Error message truncated. "
+                                 "Invalid count: %d" % total)
+
             raise Exception("Mesh parenting found.")
