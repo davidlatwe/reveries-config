@@ -36,7 +36,6 @@ pool = [
 	"4---more_than_120minutes",
 ]
 group = [
-	"maya2017vray36",
 	"maya2018_2",
 ]
 
