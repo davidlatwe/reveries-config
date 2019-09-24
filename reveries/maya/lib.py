@@ -1251,13 +1251,29 @@ def ls_nodes_by_id(ids, namespace=None):
                 cmds.nodeType(node) == "objectSet")
 
     namespace = namespace or ""
-    nodes = cmds.ls("{0}*.{1}".format(namespace, AVALON_ID_ATTR_LONG),
-                    long=False,
-                    objectsOnly=True,
-                    recursive=True)
+
+    all_nodes = set()
+    selection_list = om.MSelectionList()
+    try:
+        selection_list.add("{0}*.{1}".format(namespace, AVALON_ID_ATTR_LONG),
+                           searchChildNamespaces=True)
+    except RuntimeError:
+        # Object not exists
+        pass
+    else:
+        dag_fn = om.MFnDagNode()
+        for i in range(selection_list.length()):
+            node = selection_list.getDependNode(i)
+
+            if node.hasFn(om.MFn.kDagNode):
+                # DAG node only
+                fn_node = dag_fn.setObject(node)
+                # Include all instances
+                for path in fn_node.getAllPaths():
+                    all_nodes.add(path.partialPathName())
 
     id_map = defaultdict(set)
-    for node in nodes:
+    for node in all_nodes:
         id = utils.get_id(node)
 
         if id is None:
