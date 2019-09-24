@@ -4,10 +4,7 @@ import contextlib
 
 import pyblish.api
 
-from reveries.maya import io, lib, capsule
 from reveries.plugins import DelegatablePackageExtractor, skip_stage
-
-from maya import cmds
 
 
 class ExtractPointCache(DelegatablePackageExtractor):
@@ -28,6 +25,8 @@ class ExtractPointCache(DelegatablePackageExtractor):
     ]
 
     def extract(self):
+        from reveries.maya import capsule
+        from maya import cmds
 
         if self.data.get("staticCache"):
             self.start_frame = cmds.currentTime(query=True)
@@ -43,7 +42,6 @@ class ExtractPointCache(DelegatablePackageExtractor):
             capsule.evaluation("off"),
             capsule.maintained_selection(),
         ):
-            cmds.select(self.data["outCache"], replace=True)
             super(ExtractPointCache, self).extract()
 
     def add_range_data(self):
@@ -53,6 +51,11 @@ class ExtractPointCache(DelegatablePackageExtractor):
 
     @skip_stage
     def extract_Alembic(self):
+        from reveries.maya import io, lib, capsule
+        from maya import cmds
+
+        cmds.select(self.data["outCache"], replace=True)
+
         entry_file = self.file_name("abc")
         package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
@@ -112,6 +115,11 @@ class ExtractPointCache(DelegatablePackageExtractor):
 
     @skip_stage
     def extract_FBXCache(self):
+        from reveries.maya import io, lib, capsule
+        from maya import cmds
+
+        cmds.select(self.data["outCache"], replace=True)
+
         entry_file = self.file_name("ma")
         cache_file = self.file_name("fbx")
         package_path = self.create_package()
@@ -132,14 +140,47 @@ class ExtractPointCache(DelegatablePackageExtractor):
 
     @skip_stage
     def extract_GPUCache(self):
+        from reveries import lib
+        from reveries.maya import io, capsule
+        from maya import cmds
+
+        # Collect root nodes
+        assemblies = set()
+        for node in self.data["outCache"]:
+            assemblies.add("|" + node[1:].split("|", 1)[0])
+        assemblies = list(assemblies)
+
+        # Collect all parent nodes
+        out_hierarchy = set()
+        for node in self.data["outCache"]:
+            out_hierarchy.add(node)
+            out_hierarchy.update(lib.iter_uri(node, "|"))
+
+        # Hide unwanted nodes (nodes that were not parents)
+        attr_values = dict()
+        for node in cmds.listRelatives(assemblies,
+                                       allDescendents=True,
+                                       type="transform",
+                                       fullPath=True) or []:
+            if node not in out_hierarchy:
+                attr_values[node + ".visibility"] = False
+
+        # Export
+        cmds.select(assemblies, replace=True)
+
         entry_file = self.file_name("ma")
         cache_file = self.file_name("abc")
         package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
         cache_path = os.path.join(package_path, cache_file)
 
-        io.export_gpu(cache_path, self.start_frame, self.end_frame)
-        io.wrap_gpu(entry_path, [(cache_file, "ROOT")])
+        with contextlib.nested(
+            capsule.attribute_values(attr_values),
+            # Mute animated visibility channels
+            capsule.attribute_mute(list(attr_values.keys())),
+        ):
+            io.export_gpu(cache_path, self.start_frame, self.end_frame)
+            io.wrap_gpu(entry_path, [(cache_file, "ROOT")])
 
         self.add_data({"entryFileName": entry_file})
         self.add_range_data()

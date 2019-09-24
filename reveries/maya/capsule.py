@@ -591,6 +591,25 @@ def attribute_values(attr_values):
                 cmds.setAttr(attr, value)
 
 
+@contextlib.contextmanager
+def attribute_mute(attr_mute):
+    """Mute animated attributes
+
+    Arguments:
+        attr_mute (list): A list of attribute names
+
+    """
+    original = [(attr, cmds.mute(attr, query=True)) for attr in attr_mute]
+    try:
+        cmds.mute(attr_mute)
+        yield
+
+    finally:
+        for attr, mutted in original:
+            if not mutted:
+                cmds.mute(attr, disable=True)
+
+
 class OutputDeque(collections.deque):
     """Record Maya command output during the context
 
