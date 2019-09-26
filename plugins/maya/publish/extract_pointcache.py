@@ -115,7 +115,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
 
     @skip_stage
     def extract_FBXCache(self):
-        from reveries.maya import io, lib, capsule
+        from reveries.maya import io
         from maya import cmds
 
         cmds.select(self.data["outCache"], replace=True)
@@ -126,10 +126,6 @@ class ExtractPointCache(DelegatablePackageExtractor):
         entry_path = os.path.join(package_path, entry_file)
         cache_path = os.path.join(package_path, cache_file)
 
-        # bake visible key
-        with capsule.maintained_selection():
-            lib.bake_hierarchy_visibility(
-                cmds.ls(sl=True), self.start_frame, self.end_frame)
         with io.export_fbx_set_pointcache("FBXCacheSET"):
             io.export_fbx(cache_path)
 
