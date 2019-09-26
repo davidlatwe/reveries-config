@@ -639,25 +639,6 @@ def get_visible_in_frame_range(nodes, start, end):
     return list(visible)
 
 
-def bake_hierarchy_visibility(nodes, start_frame, end_frame, step=1):
-    curve_map = {node: cmds.createNode("animCurveTU",
-                                       name=node + "_visibility")
-                 for node in cmds.ls(nodes)
-                 if cmds.attributeQuery('visibility', node=node, exists=True)}
-
-    # Bake to animCurve
-    frame = start_frame
-    while frame <= end_frame:
-        cmds.currentTime(frame)
-        for node, curve in curve_map.items():
-            cmds.setKeyframe(curve, time=(frame,), value=is_visible(node))
-        frame += step
-
-    # Connect baked result curve
-    for node, curve in curve_map.items():
-        cmds.connectAttr(curve + ".output", node + ".visibility", force=True)
-
-
 def node_type_check(node, node_type):
     shape = node
     if cmds.objectType(node) == "transform":
