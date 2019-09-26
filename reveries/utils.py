@@ -370,8 +370,7 @@ def get_representation_path_(representation, parents):
     template_publish = project["config"]["template"]["publish"]
 
     repr_root = representation["data"].get("reprRoot")
-    proj_root = project["data"].get("root")
-    root = repr_root or proj_root or avalon.api.registered_root()
+    root = repr_root or avalon.api.registered_root()
 
     return template_publish.format(**{
         "root": root,

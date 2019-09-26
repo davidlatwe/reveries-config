@@ -311,8 +311,7 @@ class PackageLoader(object):
 
         representation = context["representation"]
         repr_root = representation["data"].get("reprRoot")
-        proj_root = context["project"]["data"].get("root")
-        root = repr_root or proj_root or avalon.api.registered_root()
+        root = repr_root or avalon.api.registered_root()
 
         data["root"] = root
         data["silo"] = context["asset"]["silo"]
