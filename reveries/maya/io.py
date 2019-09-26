@@ -33,6 +33,7 @@ def export_fbx_set_pointcache(cache_set_name):
                         cache_file=True,
                         cache_set=cache_set_name,
                         anim_only=False,
+                        bake_anim=True,
                         key_reduce=True,
                         shapes=False,
                         skins=False,
@@ -474,6 +475,7 @@ def wrap_fbx(wrapper_path, fbx_files):
 requires maya "2016";
 requires "fbxmaya";
 FBXResetImport;
+FBXImportSetTake -takeIndex -1;  // Need this to import animation after reset
 """
     fbx_node_template = """
 $cachefile = `file -q -loc "{filePath}"`;  // Resolve relative path
