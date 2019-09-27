@@ -1,6 +1,8 @@
 
 import os
 import sys
+import json
+import shutil
 import inspect
 import types
 import logging
@@ -512,20 +514,6 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         self._active_representations = list()
         self._current_representation = None
         self._extract_to_publish_dir = False
-        self._subset_doc = avalon.io.find_one({
-            "type": "subset",
-            "parent": self.context.data["assetDoc"]["_id"],
-            "name": self.data["subset"],
-        })
-
-        project = instance.context.data["projectDoc"]
-        self._publish_dir_template = project["config"]["template"]["publish"]
-        self._publish_dir_key = {"root": avalon.api.registered_root(),
-                                 "project": avalon.Session["AVALON_PROJECT"],
-                                 "silo": avalon.Session["AVALON_SILO"],
-                                 "asset": avalon.Session["AVALON_ASSET"],
-                                 "subset": self.data["subset"],
-                                 "version": None}
 
         extract_type = self.data.get("extractType")
 
