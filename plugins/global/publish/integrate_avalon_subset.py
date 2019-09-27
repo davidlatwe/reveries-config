@@ -117,8 +117,9 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         representations = []
 
         # `template` extracted from `ExtractPublishDir` plugin
-        template_data = instance.data["publishDirElem"][0]
-        template_publish = instance.data["publishDirElem"][1]
+        version_manager = instance.data["versionManager"]
+        template_publish = version_manager.template_publish
+        template_data = version_manager.template_data
 
         # Should not have any kind of check on files here, that should be done
         # by extractors, here only need to publish representation dirs.
@@ -334,15 +335,12 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         work_dir = work_dir.replace(api.registered_root(), "{root}")
         work_dir = work_dir.replace("\\", "/")
 
-        hash_val = context.data["sourceFingerprint"]["currentHash"]
-
         version_data = {
             "time": context.data["time"],
             "author": context.data["user"],
             "task": api.Session.get("AVALON_TASK"),
             "source": source,
             "workDir": work_dir,
-            "hash": hash_val,
             "comment": context.data.get("comment"),
             "dependencies": instance.data.get("dependencies", dict()),
             "dependents": dict(),
