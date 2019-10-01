@@ -36,7 +36,7 @@ class VersionManager(object):
         source = context.data["currentMaking"]
         source = context.data.get("originMaking") or source
 
-        self.log = logging.getLogger(self.name)
+        self.log = logging.getLogger("Version Manager")
 
         self._version_dir = ""
 
