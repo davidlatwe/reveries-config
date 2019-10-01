@@ -76,6 +76,9 @@ class ExtractArnoldStandIn(PackageExtractor):
                                          #      Override Nodes,
                                          #      Operators,
                                          #
+                                         # (NOTE): If Color Manager included,
+                                         #         may raise error if rendering
+                                         #         in Houdini or other DCC.
                                          # mask=6200,  # With Color Manager
                                          #
                                          mask=4152)  # No Color Manager
