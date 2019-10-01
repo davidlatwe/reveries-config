@@ -36,7 +36,8 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
         from reveries.maya import pipeline
 
         upstream_nodes = instance.data.get("shadingNetwork", [])
-        instance.data["fileNodes"] = cmds.ls(upstream_nodes, type="file")
+        file_nodes = cmds.ls(upstream_nodes, type="file")
+        instance.data["fileNodes"] = file_nodes
 
         # Frame range
         if instance.data["staticCache"]:
@@ -49,7 +50,7 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
 
         instance.data["byFrameStep"] = 1
 
-        stray = pipeline.find_stray_textures(instance)
+        stray = pipeline.find_stray_textures(file_nodes)
         if stray:
             self.log.warning("Found not versioned textures, creating "
                              "instance for publish.")
