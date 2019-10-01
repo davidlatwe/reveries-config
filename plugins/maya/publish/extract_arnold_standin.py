@@ -75,8 +75,13 @@ class ExtractArnoldStandIn(PackageExtractor):
                                          #      Shaders,
                                          #      Override Nodes,
                                          #      Operators,
-                                         #      Color Manager,
-                                         mask=6200)
+                                         #
+                                         # (NOTE): If Color Manager included,
+                                         #         may raise error if rendering
+                                         #         in Houdini or other DCC.
+                                         # mask=6200,  # With Color Manager
+                                         #
+                                         mask=4152)  # No Color Manager
 
             # Change to environment var embedded path
             root = avalon.api.registered_root().replace("\\", "/")
