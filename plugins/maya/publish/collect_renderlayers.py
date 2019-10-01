@@ -63,6 +63,8 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             render_cams = list(set(cameras).intersection(set(all_render_cams)))
 
             if not render_cams:
+                self.log.warning("No renderable camera in %s, skipping.."
+                                 "" % layer)
                 continue
             collected = True
 
