@@ -122,7 +122,7 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
         # Validate all controls
         has_connections = cls.get_invalid_connections(instance)
         has_unlocked_vis = cls.get_invalid_visibility(instance)
-        has_non_default_values = cls.get_non_default_attrs(instance)
+        has_non_default_values = cls.get_invalid_non_default_values(instance)
 
         if has_connections:
             cls.log.error("Controls have input connections: "
