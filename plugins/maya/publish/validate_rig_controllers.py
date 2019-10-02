@@ -150,37 +150,73 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
         return invalid
 
     @classmethod
-    def get_non_default_attrs(cls, control):
-        """Return attribute plugs with non-default values
+    def get_invalid_visibility(cls, instance):
+        controls = cls.get_controls(instance)
 
-        Args:
-            control (str): Name of control node.
+        has_unlocked_vis = list()
+        for control in controls:
+            # check if visibility is locked
+            plug = "{}.visibility".format(control)
+            locked = cmds.getAttr(plug, lock=True)
+            if not locked:
+                has_unlocked_vis.append(control)
 
-        Returns:
-            list: The invalid plugs
+        return has_unlocked_vis
 
-        """
+    @classmethod
+    def get_invalid_connections(cls, instance):
+        controls = cls.get_controls(instance)
 
-        invalid = []
-        for attr, default in cls.CONTROLLER_DEFAULTS.items():
-            if cmds.attributeQuery(attr, node=control, exists=True):
-                plug = "{}.{}".format(control, attr)
+        has_connections = list()
+        for control in controls:
+            if cls._get_connected_attributes(control):
+                has_connections.append(control)
 
-                # Ignore locked attributes
-                locked = cmds.getAttr(plug, lock=True)
-                if locked:
-                    continue
+        return has_connections
 
-                value = cmds.getAttr(plug)
-                if value != default:
-                    cls.log.warning("Control non-default value: "
-                                    "%s = %s" % (plug, value))
-                    invalid.append(plug)
+    @classmethod
+    def get_invalid_non_default_values(cls, instance):
+        controls = cls.get_controls(instance)
 
-        return invalid
+        has_non_default_values = list()
+        for control in controls:
+            if cls._get_non_default_attrs(control):
+                has_non_default_values.append(control)
+
+        return has_non_default_values
+
+    @classmethod
+    def fix_invalid(cls, instance):
+        controls = cls.get_controls(instance)
+        with capsule.undo_chunk(undo_on_exit=False):
+            for control in controls:
+                cls._fix_visibility(control)
+                cls._fix_connections(control)
+                cls._fix_non_default_values(control)
+
+    @classmethod
+    def fix_invalid_visibility(cls, instance):
+        controls = cls.get_controls(instance)
+        with capsule.undo_chunk(undo_on_exit=False):
+            for control in controls:
+                cls._fix_visibility(control)
+
+    @classmethod
+    def fix_invalid_connections(cls, instance):
+        controls = cls.get_controls(instance)
+        with capsule.undo_chunk(undo_on_exit=False):
+            for control in controls:
+                cls._fix_connections(control)
+
+    @classmethod
+    def fix_invalid_non_default_values(cls, instance):
+        controls = cls.get_controls(instance)
+        with capsule.undo_chunk(undo_on_exit=False):
+            for control in controls:
+                cls._fix_non_default_values(control)
 
     @staticmethod
-    def get_connected_attributes(control):
+    def _get_connected_attributes(control):
         """Return attribute plugs with incoming connections.
 
         This will also ensure no (driven) keys on unlocked keyable attributes.
@@ -209,43 +245,37 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
         return invalid
 
     @classmethod
-    def get_invalid_visibility(cls, instance):
-        controls = cls.get_controls(instance)
+    def _get_non_default_attrs(cls, control):
+        """Return attribute plugs with non-default values
 
-        has_unlocked_vis = list()
-        for control in controls:
-            # check if visibility is locked
-            plug = "{}.visibility".format(control)
-            locked = cmds.getAttr(plug, lock=True)
-            if not locked:
-                has_unlocked_vis.append(control)
+        Args:
+            control (str): Name of control node.
 
-        return has_unlocked_vis
+        Returns:
+            list: The invalid plugs
 
-    @classmethod
-    def get_invalid_connections(cls, instance):
-        controls = cls.get_controls(instance)
+        """
 
-        has_connections = list()
-        for control in controls:
-            if cls.get_connected_attributes(control):
-                has_connections.append(control)
+        invalid = []
+        for attr, default in cls.CONTROLLER_DEFAULTS.items():
+            if cmds.attributeQuery(attr, node=control, exists=True):
+                plug = "{}.{}".format(control, attr)
 
-        return has_connections
+                # Ignore locked attributes
+                locked = cmds.getAttr(plug, lock=True)
+                if locked:
+                    continue
 
-    @classmethod
-    def get_invalid_non_default_values(cls, instance):
-        controls = cls.get_controls(instance)
+                value = cmds.getAttr(plug)
+                if value != default:
+                    cls.log.warning("Control non-default value: "
+                                    "%s = %s" % (plug, value))
+                    invalid.append(plug)
 
-        has_non_default_values = list()
-        for control in controls:
-            if cls.get_non_default_attrs(control):
-                has_non_default_values.append(control)
-
-        return has_non_default_values
+        return invalid
 
     @classmethod
-    def fix_visibility(cls, control):
+    def _fix_visibility(cls, control):
         # Lock visibility
         attr = "{}.visibility".format(control)
         locked = cmds.getAttr(attr, lock=True)
@@ -254,9 +284,9 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
             cmds.setAttr(attr, lock=True)
 
     @classmethod
-    def fix_connections(cls, control):
+    def _fix_connections(cls, control):
         # Remove incoming connections
-        invalid_plugs = cls.get_connected_attributes(control)
+        invalid_plugs = cls._get_connected_attributes(control)
         if invalid_plugs:
             for plug in invalid_plugs:
                 cls.log.info("Breaking input connection to %s" % plug)
@@ -267,42 +297,12 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
                 cmds.disconnectAttr(source, plug)
 
     @classmethod
-    def fix_non_default_values(cls, control):
+    def _fix_non_default_values(cls, control):
         # Reset non-default values
-        invalid_plugs = cls.get_non_default_attrs(control)
+        invalid_plugs = cls._get_non_default_attrs(control)
         if invalid_plugs:
             for plug in invalid_plugs:
                 attr = plug.split(".")[-1]
                 default = cls.CONTROLLER_DEFAULTS[attr]
                 cls.log.info("Setting %s to %s" % (plug, default))
                 cmds.setAttr(plug, default)
-
-    @classmethod
-    def fix_invalid(cls, instance):
-        controls = cls.get_controls(instance)
-        with capsule.undo_chunk(undo_on_exit=False):
-            for control in controls:
-                cls.fix_visibility(control)
-                cls.fix_connections(control)
-                cls.fix_non_default_values(control)
-
-    @classmethod
-    def fix_invalid_visibility(cls, instance):
-        controls = cls.get_controls(instance)
-        with capsule.undo_chunk(undo_on_exit=False):
-            for control in controls:
-                cls.fix_visibility(control)
-
-    @classmethod
-    def fix_invalid_connections(cls, instance):
-        controls = cls.get_controls(instance)
-        with capsule.undo_chunk(undo_on_exit=False):
-            for control in controls:
-                cls.fix_connections(control)
-
-    @classmethod
-    def fix_invalid_non_default_values(cls, instance):
-        controls = cls.get_controls(instance)
-        with capsule.undo_chunk(undo_on_exit=False):
-            for control in controls:
-                cls.fix_non_default_values(control)
