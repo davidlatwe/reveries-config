@@ -225,16 +225,14 @@ def fix_texture_file_nodes(nodes=lib._no_val, file_path=None, dry_run=False):
                 path = cmds.getAttr(attr)
 
                 if path.startswith(bug):
-                    new_path = path.replace(bug, fix)
+                    path = path.replace(bug, fix)
 
-                elif lib.is_versioned_texture_path(path):
-                    # Embed environment variables into file path
+                if lib.is_versioned_texture_path(path):
                     new_path = env_embedded_path(path)
-
                 else:
-                    new_path = None
+                    new_path = os.path.expandvars(path)
 
-                if new_path:
+                if new_path != path:
                     cmds.setAttr(attr, new_path, type="string")
 
 
