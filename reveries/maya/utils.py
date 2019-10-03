@@ -221,13 +221,21 @@ def fix_texture_file_nodes(nodes=lib._no_val, file_path=None, dry_run=False):
                 # For after solving Avalon Launcher root `realpath` *bug*
                 bug = "$AVALON_PROJECTS$AVALON_PROJECT"
                 fix = "$AVALON_PROJECTS/$AVALON_PROJECT"
-                path = cmds.getAttr(node + ".fileTextureName")
+                attr = node + ".fileTextureName"
+                path = cmds.getAttr(attr)
+
                 if path.startswith(bug):
-                    fix = path.replace(bug, fix)
-                    cmds.setAttr(node + ".fileTextureName", fix, type="string")
-                else:
+                    new_path = path.replace(bug, fix)
+
+                elif lib.is_versioned_texture_path(path):
                     # Embed environment variables into file path
-                    texture_path_embed()
+                    new_path = env_embedded_path(path)
+
+                else:
+                    new_path = None
+
+                if new_path:
+                    cmds.setAttr(attr, new_path, type="string")
 
 
 # TODO: Objectize texture file data
