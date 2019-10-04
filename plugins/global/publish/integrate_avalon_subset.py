@@ -116,18 +116,14 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #
         representations = []
 
-        # `template` extracted from `ExtractPublishDir` plugin
-        version_manager = instance.data["versionManager"]
-        template_publish = version_manager.template_publish
-        template_data = version_manager.template_data
+        versioner = instance.data["versioner"]
 
         # Should not have any kind of check on files here, that should be done
         # by extractors, here only need to publish representation dirs.
 
         for package, repr_data in packages.items():
 
-            template_data["representation"] = package
-            publish_path = template_publish.format(**template_data)
+            publish_path = versioner.representation_dir(package)
 
             representation = {
                 "schema": "avalon-core:representation-2.0",

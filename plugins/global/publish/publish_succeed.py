@@ -15,5 +15,5 @@ class PublishSucceed(pyblish.api.ContextPlugin):
             if not instance.data.get("publish", True):
                 continue
 
-            version_manager = instance.data["versionManager"]
-            version_manager.set_succeeded()
+            versioner = instance.data["versioner"]
+            versioner.set_succeeded()
