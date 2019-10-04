@@ -450,7 +450,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             ```
 
         """
-        packager = self.data.pop("packager")
+        packager = self.data["packager"]
         extract_type = self.data.get("extractType")
 
         actived = [extract_type] if extract_type else self.representations
