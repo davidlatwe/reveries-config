@@ -116,14 +116,10 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #
         representations = []
 
-        versioner = instance.data["versioner"]
-
         # Should not have any kind of check on files here, that should be done
         # by extractors, here only need to publish representation dirs.
 
         for package, repr_data in packages.items():
-
-            publish_path = versioner.representation_dir(package)
 
             representation = {
                 "schema": "avalon-core:representation-2.0",
@@ -134,12 +130,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             }
             representations.append(representation)
 
-            if instance.data.get("bareStaging"):
-                src = stagingdir
-            else:
-                src = os.path.join(stagingdir, package)
-
-            dst = publish_path
+            src = repr_data.pop("packageDir")
+            dst = repr_data.pop("representationDir")
 
             self.transfers["packages"].append([src, dst])
 
