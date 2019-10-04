@@ -20,10 +20,10 @@ class ExtractMayaShare(PackageExtractor):
         "mayaAscii",
     ]
 
-    def extract_mayaAscii(self):
+    def extract_mayaAscii(self, packager):
         # Define extract output file path
-        entry_file = self.file_name("ma")
-        package_path = self.create_package()
+        entry_file = packager.file_name("ma")
+        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         # Perform extraction
@@ -44,7 +44,7 @@ class ExtractMayaShare(PackageExtractor):
                       shader=True,
                       constructionHistory=True)
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": entry_file,
         })
 

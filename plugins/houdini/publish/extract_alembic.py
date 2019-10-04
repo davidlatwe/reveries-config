@@ -21,14 +21,13 @@ class ExtractAlembic(PackageExtractor):
 
     def extract(self):
         if len(self.data.get("frameOutputs", [])) <= 1:
-            extract_type = ["Alembic"]
+            self.data["extractType"] = "Alembic"
         else:
-            extract_type = ["AlembicSeq"]
+            self.data["extractType"] = "AlembicSeq"
 
-        self._active_representations = extract_type
         super(ExtractAlembic, self).extract()
 
-    def extract_Alembic(self):
+    def extract_Alembic(self, packager):
         ropnode = self.member[0]
 
         # Get the filename from the filename parameter
@@ -36,19 +35,19 @@ class ExtractAlembic(PackageExtractor):
         # Set custom staging dir
         staging_dir = os.path.dirname(output)
         self.data["stagingDir"] = staging_dir
-        pkg_dir = self.create_package(representation_dir=False)
+        pkg_dir = packager.create_package(with_representation=False)
 
         file_name = os.path.basename(output)
         self.log.info("Writing alembic '%s' to '%s'" % (file_name,
                                                         pkg_dir))
         self.render(ropnode, pkg_dir)
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": file_name,
         })
-        self.inject_cache_root()
+        self.inject_cache_root(packager)
 
-    def extract_AlembicSeq(self):
+    def extract_AlembicSeq(self, packager):
         ropnode = self.member[0]
 
         # Get the first frame filename from pre-collected data
@@ -56,24 +55,24 @@ class ExtractAlembic(PackageExtractor):
         # Set custom staging dir
         staging_dir = os.path.dirname(output)
         self.data["stagingDir"] = staging_dir
-        pkg_dir = self.create_package(representation_dir=False)
+        pkg_dir = packager.create_package(with_representation=False)
 
         file_name = os.path.basename(output)
         self.log.info("Writing alembic '%s' to '%s'" % (file_name,
                                                         pkg_dir))
         self.render(ropnode, pkg_dir)
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": file_name,
             "startFrame": self.data["startFrame"],
             "endFrame": self.data["endFrame"],
             "step": self.data["step"],
         })
-        self.inject_cache_root()
+        self.inject_cache_root(packager)
 
-    def inject_cache_root(self):
+    def inject_cache_root(self, packager):
         if self.data["family"] == "reveries.pointcache":
-            self.add_data({
+            packager.add_data({
                 "reprRoot": self.data["reprRoot"],
             })
 

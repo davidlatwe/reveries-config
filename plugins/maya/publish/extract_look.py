@@ -36,13 +36,13 @@ class ExtractLook(PackageExtractor):
         "LookDev"
     ]
 
-    def extract_LookDev(self):
+    def extract_LookDev(self, packager):
 
         from avalon import maya
         from reveries.maya import lib, capsule
 
-        entry_file = self.file_name("ma")
-        package_path = self.create_package()
+        entry_file = packager.file_name("ma")
+        package_path = packager.create_package()
 
         # Extract shaders
         #
@@ -88,7 +88,7 @@ class ExtractLook(PackageExtractor):
 
         # Serialise shaders relationships
         #
-        link_file = self.file_name("json")
+        link_file = packager.file_name("json")
         link_path = os.path.join(package_path, link_file)
 
         self.log.info("Serialising shaders..")
@@ -230,7 +230,7 @@ class ExtractLook(PackageExtractor):
         with open(link_path, "w") as f:
             json.dump(relationships, f)
 
-        self.add_data({
+        packager.add_data({
             "linkFname": link_file,
             "entryFileName": entry_file,
         })

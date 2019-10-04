@@ -22,10 +22,10 @@ class ExtractRig(PackageExtractor):
         "mayaBinary",
     ]
 
-    def extract_mayaBinary(self):
+    def extract_mayaBinary(self, packager):
         # Define extract output file path
-        entry_file = self.file_name("mb")
-        package_path = self.create_package()
+        entry_file = packager.file_name("mb")
+        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         mesh_nodes = cmds.ls(self.member,
@@ -50,7 +50,7 @@ class ExtractRig(PackageExtractor):
             geo_id_and_hash[id] = hasher.digest()
             hasher.clear()
 
-        self.add_data({"modelProfile": geo_id_and_hash})
+        packager.add_data({"modelProfile": geo_id_and_hash})
 
         # Perform extraction
         self.log.info("Performing extraction..")
@@ -110,7 +110,7 @@ class ExtractRig(PackageExtractor):
                           constructionHistory=True,
                           shader=True)
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": entry_file,
         })
 

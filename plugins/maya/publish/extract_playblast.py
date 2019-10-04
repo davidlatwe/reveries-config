@@ -5,10 +5,11 @@ import reveries.utils
 
 from avalon.vendor import clique
 from reveries.maya import io, utils
-from reveries.plugins import DelegatablePackageExtractor, skip_stage
+# from reveries.plugins import DelegatablePackageExtractor
+from reveries.plugins import PackageExtractor
 
 
-class ExtractPlayblast(DelegatablePackageExtractor):
+class ExtractPlayblast(PackageExtractor):
     """
     """
 
@@ -26,12 +27,13 @@ class ExtractPlayblast(DelegatablePackageExtractor):
 
     ext = "png"
 
-    @skip_stage
-    def extract_imageSequence(self):
+    def extract_imageSequence(self, packager):
         """Extract playblast sequence directly to publish dir
         """
         from maya import cmds
         cmds.editRenderLayerGlobals(currentRenderLayer="defaultRenderLayer")
+
+        packager.skip_stage()
 
         project = self.context.data["projectDoc"]
         width, height = reveries.utils.get_resolution_data(project)
@@ -41,8 +43,8 @@ class ExtractPlayblast(DelegatablePackageExtractor):
         end_frame = self.context.data["endFrame"]
 
         suffix = "." + self.data["asset"]
-        entry_file = self.file_name(suffix=suffix)
-        publish_dir = self.create_package()
+        entry_file = packager.file_name(suffix=suffix)
+        publish_dir = packager.create_package()
         entry_path = os.path.join(publish_dir, entry_file)
 
         pipeline_data = self.context.data["projectDoc"]["data"]["pipeline"]
@@ -70,7 +72,7 @@ class ExtractPlayblast(DelegatablePackageExtractor):
                        "%%0%dd" % sequence.padding +
                        sequence.tail)
 
-        self.add_data({
+        packager.add_data({
             "imageFormat": self.ext,
             "entryFileName": entry_fname,
             "seqStart": list(sequence.indexes)[0],

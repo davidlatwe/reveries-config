@@ -19,14 +19,14 @@ class ExtractLightSet(PackageExtractor):
         "LightSet"
     ]
 
-    def extract_LightSet(self):
+    def extract_LightSet(self, packager):
 
         from maya import cmds
         from avalon import maya
         from reveries.maya import capsule
 
-        entry_file = self.file_name("ma")
-        package_path = self.create_package()
+        entry_file = packager.file_name("ma")
+        package_path = packager.create_package()
 
         # Extract lights
         #
@@ -62,6 +62,6 @@ class ExtractLightSet(PackageExtractor):
                       shader=False,
                       expressions=True)
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": entry_file,
         })

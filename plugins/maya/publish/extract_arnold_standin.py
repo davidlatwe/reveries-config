@@ -4,7 +4,7 @@ import contextlib
 
 import pyblish.api
 import avalon.api
-from reveries.plugins import PackageExtractor, skip_stage
+from reveries.plugins import PackageExtractor
 from reveries.maya import capsule
 
 from maya import cmds
@@ -25,15 +25,16 @@ class ExtractArnoldStandIn(PackageExtractor):
         "Ass",
     ]
 
-    @skip_stage
-    def extract_Ass(self):
+    def extract_Ass(self, packager):
         from reveries.maya import arnold
 
         # Ensure option created
         arnold.utils.create_options()
 
-        package_path = self.create_package()
-        cache_file = self.file_name("ass")
+        packager.skip_stage()
+        package_path = packager.create_package()
+
+        cache_file = packager.file_name("ass")
         cache_path = os.path.join(package_path, cache_file)
 
         self.log.info("Extracting shaders..")
@@ -105,8 +106,8 @@ class ExtractArnoldStandIn(PackageExtractor):
         use_sequence = self.data["startFrame"] != self.data["endFrame"]
         entry_file = os.path.basename(asses[0])
 
-        self.add_data({"entryFileName": entry_file,
-                       "useSequence": use_sequence})
+        packager.add_data({"entryFileName": entry_file,
+                           "useSequence": use_sequence})
         if use_sequence:
-            self.add_data({"startFrame": self.data["startFrame"],
-                           "endFrame": self.data["endFrame"]})
+            packager.add_data({"startFrame": self.data["startFrame"],
+                               "endFrame": self.data["endFrame"]})
