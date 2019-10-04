@@ -9,7 +9,7 @@ import avalon.io
 
 
 class CollectPublishVersioner(pyblish.api.InstancePlugin):
-    """This is a packager, for publish flow control
+    """
     """
 
     label = "Publish Versioner"
@@ -36,7 +36,6 @@ class PublishVersioner(object):
             "silo": avalon.Session["AVALON_SILO"],
             "asset": avalon.Session["AVALON_ASSET"],
             "subset": instance.data["subset"],
-            "version": None
         }
 
         source = context.data["currentMaking"]
@@ -48,6 +47,7 @@ class PublishVersioner(object):
         self._template_data = template_data
 
         self._version_dir = ""
+        self._version_num = 0
         self._data = instance.data
         self._metadata = {
             "source": source,
@@ -59,11 +59,19 @@ class PublishVersioner(object):
         self._contractor_accepted = context.data.get("contractorAccepted")
         self._asset_id = context.data["assetDoc"]["_id"]
 
+    def __repr__(self):
+        return "PublishVersioner(versionNum: %s, versionDir: %s)" % (
+            self._version_num, self._version_dir)
+
     def _metadata_path(self):
         return os.path.join(self._version_dir, self.META_FILE)
 
+    def is_in_remote_session(self):
+        # Will be deprecated
+        return bool(self._contractor_accepted)
+
     def _is_available(self):
-        if self.is_in_remote_session():
+        if self._is_in_remote_session():
             return True
 
         metadata_path = self._metadata_path()
@@ -85,6 +93,9 @@ class PublishVersioner(object):
 
     def _clean_version_dir(self):
         """Create a clean version dir"""
+        if self._is_in_remote_session():
+            return True
+
         version_dir = self._version_dir
 
         if os.path.isdir(version_dir):
@@ -110,10 +121,10 @@ class PublishVersioner(object):
         return True
 
     def version_num(self):
-        return self._template_data["version"]
+        return self._version_num
 
     def version_dir(self):
-        if self.is_in_remote_session():
+        if self._is_in_remote_session():
             # version lock if publish process has been delegated.
             version_number = self._data["versionNext"]
         else:
@@ -137,11 +148,12 @@ class PublishVersioner(object):
         version_template = os.path.dirname(self._template_publish)
 
         while True:
-            self._template_data["version"] = version_number
             # Format dir
-            version_dir = version_template.format(**self._template_data)
+            version_dir = version_template.format(**self._template_data,
+                                                  version=version_number)
             version_dir = os.path.abspath(os.path.normpath(version_dir))
 
+            self._version_num = version_number
             self._version_dir = version_dir
 
             if not self._is_available():
@@ -163,6 +175,7 @@ class PublishVersioner(object):
 
     def representation_dir(self, name):
         return self._template_publish.format(**self._template_data,
+                                             version=self._version_num,
                                              representation=name)
 
     def set_succeeded(self):
