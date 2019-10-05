@@ -41,6 +41,12 @@ class PublishVersioner(object):
         source = context.data["currentMaking"]
         source = context.data.get("originMaking", source)
 
+        if not os.path.exists(source):
+            mtime = fsize = None
+        else:
+            mtime = os.path.getmtime(source)
+            fsize = os.path.getsize(source)
+
         self.log = logging.getLogger("Version Manager")
 
         self._template_publish = template_publish
@@ -51,8 +57,8 @@ class PublishVersioner(object):
         self._data = instance.data
         self._metadata = {
             "source": source,
-            "mtime": os.path.getmtime(source),
-            "fsize": os.path.getsize(source),
+            "mtime": mtime,
+            "fsize": fsize,
             "delegated": False,
             "succeeded": False,
         }
@@ -60,15 +66,20 @@ class PublishVersioner(object):
         self._asset_id = context.data["assetDoc"]["_id"]
 
     def __repr__(self):
-        return "PublishVersioner(versionNum: %s, versionDir: %s)" % (
+        return "PublishVersioner(versionNum: %03d, versionDir: %s)" % (
             self._version_num, self._version_dir)
 
     def _metadata_path(self):
         return os.path.join(self._version_dir, self.META_FILE)
 
-    def is_in_remote_session(self):
+    def _is_in_remote_session(self):
         # Will be deprecated
         return bool(self._contractor_accepted)
+
+    def _is_about_to_remote(self):
+        # Will be deprecated
+        is_to_remote = bool(self._data.get("useContractor"))
+        return is_to_remote and not self._is_in_remote_session()
 
     def _is_available(self):
         if self._is_in_remote_session():
@@ -149,8 +160,8 @@ class PublishVersioner(object):
 
         while True:
             # Format dir
-            version_dir = version_template.format(**self._template_data,
-                                                  version=version_number)
+            version_dir = version_template.format(version=version_number,
+                                                  **self._template_data)
             version_dir = os.path.abspath(os.path.normpath(version_dir))
 
             self._version_num = version_number
@@ -168,18 +179,19 @@ class PublishVersioner(object):
                                      "version dir, trying next..")
                     continue
 
-                self._write_metadata()
                 break
+
+        self._write_metadata()
 
         return version_dir
 
     def representation_dir(self, name):
-        return self._template_publish.format(**self._template_data,
-                                             version=self._version_num,
-                                             representation=name)
+        return self._template_publish.format(version=self._version_num,
+                                             representation=name,
+                                             **self._template_data)
 
     def set_succeeded(self):
-        if self.is_about_to_remote():
+        if self._is_about_to_remote():
             state = "delegated"
         else:
             state = "succeeded"

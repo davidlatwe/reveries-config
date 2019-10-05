@@ -76,7 +76,10 @@ class PublishPackager(object):
             "packageDir": pkg_dir,
             "representationDir": repr_dir,
         })
-        os.makedirs(pkg_dir, exist_ok=True)
+
+        if not os.path.isdir(pkg_dir):
+            os.makedirs(pkg_dir)
+
         # Reset
         self._skip_stage = False
 
