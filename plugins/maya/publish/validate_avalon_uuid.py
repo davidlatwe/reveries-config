@@ -113,9 +113,9 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
             invalid = uuids.get(utils.Identifier.Duplicated, [])
         else:
             invalid = list()
-            nodes = list()
+            nodes = set()
             for member in uuids.values():
-                nodes += member
+                nodes.update(member)
 
             ids = set()
             for node in nodes:
