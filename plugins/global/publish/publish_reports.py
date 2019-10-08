@@ -37,10 +37,6 @@ class PublishReports(pyblish.api.ContextPlugin):
 
             self.log.info("Representations:")
             for package in instance.data["packages"]:
-                publish_contractor = instance.data.get("publishContractor")
-
                 self.log.info("    {}".format(package))
-                self.log.info("    - Publish contractor: {}"
-                              "".format(publish_contractor))
 
             self.log.info("")

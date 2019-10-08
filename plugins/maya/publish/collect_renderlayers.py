@@ -23,6 +23,8 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         "reveries.imgseq.render"
     ]
 
+    targets = ["deadline"]
+
     def process(self, instance):
 
         context = instance.context
@@ -115,11 +117,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             # Push renderlayer members into instance,
             # for collecting dependencies
             instance += layer_members
-
-            # Assign contractor
-            if instance.data["deadlineEnable"]:
-                instance.data["useContractor"] = True
-                instance.data["publishContractor"] = "deadline.maya.render"
 
             self.collect_output_paths(instance)
 

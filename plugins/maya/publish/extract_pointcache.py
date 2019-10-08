@@ -24,6 +24,8 @@ class ExtractPointCache(PackageExtractor):
         "GPUCache",
     ]
 
+    targets = ["localhost"]
+
     def extract(self):
         from reveries.maya import capsule
         from maya import cmds

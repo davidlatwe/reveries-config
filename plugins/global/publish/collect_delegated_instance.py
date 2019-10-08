@@ -15,9 +15,9 @@ class CollectDelegatedInstance(pyblish.api.ContextPlugin):
     order = pyblish.api.CollectorOrder + 0.3
     label = "Delegated Instance"
 
+    hosts = ["deadline"]
+
     def process(self, context):
-        if not context.data.get("contractorAccepted"):
-            return
 
         assignment = context.data["contractorAssignment"]
 

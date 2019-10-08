@@ -13,19 +13,13 @@ class OverlayClipInfoOnIntegrated(pyblish.api.InstancePlugin):
         "reveries.imgseq.playblast",
     ]
 
+    targets = ["localhost"]
+
     def process(self, instance):
 
         context = instance.context
         assert all(result["success"] for result in context.data["results"]), (
             "Atomicity not held, aborting.")
-
-        # Check Delegation
-        #
-        # Contractor completed long-run publish process
-        delegated = instance.context.data.get("contractorAccepted")
-        # Is delegating long-run publish process
-        if instance.data.get("useContractor") and not delegated:
-            return
 
         representation = io.find_one({
             "type": "representation",

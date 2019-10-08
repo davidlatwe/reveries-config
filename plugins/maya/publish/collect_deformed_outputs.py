@@ -109,8 +109,6 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance.data["startFrame"] = start_frame
                 instance.data["endFrame"] = end_frame
 
-                self.assign_contractor(instance)
-
             if not created:
                 cmds.error("No pointcache instance created.")
             else:
@@ -131,14 +129,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             instance.data["startFrame"] = start_frame
             instance.data["endFrame"] = end_frame
 
-            self.assign_contractor(instance)
-
     def pick_locators(self, members):
         return cmds.listRelatives(cmds.ls(members, type="locator"),
                                   parent=True,
                                   fullPath=True) or []
-
-    def assign_contractor(self, instance):
-        if instance.data["deadlineEnable"]:
-            instance.data["useContractor"] = True
-            instance.data["publishContractor"] = "deadline.maya.script"

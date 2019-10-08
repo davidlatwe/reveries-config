@@ -19,6 +19,26 @@ class CollectPublishVersioner(pyblish.api.InstancePlugin):
         instance.data["versioner"] = PublishVersioner(instance)
 
 
+def in_remote():
+    remote = set([
+        "deadline",
+    ])
+
+    registered = set(pyblish.api.registered_hosts())
+
+    return registered.intersection(remote)
+
+
+def to_remote():
+    remote = set([
+        "deadline",
+    ])
+
+    registered = set(pyblish.api.registered_targets())
+
+    return registered.intersection(remote)
+
+
 class PublishVersioner(object):
 
     META_FILE = ".publish.meta.json"
@@ -62,7 +82,8 @@ class PublishVersioner(object):
             "delegated": False,
             "succeeded": False,
         }
-        self._contractor_accepted = context.data.get("contractorAccepted")
+        self._in_remote = in_remote()
+        self._to_remote = to_remote()
         self._asset_id = context.data["assetDoc"]["_id"]
 
     def __repr__(self):
@@ -72,17 +93,8 @@ class PublishVersioner(object):
     def _metadata_path(self):
         return os.path.join(self._version_dir, self.META_FILE)
 
-    def _is_in_remote_session(self):
-        # Will be deprecated
-        return bool(self._contractor_accepted)
-
-    def _is_about_to_remote(self):
-        # Will be deprecated
-        is_to_remote = bool(self._data.get("useContractor"))
-        return is_to_remote and not self._is_in_remote_session()
-
     def _is_available(self):
-        if self._is_in_remote_session():
+        if self._in_remote:
             return True
 
         metadata_path = self._metadata_path()
@@ -104,7 +116,7 @@ class PublishVersioner(object):
 
     def _clean_version_dir(self):
         """Create a clean version dir"""
-        if self._is_in_remote_session():
+        if self._in_remote:
             return True
 
         version_dir = self._version_dir
@@ -135,7 +147,7 @@ class PublishVersioner(object):
         return self._version_num
 
     def version_dir(self):
-        if self._is_in_remote_session():
+        if self._in_remote:
             # version lock if publish process has been delegated.
             version_number = self._data["versionNext"]
         else:
@@ -191,7 +203,7 @@ class PublishVersioner(object):
                                              **self._template_data)
 
     def set_succeeded(self):
-        if self._is_about_to_remote():
+        if self._to_remote:
             state = "delegated"
         else:
             state = "succeeded"

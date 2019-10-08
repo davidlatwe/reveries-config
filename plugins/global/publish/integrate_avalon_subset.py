@@ -28,19 +28,13 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     label = "Integrate Subset"
     order = pyblish.api.IntegratorOrder
 
+    targets = ["localhost"]
+
     def process(self, instance):
 
         self.transfers = dict(packages=list(),
                               files=list(),
                               hardlinks=list())
-
-        # Check Delegation
-        #
-        # Contractor completed long-run publish process
-        delegated = instance.context.data.get("contractorAccepted")
-        # Is delegating long-run publish process
-        if instance.data.get("useContractor") and not delegated:
-            return
 
         # Assemble data and create version, representations
         subset, version, representations = self.register(instance)

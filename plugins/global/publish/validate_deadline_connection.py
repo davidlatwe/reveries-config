@@ -12,10 +12,8 @@ class ValidateDeadlineConnection(pyblish.api.InstancePlugin):
 
     label = "Deadline Connection"
     order = pyblish.api.ValidatorOrder + 0.1
-    families = [
-        "reveries.pointcache",
-        "reveries.imgseq",
-    ]
+
+    targets = ["deadline"]
 
     @context_process
     def process(self, context):
