@@ -90,6 +90,9 @@ class ExtractCamera(PackageExtractor):
         package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
+        if self.data.get("eulerFilter", False):
+            cmds.filterCurve(cmds.ls(sl=True))
+
         with avalon.maya.maintained_selection():
             cmds.file(entry_path,
                       force=True,
@@ -137,6 +140,9 @@ class ExtractCamera(PackageExtractor):
         entry_file = self.file_name("fbx")
         package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
+
+        if self.data.get("eulerFilter", False):
+            cmds.filterCurve(cmds.ls(sl=True))
 
         with avalon.maya.maintained_selection():
             io.export_fbx_set_camera()
