@@ -51,7 +51,11 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
 
         asset = context["asset"]
         asset_name = asset["data"].get("shortName", asset["name"])
-        family_name = context["version"]["data"]["families"][0].split(".")[-1]
+        if context["subset"]["schema"] == "avalon-core:subset-3.0":
+            families = context["subset"]["data"]["families"]
+        else:
+            families = context["version"]["data"]["families"]
+        family_name = families[0].split(".")[-1]
         namespace = namespace or unique_root_namespace(asset_name, family_name)
 
         descriptions_data = representation["data"]["descriptionsData"]
