@@ -1,5 +1,6 @@
 import sys
 import logging
+import pyblish.api
 import pyblish_qml.api
 from avalon import api, tools
 from avalon.vendor.Qt import QtCore
@@ -23,6 +24,9 @@ def _arnold_update_full_scene(*args):
 
 
 def _publish_via_targets(targets):
+    pyblish.api.deregister_all_targets()
+    for target in targets:
+        pyblish.api.register_target(target)
     pyblish_qml.api.show(targets=targets)
 
 
