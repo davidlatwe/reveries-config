@@ -74,7 +74,7 @@ class ExtractCamera(PackageExtractor):
                 frame_range = (self.start, self.end)
                 baked_camera = lib.bake_to_world_space(cam_transform,
                                                        frame_range,
-                                                       self.step)[0]
+                                                       step=self.step)[0]
                 delete_bin.append(baked_camera)
 
                 cmds.select(baked_camera,
