@@ -32,6 +32,8 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
     def process(self, context):
         from maya import cmds
 
+        targeted_families = context.data["targetFamilies"]
+
         objset_data = list()
 
         for objset in cmds.ls("*.id",
@@ -69,13 +71,19 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
             data["objectName"] = objset
             data["setMembers"] = members
 
+            family = data["family"]
+
             # Inject shadow family
-            family = cmds.getAttr(objset + ".family")
             if family in self.branched:
                 entry = self.branched[family]
                 shadow_family = family + "." + data[entry]
                 self.log.info("Injecting shadow family: %s" % shadow_family)
                 data["families"] = [shadow_family]
+
+            # Ignore instance by targeted families
+            families = set([family] + data.get("families", []))
+            if not families.issubset(targeted_families):
+                continue
 
             objset_data.append(data)
 
