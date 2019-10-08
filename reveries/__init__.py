@@ -24,7 +24,6 @@ DEV_LOADER_PATH = os.path.join(DEVELOPER_DIR, "global", "load")
 PYBLISH_PATH = os.path.dirname(pyblish.__file__)
 PYBLISH_DEFAULT = os.path.join(PYBLISH_PATH, "plugins")
 
-CONTRACTOR_PATH = os.path.join(PLUGINS_DIR, "global", "contractor")
 LAUNCHER_ACTION_PATH = os.path.join(PLUGINS_DIR, "global", "launcher")
 DEV_LAUNCHER_ACTION_PATH = os.path.join(DEVELOPER_DIR, "global", "launcher")
 

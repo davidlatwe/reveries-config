@@ -1,16 +1,8 @@
 
 import os
-import sys
-import inspect
-import types
-import logging
-
 import pyblish.api
 import avalon.api
 import avalon.io
-
-from .vendor import six
-from . import CONTRACTOR_PATH
 
 
 def depended_plugins_succeed(plugin, instance):
@@ -45,95 +37,6 @@ def depended_plugins_succeed(plugin, instance):
             succeed = False
 
     return succeed
-
-
-class BaseContractor(object):
-    """Publish delegation contractor base class
-    """
-
-    name = ""
-
-    def __init__(self):
-        self.log = logging.getLogger(self.name)
-        self.__cached_context = None
-
-    def fulfill(self, context, instances):
-        """
-        Args:
-            context (pyblish.api.Context): context object
-            instances (list): A list of delegated instances
-        """
-        raise NotImplementedError("Should be implemented in subclass.")
-
-    def _parse_context(self, context):
-        if self.__cached_context is not None:
-            return self.__cached_context
-
-        # Save Session
-        #
-        environment = dict({
-            # This will trigger `userSetup.py` on the slave
-            # such that proper initialisation happens the same
-            # way as it does on a local machine.
-            # TODO(marcus): This won't work if the slaves don't
-            # have accesss to these paths, such as if slaves are
-            # running Linux and the submitter is on Windows.
-            "PYTHONPATH": os.getenv("PYTHONPATH", ""),
-            "AVALON_TOOLS": os.getenv("AVALON_TOOLS", ""),
-        }, **avalon.api.Session)
-
-        # Save Context data from source
-        #
-        # (TODO): Deadline will convert the variable name to uppercase,
-        #         despite it show the original cases in Job Properties GUI..
-        #         Maybe we should save context data into a json file.
-        #
-        context_data_entry = [
-            "comment",
-            "user",
-        ]
-        for entry in context_data_entry:
-            key = "AVALON_CONTEXT_" + entry
-            environment[key] = context.data[entry]
-
-        self.__cached_context = environment
-        return environment
-
-    def assemble_environment(self, instance):
-        """Compose submission required environment variables for instance
-
-        Return:
-            environment (dict): A set of contract variables, return `None` if
-                instance is not assigning to this contractor or publish is
-                disabled.
-
-        """
-        if instance.data.get("publish") is False:
-            return
-        if instance.data.get("useContractor") is False:
-            return
-        if not instance.data.get("publishContractor") == self.name:
-            return
-
-        context = instance.context
-        index = context.index(instance)
-        environment = self._parse_context(context).copy()
-
-        # Save Instances' name and version
-        #
-        # instance subset name
-        key = "AVALON_DELEGATED_SUBSET_%d" % index
-        environment[key] = instance.data["subset"]
-        #
-        # instance subset version
-        #
-        # This should prevent version bump when re-running publish with
-        # same params.
-        #
-        key = "AVALON_DELEGATED_VERSION_NUM_%d" % index
-        environment[key] = instance.data["versionNext"]
-
-        return environment
 
 
 def parse_contract_environment(context):
@@ -176,58 +79,6 @@ def parse_contract_environment(context):
     # Update context
     context.data["contractorAccepted"] = True
     context.data["contractorAssignment"] = assignment
-
-
-def find_contractor(contractor_name=""):
-    """
-    """
-    for fname in os.listdir(CONTRACTOR_PATH):
-        # Ignore files which start with underscore
-        if fname.startswith("_"):
-            continue
-
-        mod_name, mod_ext = os.path.splitext(fname)
-        if not mod_ext == ".py":
-            continue
-
-        abspath = os.path.join(CONTRACTOR_PATH, fname)
-        if not os.path.isfile(abspath):
-            continue
-
-        module = types.ModuleType(mod_name)
-        module.__file__ = abspath
-
-        try:
-            with open(abspath) as f:
-                six.exec_(f.read(), module.__dict__)
-
-        except Exception as err:
-            print("Skipped: \"%s\" (%s)", mod_name, err)
-            continue
-
-        for name in dir(module):
-            if not name.startswith("Contractor"):
-                continue
-
-            # It could be anything at this point
-            cls = getattr(module, name)
-
-            if not inspect.isclass(cls):
-                continue
-
-            if (hasattr(cls, "assemble_environment") and
-                    hasattr(cls, "fulfill") and
-                    hasattr(cls, "name")):
-
-                if cls.name == contractor_name:
-
-                    # Store reference to original module, to avoid
-                    # garbage collection from collecting it's global
-                    # imports, such as `import os`.
-                    sys.modules[mod_name] = module
-
-                    return cls
-    return None
 
 
 def create_dependency_instance(dependent,
