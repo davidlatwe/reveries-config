@@ -321,6 +321,12 @@ def query_by_setuplayer(node, attr, layer):
                 for child in walk_hierarchy(highest):
                     yield child
 
+    def is_override_by(item):
+        if item in enabled_overrides:
+            attr_ = cmds.getAttr(item + ".attribute")
+            return cmds.objExists(node + "." + attr_)
+        return False
+
     # compound value filter
     if parent_attr:
         index = cmds.attributeQuery(parent_attr[0],
@@ -353,7 +359,7 @@ def query_by_setuplayer(node, attr, layer):
             selector = cmds.listConnections(item + ".selector")[0]
         except ValueError:
             # Is an override
-            if in_selection and item in enabled_overrides:
+            if in_selection and is_override_by(item):
                 overrides.append(item)
 
         else:
@@ -365,7 +371,6 @@ def query_by_setuplayer(node, attr, layer):
                     return original_value()
 
                 in_selection = True
-                overrides = []
 
     if not overrides:
         return original_value()
