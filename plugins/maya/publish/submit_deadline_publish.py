@@ -5,7 +5,7 @@ import platform
 import pyblish.api
 
 
-class SubmitDeadlineScript(pyblish.api.ContextPlugin):
+class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
     """Publish via running script on Deadline
 
     Submitting jobs per instance group to deadline.
@@ -14,13 +14,11 @@ class SubmitDeadlineScript(pyblish.api.ContextPlugin):
 
     order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
-    label = "Deadline Script Job"
+    label = "Deadline Publish"
 
     targets = ["deadline"]
 
     def process(self, context):
-
-        payloads = list()
 
         # Context data
 
@@ -60,19 +58,6 @@ class SubmitDeadlineScript(pyblish.api.ContextPlugin):
             deadline_group = instance.data["deadlineGroup"]
             deadline_prior = instance.data["deadlinePriority"]
 
-            distributed_by_frame = instance.data.get("distributedByFrame")
-            if distributed_by_frame:
-                frame_start = int(instance.data["startFrame"])
-                frame_end = int(instance.data["endFrame"])
-                frame_step = int(instance.data["byFrameStep"])
-                frame_per_task = instance.data["deadlineFramesPerTask"]
-
-                frames = "{start}-{end}x{step}".format(
-                    start=frame_start,
-                    end=frame_end,
-                    step=frame_step,
-                )
-
             job_name = "{subset} v{version:0>3}".format(
                 subset=subset,
                 version=version,
@@ -111,12 +96,6 @@ class SubmitDeadlineScript(pyblish.api.ContextPlugin):
                 "IdOnly": True
             }
 
-            if distributed_by_frame:
-                payload["JobInfo"].update({
-                    "Frames": frames,
-                    "ChunkSize": frame_per_task,
-                })
-
             # Environment
 
             environment = self.assemble_environment(instance)
@@ -133,13 +112,13 @@ class SubmitDeadlineScript(pyblish.api.ContextPlugin):
             self.log.info(json.dumps(
                 payload, indent=4, sort_keys=True)
             )
-            payloads.append(payload)
 
-        # Submit
+            # Submit
 
-        submitter = context.data["deadlineSubmitter"]
-        for payload in payloads:
-            submitter.submit(payload)
+            if "payloads" not in context.data:
+                context.data["payloads"] = list()
+
+            context.data["payloads"].append(payload)
 
     def assemble_environment(self, instance):
         """Compose submission required environment variables for instance

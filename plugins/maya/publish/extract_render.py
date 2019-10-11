@@ -9,6 +9,8 @@ from reveries.plugins import PackageExtractor
 from reveries.maya import utils
 
 
+# (TODO) This will be deprecated. Use filesequence publisher instead.
+
 class ExtractRender(PackageExtractor):
     """Start GUI rendering if not delegate to Deadline
 
