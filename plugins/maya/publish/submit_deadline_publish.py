@@ -19,6 +19,12 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
     targets = ["deadline"]
 
     def process(self, context):
+        import reveries
+
+        reveries_path = reveries.__file__
+        script_file = os.path.join(os.path.dirname(reveries_path),
+                                   "scripts",
+                                   "deadline_publish.py")
 
         # Context data
 
@@ -40,10 +46,6 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             asset=asset,
             filename=fname
         )
-
-        script_file = os.path.join(os.path.dirname(__file__),
-                                   "scripts",
-                                   "avalon_contractor_publish.py")
 
         # Instance data
 

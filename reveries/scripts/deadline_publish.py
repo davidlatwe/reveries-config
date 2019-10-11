@@ -33,6 +33,8 @@ def check_success(context):
 
 def publish():
 
+    pyblish.api.register_host("deadline")
+
     context = pyblish.api.Context()
 
     log.info("Parsing environment ...")
