@@ -16,10 +16,6 @@ class ValidateDeadlineConnection(pyblish.api.ContextPlugin):
 
     def process(self, context):
 
-        if not any(i.data.get("deadlineEnable") for i in context):
-            self.log.debug("No instance require deadline.")
-            return
-
         AVALON_DEADLINE = api.Session.get("AVALON_DEADLINE")
 
         if AVALON_DEADLINE:

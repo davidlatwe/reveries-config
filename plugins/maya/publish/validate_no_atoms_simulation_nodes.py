@@ -22,6 +22,9 @@ class ValidateNoAtomsSimulationNodes(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder
     label = "No Atoms Simulation Nodes"
     hosts = ["maya"]
+
+    targets = ["deadline"]
+
     families = [
         "reveries.imgseq",
     ]
@@ -42,11 +45,6 @@ class ValidateNoAtomsSimulationNodes(pyblish.api.InstancePlugin):
         return invalid
 
     def process(self, instance):
-        if not instance.data["deadlineEnable"]:
-            # Allow local playblast simulation result.
-            self.log.info("Not using Deadline, skip validation.")
-            return
-
         invalid = self.get_invalid(instance)
         if invalid:
             raise Exception("Should not render with Atoms Simulation nodes.")
