@@ -7,6 +7,7 @@ from avalon.vendor import clique
 # from reveries.plugins import DelegatablePackageExtractor
 from reveries.plugins import PackageExtractor
 from reveries.maya import utils
+from reveries import lib
 
 
 # (TODO) This will be deprecated. Use filesequence publisher instead.
@@ -51,7 +52,7 @@ class ExtractRender(PackageExtractor):
     def extract_imageSequence(self, packager):
         """Extract per renderlayer that has no AOVs
         """
-        if not self.context.data.get("contractorAccepted"):
+        if not lib.in_remote():
             self.start_local_rendering()
 
         repr_dir = packager.create_package()
@@ -65,7 +66,7 @@ class ExtractRender(PackageExtractor):
     def extract_imageSequenceSet(self, packager):
         """Extract per renderlayer that has AOVs
         """
-        if not self.context.data.get("contractorAccepted"):
+        if not lib.in_remote():
             self.start_local_rendering()
 
         repr_dir = packager.create_package()

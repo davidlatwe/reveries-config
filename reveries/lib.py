@@ -154,3 +154,23 @@ def publish_remote():
         sys.exit(2)
 
     print("All good. Success!")
+
+
+def in_remote():
+    remote = set([
+        "deadline",
+    ])
+
+    registered = set(pyblish.api.registered_hosts())
+
+    return registered.intersection(remote)
+
+
+def to_remote():
+    remote = set([
+        "deadline",
+    ])
+
+    registered = set(pyblish.api.registered_targets())
+
+    return registered.intersection(remote)

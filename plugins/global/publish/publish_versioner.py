@@ -6,6 +6,7 @@ import logging
 import pyblish.api
 import avalon.api
 import avalon.io
+import reveries.lib
 
 
 class CollectPublishVersioner(pyblish.api.InstancePlugin):
@@ -17,26 +18,6 @@ class CollectPublishVersioner(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         instance.data["versioner"] = PublishVersioner(instance)
-
-
-def in_remote():
-    remote = set([
-        "deadline",
-    ])
-
-    registered = set(pyblish.api.registered_hosts())
-
-    return registered.intersection(remote)
-
-
-def to_remote():
-    remote = set([
-        "deadline",
-    ])
-
-    registered = set(pyblish.api.registered_targets())
-
-    return registered.intersection(remote)
 
 
 class PublishVersioner(object):
@@ -82,8 +63,8 @@ class PublishVersioner(object):
             "delegated": False,
             "succeeded": False,
         }
-        self._in_remote = in_remote()
-        self._to_remote = to_remote()
+        self._in_remote = reveries.lib.in_remote()
+        self._to_remote = reveries.lib.to_remote()
         self._asset_id = context.data["assetDoc"]["_id"]
 
     def __repr__(self):
