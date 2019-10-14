@@ -67,10 +67,6 @@ class DeadlineSubmitter(object):
 
         # Save Context data from source
         #
-        # (TODO): Deadline will convert the variable name to uppercase,
-        #         despite it show the original cases in Job Properties GUI..
-        #         Maybe we should save context data into a json file.
-        #
         context_data_entry = [
             "comment",
             "user",

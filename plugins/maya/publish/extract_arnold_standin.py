@@ -37,7 +37,7 @@ class ExtractArnoldStandIn(PackageExtractor):
         cache_file = packager.file_name("ass")
         cache_path = os.path.join(package_path, cache_file)
 
-        self.log.info("Extracting shaders..")
+        self.log.info("Extracting standin..")
 
         texture = self.data.get("textureInstance")
         if texture is not None:

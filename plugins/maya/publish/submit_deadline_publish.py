@@ -126,8 +126,8 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
         """Compose submission required environment variables for instance
 
         Return:
-            environment (dict): A set of contract variables, return `None` if
-                instance is not assigning to this contractor or publish is
+            environment (dict): A set of remote variables, return `None` if
+                instance is not assigning to remote site or publish is
                 disabled.
 
         """
