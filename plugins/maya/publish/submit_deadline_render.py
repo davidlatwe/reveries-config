@@ -12,7 +12,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ExtractorOrder
+    order = pyblish.api.ExtractorOrder + 0.2
     hosts = ["maya"]
     label = "Deadline Render"
 
@@ -23,6 +23,8 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
     targets = ["deadline"]
 
     def process(self, instance):
+
+        instance.data["submitted"] = True
 
         # Context data
 

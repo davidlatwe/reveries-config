@@ -12,7 +12,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
 
     """
 
-    order = pyblish.api.ExtractorOrder
+    order = pyblish.api.ExtractorOrder + 0.3
     hosts = ["maya"]
     label = "Deadline Publish"
 
@@ -51,6 +51,12 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
 
         for instance in context:
             if not instance.data.get("publish", True):
+                continue
+
+            if instance.data.get("isDependency", False):
+                continue
+
+            if instance.data.get("submitted", False):
                 continue
 
             subset = instance.data["subset"]

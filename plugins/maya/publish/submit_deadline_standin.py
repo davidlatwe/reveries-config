@@ -7,7 +7,7 @@ import pyblish.api
 
 class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
 
-    order = pyblish.api.ExtractorOrder
+    order = pyblish.api.ExtractorOrder + 0.2
     hosts = ["maya"]
     label = "Deadline Stand-In"
 
@@ -24,6 +24,8 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
         script_file = os.path.join(os.path.dirname(reveries_path),
                                    "scripts",
                                    "deadline_standin_by_frame.py")
+
+        instance.data["submitted"] = True
 
         # Context data
 

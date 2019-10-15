@@ -87,6 +87,7 @@ def create_dependency_instance(dependent,
     instance.data["futureDependencies"] = dict()
 
     instance.data["objectName"] = dependent.data["objectName"]
+    instance.data["isDependency"] = True
 
     if data is not None:
         instance.data.update(data)
