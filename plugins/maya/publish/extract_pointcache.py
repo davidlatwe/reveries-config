@@ -163,7 +163,16 @@ class ExtractPointCache(DelegatablePackageExtractor):
                                        type="transform",
                                        fullPath=True) or []:
             if node not in out_hierarchy:
-                attr_values[node + ".visibility"] = False
+                attr = node + ".visibility"
+
+                locked = cmds.getAttr(attr, lock=True)
+                has_connections = cmds.listConnections(attr,
+                                                       source=True,
+                                                       destination=False)
+                if locked or has_connections:
+                    continue
+
+                attr_values[attr] = False
 
         # Export
         cmds.select(assemblies, replace=True, noExpand=True)
