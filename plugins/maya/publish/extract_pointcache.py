@@ -122,7 +122,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
         from reveries.maya import io
         from maya import cmds
 
-        cmds.select(self.data["outCache"], replace=True)
+        cmds.select(self.data["outCache"], replace=True, noExpand=True)
 
         entry_file = self.file_name("ma")
         cache_file = self.file_name("fbx")
@@ -166,7 +166,7 @@ class ExtractPointCache(DelegatablePackageExtractor):
                 attr_values[node + ".visibility"] = False
 
         # Export
-        cmds.select(assemblies, replace=True)
+        cmds.select(assemblies, replace=True, noExpand=True)
 
         entry_file = self.file_name("ma")
         cache_file = self.file_name("abc")
