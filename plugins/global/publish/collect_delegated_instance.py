@@ -57,7 +57,11 @@ class CollectDelegatedInstance(pyblish.api.ContextPlugin):
         self.log.info("Found {} delegated instances.".format(len(assignment)))
 
         collected_count = 0
+
         for instance in context:
+            if instance.data.get("isDependency", False):
+                continue
+
             name = instance.data["subset"]
             if name in assignment:
                 # version lock
