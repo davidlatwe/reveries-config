@@ -78,14 +78,36 @@ class DeadlineSubmitter(object):
             "comment",
             "user",
         ]
-        for entry in context_data_entry:
-            key = "AVALON_CONTEXT_" + entry
+        for index, entry in enumerate(context_data_entry):
+            key = "AVALON_CONTEXT_DATA_NAME%d" % index
+            environment[key] = entry
+
+            key = "AVALON_CONTEXT_DATA_VALUE%d" % index
             environment[key] = context.data[entry]
 
         self._environment = environment
 
-    def context_env(self):
-        return self._environment.copy()
+    def instance_env(self, instance, environment=None):
+        """
+        """
+        environment = environment or self._environment.copy()
+
+        # Save Instances' name and version
+        # This should prevent version bump when re-running publish with
+        # same params.
+
+        subset = instance.data["subset"]
+        version = str(instance.data["versionNext"])
+
+        key = "AVALON_DELEGATED_SUBSETS"
+        value = subset + ":" + version
+
+        if key in environment:
+            environment[key] += ";" + value
+        else:
+            environment[key] = value
+
+        return environment
 
     def add_job(self, payload):
         """Add job to queue and returns an index"""

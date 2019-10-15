@@ -23,32 +23,36 @@ class CollectDelegatedInstance(pyblish.api.ContextPlugin):
         os_environ = os.environ.copy()
         assignment = dict()
 
-        AVALON_CONTEXT_ = "AVALON_CONTEXT_"
-        AVALON_DELEGATED_SUBSET_ = "AVALON_DELEGATED_SUBSET_"
-        AVALON_DELEGATED_VERSION_NUM_ = "AVALON_DELEGATED_VERSION_NUM_"
+        AVALON_CONTEXT_DATA_NAME = "AVALON_CONTEXT_DATA_NAME"
+        AVALON_CONTEXT_DATA_VALUE = "AVALON_CONTEXT_DATA_VALUE"
+        AVALON_DELEGATED_SUBSETS = "AVALON_DELEGATED_SUBSETS"
 
         for key in os_environ:
             # Context
-            if key.startswith(AVALON_CONTEXT_):
+            if key.startswith(AVALON_CONTEXT_DATA_NAME):
                 # Read Context data
                 #
-                entry = key[len(AVALON_CONTEXT_):]
-                context.data[entry] = os_environ[key]
+                entry = os_environ[key]
+                value = key.replace(AVALON_CONTEXT_DATA_NAME,
+                                    AVALON_CONTEXT_DATA_VALUE)
+                context.data[entry] = os_environ[value]
+
+                continue
 
             # Instance
-            if key.startswith(AVALON_DELEGATED_SUBSET_):
-                # Read Instances' name and version
+            if key == AVALON_DELEGATED_SUBSETS:
+                # Read Instances' subset and version
                 #
-                num_key = key.replace(AVALON_DELEGATED_SUBSET_,
-                                      AVALON_DELEGATED_VERSION_NUM_)
-                subset_name = os_environ[key]
-                version_num = int(os_environ[num_key])
+                for value in os_environ[key].split(";"):
 
-                # Assign instance
-                assignment[subset_name] = version_num
+                    subset_name, version_num = value.rsplit(":", 1)
+                    version_num = int(version_num)
 
-                self.log.info("Assigned subset {0!r}\n\tVer. Num: {1!r}"
-                              "".format(subset_name, version_num))
+                    # Assign instance
+                    assignment[subset_name] = version_num
+
+                    self.log.info("Assigned subset {0!r}\n\tVer. Num: {1!r}"
+                                  "".format(subset_name, version_num))
 
         self.log.info("Found {} delegated instances.".format(len(assignment)))
 

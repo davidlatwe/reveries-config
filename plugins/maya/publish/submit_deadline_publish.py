@@ -135,24 +135,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                 disabled.
 
         """
-        context = instance.context
-        index = context.index(instance)
-
-        # From context
-        environment = context.data["deadlineSubmitter"].context_env()
-
-        # Save Instances' name and version
-        #
-        # instance subset name
-        key = "AVALON_DELEGATED_SUBSET_%d" % index
-        environment[key] = instance.data["subset"]
-        #
-        # instance subset version
-        #
-        # This should prevent version bump when re-running publish with
-        # same params.
-        #
-        key = "AVALON_DELEGATED_VERSION_NUM_%d" % index
-        environment[key] = instance.data["versionNext"]
+        submitter = instance.context.data["deadlineSubmitter"]
+        environment = submitter.instance_env(instance)
 
         return environment

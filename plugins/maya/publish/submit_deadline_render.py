@@ -176,10 +176,8 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
             environment (dict)
 
         """
-        context = instance.contex
-
-        # From context
-        environment = context.data["deadlineSubmitter"].context_env()
+        submitter = instance.context.data["deadlineSubmitter"]
+        environment = submitter.instance_env(instance)
 
         # From current environment
         for var in [
