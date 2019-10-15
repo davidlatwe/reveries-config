@@ -1,6 +1,7 @@
 
 import os
 import platform
+import copy
 import json
 import pyblish.api
 
@@ -62,7 +63,6 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
         frame_start = int(instance.data["startFrame"])
         frame_end = int(instance.data["endFrame"])
         frame_step = int(instance.data["byFrameStep"])
-        frame_per_task = instance.data["deadlineFramesPerTask"]
 
         frames = "{start}-{end}x{step}".format(
             start=frame_start,
@@ -90,9 +90,7 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
                 "Priority": deadline_prior,
 
                 "Frames": frames,
-                "ChunkSize": frame_per_task,
-
-                "PostJobScript": script_file,
+                "ChunkSize": 1,
 
                 "ExtraInfo0": project["name"],
             },
@@ -181,10 +179,25 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
             environment (dict)
 
         """
-        context = instance.contex
+        context = instance.context
+        index = context.index(instance)
 
         # From context
         environment = context.data["deadlineSubmitter"].context_env()
+
+        # Save Instances' name and version
+        #
+        # instance subset name
+        key = "AVALON_DELEGATED_SUBSET_%d" % index
+        environment[key] = instance.data["subset"]
+        #
+        # instance subset version
+        #
+        # This should prevent version bump when re-running publish with
+        # same params.
+        #
+        key = "AVALON_DELEGATED_VERSION_NUM_%d" % index
+        environment[key] = instance.data["versionNext"]
 
         # From current environment
         for var in [
@@ -192,5 +205,8 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
             "ARNOLD_PLUGIN_PATH",
         ]:
             environment[var] = os.getenv(var, "")
+
+        # Remote data json file path
+        environment["REMOTE_DATA_PATH"] = instance.data["remoteDataPath"]
 
         return environment

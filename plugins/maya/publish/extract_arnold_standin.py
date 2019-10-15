@@ -1,11 +1,13 @@
 
 import os
+import json
 import contextlib
 
 import pyblish.api
 import avalon.api
 from reveries.plugins import PackageExtractor
 from reveries.maya import capsule
+from reveries import lib
 
 from maya import cmds
 
@@ -45,6 +47,42 @@ class ExtractArnoldStandIn(PackageExtractor):
         else:
             file_node_attrs = dict()
 
+        data = {
+            "fileNodeAttrs": file_node_attrs,
+            "member": self.member,
+            "cachePath": cache_path,
+        }
+        data_path = os.path.join(package_path, ".remoteData.json")
+
+        if lib.to_remote():
+            self.data["remoteDataPath"] = data_path
+            with open(data_path, "w") as fp:
+                json.dump(data, fp, indent=4)
+
+            return
+
+        elif lib.in_remote():
+            self.log.info("Stand-In exported via per-frame script.")
+
+        else:
+            self.export_ass(data,
+                            self.data["startFrame"],
+                            self.data["endFrame"],
+                            self.data["byFrameStep"])
+
+        entry_file = next(f for f in os.listdir(package_path)
+                          if f.endswith(".ass"))
+
+        use_sequence = self.data["startFrame"] != self.data["endFrame"]
+        packager.add_data({"entryFileName": entry_file,
+                           "useSequence": use_sequence})
+        if use_sequence:
+            packager.add_data({"startFrame": self.data["startFrame"],
+                               "endFrame": self.data["endFrame"]})
+
+    @staticmethod
+    def export_ass(data, start, end, step):
+
         arnold_tx_settings = {
             "defaultArnoldRenderOptions.autotx": False,
             "defaultArnoldRenderOptions.use_existing_tiled_textures": True,
@@ -57,18 +95,18 @@ class ExtractArnoldStandIn(PackageExtractor):
             capsule.maintained_selection(),
             capsule.ref_edit_unlock(),
             # (NOTE) Ensure attribute unlock
-            capsule.attribute_states(file_node_attrs.keys(), lock=False),
+            capsule.attribute_states(data["fileNodeAttrs"].keys(), lock=False),
             # Change to published path
-            capsule.attribute_values(file_node_attrs),
+            capsule.attribute_values(data["fileNodeAttrs"]),
             # Disable Auto TX update and enable to use existing TX
             capsule.attribute_values(arnold_tx_settings),
         ):
-            cmds.select(self.member, replace=True)
-            asses = cmds.arnoldExportAss(filename=cache_path,
+            cmds.select(data["member"], replace=True)
+            asses = cmds.arnoldExportAss(filename=data["cachePath"],
                                          selected=True,
-                                         startFrame=self.data["startFrame"],
-                                         endFrame=self.data["endFrame"],
-                                         frameStep=self.data["byFrameStep"],
+                                         startFrame=start,
+                                         endFrame=end,
+                                         frameStep=step,
                                          expandProcedurals=True,
                                          boundingBox=True,
                                          # Mask:
@@ -102,12 +140,3 @@ class ExtractArnoldStandIn(PackageExtractor):
                 if has_change:
                     with open(ass, "w") as assf:
                         assf.write("".join(lines))
-
-        use_sequence = self.data["startFrame"] != self.data["endFrame"]
-        entry_file = os.path.basename(asses[0])
-
-        packager.add_data({"entryFileName": entry_file,
-                           "useSequence": use_sequence})
-        if use_sequence:
-            packager.add_data({"startFrame": self.data["startFrame"],
-                               "endFrame": self.data["endFrame"]})

@@ -1,19 +1,30 @@
 
+import os
+import json
 import pyblish.api
-import reveries.lib
-
-
-def __main__(*args):
-    # Post job script
-    pyblish.api.register_host("deadline")
-    reveries.lib.publish_remote()
 
 
 if __name__ == "__main__":
-    # Script job per frame
-    pyblish.api.register_host("deadline")
-    pyblish.api.register_target("distributed")
+    # Maya script job per frame
+    from maya import mel
 
-    # package path
-    # fileNodeAttrs
+    # Find extractor plugin
+    plugin = None
+    for p in pyblish.api.discover():
+        if p.__name__ == "ExtractArnoldStandIn":
+            plugin = p
+            break
+
+    assert plugin, "Pyblish plugin not found."
+
+    # Parse data for extractor
+    data_path = os.environ["REMOTE_DATA_PATH"]
+    with open(data_path, "r") as fp:
+        data = json.load(fp)
+
     # Frame range
+    start = int(mel.eval("DeadlineValue(\"StartFrame\")"))
+    end = int(mel.eval("DeadlineValue(\"EndFrame\")"))
+
+    # Export
+    plugin.export_ass(data, start, end, 1)
