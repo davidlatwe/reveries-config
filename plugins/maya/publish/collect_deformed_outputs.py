@@ -56,15 +56,23 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 # Not a subset group node
                 continue
 
-            sets = cmds.ls(cmds.sets(container, query=True),
-                           type="objectSet")
-            out_sets += [s for s in sets if s.endswith("OutSet")]
+            nodes = cmds.sets(container, query=True)
+            sets = [
+                s for s in cmds.ls(nodes, type="objectSet")
+                if s.endswith("OutSet")
+            ]
+            if sets:
+                out_sets += sets
+                members.remove(group)
 
         # Collect cacheable nodes
+
+        created = False
+        backup = instance
+
         if out_sets:
             # Cacheables from OutSet of loaded subset
             out_cache = dict()
-            created = False
 
             for node in out_sets:
                 name = node.rsplit(":", 1)[-1][:-len("OutSet")] or "Default"
@@ -80,9 +88,12 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
                 out_cache[(namespace, name)] = cacheables
 
+                for n in cacheables:
+                    if n in members:
+                        members.remove(n)
+
             # Re-Create instances
             context = instance.context
-            backup = instance
             source_data = instance.data
 
             for (namespace, name), cacheables in out_cache.items():
@@ -111,12 +122,19 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
                 self.assign_contractor(instance)
 
+        if not members:
+            # Nothing left, all in/has OutSet
+
             if not created:
                 cmds.error("No pointcache instance created.")
             else:
                 context.remove(backup)
 
         else:
+            # Cache nodes that were not in any OutSet
+
+            instance = backup
+
             # Cacheables from instance member
             cacheables = lib.pick_cacheable(members)
             cacheables = lib.get_visible_in_frame_range(cacheables,
