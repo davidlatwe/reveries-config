@@ -1,9 +1,11 @@
 
 import os
 import re
+import logging
 import subprocess
 import pyblish.api
 import avalon.api
+import avalon.io
 from avalon.vendor import requests
 from reveries import utils
 
@@ -23,6 +25,11 @@ class PublishDeadlineSubmitter(pyblish.api.ContextPlugin):
 class DeadlineSubmitter(object):
 
     def __init__(self, context):
+
+        self.log = logging.getLogger(name="DeadlineSubmitter")
+
+        self._jobs = dict()
+        self._submitted = dict()
 
         self._cmd = None
         self._url = None
@@ -80,11 +87,42 @@ class DeadlineSubmitter(object):
     def context_env(self):
         return self._environment.copy()
 
-    def submit(self, payload):
+    def add_job(self, payload):
+        """Add job to queue and returns an index"""
+        index = len(self._jobs)
+        self._jobs[index] = payload
+        return index
+
+    def submit(self):
+        """Submit all jobs"""
+        while self._jobs:
+            index, payload = self._jobs.popitem()
+
+            deps = payload["JobInfo"].get("JobDependencies")
+            if deps:
+                dep_jobids = list()
+                for _index in deps.split(","):
+                    if _index in self._submitted:
+                        _jobid = self._submitted[_index]
+                    else:
+                        _payload = self._jobs.pop(_index)
+                        _jobid = self._submit(_index, _payload)
+
+                    dep_jobids.append(_jobid)
+
+                payload["JobInfo"]["JobDependencies"] = ",".join(dep_jobids)
+
+            self._submit(index, payload)
+
+    def _submit(self, index, payload):
         if self._cmd:
-            self._via_command(payload)
+            jobid = self._via_command(payload)
         else:
-            self._via_web_service(payload)
+            jobid = self._via_web_service(payload)
+
+        self._submitted[index] = jobid
+
+        return jobid
 
     def _via_web_service(self, payload):
         response = requests.post(self._url,

@@ -11,6 +11,4 @@ class SubmitDeadlineJobs(pyblish.api.ContextPlugin):
 
     def process(self, context):
         submitter = context.data["deadlineSubmitter"]
-
-        for payload in context.data["payloads"]:
-            submitter.submit(payload)
+        submitter.submit()

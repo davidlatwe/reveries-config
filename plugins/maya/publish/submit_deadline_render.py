@@ -164,10 +164,8 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
 
         # Submit
 
-        if "payloads" not in context.data:
-            context.data["payloads"] = list()
-
-        context.data["payloads"].append(payload)
+        submitter = context.data["deadlineSubmitter"]
+        submitter.add_job(payload)
 
     def assemble_environment(self, instance):
         """Compose submission required environment variables for instance

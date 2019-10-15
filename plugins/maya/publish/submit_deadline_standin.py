@@ -145,10 +145,32 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
 
         # Submit
 
-        if "payloads" not in context.data:
-            context.data["payloads"] = list()
+        submitter = context.data["deadlineSubmitter"]
+        index = submitter.add_job(payload)
 
-        context.data["payloads"].append(payload)
+        # Publish script
+
+        payload = copy.deepcopy(payload)
+
+        script_file = os.path.join(os.path.dirname(reveries_path),
+                                   "scripts",
+                                   "deadline_publish.py")
+        # Clean up
+        payload["JobInfo"].pop("Frames")
+        payload["JobInfo"].pop("ChunkSize")
+        # Update
+        payload["JobInfo"].update({
+            "Name": "__pub__" + payload["JobInfo"]["Name"],
+            "UserName": project["data"]["deadline"]["publishUser"],
+            "Priority": 99,
+            "JobDependencies": index,
+        })
+        payload["PluginInfo"].update({
+            "ScriptJob": True,
+            "ScriptFilename": script_file,
+        })
+
+        submitter.add_job(payload)
 
     def assemble_environment(self, instance):
         """Compose submission required environment variables for instance
