@@ -54,15 +54,13 @@ class ExtractPointCache(DelegatablePackageExtractor):
         from reveries.maya import io, lib, capsule
         from maya import cmds
 
-        cmds.select(self.data["outCache"], replace=True)
-
         entry_file = self.file_name("abc")
         package_path = self.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         euler_filter = self.data.get("eulerFilter", False)
 
-        root = cmds.ls(sl=True, long=True)
+        root = self.data["outCache"]
 
         with capsule.maintained_selection():
             # Selection may change if there are duplicate named nodes and
@@ -89,16 +87,22 @@ class ExtractPointCache(DelegatablePackageExtractor):
                     # Replace duplicat named nodes with unique named
                     root = list(set(root) - set(duplicated)) + unique_named
 
+                root += cmds.listRelatives(root,
+                                           allDescendents=True,
+                                           fullPath=True,
+                                           noIntermediate=True) or []
+                cmds.select(root, replace=True, noExpand=True)
+
                 io.export_alembic(
                     entry_path,
                     self.start_frame,
                     self.end_frame,
-                    selection=False,
+                    selection=True,
                     renderableOnly=True,
+                    writeVisibility=True,
                     writeCreases=True,
                     worldSpace=True,
                     eulerFilter=euler_filter,
-                    root=root,
                     attr=[
                         lib.AVALON_ID_ATTR_LONG,
                     ],
