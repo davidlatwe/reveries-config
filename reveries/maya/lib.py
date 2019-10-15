@@ -2,6 +2,7 @@
 import os
 import re
 import logging
+import itertools
 from collections import defaultdict
 from maya import cmds, mel
 from maya.api import OpenMaya as om
@@ -13,7 +14,7 @@ from maya.app.general.fileTexturePathResolver import (
 from avalon import io
 
 from .. import lib
-from ..vendor.six import string_types
+from ..vendor.six import string_types, moves as six_moves
 from .vendor import capture
 from ..utils import get_representation_path_
 
@@ -121,7 +122,7 @@ def query_by_renderlayer(node, attr, layer):
            has layeroverride.
 
     Arguments:
-        node (str): node name
+        node (str): node long name
         attr (str): node attribute name
         layer (str): renderLayer name
 
@@ -185,6 +186,8 @@ def query_by_setuplayer(node, attr, layer):
         layer (str): renderLayer name (NOT renderSetupLayer)
 
     """
+    from maya.app.renderSetup.model import selector as rs_selector
+
     node_attr = node + "." + attr
 
     def original_value(attr_=None):
@@ -239,14 +242,59 @@ def query_by_setuplayer(node, attr, layer):
 
     # The hunt begins...
 
+    def _is_selected_by_patterns(patterns, types=None):
+        """Customized version of `renderSetup.model.selector.ls`"""
+
+        if types is None:
+            types = []
+        included = [t for t in types if not t.startswith("-")]
+
+        def includer(selection, pattern):
+            update = set.update
+            if pattern.startswith(r"-"):
+                pattern = pattern[1:]
+                update = set.difference_update
+
+            if pattern == "*":
+                # Since we only need to know about whether this one node
+                # been selected, so instead of listing everything ("*"),
+                # listing this one node is all we need here.
+                #
+                # This saved a lot of processing time.
+                #
+                update(selection, cmds.ls(node, type=included, long=True))
+            else:
+                update(selection, cmds.ls(pattern, type=included, long=True))
+
+            return selection
+
+        selection = six_moves.reduce(includer, patterns, set())
+
+        if node in selection:
+            excluded = [t for t in types if t.startswith("-")]
+            excluded.extend(rs_selector.getRSExcludes())
+            filter = rs_selector.createTypeFilter(excluded)
+            selection = itertools.ifilter(filter, selection)
+
+            return node in set(selection)
+
+        return False
+
     def is_selected_by(selector):
         """Did the collection selector select this node ?"""
-        pattern = cmds.getAttr(selector + ".pattern")
-        selection = cmds.getAttr(selector + ".staticSelection")
-        if (node in selection.split() or
-                node in cmds.ls(re.split(";| ", pattern), long=True)):
+
+        # Static selection
+        static = cmds.getAttr(selector + ".staticSelection")
+        if node in static.split():
             return True
-        return False
+
+        # Pattern selection
+        pattern = cmds.getAttr(selector + ".pattern")
+        patterns = re.split("\s*[;\s]\s*", pattern)
+        ftype = cmds.getAttr(selector + ".typeFilter")
+
+        return _is_selected_by_patterns(patterns,
+                                        rs_selector.Filters.filterTypes(ftype))
 
     def walk_siblings(item):
         """Walk renderSetup nodes from highest(bottom) to lowest(top)"""
@@ -272,6 +320,12 @@ def query_by_setuplayer(node, attr, layer):
             else:
                 for child in walk_hierarchy(highest):
                     yield child
+
+    def is_override_by(item):
+        if item in enabled_overrides:
+            attr_ = cmds.getAttr(item + ".attribute")
+            return cmds.objExists(node + "." + attr_)
+        return False
 
     # compound value filter
     if parent_attr:
@@ -305,7 +359,7 @@ def query_by_setuplayer(node, attr, layer):
             selector = cmds.listConnections(item + ".selector")[0]
         except ValueError:
             # Is an override
-            if in_selection and item in enabled_overrides:
+            if in_selection and is_override_by(item):
                 overrides.append(item)
 
         else:
@@ -317,7 +371,6 @@ def query_by_setuplayer(node, attr, layer):
                     return original_value()
 
                 in_selection = True
-                overrides = []
 
     if not overrides:
         return original_value()

@@ -74,7 +74,7 @@ class ExtractCamera(PackageExtractor):
                 frame_range = (self.start, self.end)
                 baked_camera = lib.bake_to_world_space(cam_transform,
                                                        frame_range,
-                                                       self.step)[0]
+                                                       step=self.step)[0]
                 delete_bin.append(baked_camera)
 
                 cmds.select(baked_camera,
@@ -89,6 +89,9 @@ class ExtractCamera(PackageExtractor):
         entry_file = packager.file_name("ma")
         package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
+
+        if self.data.get("eulerFilter", False):
+            cmds.filterCurve(cmds.ls(sl=True))
 
         with avalon.maya.maintained_selection():
             cmds.file(entry_path,
@@ -137,6 +140,9 @@ class ExtractCamera(PackageExtractor):
         entry_file = packager.file_name("fbx")
         package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
+
+        if self.data.get("eulerFilter", False):
+            cmds.filterCurve(cmds.ls(sl=True))
 
         with avalon.maya.maintained_selection():
             io.export_fbx_set_camera()
