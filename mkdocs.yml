@@ -1,0 +1,31 @@
+site_name: Avalon Reveries
+
+nav:
+  - Home: index.md
+  - Release Notes: release_notes.md
+  - Avalon:
+    - Overview: avalon_overview.md
+    - Maya: avalon_maya.md
+    - Houdini: avalon_houdini.md
+    - Nuke: avalon_nuke.md
+  - Publish:
+    - Overview: publish_overview.md
+    - Maya: publish_maya.md
+    - Houdini: publish_houdini.md
+    - Nuke: publish_nuke.md
+  - Utilities:
+    - Overview: utilities_overview.md
+
+theme:
+  name: 'material'
+  font:
+    text: 'Noto Sans TC'
+    code: 'Roboto Mono'
+  palette:
+    primary: 'cyan'
+    accent: 'cyan'
+  feature:
+    tabs: true
+
+markdown_extensions:
+  - admonition
