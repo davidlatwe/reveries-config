@@ -87,6 +87,10 @@ def create_dependency_instance(dependent,
     instance.data["futureDependencies"] = dict()
 
     instance.data["objectName"] = dependent.data["objectName"]
+
+    if "childInstances" not in dependent.data:
+        dependent.data["childInstances"] = list()
+    dependent.data["childInstances"].append(instance)
     instance.data["isDependency"] = True
 
     if data is not None:

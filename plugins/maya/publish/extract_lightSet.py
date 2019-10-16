@@ -35,7 +35,8 @@ class ExtractLightSet(PackageExtractor):
         self.log.info("Extracting lights..")
 
         # From texture extractor
-        texture = self.data.get("textureInstance")
+        texture = next(chd for chd in self.data.get("childInstances", [])
+                       if chd.data["family"] == "reveries.texture")
         if texture is not None:
             file_node_attrs = texture.data.get("fileNodeAttrs", dict())
         else:
