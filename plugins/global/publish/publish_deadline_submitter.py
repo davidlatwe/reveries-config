@@ -96,16 +96,21 @@ class DeadlineSubmitter(object):
         # This should prevent version bump when re-running publish with
         # same params.
 
-        subset = instance.data["subset"]
-        version = str(instance.data["versionNext"])
+        def save(instance):
+            subset = instance.data["subset"]
+            version = str(instance.data["versionNext"])
 
-        key = "AVALON_DELEGATED_SUBSETS"
-        value = subset + ":" + version
+            key = "AVALON_DELEGATED_SUBSETS"
+            value = subset + ":" + version
 
-        if key in environment:
-            environment[key] += ";" + value
-        else:
-            environment[key] = value
+            if key in environment:
+                environment[key] += ";" + value
+            else:
+                environment[key] = value
+
+        save(instance)
+        for child in instance.data.get("childInstances", []):
+            save(child)
 
         return environment
 
