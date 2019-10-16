@@ -10,5 +10,8 @@ class SubmitDeadlineJobs(pyblish.api.ContextPlugin):
     targets = ["deadline"]
 
     def process(self, context):
+        assert all(result["success"] for result in context.data["results"]), (
+            "Atomicity not held, aborting.")
+
         submitter = context.data["deadlineSubmitter"]
         submitter.submit()

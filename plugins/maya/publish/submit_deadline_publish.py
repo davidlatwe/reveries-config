@@ -26,6 +26,9 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                                    "scripts",
                                    "deadline_publish.py")
 
+        assert all(result["success"] for result in context.data["results"]), (
+            "Atomicity not held, aborting.")
+
         # Context data
 
         username = context.data["user"]

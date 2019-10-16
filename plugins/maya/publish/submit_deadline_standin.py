@@ -28,9 +28,12 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
 
         instance.data["submitted"] = True
 
-        # Context data
-
         context = instance.context
+
+        assert all(result["success"] for result in context.data["results"]), (
+            "Atomicity not held, aborting.")
+
+        # Context data
 
         username = context.data["user"]
         comment = context.data.get("comment", "")
