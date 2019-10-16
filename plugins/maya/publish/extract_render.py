@@ -12,7 +12,7 @@ from reveries import lib
 
 # (TODO) This will be deprecated. Use filesequence publisher instead.
 
-class ExtractRender(PackageExtractor):
+class _ExtractRender(PackageExtractor):
     """Start GUI rendering if not delegate to Deadline
 
     # Change to use File sequence publisher
