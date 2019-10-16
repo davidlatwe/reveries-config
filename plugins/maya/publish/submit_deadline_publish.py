@@ -138,4 +138,11 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
         submitter = instance.context.data["deadlineSubmitter"]
         environment = submitter.instance_env(instance)
 
+        # From current environment
+        for var in [
+            "MAYA_MODULE_PATH",
+            "ARNOLD_PLUGIN_PATH",
+        ]:
+            environment[var] = os.getenv(var, "")
+
         return environment
