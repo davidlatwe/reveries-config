@@ -3,6 +3,7 @@ import os
 import json
 import platform
 import pyblish.api
+from reveries.maya import utils
 
 
 class SubmitDeadlineRender(pyblish.api.InstancePlugin):
@@ -81,9 +82,12 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
             step=frame_step,
         )
 
+        output_paths = utils.get_output_paths(output_dir,
+                                              renderer,
+                                              renderlayer,
+                                              rendercam)
         output_path_keys = dict()
-        output_paths = instance.data["outputPaths"].values()
-        for count, outpath in enumerate(output_paths):
+        for count, outpath in enumerate(output_paths.values()):
             head, tail = os.path.split(outpath)
             output_path_keys["OutputDirectory%d" % count] = head
             output_path_keys["OutputFilename%d" % count] = tail
