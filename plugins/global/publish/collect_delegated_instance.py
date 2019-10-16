@@ -1,4 +1,5 @@
 
+import os
 import pyblish.api
 
 
@@ -15,14 +16,50 @@ class CollectDelegatedInstance(pyblish.api.ContextPlugin):
     order = pyblish.api.CollectorOrder + 0.3
     label = "Delegated Instance"
 
-    def process(self, context):
-        if not context.data.get("contractorAccepted"):
-            return
+    hosts = ["deadline"]
 
-        assignment = context.data["contractorAssignment"]
+    def process(self, context):
+
+        os_environ = os.environ.copy()
+        assignment = dict()
+
+        AVALON_CONTEXT_DATA_NAME = "AVALON_CONTEXT_DATA_NAME"
+        AVALON_CONTEXT_DATA_VALUE = "AVALON_CONTEXT_DATA_VALUE"
+        AVALON_DELEGATED_SUBSETS = "AVALON_DELEGATED_SUBSETS"
+
+        for key in os_environ:
+            # Context
+            if key.startswith(AVALON_CONTEXT_DATA_NAME):
+                # Read Context data
+                #
+                entry = os_environ[key]
+                value = key.replace(AVALON_CONTEXT_DATA_NAME,
+                                    AVALON_CONTEXT_DATA_VALUE)
+                context.data[entry] = os_environ[value]
+
+                continue
+
+            # Instance
+            if key == AVALON_DELEGATED_SUBSETS:
+                # Read Instances' subset and version
+                #
+                for value in os_environ[key].split(";"):
+
+                    subset_name, version_num = value.rsplit(":", 1)
+                    version_num = int(version_num)
+
+                    # Assign instance
+                    assignment[subset_name] = version_num
+
+                    self.log.info("Assigned subset {0!r}\n\tVer. Num: {1!r}"
+                                  "".format(subset_name, version_num))
+
+        self.log.info("Found {} delegated instances.".format(len(assignment)))
 
         collected_count = 0
+
         for instance in context:
+
             name = instance.data["subset"]
             if name in assignment:
                 # version lock

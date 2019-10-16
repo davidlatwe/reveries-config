@@ -39,9 +39,9 @@ class ExtractModel(PackageExtractor):
         ):
             super(ExtractModel, self).extract()
 
-    def extract_mayaBinary(self):
-        entry_file = self.file_name("mb")
-        package_path = self.create_package()
+    def extract_mayaBinary(self, packager):
+        entry_file = packager.file_name("mb")
+        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         mesh_nodes = cmds.ls(self.member,
@@ -65,7 +65,7 @@ class ExtractModel(PackageExtractor):
             geo_id_and_hash[id] = hasher.digest()
             hasher.clear()
 
-        self.add_data({"modelProfile": geo_id_and_hash})
+        packager.add_data({"modelProfile": geo_id_and_hash})
 
         # Perform extraction
         self.log.info("Extracting %s" % str(self.member))
@@ -98,7 +98,7 @@ class ExtractModel(PackageExtractor):
                 constructionHistory=False
             )
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": entry_file,
         })
 
@@ -107,9 +107,9 @@ class ExtractModel(PackageExtractor):
             path=entry_path)
         )
 
-    def extract_Alembic(self):
-        entry_file = self.file_name("abc")
-        package_path = self.create_package()
+    def extract_Alembic(self, packager):
+        entry_file = packager.file_name("abc")
+        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         cmds.select(self.member, noExpand=True)
@@ -131,6 +131,6 @@ class ExtractModel(PackageExtractor):
             ],
         )
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": entry_file,
         })

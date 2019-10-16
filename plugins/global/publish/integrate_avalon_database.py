@@ -10,17 +10,11 @@ class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
     label = "Integrate Database"
     order = pyblish.api.IntegratorOrder + 0.1
 
+    targets = ["localhost"]
+
     def process(self, instance):
 
         context = instance.context
-
-        # Check Delegation
-        #
-        # Contractor completed long-run publish process
-        delegated = context.data.get("contractorAccepted")
-        # Is delegating long-run publish process
-        if instance.data.get("useContractor") and not delegated:
-            return
 
         assert all(result["success"] for result in context.data["results"]), (
             "Atomicity not held, aborting.")

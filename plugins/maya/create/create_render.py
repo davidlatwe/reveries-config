@@ -39,7 +39,6 @@ class RenderCreator(avalon.maya.Creator):
     ]
 
     def process(self):
-        from maya import cmds
 
         # Build pipeline render settings
 
@@ -70,7 +69,6 @@ class RenderCreator(avalon.maya.Creator):
             self.log.warning("Already existed.")
             return instance[0]
 
-        self.data["deadlineEnable"] = False
         self.data["deadlinePriority"] = priority
         self.data["deadlinePool"] = ["none"] + deadline["pool"]
         self.data["deadlineGroup"] = deadline["group"]
@@ -79,9 +77,5 @@ class RenderCreator(avalon.maya.Creator):
         self.data["publishOrder"] = 999
 
         instance = super(RenderCreator, self).process()
-
-        # (TODO) Currently, force using Deadline to render
-        if variant == "render":
-            cmds.setAttr(instance + ".deadlineEnable", True, lock=True)
 
         return put_instance_icon(instance)

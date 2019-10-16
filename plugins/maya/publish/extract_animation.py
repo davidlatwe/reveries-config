@@ -22,15 +22,15 @@ class ExtractAnimation(PackageExtractor):
         "anim",
     ]
 
-    def extract_anim(self):
+    def extract_anim(self, packager):
         cmds.loadPlugin("animImportExport", quiet=True)
 
-        package_path = self.create_package()
+        package_path = packager.create_package()
 
-        entry_file = self.file_name("anim")
+        entry_file = packager.file_name("anim")
         entry_path = os.path.join(package_path, entry_file)
 
-        sele_file = self.file_name("mel")
+        sele_file = packager.file_name("mel")
         sele_path = os.path.join(package_path, sele_file)
 
         # Save animated nodes with order
@@ -85,5 +85,5 @@ class ExtractAnimation(PackageExtractor):
                                "-shape 0")
                       )
 
-        self.add_data({"entryFileName": entry_file,
-                       "animatedAssetId": self.data["animatedAssetId"]})
+        packager.add_data({"entryFileName": entry_file,
+                           "animatedAssetId": self.data["animatedAssetId"]})

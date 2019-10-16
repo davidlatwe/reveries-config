@@ -21,10 +21,10 @@ class ExtractXGenInteractive(PackageExtractor):
         "XGenInteractive",
     ]
 
-    def extract_XGenInteractive(self):
+    def extract_XGenInteractive(self, packager):
         from maya import cmds
 
-        package_dir = self.create_package()
+        package_dir = packager.create_package()
 
         bound_map = dict()
         clay_shader = "initialShadingGroup"
@@ -47,7 +47,7 @@ class ExtractXGenInteractive(PackageExtractor):
             #        I'd like to use reference to load it later.
             #        Referencing file that was not `.ma`, `.mb` or other
             #        normal ext will crash Maya on file saving.
-            entry_file = self.file_name("ma")
+            entry_file = packager.file_name("ma")
             entry_path = os.path.join(package_dir, entry_file)
 
             # (NOTE) Separating grooms and bounding meshes seems not able to
@@ -73,13 +73,13 @@ class ExtractXGenInteractive(PackageExtractor):
                           constructionHistory=True)
 
         # Parse preset bounding map
-        link_file = self.file_name("json")
+        link_file = packager.file_name("json")
         link_path = os.path.join(package_dir, link_file)
 
         with open(link_path, "w") as fp:
             json.dump(bound_map, fp, ensure_ascii=False)
 
-        self.add_data({
+        packager.add_data({
             "linkFname": link_file,
             "entryFileName": entry_file,
         })

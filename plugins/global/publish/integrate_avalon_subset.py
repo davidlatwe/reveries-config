@@ -28,19 +28,13 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     label = "Integrate Subset"
     order = pyblish.api.IntegratorOrder
 
+    targets = ["localhost"]
+
     def process(self, instance):
 
         self.transfers = dict(packages=list(),
                               files=list(),
                               hardlinks=list())
-
-        # Check Delegation
-        #
-        # Contractor completed long-run publish process
-        delegated = instance.context.data.get("contractorAccepted")
-        # Is delegating long-run publish process
-        if instance.data.get("useContractor") and not delegated:
-            return
 
         # Assemble data and create version, representations
         subset, version, representations = self.register(instance)
@@ -116,17 +110,10 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #
         representations = []
 
-        # `template` extracted from `ExtractPublishDir` plugin
-        template_data = instance.data["publishDirElem"][0]
-        template_publish = instance.data["publishDirElem"][1]
-
         # Should not have any kind of check on files here, that should be done
         # by extractors, here only need to publish representation dirs.
 
         for package, repr_data in packages.items():
-
-            template_data["representation"] = package
-            publish_path = template_publish.format(**template_data)
 
             representation = {
                 "schema": "avalon-core:representation-2.0",
@@ -137,12 +124,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             }
             representations.append(representation)
 
-            if instance.data.get("bareStaging"):
-                src = stagingdir
-            else:
-                src = os.path.join(stagingdir, package)
-
-            dst = publish_path
+            src = repr_data.pop("packageDir")
+            dst = repr_data.pop("representationDir")
 
             self.transfers["packages"].append([src, dst])
 
@@ -334,15 +317,12 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         work_dir = work_dir.replace(api.registered_root(), "{root}")
         work_dir = work_dir.replace("\\", "/")
 
-        hash_val = context.data["sourceFingerprint"]["currentHash"]
-
         version_data = {
             "time": context.data["time"],
             "author": context.data["user"],
             "task": api.Session.get("AVALON_TASK"),
             "source": source,
             "workDir": work_dir,
-            "hash": hash_val,
             "comment": context.data.get("comment"),
             "dependencies": instance.data.get("dependencies", dict()),
             "dependents": dict(),

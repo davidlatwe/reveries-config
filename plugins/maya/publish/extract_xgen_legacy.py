@@ -2,7 +2,7 @@
 import os
 import pyblish.api
 from maya import cmds
-from reveries.plugins import PackageExtractor, skip_stage
+from reveries.plugins import PackageExtractor
 from reveries.maya import io, utils
 from reveries.maya.xgen import legacy as xgen
 
@@ -22,10 +22,10 @@ class ExtractXGenLegacy(PackageExtractor):
         "XGenLegacy",
     ]
 
-    @skip_stage
-    def extract_XGenLegacy(self):
+    def extract_XGenLegacy(self, packager):
 
-        package_dir = self.create_package()
+        packager.skip_stage()
+        package_dir = packager.create_package()
 
         xgen_files = list()
         descriptions_data = dict()
@@ -61,7 +61,7 @@ class ExtractXGenLegacy(PackageExtractor):
                                     "this is a bug." % src)
 
                 dst = os.path.join(package_dir, "maps", palette, tail)
-                self.add_file(src, dst)
+                packager.add_file(src, dst)
 
             # Export guides
             guides = xgen.list_guides(desc)
@@ -94,7 +94,7 @@ class ExtractXGenLegacy(PackageExtractor):
             if xgen.save_culled_as_delta(palette, xgd_path):
                 self.log.info("Culled primitives saved.")
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": None,  # Yes, no entry file for XGen Legacy.
             "descriptionsData": descriptions_data,
             "palettes": xgen_files,

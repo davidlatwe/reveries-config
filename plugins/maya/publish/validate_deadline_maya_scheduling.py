@@ -13,8 +13,12 @@ class ValidateDeadlineMayaScheduling(pyblish.api.InstancePlugin):
     label = "Deadline Scheduling"
     order = pyblish.api.ValidatorOrder + 0.1
     hosts = ["maya"]
+
+    targets = ["deadline"]
+
     families = [
         "reveries.pointcache",
+        "reveries.standin",
         "reveries.imgseq",
     ]
     actions = [
@@ -28,9 +32,6 @@ class ValidateDeadlineMayaScheduling(pyblish.api.InstancePlugin):
         return [instance.data["objectName"]]
 
     def process(self, instance):
-
-        if not instance.data["deadlineEnable"]:
-            return
 
         priority = instance.data["deadlinePriority"]
         pool = instance.data["deadlinePool"]

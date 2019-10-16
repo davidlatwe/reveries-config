@@ -84,10 +84,10 @@ class ExtractCamera(PackageExtractor):
 
                 super(ExtractCamera, self).extract()
 
-    def extract_mayaAscii(self):
+    def extract_mayaAscii(self, packager):
 
-        entry_file = self.file_name("ma")
-        package_path = self.create_package()
+        entry_file = packager.file_name("ma")
+        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         if self.data.get("eulerFilter", False):
@@ -105,7 +105,7 @@ class ExtractCamera(PackageExtractor):
                       shader=False,
                       expressions=False)
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": entry_file,
             "cameraUUID": self.camera_uuid,
             "startFrame": self.start,
@@ -113,10 +113,10 @@ class ExtractCamera(PackageExtractor):
             "byFrameStep": self.step,
         })
 
-    def extract_Alembic(self):
+    def extract_Alembic(self, packager):
 
-        entry_file = self.file_name("abc")
-        package_path = self.create_package()
+        entry_file = packager.file_name("abc")
+        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         euler_filter = self.data.get("eulerFilter", False)
@@ -127,7 +127,7 @@ class ExtractCamera(PackageExtractor):
                               self.end,
                               eulerFilter=euler_filter)
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": entry_file,
             "cameraUUID": self.camera_uuid,
             "startFrame": self.start,
@@ -135,10 +135,10 @@ class ExtractCamera(PackageExtractor):
             "byFrameStep": self.step,
         })
 
-    def extract_FBX(self):
+    def extract_FBX(self, packager):
 
-        entry_file = self.file_name("fbx")
-        package_path = self.create_package()
+        entry_file = packager.file_name("fbx")
+        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
         if self.data.get("eulerFilter", False):
@@ -148,7 +148,7 @@ class ExtractCamera(PackageExtractor):
             io.export_fbx_set_camera()
             io.export_fbx(entry_path)
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": entry_file,
             "cameraUUID": self.camera_uuid,
             "startFrame": self.start,

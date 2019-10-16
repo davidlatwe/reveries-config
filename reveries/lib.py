@@ -1,6 +1,11 @@
 
 import os
+import sys
 import math
+import logging
+import subprocess
+import pyblish.util
+import avalon.io
 
 
 AVALON_ID = "AvalonID"
@@ -103,3 +108,69 @@ def iter_uri(path, sep):
 
         path = split[0]
         yield path
+
+
+def publish_remote():
+    """Perform a publish without pyblish GUI that will sys.exit on errors.
+
+    This will:
+        - `sys.exit(1)` on nothing being collected
+        - `sys.exit(2)` on errors during publish
+
+    Note: This function assumes Avalon has been installed prior to this.
+          As such it does *not* trigger avalon.api.install().
+
+    """
+    log = logging.getLogger("Pyblish")
+
+    if not avalon.io._is_installed:
+        log.info("Fixing database connections..")
+        os.environ["PATH"] += ";" + os.getenv("AVALON_TOOLS", "")
+        subprocess.call("db_connection_fixer", shell=True)
+        # Reinstall
+        log.info("Reinstalling..")
+        host = avalon.api.registered_host()
+        avalon.api.install(host)
+
+    # Start publish
+
+    print("Starting pyblish.util.pyblish()..")
+    context = pyblish.util.publish()
+    print("Finished pyblish.util.publish(), checking for errors..")
+
+    if not context:
+        log.warning("Fatal Error: Nothing collected.")
+        sys.exit(1)
+
+    # Collect errors, {plugin name: error}
+    error_results = [r for r in context.data["results"] if r["error"]]
+
+    if error_results:
+        error_format = "Failed {plugin.__name__}: {error} -- {error.traceback}"
+        for result in error_results:
+            log.error(error_format.format(**result))
+
+        log.error("Fatal Error: Errors occurred during publish, see log..")
+        sys.exit(2)
+
+    print("All good. Success!")
+
+
+def in_remote():
+    remote = set([
+        "deadline",
+    ])
+
+    registered = set(pyblish.api.registered_hosts())
+
+    return registered.intersection(remote)
+
+
+def to_remote():
+    remote = set([
+        "deadline",
+    ])
+
+    registered = set(pyblish.api.registered_targets())
+
+    return registered.intersection(remote)

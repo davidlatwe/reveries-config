@@ -4,25 +4,17 @@ import subprocess
 import pyblish.api
 import avalon.api as api
 from avalon.vendor import requests
-from reveries.plugins import context_process
 
 
-class ValidateDeadlineConnection(pyblish.api.InstancePlugin):
+class ValidateDeadlineConnection(pyblish.api.ContextPlugin):
     """Validate Deadline Web Service is running"""
 
     label = "Deadline Connection"
     order = pyblish.api.ValidatorOrder + 0.1
-    families = [
-        "reveries.pointcache",
-        "reveries.imgseq",
-    ]
 
-    @context_process
+    targets = ["deadline"]
+
     def process(self, context):
-
-        if not any(i.data.get("deadlineEnable") for i in context):
-            self.log.debug("No instance require deadline.")
-            return
 
         AVALON_DEADLINE = api.Session.get("AVALON_DEADLINE")
 

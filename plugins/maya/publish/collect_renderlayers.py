@@ -23,6 +23,8 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
         "reveries.imgseq.render"
     ]
 
+    targets = ["deadline"]
+
     def process(self, instance):
 
         context = instance.context
@@ -116,19 +118,6 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             # for collecting dependencies
             instance += layer_members
 
-            # Assign contractor
-            if instance.data["deadlineEnable"]:
-                instance.data["useContractor"] = True
-                instance.data["publishContractor"] = "deadline.maya.render"
-
-            self.collect_output_paths(instance)
-
-            # Set extract type (representation type)
-            if len(instance.data["outputPaths"]) > 1:
-                instance.data["extractType"] = "imageSequenceSet"
-            else:
-                instance.data["extractType"] = "imageSequence"
-
         if collected:
             # Original instance contain renderable camera,
             # we can safely remove it
@@ -136,14 +125,3 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
             # Sort by renderlayers, masterLayer will be on top
             L = (lambda i: i.data["subset"].split(".")[-1])
             context.sort(key=lambda i: 0 if L(i) == "masterLayer" else L(i))
-
-    def collect_output_paths(self, instance):
-        renderer = instance.data["renderer"]
-        layer = instance.data["renderlayer"]
-        output_dir = instance.context.data["outputDir"]
-        cam = instance.data["renderCam"][0]
-
-        instance.data["outputPaths"] = utils.get_output_paths(output_dir,
-                                                              renderer,
-                                                              layer,
-                                                              cam)

@@ -4,12 +4,19 @@ import pyblish.api
 import reveries.utils
 
 from avalon.vendor import clique
-from reveries.plugins import DelegatablePackageExtractor, skip_stage
+# from reveries.plugins import DelegatablePackageExtractor
+from reveries.plugins import PackageExtractor
 from reveries.maya import utils
+from reveries import lib
 
 
-class ExtractRender(DelegatablePackageExtractor):
+# (TODO) This will be deprecated. Use filesequence publisher instead.
+
+class _ExtractRender(PackageExtractor):
     """Start GUI rendering if not delegate to Deadline
+
+    # Change to use File sequence publisher
+
     """
 
     label = "Extract Render"
@@ -42,36 +49,34 @@ class ExtractRender(DelegatablePackageExtractor):
                                                               cam)
         super(ExtractRender, self).process(instance)
 
-    @skip_stage
-    def extract_imageSequence(self):
+    def extract_imageSequence(self, packager):
         """Extract per renderlayer that has no AOVs
         """
-        if not self.context.data.get("contractorAccepted"):
+        if not lib.in_remote():
             self.start_local_rendering()
 
-        repr_dir = self.create_package()
+        repr_dir = packager.create_package()
 
         # Assume the rendering has been completed at this time being,
         # start to check and extract the rendering outputs
         aov_name, aov_path = next(iter(self.data["outputPaths"].items()))
 
-        self.add_sequence(aov_path, aov_name, repr_dir)
+        self.add_sequence(packager, aov_path, aov_name, repr_dir)
 
-    @skip_stage
-    def extract_imageSequenceSet(self):
+    def extract_imageSequenceSet(self, packager):
         """Extract per renderlayer that has AOVs
         """
-        if not self.context.data.get("contractorAccepted"):
+        if not lib.in_remote():
             self.start_local_rendering()
 
-        repr_dir = self.create_package()
+        repr_dir = packager.create_package()
 
         # Assume the rendering has been completed at this time being,
         # start to check and extract the rendering outputs
         for aov_name, aov_path in self.data["outputPaths"].items():
-            self.add_sequence(aov_path, aov_name, repr_dir)
+            self.add_sequence(packager, aov_path, aov_name, repr_dir)
 
-    def add_sequence(self, aov_path, aov_name, repr_dir):
+    def add_sequence(self, packager, aov_path, aov_name, repr_dir):
         """
         """
         from maya import cmds
@@ -107,7 +112,7 @@ class ExtractRender(DelegatablePackageExtractor):
         e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
         camera = self.data["renderCam"][0]
 
-        self.add_data({"sequence": {
+        packager.add_data({"sequence": {
             aov_name: {
                 "imageFormat": self.data["fileExt"],
                 "entryFileName": entry_fname,
@@ -130,7 +135,7 @@ class ExtractRender(DelegatablePackageExtractor):
         for file in [entry_fname % i for i in sequence.indexes]:
             src = seq_dir + "/" + file
             dst = os.path.join(repr_dir, aov_name, file)
-            self.add_hardlink(src, dst)
+            packager.add_hardlink(src, dst)
 
     def start_local_rendering(self):
         """Start rendering at local with GUI

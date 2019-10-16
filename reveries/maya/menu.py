@@ -1,6 +1,8 @@
 import sys
 import logging
-from avalon import api
+import pyblish.api
+import pyblish_qml.api
+from avalon import api, tools
 from avalon.vendor.Qt import QtCore
 from maya import cmds
 
@@ -21,11 +23,34 @@ def _arnold_update_full_scene(*args):
     arnold.utils.update_full_scene()
 
 
+def _publish_via_targets(targets):
+    pyblish.api.deregister_all_targets()
+    for target in targets:
+        pyblish.api.register_target(target)
+    pyblish_qml.api.show(targets=targets)
+
+
 def install():
     from . import interactive
 
+    def publish_in_local(*args):
+        _publish_via_targets(["default", "localhost"])
+
+    def publish_in_deadline(*args):
+        _publish_via_targets(["default", "deadline"])
+
     def deferred():
+        cmds.menuItem("Publish___",  # Publish...
+                      edit=True,
+                      command=publish_in_local)
+
         # Append to Avalon's menu
+        cmds.menuItem(divider=True)
+
+        cmds.menuItem("Deadline Publish...",
+                      command=publish_in_deadline,
+                      image=tools.publish.ICON)
+
         cmds.menuItem(divider=True)
 
         cmds.menuItem("Snap!", command=interactive.active_view_snapshot)

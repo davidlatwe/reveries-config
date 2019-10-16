@@ -7,7 +7,7 @@ import avalon.api
 import avalon.io
 
 from reveries import lib
-from reveries.plugins import PackageExtractor, skip_stage
+from reveries.plugins import PackageExtractor
 from reveries.maya.plugins import env_embedded_path
 from reveries.maya import lib as maya_lib
 
@@ -29,10 +29,11 @@ class ExtractTexture(PackageExtractor):
         "TexturePack"
     ]
 
-    @skip_stage
-    def extract_TexturePack(self):
+    def extract_TexturePack(self, packager):
 
-        package_path = self.create_package()
+        packager.skip_stage()
+
+        package_path = packager.create_package()
         package_path = env_embedded_path(package_path)
 
         # For storing calculated published file path for look or lightSet
@@ -157,13 +158,13 @@ class ExtractTexture(PackageExtractor):
                 all_files = list()
                 for file, abs_path in data["pathMap"].items():
                     final_path = package_path + "/" + file
-                    self.add_file(abs_path, final_path)
+                    packager.add_file(abs_path, final_path)
 
                     if self.use_tx:
                         # Upload .tx file as well
                         tx_abs_path = to_tx(abs_path)
                         tx_final_path = to_tx(final_path)
-                        self.add_file(tx_abs_path, tx_final_path)
+                        packager.add_file(tx_abs_path, tx_final_path)
 
                     all_files.append(file)
 
@@ -173,7 +174,7 @@ class ExtractTexture(PackageExtractor):
                                             resolved_path,
                                             current_color_space)
 
-        self.add_data({"fileInventory": file_inventory})
+        packager.add_data({"fileInventory": file_inventory})
 
     def update_file_node_attrs(self, file_nodes, path, color_space):
         from reveries.maya import lib

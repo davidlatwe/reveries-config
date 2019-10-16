@@ -40,8 +40,3 @@ class CollectPlayblast(pyblish.api.InstancePlugin):
         # Push renderlayer members into instance,
         # for collecting dependencies
         instance += layer_members
-
-        # Assign contractor
-        if instance.data["deadlineEnable"]:
-            instance.data["useContractor"] = True
-            instance.data["publishContractor"] = "deadline.maya.script"

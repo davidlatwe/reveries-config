@@ -1,17 +1,8 @@
 
 import os
-import sys
-import inspect
-import types
-import logging
-
 import pyblish.api
 import avalon.api
 import avalon.io
-
-from .vendor import six
-from .utils import temp_dir, deep_update
-from . import CONTRACTOR_PATH
 
 
 def depended_plugins_succeed(plugin, instance):
@@ -46,189 +37,6 @@ def depended_plugins_succeed(plugin, instance):
             succeed = False
 
     return succeed
-
-
-class BaseContractor(object):
-    """Publish delegation contractor base class
-    """
-
-    name = ""
-
-    def __init__(self):
-        self.log = logging.getLogger(self.name)
-        self.__cached_context = None
-
-    def fulfill(self, context, instances):
-        """
-        Args:
-            context (pyblish.api.Context): context object
-            instances (list): A list of delegated instances
-        """
-        raise NotImplementedError("Should be implemented in subclass.")
-
-    def _parse_context(self, context):
-        if self.__cached_context is not None:
-            return self.__cached_context
-
-        # Save Session
-        #
-        environment = dict({
-            # This will trigger `userSetup.py` on the slave
-            # such that proper initialisation happens the same
-            # way as it does on a local machine.
-            # TODO(marcus): This won't work if the slaves don't
-            # have accesss to these paths, such as if slaves are
-            # running Linux and the submitter is on Windows.
-            "PYTHONPATH": os.getenv("PYTHONPATH", ""),
-            "AVALON_TOOLS": os.getenv("AVALON_TOOLS", ""),
-        }, **avalon.api.Session)
-
-        # Save Context data from source
-        #
-        # (TODO): Deadline will convert the variable name to uppercase,
-        #         despite it show the original cases in Job Properties GUI..
-        #         Maybe we should save context data into a json file.
-        #
-        context_data_entry = [
-            "comment",
-            "user",
-        ]
-        for entry in context_data_entry:
-            key = "AVALON_CONTEXT_" + entry
-            environment[key] = context.data[entry]
-
-        self.__cached_context = environment
-        return environment
-
-    def assemble_environment(self, instance):
-        """Compose submission required environment variables for instance
-
-        Return:
-            environment (dict): A set of contract variables, return `None` if
-                instance is not assigning to this contractor or publish is
-                disabled.
-
-        """
-        if instance.data.get("publish") is False:
-            return
-        if instance.data.get("useContractor") is False:
-            return
-        if not instance.data.get("publishContractor") == self.name:
-            return
-
-        context = instance.context
-        index = context.index(instance)
-        environment = self._parse_context(context).copy()
-
-        # Save Instances' name and version
-        #
-        # instance subset name
-        key = "AVALON_DELEGATED_SUBSET_%d" % index
-        environment[key] = instance.data["subset"]
-        #
-        # instance subset version
-        #
-        # This should prevent version bump when re-running publish with
-        # same params.
-        #
-        key = "AVALON_DELEGATED_VERSION_NUM_%d" % index
-        environment[key] = instance.data["versionNext"]
-
-        return environment
-
-
-def parse_contract_environment(context):
-    """Assign delegated instances via parsing the environment
-    """
-    assignment = dict()
-    os_environ = os.environ.copy()
-
-    AVALON_CONTEXT_ = "AVALON_CONTEXT_"
-    AVALON_DELEGATED_SUBSET_ = "AVALON_DELEGATED_SUBSET_"
-    AVALON_DELEGATED_VERSION_NUM_ = "AVALON_DELEGATED_VERSION_NUM_"
-
-    for key in os_environ:
-
-        # Context
-        if key.startswith(AVALON_CONTEXT_):
-            # Read Context data
-            #
-            entry = key[len(AVALON_CONTEXT_):]
-            # (NOTE): Deadline will convert the variable name to uppercase..
-            context.data[entry.lower()] = os_environ[key]
-
-        # Instance
-        if key.startswith(AVALON_DELEGATED_SUBSET_):
-            # Read Instances' name and version
-            #
-            num_key = key.replace(AVALON_DELEGATED_SUBSET_,
-                                  AVALON_DELEGATED_VERSION_NUM_)
-            subset_name = os_environ[key]
-            version_num = int(os_environ[num_key])
-
-            # Assign instance
-            assignment[subset_name] = version_num
-
-            print("Assigned subset {0!r}\n\tVer. Num: {1!r}"
-                  "".format(subset_name, version_num))
-
-    print("Found {} delegated instances.".format(len(assignment)))
-
-    # Update context
-    context.data["contractorAccepted"] = True
-    context.data["contractorAssignment"] = assignment
-
-
-def find_contractor(contractor_name=""):
-    """
-    """
-    for fname in os.listdir(CONTRACTOR_PATH):
-        # Ignore files which start with underscore
-        if fname.startswith("_"):
-            continue
-
-        mod_name, mod_ext = os.path.splitext(fname)
-        if not mod_ext == ".py":
-            continue
-
-        abspath = os.path.join(CONTRACTOR_PATH, fname)
-        if not os.path.isfile(abspath):
-            continue
-
-        module = types.ModuleType(mod_name)
-        module.__file__ = abspath
-
-        try:
-            with open(abspath) as f:
-                six.exec_(f.read(), module.__dict__)
-
-        except Exception as err:
-            print("Skipped: \"%s\" (%s)", mod_name, err)
-            continue
-
-        for name in dir(module):
-            if not name.startswith("Contractor"):
-                continue
-
-            # It could be anything at this point
-            cls = getattr(module, name)
-
-            if not inspect.isclass(cls):
-                continue
-
-            if (hasattr(cls, "assemble_environment") and
-                    hasattr(cls, "fulfill") and
-                    hasattr(cls, "name")):
-
-                if cls.name == contractor_name:
-
-                    # Store reference to original module, to avoid
-                    # garbage collection from collecting it's global
-                    # imports, such as `import os`.
-                    sys.modules[mod_name] = module
-
-                    return cls
-    return None
 
 
 def create_dependency_instance(dependent,
@@ -280,6 +88,11 @@ def create_dependency_instance(dependent,
 
     instance.data["objectName"] = dependent.data["objectName"]
 
+    if "childInstances" not in dependent.data:
+        dependent.data["childInstances"] = list()
+    dependent.data["childInstances"].append(instance)
+    instance.data["isDependency"] = True
+
     if data is not None:
         instance.data.update(data)
 
@@ -311,8 +124,7 @@ class PackageLoader(object):
 
         representation = context["representation"]
         repr_root = representation["data"].get("reprRoot")
-        proj_root = context["project"]["data"].get("root")
-        root = repr_root or proj_root or avalon.api.registered_root()
+        root = repr_root or avalon.api.registered_root()
 
         data["root"] = root
         data["silo"] = context["asset"]["silo"]
@@ -379,28 +191,6 @@ def context_process(process):
         return result
 
     return _context_process
-
-
-def skip_stage(extractor):
-    """Decorator, indicate the extractor will directly save to publish dir
-
-    This will make `PackageExtractor.create_package()` return representation's
-    versioned dir in publish space.
-
-    And the `instance.data["stagingDir"]` will be set to versioned dir instead
-    of random dir in temp folder. So there should be no file/dir copy while
-    intergation since the representation already exists in final destination.
-
-    """
-
-    def _skip_stage(self, *args, **kwargs):
-        self._extract_to_publish_dir = True
-        result = extractor(self, *args, **kwargs)
-        self._extract_to_publish_dir = False
-
-        return result
-
-    return _skip_stage
 
 
 class PackageExtractor(pyblish.api.InstancePlugin):
@@ -474,20 +264,14 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             ```
 
         """
-        extract_methods = list()
-        for repr_ in self._active_representations:
-            method = getattr(self, "extract_" + repr_, None)
-            if method is None:
-                msg = ("This extractor does not have the method to "
-                       "extract {!r}".format(repr_))
-                self.log.error(msg)
-                raise AttributeError(msg)
+        packager = self.data["packager"]
+        extract_type = self.data.get("extractType")
 
-            extract_methods.append((method, repr_))
-
-        for method, repr_ in extract_methods:
-            self._current_representation = repr_
-            method()
+        actived = [extract_type] if extract_type else self.representations
+        for representation in actived:
+            packager.set_representation(representation)
+            extract = getattr(self, "extract_" + representation)
+            extract(packager)
 
     def process(self, instance):
         """Extractor's main process
@@ -500,179 +284,11 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         assert all(result["success"] for result in context.data["results"]), (
             "Atomicity not held, aborting.")
 
-        self._process(instance)
-        self.extract()
-
-    def _process(self, instance):
-        """Pre-extraction process
-        """
-        self.context = instance.context
+        self.context = context
         self.data = instance.data
         self.member = instance[:]
 
-        self._active_representations = list()
-        self._current_representation = None
-        self._extract_to_publish_dir = False
-        self._subset_doc = avalon.io.find_one({
-            "type": "subset",
-            "parent": self.context.data["assetDoc"]["_id"],
-            "name": self.data["subset"],
-        })
-
-        project = instance.context.data["projectDoc"]
-        self._publish_dir_template = project["config"]["template"]["publish"]
-        self._publish_dir_key = {"root": avalon.api.registered_root(),
-                                 "project": avalon.Session["AVALON_PROJECT"],
-                                 "silo": avalon.Session["AVALON_SILO"],
-                                 "asset": avalon.Session["AVALON_ASSET"],
-                                 "subset": self.data["subset"],
-                                 "version": None}
-
-        extract_type = self.data.get("extractType")
-
-        if extract_type is None:
-            self.log.debug("No specific extraction type, extract all "
-                           "supported type of representations.")
-            self._active_representations = self.representations
-
-        elif extract_type in self.representations:
-            self._active_representations = [extract_type]
-
-        else:
-            msg = "{!r} not supported. This is a bug.".format(extract_type)
-            raise RuntimeError(msg)
-
-        if "packages" not in self.data:
-            self.data["packages"] = dict()  # representations' data
-        if "files" not in self.data:
-            self.data["files"] = list()
-        if "hardlinks" not in self.data:
-            self.data["hardlinks"] = list()
-
-    def file_name(self, extension="", suffix=""):
-        """Convenient method for composing file name with default format"""
-        extension = ("." + extension) if extension else ""
-        return "{subset}{suffix}{ext}".format(subset=self.data["subset"],
-                                              suffix=suffix,
-                                              ext=extension)
-
-    def create_package(self, representation_dir=True):
-        """Create representation stage dir
-
-        Register and create a staging directory for extraction usage later on.
-
-        MUST call this in every representation's extraction process.
-
-        The default staging directory is generated by `tempfile.mkdtemp()` with
-        "pyblish_tmp_" prefix, but if the extraction method get decorated with
-        `skip_stage`, the staging directory will be the publish directory.
-
-        Args:
-            representation_dir (bool): Whether to extend representation dir to
-                                       the end of the staging path.
-                                       Default True.
-
-        Return:
-            pkg_dir (str): staging directory
-
-        """
-        staging_dir = self.data.get("stagingDir", None)
-
-        if not staging_dir:
-            if self._extract_to_publish_dir:
-                staging_dir = self.data["versionDir"]
-            else:
-                staging_dir = temp_dir(prefix="pyblish_tmp_")
-
-            self.data["stagingDir"] = staging_dir
-
-        if representation_dir:
-            pkg_dir = os.path.join(staging_dir, self._current_representation)
-        else:
-            self.data["bareStaging"] = True
-            pkg_dir = staging_dir
-
-        if os.path.isdir(pkg_dir):
-            if os.listdir(pkg_dir):
-                raise Exception("Staging dir is not empty: %s" % pkg_dir)
-        else:
-            os.makedirs(pkg_dir)
-
-        return pkg_dir
-
-    def add_data(self, data):
-        """Add(Update) data to representation
-
-        Arguments:
-            data (dict): Additional representation data
-
-        """
-        if self._current_representation not in self.data["packages"]:
-            self.data["packages"][self._current_representation] = dict()
-
-        deep_update(self.data["packages"][self._current_representation], data)
-
-    def add_file(self, src, dst):
-        """Add file to copy queue
-
-        Arguments:
-            src (str): Source file path
-            dst (str): The path that file needs to be copied to
-
-        """
-        self.data["files"].append((src, dst))
-
-    def add_hardlink(self, src, dst):
-        """Add file to hardlink queue
-
-        Arguments:
-            src (str): Source file path
-            dst (str): The path that file needs to be hardlinked to
-
-        """
-        self.data["hardlinks"].append((src, dst))
-
-
-class DelegatablePackageExtractor(PackageExtractor):
-    """Reveries' delegatable extractor base class
-
-    This class inherited `PackageExtractor`, and re-implemented the `process`
-    method and stuff that enables the ability to skip or run the extraction
-    via context and instance data flags.
-
-    If instance data has `"useContractor"` entry and set to `True`, then this
-    instance will be delegated.
-
-    If the context data has `"contractorAccepted"` entry and set to `True`,
-    which indicate that this publish session is running in contractor, and
-    the delegated instance will be extracted.
-
-    The usage is just the same as `PackageExtractor`.
-
-    """
-
-    def process(self, instance):
-        """Delegatable extractor's main process
-
-        This should NOT be re-implemented.
-
-        """
-        self._process(instance)
-
-        use_contractor = self.data.get("useContractor")
-        accepted = self.context.data.get("contractorAccepted")
-        on_delegate = use_contractor and not accepted
-
-        # Skip extraction if the instance is going to be delegated
-        if on_delegate:
-            # The active representations of this instance will be delegated
-            # to contractor for remote extraction.
-            # Bind with a version dir and skip current extraction.
-            for repr_ in self._active_representations:
-                self.log.info("Delegating representation {0} of {1}"
-                              "".format(repr_, self.data["name"]))
-        else:
-            self.extract()
+        self.extract()
 
 
 def get_errored_instances_from_context(context, include_warning=False):

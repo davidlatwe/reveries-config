@@ -2,7 +2,7 @@
 import os
 import pyblish.api
 
-from reveries.plugins import PackageExtractor, skip_stage
+from reveries.plugins import PackageExtractor
 
 
 class ExtractAtomsCrowdCache(PackageExtractor):
@@ -16,16 +16,17 @@ class ExtractAtomsCrowdCache(PackageExtractor):
         "atoms",
     ]
 
-    @skip_stage
-    def extract_atoms(self):
+    def extract_atoms(self, packager):
         from AtomsMaya.hostbridge.commands import MayaCommandsHostBridge
+
+        packager.skip_stage()
 
         start_frame = int(self.context.data.get("startFrame"))
         end_frame = int(self.context.data.get("endFrame"))
 
-        package_path = self.create_package()
+        package_path = packager.create_package()
 
-        entry_file = self.file_name("atoms")
+        entry_file = packager.file_name("atoms")
         entry_path = os.path.join(package_path, entry_file)
 
         cache_dir = str(os.path.dirname(entry_path))
@@ -38,13 +39,13 @@ class ExtractAtomsCrowdCache(PackageExtractor):
                                                   end_frame,
                                                   agent_groups)
 
-        variation_file = self.file_name("json")
+        variation_file = packager.file_name("json")
         variation_path = os.path.join(package_path, variation_file)
 
         with open(variation_path, "w") as variation:
             variation.write(self.data["variationStr"])
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": entry_file,
             "variationFile": variation_file,
             "startFrame": start_frame,

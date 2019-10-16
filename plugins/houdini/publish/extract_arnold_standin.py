@@ -17,7 +17,7 @@ class ExtractArnoldStandIn(PackageExtractor):
         "Ass",
     ]
 
-    def extract_Ass(self):
+    def extract_Ass(self, packager):
 
         import hou
 
@@ -30,7 +30,7 @@ class ExtractArnoldStandIn(PackageExtractor):
 
         staging_dir = os.path.dirname(output)
         self.data["stagingDir"] = staging_dir
-        pkg_dir = self.create_package(representation_dir=False)
+        pkg_dir = packager.create_package(with_representation=False)
 
         file_name = os.path.basename(output)
         self.log.info("Writing Ass '%s' to '%s'" % (file_name, pkg_dir))
@@ -45,13 +45,13 @@ class ExtractArnoldStandIn(PackageExtractor):
             traceback.print_exc()
             raise RuntimeError("Render failed: {0}".format(exc))
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": file_name,
             "reprRoot": self.data["reprRoot"],
         })
 
         if self.data.get("startFrame"):
-            self.add_data({
+            packager.add_data({
                 "startFrame": self.data["startFrame"],
                 "endFrame": self.data["endFrame"],
                 "step": self.data["step"],

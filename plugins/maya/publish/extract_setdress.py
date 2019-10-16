@@ -93,10 +93,10 @@ class ExtractSetDress(PackageExtractor):
                     continue
                 self._collect_components_matrix(data, sub_container)
 
-    def extract_setPackage(self):
-        entry_file = self.file_name("abc")
-        instances_file = self.file_name("json")
-        package_path = self.create_package()
+    def extract_setPackage(self, packager):
+        entry_file = packager.file_name("abc")
+        instances_file = packager.file_name("json")
+        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
         instances_path = os.path.join(package_path, instances_file)
 
@@ -118,7 +118,7 @@ class ExtractSetDress(PackageExtractor):
                           writeCreases=True,
                           attr=[lib.AVALON_ID_ATTR_LONG])
 
-        self.add_data({
+        packager.add_data({
             "entryFileName": entry_file,
         })
 
