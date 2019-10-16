@@ -111,7 +111,7 @@ class DeadlineSubmitter(object):
 
     def add_job(self, payload):
         """Add job to queue and returns an index"""
-        index = len(self._jobs)
+        index = str(len(self._jobs))
         self._jobs[index] = payload
         return index
 
