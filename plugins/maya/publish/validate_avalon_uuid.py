@@ -238,6 +238,9 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                 # to have id.
                 continue
 
+            if cmds.referenceQuery(node, isNodeReferenced=True):
+                continue
+
             state = utils.get_id_status(node)
             id_ns = utils.get_id_namespace(node)
             if not id_ns:
