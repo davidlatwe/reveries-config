@@ -4,7 +4,7 @@ from reveries.maya.pipeline import put_instance_icon
 
 
 class AnimationCreator(avalon.maya.Creator):
-    """Any character or prop animation"""
+    """發佈動畫曲線 (Animation Curves)"""
 
     label = "Animation"
     family = "reveries.animation"

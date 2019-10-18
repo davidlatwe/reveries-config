@@ -5,7 +5,7 @@ from reveries.maya.pipeline import put_instance_icon
 
 
 class LookCreator(avalon.maya.Creator):
-    """Shader connections defining shape look"""
+    """發佈材質 (包含貼圖, 模型渲染相關參數)"""
 
     label = "Look"
     family = "reveries.look"
