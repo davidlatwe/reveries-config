@@ -5,9 +5,14 @@ nav:
   - Release Notes: release_notes.md
   - Avalon:
     - Overview: avalon_overview.md
-    - Maya: avalon_maya.md
-    - Houdini: avalon_houdini.md
-    - Nuke: avalon_nuke.md
+    - Tools:
+      - Project Manager: avalon_tool_project_mgr.md
+      - Context Manager: avalon_tool_context_mgr.md
+      - Work Files: avalon_tool_workfiles.md
+      - Creator: avalon_tool_creator.md
+      - Publish: avalon_tool_publish.md
+      - Loader: avalon_tool_loader.md
+      - Scene Inventory: avalon_tool_scene_mgr.md
   - Publish:
     - Overview: publish_overview.md
     - Maya: publish_maya.md
