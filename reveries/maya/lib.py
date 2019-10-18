@@ -283,6 +283,11 @@ def query_by_setuplayer(node, attr, layer):
     def is_selected_by(selector):
         """Did the collection selector select this node ?"""
 
+        # Special selector
+        if cmds.nodeType(selector) == "arnoldAOVChildSelector":
+            selected = cmds.getAttr(selector + ".arnoldAOVNodeName")
+            return node == selected
+
         # Static selection
         static = cmds.getAttr(selector + ".staticSelection")
         if node in static.split():
