@@ -124,9 +124,6 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                     ids.add(id)
                 else:
                     invalid.append(node)
-                    # Wipe out invalid Id's verifier so to force Id renew
-                    varifier = node + "." + utils.Identifier.ATTR_VERIFIER
-                    cmds.setAttr(varifier, "", type="string")
 
         return invalid
 
@@ -198,6 +195,9 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
             asset_id = str(instance.context.data["assetDoc"]["_id"])
             with utils.id_namespace(asset_id):
                 for node in invalid:
+                    # Wipe out invalid Id's verifier so to force Id renew
+                    varifier = node + "." + utils.Identifier.ATTR_VERIFIER
+                    cmds.setAttr(varifier, "", type="string")
                     utils.upsert_id(node)
 
     @classmethod
