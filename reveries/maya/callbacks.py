@@ -6,10 +6,9 @@ from maya import cmds, OpenMaya
 from avalon import maya, api as avalon
 
 from .. import utils
-from .pipeline import set_scene_timeline
 from .vendor import sticker
 
-from . import PYMEL_MOCK_FLAG, utils as maya_utils
+from . import PYMEL_MOCK_FLAG, utils as maya_utils, lib, pipeline
 
 
 def _outliner_hide_set_member():
@@ -41,7 +40,7 @@ def on_task_changed(_, *args):
     maya.pipeline._on_task_changed()
 
     if not cmds.file(query=True, sceneName=True):
-        set_scene_timeline()
+        pipeline.set_scene_timeline()
 
 
 def on_init(_):
@@ -83,10 +82,23 @@ def on_init(_):
     cmds.evalDeferred("from reveries.maya import callbacks;"
                       "callbacks._outliner_hide_set_member()")
 
+    avalon.logger.info("Installing callbacks before new..")
+
+    OpenMaya.MSceneMessage.addCallback(
+        OpenMaya.MSceneMessage.kBeforeNew,
+        before_new
+    )
+
+
+def before_new(_):
+    # We need to save current FPS here because after scene renewed, FPS will
+    # be changed to Maya default FPS.
+    pipeline._current_fps["_"] = lib.current_fps()
+
 
 def on_new(_):
     try:
-        set_scene_timeline()
+        pipeline.set_scene_timeline()
     except Exception as e:
         cmds.warning(e.message)
 
