@@ -10,6 +10,7 @@ except ImportError:
 import avalon.api as avalon
 
 from pyblish import api as pyblish
+import pyblish_qml
 
 from . import pipeline
 from .. import PLUGINS_DIR
@@ -94,6 +95,20 @@ def install():  # pragma: no cover
     cmds.evalDeferred("import reveries.maya;"
                       "reveries.maya._override_deferred()")
 
+    # Config Pyblish QML
+    pyblish_qml.settings.Directions = {
+        "Local Publish": {
+            "awesomeIcon": "motorcycle",
+            "description": "Publish from this computer",
+            "targets": ["default", "localhost"],
+        },
+        "Deadline Publish": {
+            "awesomeIcon": "rocket",
+            "description": "Publish in Deadline render farm",
+            "targets": ["default", "deadline"],
+        },
+    }
+
     self.installed = True
 
 
@@ -106,6 +121,8 @@ def uninstall():  # pragma: no cover
     pyblish.deregister_plugin_path(PUBLISH_PATH)
     avalon.deregister_plugin_path(avalon.Loader, LOAD_PATH)
     avalon.deregister_plugin_path(avalon.Creator, CREATE_PATH)
+
+    # (TODO) uninstall callbacks
 
     self.installed = False
 
