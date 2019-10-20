@@ -518,6 +518,9 @@ def has_turntable():
         return turntable
 
 
+_current_fps = {"_": None}
+
+
 def set_scene_timeline(project=None, asset_name=None, strict=True):
     """Set timeline to correct frame range for the asset
 
@@ -535,7 +538,8 @@ def set_scene_timeline(project=None, asset_name=None, strict=True):
     """
     log.info("Timeline setting...")
 
-    current_fps = lib.current_fps()
+    current_fps = _current_fps["_"] or lib.current_fps()
+    _current_fps["_"] = None
 
     start_frame, end_frame, fps = utils.compose_timeline_data(project,
                                                               asset_name,
