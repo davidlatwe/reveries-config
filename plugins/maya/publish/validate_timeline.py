@@ -53,13 +53,14 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
             self.log.info("No range been set on this asset, skipping..")
             return True
 
-        project = context.data["projectDoc"]
-        proj_start, proj_end, fps = utils.compose_timeline_data(project,
-                                                                asset_name)
-
         scene_start = context.data.get("startFrame")
         scene_end = context.data.get("endFrame")
         scene_fps = context.data.get("fps")
+
+        project = context.data["projectDoc"]
+        proj_start, proj_end, fps = utils.compose_timeline_data(project,
+                                                                asset_name,
+                                                                scene_fps)
 
         # Check if any of the values are present
         if any(value is None for value in (scene_start, scene_end)):

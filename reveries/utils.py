@@ -56,7 +56,7 @@ def clear_stage(prefix="pyblish_tmp_"):
     os.chdir(cwd_backup)
 
 
-def get_timeline_data(project=None, asset_name=None):
+def get_timeline_data(project=None, asset_name=None, current_fps=None):
     """Get asset timeline data from project document
 
     Get timeline data from asset if asset has it's own settings, or get from
@@ -67,6 +67,8 @@ def get_timeline_data(project=None, asset_name=None):
             not provided.
         asset_name (str, optional): Asset name, get from `avalon.Session` if
             not provided.
+        current_fps (float, optional): For preserving current FPS setting if
+            project has multiple valid FPS.
 
     Returns:
         edit_in (int),
@@ -91,10 +93,15 @@ def get_timeline_data(project=None, asset_name=None):
     handles = get("handles")
     fps = get("fps")
 
+    # If project has multiple valid FPS, try preserving current FPS
+    fpses = project["data"].get("fpses")
+    if fpses and current_fps in fpses:
+        fps = current_fps
+
     return edit_in, edit_out, handles, fps
 
 
-def compose_timeline_data(project=None, asset_name=None):
+def compose_timeline_data(project=None, asset_name=None, current_fps=None):
     """Compute and return start frame, end frame and fps
 
     Get timeline data from asset if asset has it's own settings, or get from
@@ -105,6 +112,8 @@ def compose_timeline_data(project=None, asset_name=None):
             not provided.
         asset_name (str, optional): Asset name, get from `avalon.Session` if
             not provided.
+        current_fps (float, optional): For preserving current FPS setting if
+            project has multiple valid FPS.
 
     Returns:
         start_frame (int),
@@ -112,7 +121,9 @@ def compose_timeline_data(project=None, asset_name=None):
         fps (float)
 
     """
-    edit_in, edit_out, handles, fps = get_timeline_data(project, asset_name)
+    edit_in, edit_out, handles, fps = get_timeline_data(project,
+                                                        asset_name,
+                                                        current_fps)
     start_frame = edit_in - handles
     end_frame = edit_out + handles
 

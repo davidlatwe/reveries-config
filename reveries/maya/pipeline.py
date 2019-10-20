@@ -535,8 +535,11 @@ def set_scene_timeline(project=None, asset_name=None, strict=True):
     """
     log.info("Timeline setting...")
 
+    current_fps = lib.current_fps()
+
     start_frame, end_frame, fps = utils.compose_timeline_data(project,
-                                                              asset_name)
+                                                              asset_name,
+                                                              current_fps)
     fps = lib.FPS_MAP.get(fps)
 
     if fps is None:
