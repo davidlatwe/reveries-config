@@ -1,4 +1,13 @@
 
+## 1.0.1
+<h5>Oct 20, 2019</h5>
+<h4>Note</h4>
+
+* [Maya] 支援多 FPS 格式的專案
+
+<h4>Technical Detail</h4>
+See [#173](https://github.com/MoonShineVFX/reveries-config/pull/173)
+
 ## 1.0.0
 <h5>Oct 17, 2019</h5>
 <h4>Note</h4>
