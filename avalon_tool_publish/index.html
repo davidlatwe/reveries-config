@@ -36,7 +36,7 @@
     
     
       
-        <title>Nuke - Avalon Reveries</title>
+        <title>Publish - Avalon Reveries</title>
       
     
     
@@ -83,6 +83,10 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
+      <a href="#features" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
     
       <header class="md-header" data-md-component="header">
   <nav class="md-header-nav md-grid">
@@ -105,7 +109,7 @@
             </span>
             <span class="md-header-nav__topic">
               
-                Nuke
+                Publish
               
             </span>
           
@@ -174,7 +178,7 @@
   
     <li class="md-tabs__item">
       
-        <a href="../avalon_overview/" class="md-tabs__link">
+        <a href="../avalon_overview/" class="md-tabs__link md-tabs__link--active">
           Avalon
         </a>
       
@@ -187,7 +191,7 @@
   
     <li class="md-tabs__item">
       
-        <a href="../publish_overview/" class="md-tabs__link md-tabs__link--active">
+        <a href="../publish_overview/" class="md-tabs__link">
           Publish
         </a>
       
@@ -259,10 +263,12 @@
       
       
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
     
     <label class="md-nav__link" for="nav-3">
       Avalon
@@ -290,10 +296,12 @@
           
           
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3-2" type="checkbox" id="nav-3-2">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3-2" type="checkbox" id="nav-3-2" checked>
     
     <label class="md-nav__link" for="nav-3-2">
       Tools
@@ -357,11 +365,52 @@
           
           
 
+  
 
-  <li class="md-nav__item">
-    <a href="../avalon_tool_publish/" title="Publish" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Publish
+      </label>
+    
+    <a href="./" title="Publish" class="md-nav__link md-nav__link--active">
       Publish
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#targets" class="md-nav__link">
+    Targets
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
         
@@ -403,12 +452,10 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
     
     <label class="md-nav__link" for="nav-4">
       Publish
@@ -460,18 +507,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-    
-    <a href="./" title="Nuke" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../publish_nuke/" title="Nuke" class="md-nav__link">
       Nuke
     </a>
-    
   </li>
 
         
@@ -523,15 +563,61 @@
               </div>
             
             
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#targets" class="md-nav__link">
+    Targets
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
           
           <div class="md-content">
             <article class="md-content__inner md-typeset">
               
                 
                 
-                  <h1>Nuke</h1>
+                  <h1>Publish</h1>
                 
-                
+                <h2 id="features">Features</h2>
+<p>內容發佈工具，關於 publish 工具的操作細節，請見 <a href="../publish_overview/">Publish &gt; Overview</a></p>
+<h2 id="targets">Targets</h2>
+<p>目前有兩種 Publish 模式，一種是一般的本機 Publish (Local)，另一種是上傳至 Deadline 農場，進行遠端發佈。</p>
+<p>能夠在 Deadline 上發佈的類型不多，支援的類型如下:</p>
+<ul>
+<li>Point Cache</li>
+<li>Arnold Stand-In</li>
+<li>Playblast</li>
+<li>Rendering</li>
+</ul>
                 
                   
                 
@@ -552,7 +638,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../publish_houdini/" title="Houdini" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../avalon_tool_creator/" title="Creator" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -561,19 +647,19 @@
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Houdini
+                Creator
               </span>
             </div>
           </a>
         
         
-          <a href="../utilities_overview/" title="Overview" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../avalon_tool_loader/" title="Loader" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Overview
+                Loader
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">

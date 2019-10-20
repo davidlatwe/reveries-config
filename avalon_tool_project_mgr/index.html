@@ -36,7 +36,7 @@
     
     
       
-        <title>Nuke - Avalon Reveries</title>
+        <title>Project Manager - Avalon Reveries</title>
       
     
     
@@ -83,6 +83,10 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
+      <a href="#features" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
     
       <header class="md-header" data-md-component="header">
   <nav class="md-header-nav md-grid">
@@ -105,7 +109,7 @@
             </span>
             <span class="md-header-nav__topic">
               
-                Nuke
+                Project Manager
               
             </span>
           
@@ -174,7 +178,7 @@
   
     <li class="md-tabs__item">
       
-        <a href="../avalon_overview/" class="md-tabs__link">
+        <a href="../avalon_overview/" class="md-tabs__link md-tabs__link--active">
           Avalon
         </a>
       
@@ -187,7 +191,7 @@
   
     <li class="md-tabs__item">
       
-        <a href="../publish_overview/" class="md-tabs__link md-tabs__link--active">
+        <a href="../publish_overview/" class="md-tabs__link">
           Publish
         </a>
       
@@ -259,10 +263,12 @@
       
       
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
     
     <label class="md-nav__link" for="nav-3">
       Avalon
@@ -290,10 +296,12 @@
           
           
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3-2" type="checkbox" id="nav-3-2">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3-2" type="checkbox" id="nav-3-2" checked>
     
     <label class="md-nav__link" for="nav-3-2">
       Tools
@@ -309,11 +317,85 @@
           
           
 
+  
 
-  <li class="md-nav__item">
-    <a href="../avalon_tool_project_mgr/" title="Project Manager" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Project Manager
+      </label>
+    
+    <a href="./" title="Project Manager" class="md-nav__link md-nav__link--active">
       Project Manager
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#add-silo" class="md-nav__link">
+    Add Silo
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-asset" class="md-nav__link">
+    Add Asset
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parent" class="md-nav__link">
+    Parent
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-task" class="md-nav__link">
+    Add Task
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
         
@@ -403,12 +485,10 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
     
     <label class="md-nav__link" for="nav-4">
       Publish
@@ -460,18 +540,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-    
-    <a href="./" title="Nuke" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../publish_nuke/" title="Nuke" class="md-nav__link">
       Nuke
     </a>
-    
   </li>
 
         
@@ -523,15 +596,110 @@
               </div>
             
             
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#add-silo" class="md-nav__link">
+    Add Silo
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-asset" class="md-nav__link">
+    Add Asset
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parent" class="md-nav__link">
+    Parent
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-task" class="md-nav__link">
+    Add Task
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
           
           <div class="md-content">
             <article class="md-content__inner md-typeset">
               
                 
                 
-                  <h1>Nuke</h1>
+                  <h1>Project Manager</h1>
                 
-                
+                <p><img alt="project_mgr" src="" /></p>
+<h2 id="features">Features</h2>
+<p>供專案管理員創建專案資產項目，以及指派工作部門。無法用於刪除或修改。一般透過 Avalon Launcher 來開啟。</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>通常僅有被設定為專案管理員的人可以使用此工具。</p>
+</div>
+<h3 id="add-silo">Add Silo</h3>
+<p><img alt="project_mgr_add_silo" src="" /></p>
+<p>在新增 Asset 之前，先切換到該 Asset 所屬的 Silo 頁面，如果不存在，請點按 <code>+</code> 建立。</p>
+<h3 id="add-asset">Add Asset</h3>
+<p><img alt="project_mgr_add_asset" src="" /></p>
+<p>請按下方的 "Add Asset" 以新增。</p>
+<h4 id="parent">Parent</h4>
+<p><img alt="project_mgr_add_asset_parent" src="" /></p>
+<p>Asset 可以有層級，如果在新增 Asset 的時候有選取其他的 Asset，那麼新創建的 Asset 會是先前選取的子 Asset。</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>Asset 一旦建立，便不好刪除，務必事先確定好名稱並檢查錯字。</p>
+</div>
+<h3 id="add-task">Add Task</h3>
+<p><img alt="project_mgr_add_task" src="" /></p>
+<p>每個項目都需要指派工作部門，否則無法存取。</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>可以一次選取多個 Asset 來批次指派工作部門。</p>
+</div>
                 
                   
                 
@@ -552,7 +720,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../publish_houdini/" title="Houdini" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../avalon_overview/" title="Overview" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -561,19 +729,19 @@
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Houdini
+                Overview
               </span>
             </div>
           </a>
         
         
-          <a href="../utilities_overview/" title="Overview" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../avalon_tool_context_mgr/" title="Context Manager" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Overview
+                Context Manager
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
