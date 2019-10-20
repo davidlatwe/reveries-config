@@ -82,6 +82,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
             step=frame_step,
         )
 
+        # (NOTE) This takes long time to process
         output_paths = utils.get_output_paths(output_dir,
                                               renderer,
                                               renderlayer,
