@@ -133,6 +133,10 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         if instance.data["family"] in cls.loose_uuid:
             return
 
+        if instance.data["family"] == "reveries.rig":
+            # Rig's model may coming from multiple assets
+            return
+
         if uuids is None:
             uuids = cls._get_avalon_uuid(instance)
 
