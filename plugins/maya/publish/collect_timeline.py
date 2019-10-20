@@ -1,6 +1,5 @@
 
 import maya.cmds as cmds
-import maya.mel as mel
 import pyblish.api
 
 
@@ -13,10 +12,12 @@ class CollectTimeline(pyblish.api.ContextPlugin):
     label = "Scene Timeline"
 
     def process(self, context):
+        from reveries.maya import lib
+
         context.data.update(
             {
                 "startFrame": cmds.playbackOptions(query=True, minTime=True),
                 "endFrame": cmds.playbackOptions(query=True, maxTime=True),
-                "fps": mel.eval('currentTimeUnitToFPS()'),
+                "fps": lib.current_fps(),
             }
         )

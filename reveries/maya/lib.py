@@ -64,6 +64,10 @@ FPS_MAP = {
 }
 
 
+def current_fps():
+    return round(mel.eval('currentTimeUnitToFPS()'), 3)
+
+
 def is_using_renderSetup():
     """Is Maya currently using renderSetup system ?"""
     try:
