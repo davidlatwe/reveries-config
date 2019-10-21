@@ -5,17 +5,17 @@ from reveries import plugins
 from reveries.maya import plugins as maya_plugins
 
 
-class SelectAtomsSimNodes(maya_plugins.MayaSelectInvalidInstanceAction):
+class SelectAtomsSimNodes(maya_plugins.MayaSelectInvalidContextAction):
 
     label = "Select Atoms Sim Nodes"
 
 
-class DeleteAtomsSimNodes(plugins.RepairInstanceAction):
+class DeleteAtomsSimNodes(plugins.RepairContextAction):
 
     label = "Clean Up"
 
 
-class ValidateNoAtomsSimulationNodes(pyblish.api.InstancePlugin):
+class ValidateNoAtomsSimulationNodes(pyblish.api.ContextPlugin):
     """
     """
 
@@ -25,9 +25,6 @@ class ValidateNoAtomsSimulationNodes(pyblish.api.InstancePlugin):
 
     targets = ["deadline"]
 
-    families = [
-        "reveries.imgseq",
-    ]
     actions = [
         pyblish.api.Category("Select"),
         SelectAtomsSimNodes,
@@ -36,23 +33,25 @@ class ValidateNoAtomsSimulationNodes(pyblish.api.InstancePlugin):
     ]
 
     @classmethod
-    def get_invalid(cls, instance):
-        invalid = list()
+    def get_invalid(cls, context):
+        invalid = set()
 
-        invalid += instance.data["AtomsNodes"]
-        invalid += instance.data["AtomsAgentGroups"]
+        for instance in context:
+            invalid.update(instance.data["AtomsNodes"])
+            invalid.update(instance.data["AtomsAgentGroups"])
 
-        return invalid
+        return list(invalid)
 
-    def process(self, instance):
-        invalid = self.get_invalid(instance)
+    def process(self, context):
+        invalid = self.get_invalid(context)
         if invalid:
-            raise Exception("Should not render with Atoms Simulation nodes.")
+            raise Exception("Should not publish with Atoms Simulation nodes "
+                            "in Deadline.")
 
     @classmethod
-    def fix_invalid(cls, instance):
+    def fix_invalid(cls, context):
         """Delete unknown nodes"""
         from maya import cmds
 
-        for node in cls.get_invalid(instance):
+        for node in cls.get_invalid(context):
             cmds.delete(node)
