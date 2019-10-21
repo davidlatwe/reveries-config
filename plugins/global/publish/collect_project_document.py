@@ -5,14 +5,16 @@ import avalon.io
 
 
 class CollectProjectDocument(pyblish.api.ContextPlugin):
-    """Collect project document from database
+    """從資料庫讀取 Project 文件"""
+
+    """
 
     keys in context.data:
         * projectDoc
 
     """
 
-    label = "Find Project Document"
+    label = "取得 Project 文件"
     order = pyblish.api.CollectorOrder - 0.35
 
     def process(self, context):

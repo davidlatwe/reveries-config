@@ -6,6 +6,29 @@ from reveries.maya import lib, pipeline
 
 
 class CollectDeformedOutputs(pyblish.api.InstancePlugin):
+    """從選取的物件中篩選可被 cache 的物件
+
+    !!! 注意: 只有 visible 物件會被 cache
+
+    篩選方法有兩個:
+
+        1. 選取 Subset Group 節點 (紅色包裹圖示的物件)，然後該 Subset
+           帶有 OutSet 或 名字以 OutSet 結尾的 objectSet，這時候只會
+           從那個 objectSet 取得要被 cache 的物件。 這個方法主要是使用
+           在輸出角色 cache的時候，通常只有 Rig 會有 OutSet。
+
+        2. 如果找不到 OutSet (方法 1 失敗)，那就會篩選選取物件的整個階
+           層，從中挑選可以被 cache 的物件。
+
+    如果是使用 OutSet 的方式 (方法 1) 來引導系統的話，Subset 的名字也
+    會受 OutSet 的前綴影響，例如:
+
+             "OutSet" -> "pointcache.Boy_model_01_Default"
+          "SimOutSet" -> "pointcache.Boy_model_01_Sim"
+        "ClothOutSet" -> "pointcache.Boy_model_01_Cloth"
+
+    """
+
     """Collect out geometry data for instance.
 
     Only visible objects will be cached.
@@ -25,7 +48,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
     """
 
     order = pyblish.api.CollectorOrder - 0.2999
-    label = "Collect Deformed Outputs"
+    label = "篩選 pointcache 物件"
     hosts = ["maya"]
     families = [
         "reveries.pointcache",

@@ -3,6 +3,12 @@ import pyblish.api
 
 
 class AvalonSceneReady(pyblish.api.ContextPlugin):
+    """標記場景為預備狀態
+
+    場景在被標記為預備狀態之後，如果有任何物件或數值的更動，狀態就會失效
+
+    """
+
     """Define current scene in ready state
 
     Collecte current undo count for later validation.
@@ -10,7 +16,7 @@ class AvalonSceneReady(pyblish.api.ContextPlugin):
     """
 
     order = pyblish.api.CollectorOrder + 0.49999
-    label = "Scene Ready"
+    label = "進入預備狀態"
     hosts = ["maya"]
 
     def process(self, context):

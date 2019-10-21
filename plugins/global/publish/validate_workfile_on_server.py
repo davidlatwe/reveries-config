@@ -31,10 +31,12 @@ def is_in_workspace(path, workdir):
 
 
 class ValidateWorkfileInWorkspace(pyblish.api.InstancePlugin):
+    """確認工作檔確實存檔於 Avalon 的工作區"""
+
     """Validate the workfile is inside workspace"""
 
     order = pyblish.api.ValidatorOrder - 0.49995
-    label = "Workfile In Workspace"
+    label = "確認工作檔存在於工作區"
     families = [
         "reveries.pointcache",
         "reveries.imgseq",
@@ -53,5 +55,4 @@ class ValidateWorkfileInWorkspace(pyblish.api.InstancePlugin):
             raise RuntimeError("Workdir not defined, this is a bug.")
 
         if not is_in_workspace(current_making, workdir):
-            raise RuntimeError("Workfile is not no server, "
-                               "please save to network drive.")
+            raise RuntimeError("工作檔不存在於工作區，請將工作檔另存至工作區。")

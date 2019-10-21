@@ -4,10 +4,10 @@ from avalon import io
 
 
 class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
-    """Write to database
+    """寫入本次發佈的相關資料至資料庫
     """
 
-    label = "Integrate Database"
+    label = "寫入資料庫"
     order = pyblish.api.IntegratorOrder + 0.1
 
     targets = ["localhost"]

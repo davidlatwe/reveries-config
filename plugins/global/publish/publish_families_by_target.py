@@ -3,11 +3,13 @@ import pyblish.api
 
 
 class PublishFamiliesByTarget(pyblish.api.ContextPlugin):
+    """建立與發佈目標 (Target) 相應的家族 (Family) 清單"""
+
     """Listing publish target supported families
     """
 
     order = pyblish.api.CollectorOrder - 0.4
-    label = "Supported Families"
+    label = "Families 支援清單"
 
     ALL_FAMILIES = set([
         "reveries.shotpkg",

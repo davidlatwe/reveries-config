@@ -9,6 +9,8 @@ from avalon.vendor import filelink
 
 
 class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
+    """公開檔案並發佈至網路硬碟"""
+
     """Write to files and metadata, Resolve any dependency issues
 
     This plug-in exposes your data to others by encapsulating it
@@ -25,7 +27,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     """
 
-    label = "Integrate Subset"
+    label = "上傳 Subset"
     order = pyblish.api.IntegratorOrder
 
     targets = ["localhost"]

@@ -14,37 +14,37 @@ from reveries.maya import utils
 
 class SelectMissing(MayaSelectInvalidInstanceAction):
 
-    label = "ID Missing"
+    label = "沒有編號"
     symptom = "missing"
 
 
 class SelectDuplicated(MayaSelectInvalidInstanceAction):
 
-    label = "ID Duplicated"
+    label = "重複編號"
     symptom = "duplicated"
 
 
 class SelectMissMatchedAsset(MayaSelectInvalidInstanceAction):
 
-    label = "Invalid Asset ID"
+    label = "Asset Id 錯誤"
     symptom = "asset_id"
 
 
 class RepairIDMissing(RepairInstanceAction):
 
-    label = "Fix Missing ID"
+    label = "沒有編號"
     symptom = "missing"
 
 
 class RepairIDDuplicated(RepairInstanceAction):
 
-    label = "Fix Duplicated ID"
+    label = "重複編號"
     symptom = "duplicated"
 
 
 class RepairMissMatchedAsset(RepairInstanceAction):
 
-    label = "Fix Asset ID"
+    label = "Asset Id 錯誤"
     symptom = "asset_id"
 
 
@@ -56,15 +56,31 @@ def ls_subset_groups():
 
 
 class ValidateAvalonUUID(pyblish.api.InstancePlugin):
-    """All transfrom and types required by each family must have an UUID
+    """物件要有編號 (AvalonID)
 
-    To fix this, use *Fix It* action to regenerate UUIDs.
+    Model mesh, XGen, rig 控制器, 攝影機, 燈光等等物件需要被打上正確的
+    編碼。這是為了之後套材質 (look) 或者套動態 (animCurve) 時的資料配對。
+
+    AvalonID 通常看起來像這樣:
+
+        5da7d9fa2ec7db73c0d2fe77:5dadbe36ed9f0d8638c021eb
+        |------ Asset Id ------| |----- Object Id ------|
+
+    是由兩串編碼加上中間區隔的冒號組成，這個資料會寫在物件的 ".AvalonID"
+    屬性。
+
+    這個驗證的錯誤狀況有三種:
+        1. 沒有編號
+        2. 重複編號
+        3. Asset Id 錯誤
+
+    請根據錯誤訊息來執行相對應的修正動作。
 
     """
 
     order = pyblish.api.ValidatorOrder - 0.12
     hosts = ["maya"]
-    label = "Avalon UUID Assigned"
+    label = "物件編號指派正確"
 
     strict_uuid = [
         "reveries.model",
@@ -83,11 +99,11 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     families = strict_uuid + loose_uuid
 
     actions = [
-        pyblish.api.Category("Select"),
+        pyblish.api.Category("選取"),
         SelectMissing,
         SelectDuplicated,
         SelectMissMatchedAsset,
-        pyblish.api.Category("Fix It"),
+        pyblish.api.Category("修正"),
         RepairIDMissing,
         RepairIDDuplicated,
         RepairMissMatchedAsset,
@@ -142,7 +158,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     def echo(self, instance, invalid, cause):
         self.log.error(
-            "'%s' %s on:\n%s" % (
+            "'{}' {} :\n{}".format(
                 instance,
                 cause,
                 ",\n".join("'" + member + "'" for member in invalid))
@@ -157,17 +173,17 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         invalid = self.get_invalid_missing(instance, uuids_dict)
         if invalid:
             IS_INVALID = True
-            self.echo(instance, invalid, "Missing ID attribute")
+            self.echo(instance, invalid, "發現部分物件**沒有**編號")
 
         invalid = self.get_invalid_duplicated(instance, uuids_dict)
         if invalid:
             IS_INVALID = True
-            self.echo(instance, invalid, "Duplicated IDs")
+            self.echo(instance, invalid, "發現**重複**編號的物件")
 
         invalid = self.get_invalid_asset_id(instance, uuids_dict)
         if invalid:
             IS_INVALID = True
-            self.echo(instance, invalid, "Invalid Asset IDs")
+            self.echo(instance, invalid, "發現 Asset Id 錯誤")
 
         # End
         if IS_INVALID:
@@ -249,7 +265,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
             uuids[state].append(node)
 
-            if not id_ns == asset_id:
+            if id_ns and not id_ns == asset_id:
                 uuids["missMatched"].append(node)
 
         return uuids

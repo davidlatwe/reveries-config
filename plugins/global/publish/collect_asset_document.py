@@ -5,14 +5,16 @@ import avalon.io
 
 
 class CollectAssetDocument(pyblish.api.ContextPlugin):
-    """Collect asset document from database
+    """從資料庫讀取 Asset 文件"""
+
+    """
 
     keys in context.data:
         * assetDoc
 
     """
 
-    label = "Find Asset Document"
+    label = "取得 Asset 文件"
     order = pyblish.api.CollectorOrder - 0.34
 
     def process(self, context):

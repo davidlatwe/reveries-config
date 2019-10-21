@@ -3,9 +3,9 @@ import getpass
 
 
 class CollectUser(pyblish.api.ContextPlugin):
-    """Store user name"""
+    """寫入當前登錄的使用者名稱"""
 
-    label = "Collect Current User"
+    label = "登錄使用者"
     order = pyblish.api.CollectorOrder - 0.5
 
     def process(self, context):

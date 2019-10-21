@@ -3,9 +3,9 @@ from avalon import api
 
 
 class CollectTime(pyblish.api.ContextPlugin):
-    """Store global time at the time of publish"""
+    """記下現在時間並紀錄為發佈時間"""
 
-    label = "Collect Current Time"
+    label = "紀錄發佈時間"
     order = pyblish.api.CollectorOrder - 0.5
 
     def process(self, context):
