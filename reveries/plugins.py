@@ -378,7 +378,7 @@ class RepairInstanceAction(OnSymptomAction):
         action = self._get_action(plugin)
 
         # Get the errored instances
-        self.log.info("Finding failed instances..")
+        self.log.debug("Finding failed instances..")
         errored_instances = get_errored_instances_from_context(context)
 
         # Apply pyblish.logic to get the instances for the plug-in
@@ -406,12 +406,10 @@ class RepairContextAction(OnSymptomAction):
         action = self._get_action(plugin)
 
         # Get the errored instances
-        self.log.info("Finding failed instances..")
         errored_plugins = get_errored_plugins_from_data(context)
 
         # Apply pyblish.logic to get the instances for the plug-in
         if plugin in errored_plugins:
-            self.log.info("Attempting fix ...")
             action(context)
 
 
@@ -440,7 +438,6 @@ class SelectInvalidInstanceAction(OnSymptomAction):
         instances = pyblish.api.instances_by_plugin(errored_instances, plugin)
 
         # Get the invalid nodes for the plug-ins
-        self.log.info("Finding invalid nodes..")
         invalid = list()
 
         for instance in instances:
@@ -457,7 +454,6 @@ class SelectInvalidInstanceAction(OnSymptomAction):
 
         if invalid:
             invalid = list(set(invalid))
-            self.log.info("Selecting invalid nodes: %s" % ", ".join(invalid))
             self.select(invalid)
         else:
             self.log.info("No invalid nodes found.")
@@ -489,7 +485,6 @@ class SelectInvalidContextAction(OnSymptomAction):
         action = self._get_action(plugin)
 
         # Get the invalid nodes for the plug-ins
-        self.log.info("Finding invalid nodes..")
         invalid = action(context)
 
         if invalid:
@@ -500,8 +495,6 @@ class SelectInvalidContextAction(OnSymptomAction):
             else:
                 self.log.warning("Plug-in returned to be invalid, "
                                  "but has no selectable nodes.")
-
-            self.log.info("Selecting invalid nodes: %s" % ", ".join(invalid))
             self.select(invalid)
 
         else:
