@@ -37,8 +37,8 @@ class ValidateNoAtomsSimulationNodes(pyblish.api.ContextPlugin):
         invalid = set()
 
         for instance in context:
-            invalid.update(instance.data["AtomsNodes"])
-            invalid.update(instance.data["AtomsAgentGroups"])
+            invalid.update(instance.data.get("AtomsNodes", []))
+            invalid.update(instance.data.get("AtomsAgentGroups", []))
 
         return list(invalid)
 
