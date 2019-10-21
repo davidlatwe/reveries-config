@@ -3,10 +3,10 @@ import pyblish.api
 
 
 class ExtractVersionDirectory(pyblish.api.InstancePlugin):
-    """Create publish version directory
+    """計算下一個版本號並創建資料夾
     """
 
-    label = "Create Version Directory"
+    label = "創建版號"
     order = pyblish.api.ExtractorOrder - 0.4
 
     def process(self, instance):

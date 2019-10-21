@@ -3,6 +3,15 @@ import pyblish.api
 
 
 class AvalonCheckSceneReady(pyblish.api.ContextPlugin):
+    """確認場景仍為預備狀態
+
+    場景在預備程序完成後 (Reset, Collecting 完成) 會被標註為完成預備狀態，在
+    那之後，如果有任何物件或數值的更動，狀態就會失效而無法繼續發佈。
+
+    這是因為系統先前從場景蒐集的資料可能已經過時，因此需要重置。
+
+    """
+
     """Validate current scene still fit the definition of *ready*
 
     By checking new undo commands in undo queue after collecting, and consider
@@ -11,7 +20,7 @@ class AvalonCheckSceneReady(pyblish.api.ContextPlugin):
     """
 
     order = pyblish.api.ValidatorOrder - 0.49998
-    label = "Is Scene Ready"
+    label = "檢查預備狀態"
     hosts = ["maya"]
 
     def process(self, context):

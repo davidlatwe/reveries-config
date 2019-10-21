@@ -3,13 +3,19 @@ import pyblish.api
 
 
 class ValidateSubsetUnique(pyblish.api.ContextPlugin):
+    """確認正在發佈的所有物件 (Subset Instance) 沒有重複名稱
+
+    同時間不能發佈相同 Subset 名稱的內容。
+
+    """
+
     """No duplicated subset
 
     You can not publish multiple subsets with the same subset name.
 
     """
 
-    label = "Subset Unique"
+    label = "無重複 Subset"
     order = pyblish.api.ValidatorOrder - 0.44
 
     def process(self, context):

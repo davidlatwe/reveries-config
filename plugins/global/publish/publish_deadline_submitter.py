@@ -11,9 +11,10 @@ from reveries import utils
 
 
 class PublishDeadlineSubmitter(pyblish.api.ContextPlugin):
+    """Deadline 發佈機器人"""
 
     order = pyblish.api.ExtractorOrder - 0.3
-    label = "Deadline Context"
+    label = "Deadline 發佈機器人"
 
     targets = ["deadline"]
 

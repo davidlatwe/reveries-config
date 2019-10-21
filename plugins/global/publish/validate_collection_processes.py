@@ -3,6 +3,9 @@ import pyblish.api
 
 
 class ValidateCollectionProcesses(pyblish.api.ContextPlugin):
+    """確認先前的資料收集程序運行正常
+    """
+
     """Validate previous collector plugins all processed without error
 
     Currently Pyblish only stop on validation fail, so we use this plugin
@@ -10,7 +13,7 @@ class ValidateCollectionProcesses(pyblish.api.ContextPlugin):
 
     """
 
-    label = "Good Collecting"
+    label = "資料收集零錯誤"
     order = pyblish.api.ValidatorOrder - 0.49999
 
     def process(self, context):
