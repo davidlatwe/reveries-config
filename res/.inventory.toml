@@ -39,6 +39,9 @@ pool = [
 group = [
 	"maya2018_2",
 ]
+defaultPool = "1---less_than_15minutes"
+defaultGroup = "maya2018_2"
+defaultPriority = 80
 
 [deadline.maya.priorities]
 pointcache = 95
