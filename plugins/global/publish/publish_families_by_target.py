@@ -46,6 +46,7 @@ class PublishFamiliesByTarget(pyblish.api.ContextPlugin):
         "deadline": [
             "reveries.pointcache",
             "reveries.standin",
+            "reveries.camera",
             "reveries.imgseq",
             "reveries.imgseq.playblast",
             "reveries.imgseq.render",
