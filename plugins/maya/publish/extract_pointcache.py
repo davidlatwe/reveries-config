@@ -126,6 +126,8 @@ class ExtractPointCache(PackageExtractor):
 
         cmds.select(self.data["outCache"], replace=True)
 
+        packager.skip_stage()
+
         entry_file = packager.file_name("ma")
         cache_file = packager.file_name("fbx")
         package_path = packager.create_package()
