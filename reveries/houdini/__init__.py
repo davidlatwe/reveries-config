@@ -3,6 +3,7 @@ import os
 import logging
 
 from pyblish import api as pyblish
+import pyblish_qml.settings
 
 from avalon import api as avalon
 from avalon.houdini import pipeline as houdini
@@ -32,6 +33,20 @@ def install():
     avalon.before("save", before_save)
     avalon.on("save", on_save)
     avalon.on("open", on_open)
+
+    # Config Pyblish QML
+    pyblish_qml.settings.Directions = {
+        "Local Publish": {
+            "awesomeIcon": "motorcycle",
+            "description": "Publish from this computer",
+            "targets": ["default", "localhost"],
+        },
+        "Deadline Publish": {
+            "awesomeIcon": "rocket",
+            "description": "Publish in Deadline render farm",
+            "targets": ["default", "deadline"],
+        },
+    }
 
 
 def on_init(*args):

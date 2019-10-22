@@ -10,7 +10,7 @@ except ImportError:
 import avalon.api as avalon
 
 from pyblish import api as pyblish
-import pyblish_qml
+import pyblish_qml.settings
 
 from . import pipeline
 from .. import PLUGINS_DIR
