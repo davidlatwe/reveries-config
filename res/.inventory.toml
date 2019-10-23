@@ -36,11 +36,7 @@ pool = [
 	"3---about_90minutes",
 	"4---more_than_120minutes",
 ]
-group = [
-	"maya2018_2",
-]
 defaultPool = "1---less_than_15minutes"
-defaultGroup = "maya2018_2"
 defaultPriority = 80
 
 [deadline.maya.priorities]
