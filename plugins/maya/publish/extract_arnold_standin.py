@@ -41,12 +41,13 @@ class ExtractArnoldStandIn(PackageExtractor):
 
         self.log.info("Extracting standin..")
 
-        texture = next(chd for chd in self.data.get("childInstances", [])
-                       if chd.data["family"] == "reveries.texture")
-        if texture is not None:
-            file_node_attrs = texture.data.get("fileNodeAttrs", dict())
-        else:
+        try:
+            texture = next(chd for chd in self.data.get("childInstances", [])
+                           if chd.data["family"] == "reveries.texture")
+        except StopIteration:
             file_node_attrs = dict()
+        else:
+            file_node_attrs = texture.data.get("fileNodeAttrs", dict())
 
         data = {
             "fileNodeAttrs": file_node_attrs,
