@@ -162,7 +162,10 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
         payload["JobInfo"].pop("ChunkSize")
         # Update
         payload["JobInfo"].update({
-            "Name": "__pub__" + payload["JobInfo"]["Name"],
+            # Put all dependent jobs in one place
+            "BatchName": "[Avalon] Maya Publish Dependent Jobs",
+
+            "Name": batch_name + "@" + payload["JobInfo"]["Name"],
             "UserName": project["data"]["deadline"]["publishUser"],
             "Priority": 99,
             "JobDependencies": index,
