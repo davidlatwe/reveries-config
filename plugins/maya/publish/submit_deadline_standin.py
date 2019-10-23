@@ -167,7 +167,7 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
 
             "Name": batch_name + "@" + payload["JobInfo"]["Name"],
             "UserName": project["data"]["deadline"]["publishUser"],
-            "Priority": 99,
+            "Priority": 100,
             "JobDependencies": index,
         })
         payload["PluginInfo"].update({
