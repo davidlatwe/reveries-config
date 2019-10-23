@@ -68,7 +68,6 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         rendercam = instance.data["renderCam"][0]
 
         deadline_pool = instance.data["deadlinePool"]
-        deadline_group = instance.data["deadlineGroup"]
         deadline_prior = instance.data["deadlinePriority"]
 
         frame_start = int(instance.data["startFrame"])
@@ -109,7 +108,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
                 "MachineName": platform.node(),
                 "Comment": comment,
                 "Pool": deadline_pool,
-                "Group": deadline_group,
+                # "Group": deadline_group,
                 "Priority": deadline_prior,
                 "Frames": frames,
                 "ChunkSize": frame_per_task,

@@ -69,8 +69,6 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
 
             deadline_pool = instance.data.get("deadlinePool",
                                               deadline["defaultPool"])
-            deadline_group = instance.data.get("deadlineGroup",
-                                               deadline["defaultGroup"])
             deadline_prior = instance.data.get("deadlinePriority",
                                                deadline["defaultPriority"])
 
@@ -90,7 +88,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                     "MachineName": platform.node(),
                     "Comment": comment,
                     "Pool": deadline_pool,
-                    "Group": deadline_group,
+                    # "Group": deadline_group,
                     "Priority": deadline_prior,
 
                     "ExtraInfo0": project["name"],

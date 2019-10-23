@@ -60,7 +60,6 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
         version = instance.data["versionNext"]
 
         deadline_pool = instance.data["deadlinePool"]
-        deadline_group = instance.data["deadlineGroup"]
         deadline_prior = instance.data["deadlinePriority"]
 
         frame_start = int(instance.data["startFrame"])
@@ -89,7 +88,7 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
                 "MachineName": platform.node(),
                 "Comment": comment,
                 "Pool": deadline_pool,
-                "Group": deadline_group,
+                # "Group": deadline_group,
                 "Priority": deadline_prior,
 
                 "Frames": frames,
