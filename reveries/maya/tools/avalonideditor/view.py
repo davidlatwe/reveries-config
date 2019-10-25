@@ -42,11 +42,26 @@ class SelectionOutline(QtWidgets.QWidget):
         self.view = view
         self.proxy = proxy
 
+        # (TODO)
+        # Get all nodes
+        # Get selected nodes
+        # Dynamic selecting (If this enabled, dim out above two. Default off)
+        # "Freeze List" will not be needed
+
         freezer = QtWidgets.QCheckBox("Freeze List")
+
+        # (TODO)
+        # These three not implemented
+        include_hierarchy = QtWidgets.QCheckBox("Include Hierarchy")
+        hide_referenced = QtWidgets.QCheckBox("Hide Referenced")
+        refresh = QtWidgets.QPushButton("Refresh")
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(freezer)
+        layout.addWidget(include_hierarchy)
+        layout.addWidget(hide_referenced)
         layout.addWidget(self.view)
+        layout.addWidget(refresh)
 
         self.setLayout(layout)
 
