@@ -38,10 +38,12 @@ class SelectionModel(models.TreeModel):
         ("circle", "#3164C8"),
     ]
     STATUS_ICONS = [
-        ("check-circle", "#38DB8C"),
-        ("copy", "#ECA519"),
-        ("question-circle", "#EC534E"),
+        ("check-circle", "#38DB8C"),  # Clean, Ok
+        ("copy", "#ECA519"),  # Duplicated
+        ("question-circle", "#EC534E"),  # Untracked
         ("check-circle", "#ECA519"),  # Duplicate source
+        ("copy", "#516464"),  # Duplicated but referenced
+        ("meh-o", "#516464"),  # Untracked but referenced
     ]
 
     def __init__(self, parent=None):
@@ -157,6 +159,16 @@ class SelectionModel(models.TreeModel):
                         node["Id"] in self._duplicated_id):
                     # Is duplicate source
                     status = 3
+
+                elif node["isReferenced"]:
+
+                    if status == utils.Identifier.Untracked:
+                        # Is referenced but untracked
+                        status = 5
+
+                    elif status == utils.Identifier.Duplicated:
+                        # Is referenced but duplicated
+                        status = 4
 
                 return self.status_icon[status]
 
