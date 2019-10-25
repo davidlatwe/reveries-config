@@ -68,7 +68,8 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
         members = instance[:]
         out_sets = list()
 
-        # Find OutSet from subset group nodes
+        # Find OutSet from *Subset Group nodes*
+        #
         for group in cmds.ls(members, type="transform", long=True):
             if cmds.listRelatives(group, shapes=True):
                 continue
@@ -96,12 +97,20 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
         if out_sets:
             # Cacheables from OutSet of loaded subset
             out_cache = dict()
+            subset = instance.data["subset"][len("pointcache"):]
 
-            for node in out_sets:
-                name = node.rsplit(":", 1)[-1][:-len("OutSet")] or "Default"
+            for out_set in out_sets:
+
+                variant = out_set.rsplit(":", 1)[-1][:-len("OutSet")]
+                if variant:
+                    name = variant + "." + subset
+                else:
+                    name = subset
+
                 self.log.info(name)
-                namespace = lib.get_ns(node)
-                set_member = cmds.sets(node, query=True) or []
+
+                namespace = lib.get_ns(out_set)
+                set_member = cmds.sets(out_set, query=True) or []
                 cacheables = lib.pick_cacheable(set_member)
                 cacheables = lib.get_visible_in_frame_range(cacheables,
                                                             int(start_frame),
@@ -134,6 +143,9 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 created = True
 
                 instance.data.update(source_data)
+
+                # New subset name
+                #
                 instance.data["subset"] = ".".join(["pointcache",
                                                     namespace,
                                                     name])
