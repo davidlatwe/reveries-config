@@ -1133,7 +1133,10 @@ def apply_shaders(relationships,
                 cmds.sets(surface, forceElement=shader)
             except RuntimeError as e:
                 if "Unable to update render layer adjustment" not in str(e):
-                    raise e
+                    log.error("RuntimeError -> Command: cmds.sets('%s', "
+                              "forceElement='%s')" % (surface, shader))
+                    log.error(e)
+                    continue
 
                 log.warning("Assign failed due to 'Unable to update render "
                             "layer adjustment': %s @ %s" % (shader, surface))
