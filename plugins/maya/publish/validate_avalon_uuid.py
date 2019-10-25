@@ -136,6 +136,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
             ids = set()
             for node in nodes:
                 id = utils.get_id(node)
+                if id is None:
+                    continue
                 if id not in ids:
                     ids.add(id)
                 else:
