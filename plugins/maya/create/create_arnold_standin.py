@@ -33,6 +33,5 @@ class ArnoldStandInCreator(avalon.maya.Creator):
 
         self.data["deadlinePriority"] = priority
         self.data["deadlinePool"] = ["none"] + deadline["pool"]
-        self.data["deadlineGroup"] = deadline["group"]
 
         return put_instance_icon(super(ArnoldStandInCreator, self).process())

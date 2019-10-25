@@ -71,7 +71,6 @@ class RenderCreator(avalon.maya.Creator):
 
         self.data["deadlinePriority"] = priority
         self.data["deadlinePool"] = ["none"] + deadline["pool"]
-        self.data["deadlineGroup"] = deadline["group"]
         self.data["deadlineFramesPerTask"] = 1
         self.data["renderType"] = variant
         self.data["publishOrder"] = 999
