@@ -46,8 +46,10 @@ class ExtractRig(PackageExtractor):
             hasher.update_points()
             hasher.update_normals()
             hasher.update_uvmap()
-            # It must be one mesh paring to one transform.
-            geo_id_and_hash[id] = hasher.digest()
+            # May have duplicated Id
+            if id not in geo_id_and_hash:
+                geo_id_and_hash[id] = list()
+            geo_id_and_hash[id].append(hasher.digest())
             hasher.clear()
 
         packager.add_data({"modelProfile": geo_id_and_hash})
