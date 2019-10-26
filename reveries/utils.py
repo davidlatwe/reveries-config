@@ -1,3 +1,4 @@
+# -*-coding: utf-8
 
 import os
 import tempfile
@@ -7,6 +8,7 @@ import shutil
 import weakref
 import getpass
 import pymongo
+import datetime
 
 from distutils.dir_util import copy_tree
 
@@ -15,6 +17,15 @@ from avalon import io, Session
 import pyblish.api
 import avalon
 from pyblish_qml.ipc import formatting
+
+
+class LocalTZ(datetime.tzinfo):
+    """Local time zone info, I guess. ¯\_(ツ)_/¯ """
+    delta = datetime.datetime.now() - datetime.datetime.utcnow()
+    utcoffset = dst = lambda self, dt: self.delta
+
+
+localtz = LocalTZ()
 
 
 def temp_dir(prefix="pyblish_tmp_"):

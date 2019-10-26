@@ -208,3 +208,23 @@ def before_create_reference(reference_node,
         reference_node.setRawFullName(path)
 
     return True
+
+
+_event_callbacks = {}
+
+
+def register_event_callback(token, event, func, data=None):
+    # API 2.0
+    callback_id = om.MEventMessage.addEventCallback(event, func, data)
+    _event_callbacks[token] = callback_id
+
+
+def deregister_event_callback(token):
+    callback_id = _event_callbacks.pop(token, None)
+    if callback_id:
+        om.MMessage.removeCallback(callback_id)
+
+
+def deregister_all_event_callbacks():
+    om.MMessage.removeCallbacks(list(_event_callbacks.values()))
+    _event_callbacks.clear()
