@@ -7,7 +7,7 @@ from maya import cmds
 from avalon import maya
 
 from reveries.plugins import PackageExtractor
-from reveries.maya import capsule, lib, utils
+from reveries.maya import capsule, utils
 
 
 class ExtractRig(PackageExtractor):
@@ -36,10 +36,8 @@ class ExtractRig(PackageExtractor):
             maya.maintained_selection(),
         ):
             with capsule.undo_chunk_when_no_undo():
-                # (NOTE) Current workflow may keep model stay loaded as
-                #   referenced in scene, but need to take extra care while
-                #   extracting. (Will be undone)
 
+                """(DEPRECATED, keeping namespaces)
                 # - Remove referenced subset's namespace before exporting
                 #   (Not keeping model namespace)
                 referenced_namespace = self.context.data["referencedNamespace"]
@@ -62,6 +60,7 @@ class ExtractRig(PackageExtractor):
                         cmds.file(loadReference=ref_node)
                         cmds.namespace(removeNamespace=namespace,
                                        mergeNamespaceWithRoot=True)
+                """
 
                 # - Remove loaded container member
                 #   If the mesh of the loaded model has been copied and edited
