@@ -28,32 +28,6 @@ class ExtractRig(PackageExtractor):
         package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
-        mesh_nodes = cmds.ls(self.member,
-                             type="mesh",
-                             noIntermediate=True,
-                             long=True)
-
-        # Hash model and collect Avalon UUID
-        geo_id_and_hash = dict()
-        hasher = utils.MeshHasher()
-        for mesh in mesh_nodes:
-            # Get ID
-            transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
-            id = utils.get_id(transform)
-            assert id is not None, ("Some mesh has no Avalon UUID. "
-                                    "This should not happend.")
-            hasher.set_mesh(mesh)
-            hasher.update_points()
-            hasher.update_normals()
-            hasher.update_uvmap()
-            # May have duplicated Id
-            if id not in geo_id_and_hash:
-                geo_id_and_hash[id] = list()
-            geo_id_and_hash[id].append(hasher.digest())
-            hasher.clear()
-
-        packager.add_data({"modelProfile": geo_id_and_hash})
-
         # Perform extraction
         self.log.info("Performing extraction..")
         with contextlib.nested(
@@ -99,6 +73,13 @@ class ExtractRig(PackageExtractor):
                 for container in self.context.data["RootContainers"]:
                     cmds.delete(container)
 
+                mesh_nodes = cmds.ls(self.member,
+                                     type="mesh",
+                                     noIntermediate=True,
+                                     long=True)
+                geo_id_and_hash = self.hash(set(mesh_nodes))
+                packager.add_data({"modelProfile": geo_id_and_hash})
+
                 cmds.select(cmds.ls(self.member), noExpand=True)
 
                 cmds.file(entry_path,
@@ -120,3 +101,30 @@ class ExtractRig(PackageExtractor):
             name=self.data["subset"],
             path=entry_path)
         )
+
+    def hash(self, mesh_nodes):
+        # Hash model and collect Avalon UUID
+        geo_id_and_hash = dict()
+        hasher = utils.MeshHasher()
+        for mesh in mesh_nodes:
+            # Get ID
+            transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
+            id = utils.get_id(transform)
+            assert id is not None, ("Some mesh has no Avalon UUID. "
+                                    "This should not happend.")
+            hasher.set_mesh(mesh)
+            hasher.update_points()
+            hasher.update_normals()
+            hasher.update_uvmap()
+
+            result = hasher.digest()
+            result["hierarchy"] = transform
+
+            # May have duplicated Id
+            if id not in geo_id_and_hash:
+                geo_id_and_hash[id] = list()
+            geo_id_and_hash[id].append(result)
+
+            hasher.clear()
+
+        return geo_id_and_hash
