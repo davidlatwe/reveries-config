@@ -50,27 +50,6 @@ class ExtractModel(PackageExtractor):
                              long=True)
         clay_shader = "initialShadingGroup"
 
-        # Hash model and collect Avalon UUID
-        geo_id_and_hash = dict()
-        hasher = utils.MeshHasher()
-        for mesh in mesh_nodes:
-            # Get ID
-            transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
-            id = utils.get_id(transform)
-            assert id is not None, ("Some mesh has no Avalon UUID. "
-                                    "This should not happend.")
-            hasher.set_mesh(mesh)
-            hasher.update_points()
-            hasher.update_normals()
-            hasher.update_uvmap()
-            # May have duplicated Id
-            if id not in geo_id_and_hash:
-                geo_id_and_hash[id] = list()
-            geo_id_and_hash[id].append(hasher.digest())
-            hasher.clear()
-
-        packager.add_data({"modelProfile": geo_id_and_hash})
-
         # Perform extraction
         self.log.info("Extracting %s" % str(self.member))
         cmds.select(self.member, noExpand=True)
@@ -85,6 +64,9 @@ class ExtractModel(PackageExtractor):
             # Remove all stray shapes, ensure no intermediate nodes
             all_meshes = set(cmds.ls(self.member, type="mesh", long=True))
             cmds.delete(list(all_meshes - set(mesh_nodes)))
+
+            geo_id_and_hash = self.hash(set(mesh_nodes))
+            packager.add_data({"modelProfile": geo_id_and_hash})
 
             cmds.file(
                 entry_path,
@@ -138,3 +120,30 @@ class ExtractModel(PackageExtractor):
         packager.add_data({
             "entryFileName": entry_file,
         })
+
+    def hash(self, mesh_nodes):
+        # Hash model and collect Avalon UUID
+        geo_id_and_hash = dict()
+        hasher = utils.MeshHasher()
+        for mesh in mesh_nodes:
+            # Get ID
+            transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
+            id = utils.get_id(transform)
+            assert id is not None, ("Some mesh has no Avalon UUID. "
+                                    "This should not happend.")
+            hasher.set_mesh(mesh)
+            hasher.update_points()
+            hasher.update_normals()
+            hasher.update_uvmap()
+
+            result = hasher.digest()
+            result["hierarchy"] = transform
+
+            # May have duplicated Id
+            if id not in geo_id_and_hash:
+                geo_id_and_hash[id] = list()
+            geo_id_and_hash[id].append(result)
+
+            hasher.clear()
+
+        return geo_id_and_hash
