@@ -7,8 +7,9 @@
 1. Select geometries
 2. Chose the version to compare
 3. Run hash if comparing with scene nodes
-4. Generate TODO list or objectSet ?
+4. Generate TODO list or objectSet ? NO
 
+# DIY
 * After first comparing, generate an objectSet to log the difference
 * Rigger working on adopting changes, and remove meshes from that set if done
 * Work interrupted, or maybe newer version of model is out
