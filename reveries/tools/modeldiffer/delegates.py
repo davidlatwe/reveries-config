@@ -1,6 +1,7 @@
 
 from avalon.vendor.Qt import QtWidgets, QtCore
 from avalon.vendor import qtawesome
+from . import models
 
 
 class DiffDelegate(QtWidgets.QStyledItemDelegate):
@@ -27,6 +28,8 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
         ("delicious", "#6A6A6A"),  # UV Dimmed
     ]
 
+    DiffStateRole = models.ComparerModel.DiffStateRole
+
     def __init__(self, parent=None):
         super(DiffDelegate, self).__init__(parent)
 
@@ -52,9 +55,9 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
         return size
 
     def paint(self, painter, option, index):
-        super(DiffDelegate, self).paint(painter, option, index)
+        # super(DiffDelegate, self).paint(painter, option, index)
 
-        states = index.data(QtCore.Qt.DecorationRole)
+        states = index.data(self.DiffStateRole)
         name_state, points_state, uvmap_state = states
 
         name_pixmap = self.name_pixmap[name_state]

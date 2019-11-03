@@ -1,31 +1,33 @@
 
 import logging
-from maya import cmds
 
 from avalon.tools import models
 from avalon.vendor import qtawesome
 from avalon.vendor.Qt import QtGui, QtCore
 from avalon import api, io
 
-from ....maya import utils, pipeline
+from . import lib
+
+
+SIDE_A = "origin"
+SIDE_B = "contrast"
+
+SIDE_A_DATA = "originData"
+SIDE_B_DATA = "contrastData"
+
+SIDE_COLOR = {
+    SIDE_A: "#ECD781",
+    SIDE_B: "#E79A73",
+}
 
 
 main_logger = logging.getLogger("modeldiffer")
 
 
-def is_supported_loader(name):
-    return name in ("ModelLoader",)  # "RigLoader")
-
-
-def is_supported_subset(name):
-    return any(name.startswith(family)
-               for family in ("model",))  # "rig"))
-
-
-class OriginsModel(QtGui.QStandardItemModel):
+class HostContainerListModel(QtGui.QStandardItemModel):
 
     def __init__(self, parent=None):
-        super(OriginsModel, self).__init__(parent=parent)
+        super(HostContainerListModel, self).__init__(parent=parent)
         self.placeholder_item = QtGui.QStandardItem(
             qtawesome.icon("fa.hand-o-right", color="white"),
             "< Select Container.. >"
@@ -36,13 +38,16 @@ class OriginsModel(QtGui.QStandardItemModel):
         self.clear()
         self.blockSignals(False)
 
+        host = api.registered_host()
+        if host is None:
+            return
+
         self.beginResetModel()
 
         self.appendRow(self.placeholder_item)
 
-        host = api.registered_host()
         for container in host.ls():
-            if is_supported_loader(container["loader"]):
+            if lib.is_supported_loader(container["loader"]):
                 item = QtGui.QStandardItem(container["namespace"][1:])
 
                 item.setData(container, QtCore.Qt.UserRole)
@@ -52,10 +57,10 @@ class OriginsModel(QtGui.QStandardItemModel):
         self.endResetModel()
 
 
-class ContrastModel(QtGui.QStandardItemModel):
+class DatabaseDocumentModel(QtGui.QStandardItemModel):
 
     def __init__(self, level, parent=None):
-        super(ContrastModel, self).__init__(parent=parent)
+        super(DatabaseDocumentModel, self).__init__(parent=parent)
         self.lister = {
             "silo": self.list_silos,
             "asset": self.list_assets,
@@ -102,7 +107,7 @@ class ContrastModel(QtGui.QStandardItemModel):
         if asset_id is not None:
             filter = {"type": "subset", "parent": asset_id}
             for subset in io.find(filter, projection={"name": True}):
-                if is_supported_subset(subset["name"]):
+                if lib.is_supported_subset(subset["name"]):
                     yield subset
 
     def list_versions(self, subset_id):
@@ -116,14 +121,19 @@ class ContrastModel(QtGui.QStandardItemModel):
 class ComparerItem(models.Item):
     """Group by unique name and compare within same Id"""
 
+    sides = [
+        SIDE_A,
+        SIDE_B,
+    ]
+
     def __init__(self, name, id):
         self.name = name
         self.id = id
 
         data = {
+            SIDE_A_DATA: None,
+            SIDE_B_DATA: None,
             "matchMethod": 0,
-            "originData": None,
-            "contrastData": None,
             "points": 2,
             "uvmap": 2,
         }
@@ -132,55 +142,49 @@ class ComparerItem(models.Item):
     def __eq__(self, other):
         return self.name == other
 
-    def __repr__(self):
-        return self.name
+    def get_this(self, side):
+        return side + "Data"
 
-    def add_origin(self, data, matched=0):
-        self.update({"originData": data})
+    def get_other(self, side):
+        return self.sides[not self.sides.index(side)] + "Data"
+
+    def add_this(self, side, data, matched=0):
+        this = self.get_this(side)
+        self.update({this: data})
         self["matchMethod"] = matched
 
-    def add_contrast(self, data, matched=0):
-        self.update({"contrastData": data})
-        self["matchMethod"] = matched
+    def has_other(self, side):
+        other = self.get_other(side)
+        return self[other] is not None
 
-    def has_origin(self):
-        return self["originData"] is not None
-
-    def has_contrast(self):
-        return self["contrastData"] is not None
-
-    def pop_origin(self):
+    def pop_this(self, side):
+        other = self.get_this(side)
         self.update({
+            other: None,
             "matchMethod": 0,
-            "originData": None,
-            "points": 2,
-            "uvmap": 2,
-        })
-
-    def pop_contrast(self):
-        self.update({
-            "matchMethod": 0,
-            "contrastData": None,
             "points": 2,
             "uvmap": 2,
         })
 
     def compare(self):
-        origin = self["originData"]
-        contrast = self["contrastData"]
+        side_a = self[SIDE_A_DATA]
+        side_b = self[SIDE_B_DATA]
         self.update({
-            "points": int(origin["points"] == contrast["points"]),
-            "uvmap": int(origin["uvmap"] == contrast["uvmap"]),
+            "points": int(side_a["points"] == side_b["points"]),
+            "uvmap": int(side_a["uvmap"] == side_b["uvmap"]),
         })
 
 
 class ComparerModel(models.TreeModel):
 
-    Columns = ["origin", "diff", "contrast"]
+    Columns = ["diff", SIDE_A, SIDE_B]
+
+    DiffStateRole = QtCore.Qt.UserRole + 2
+    HostSelectRole = QtCore.Qt.UserRole + 3
 
     HEADER_ICONS = [
-        ("home", "#BEBEBE"),
-        ("cloud", "#BEBEBE"),
+        ("cubes", SIDE_COLOR[SIDE_A]),
+        ("cubes", SIDE_COLOR[SIDE_B]),
         ("adjust", "#BEBEBE"),
     ]
 
@@ -191,18 +195,10 @@ class ComparerModel(models.TreeModel):
             qtawesome.icon("fa.{}".format(icon), color=color)
             for icon, color in self.HEADER_ICONS
         ]
-        self._hasher = utils.MeshHasher()
-        self._use_long_name = True
+
+        self._use_long_name = False
         self._origin_shared_root = ""
         self._contrast_shared_root = ""
-
-    def hash(self, mesh):
-        self._hasher.clear()
-        self._hasher.set_mesh(mesh)
-        self._hasher.update_points()
-        self._hasher.update_uvmap()
-
-        return self._hasher.digest()
 
     def extract_shared_root(self, nodes):
         shared_root = ""
@@ -220,51 +216,17 @@ class ComparerModel(models.TreeModel):
     def set_use_long_name(self, value):
         self._use_long_name = value
 
-    def refresh_origin(self, container=None):
-        """
-        Args:
-            container (dict, optional): container object
-        """
-
-        if container:
-            # From Avalon container node (with node name comparing)
-            #
-            # In this mode, we know where the hierarchy root is, so
-            # we can compare with node names.
-            #
-            root = pipeline.get_group_from_container(container["objectName"])
-
-            meshes = cmds.ls(cmds.sets(container["objectName"], query=True),
-                             type="mesh",
-                             noIntermediate=True,
-                             long=True)
-        else:
-            # From selection (only compare with mesh hash values)
-            #
-            # In this mode, we can not be sure that the mesh long name is
-            # comapreable, so the name will not be compared.
-            #
-            root = None
-
-            meshes = cmds.listRelatives(cmds.ls(selection=True, long=True),
-                                        shapes=True,
-                                        noIntermediate=True,
-                                        fullPath=True,
-                                        type="mesh")
-
-        if not meshes:
-            main_logger.warning("No mesh selected..")
-            return
+    def refresh_side(self, side, profile, host=False):
 
         items = self._root_item.children()
         root_index = QtCore.QModelIndex()
 
-        # Remove previous origins
+        # Remove previous data of this side
 
         remove = list()
         for item in items:
-            if item.has_contrast():
-                item.pop_origin()
+            if item.has_other(side):
+                item.pop_this(side)
             else:
                 remove.append(item)
 
@@ -274,141 +236,36 @@ class ComparerModel(models.TreeModel):
             items.remove(item)
             self.endRemoveRows()
 
-        # Place new origins
+        # Place new data
 
-        dataset = dict()
-
-        for mesh in meshes:
-            transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
-
-            if root and transform.startswith(root):
-                namespace = container["namespace"][1:] + ":"
-                name = transform[len(root):].replace(namespace, "")
-            else:
-                name = transform
-
-            data = {
-                "fullPath": transform,
-                "points": None,
-                "uvmap": None,
-            }
-            data.update(self.hash(mesh))
-
-            dataset[name] = data
-
-        shared_root = self.extract_shared_root(dataset)
+        shared_root = self.extract_shared_root(profile)
         self._origin_shared_root = shared_root
 
-        for name, data in dataset.items():
+        for name, data in profile.items():
 
-            long_name = name[len(shared_root):]
-            names = long_name.split("|")
-            short_name = ">" * (len(names) - 1) + "| " + names[-1]
-
-            data["longName"] = long_name
-            data["shortName"] = short_name
+            data["longName"] = data.get("fullPath", name)
+            data["shortName"] = name[len(shared_root):]
+            data["fromHost"] = host
 
             if name in items:
-                # Has matched contrast
+                # Has matched
                 item = items[items.index(name)]
-                item.add_origin(data, matched=1)
-                item.compare()
-            else:
-                id = utils.get_id(data["fullPath"])
-
-                for item in items:
-                    if item.id == id:
-                        item.add_origin(data, matched=2)
-                        item.compare()
-                        break
-
-                else:
-                    item = ComparerItem(name, id)
-                    item.add_origin(data)
-                    # Append origin
-                    last = self.rowCount(root_index)
-                    self.beginInsertRows(root_index, last, last)
-                    self.add_child(item)
-                    self.endInsertRows()
-
-    def refresh_contrast(self, version_id):
-        representation = io.find_one({"type": "representation",
-                                      "name": "mayaBinary",
-                                      "parent": version_id})
-        if representation is None:
-            main_logger.critical("Representation not found. This is a bug.")
-            return
-
-        model_profile = representation["data"].get("modelProfile")
-
-        if model_profile is None:
-            main_logger.critical("'data.modelProfile' not found."
-                                 "This is a bug.")
-            return
-
-        items = self._root_item.children()
-        root_index = QtCore.QModelIndex()
-
-        # Remove previous contrasts
-
-        remove = list()
-        for item in list(items):
-            if item.has_origin():
-                item.pop_contrast()
-            else:
-                remove.append(item)
-
-        for item in remove:
-            row = item.row()
-            self.beginRemoveRows(root_index, row, row)
-            items.remove(item)
-            self.endRemoveRows()
-
-        # Place new contrasts
-
-        dataset = dict()
-
-        for id, meshes_data in model_profile.items():
-            for data in meshes_data:
-
-                name = data.pop("hierarchy")
-                # No need to compare normals
-                data.pop("normals")
-
-                data["avalonId"] = id
-
-                dataset[name] = data
-
-        shared_root = self.extract_shared_root(dataset)
-        self._contrast_shared_root = shared_root
-
-        for name, data in dataset.items():
-
-            long_name = name[len(shared_root):]
-            names = long_name.split("|")
-            short_name = ">" * (len(names) - 1) + "| " + names[-1]
-
-            data["longName"] = long_name
-            data["shortName"] = short_name
-
-            if name in items:
-                # Has matched contrast
-                item = items[items.index(name)]
-                item.add_contrast(data, matched=1)
+                item.add_this(side, data, matched=1)
                 item.compare()
             else:
                 id = data["avalonId"]
 
                 for item in items:
                     if item.id == id:
-                        item.add_contrast(data, matched=2)
+                        # Matched by Id
+                        item.add_this(side, data, matched=2)
                         item.compare()
                         break
 
                 else:
+                    # No match
                     item = ComparerItem(name, id)
-                    item.add_contrast(data)
-                    # Append contrast
+                    item.add_this(side, data)
                     last = self.rowCount(root_index)
                     self.beginInsertRows(root_index, last, last)
                     self.add_child(item)
@@ -422,25 +279,88 @@ class ComparerModel(models.TreeModel):
         if role == QtCore.Qt.DisplayRole:
             column = index.column()
 
-            if self.Columns[column] == "origin":
+            if self.Columns[column] == SIDE_A:
                 item = index.internalPointer()
-                if not item["originData"]:
+                if not item.get(SIDE_A_DATA):
                     return
                 if self._use_long_name:
-                    return item["originData"]["longName"]
+                    return item[SIDE_A_DATA]["longName"]
                 else:
-                    return item["originData"]["shortName"]
+                    return item[SIDE_A_DATA]["shortName"]
 
-            if self.Columns[column] == "contrast":
+            if self.Columns[column] == SIDE_B:
                 item = index.internalPointer()
-                if not item["contrastData"]:
+                if not item.get(SIDE_B_DATA):
                     return
                 if self._use_long_name:
-                    return item["contrastData"]["longName"]
+                    return item[SIDE_B_DATA]["longName"]
                 else:
-                    return item["contrastData"]["shortName"]
+                    return item[SIDE_B_DATA]["shortName"]
 
-        if role == QtCore.Qt.DecorationRole:
+        if role == QtCore.Qt.ForegroundRole:
+            column = index.column()
+
+            if self.Columns[column] == SIDE_A:
+                item = index.internalPointer()
+                if not item.get(SIDE_A_DATA):
+                    return
+                if not item[SIDE_A_DATA]["fromHost"]:
+                    return QtGui.QColor("gray")
+
+            if self.Columns[column] == SIDE_B:
+                item = index.internalPointer()
+                if not item.get(SIDE_B_DATA):
+                    return
+                if not item[SIDE_B_DATA]["fromHost"]:
+                    return QtGui.QColor("gray")
+
+        if role == QtCore.Qt.FontRole:
+            column = index.column()
+
+            if self.Columns[column] == SIDE_A:
+                item = index.internalPointer()
+                if not item.get(SIDE_A_DATA):
+                    return
+                if item[SIDE_A_DATA]["fromHost"]:
+                    bold = QtGui.QFont()
+                    bold.setBold(True)
+                    return bold
+                else:
+                    return
+
+            if self.Columns[column] == SIDE_B:
+                item = index.internalPointer()
+                if not item.get(SIDE_B_DATA):
+                    return
+                if item[SIDE_B_DATA]["fromHost"]:
+                    bold = QtGui.QFont()
+                    bold.setBold(True)
+                    return bold
+                else:
+                    return
+
+        if role == self.HostSelectRole:
+            column = index.column()
+
+            if self.Columns[column] == SIDE_A:
+                item = index.internalPointer()
+                if not item.get(SIDE_A_DATA):
+                    return
+                if item[SIDE_A_DATA]["fromHost"]:
+                    return item[SIDE_A_DATA]["longName"]
+                else:
+                    return
+
+            if self.Columns[column] == SIDE_B:
+                item = index.internalPointer()
+                if not item.get(SIDE_B_DATA):
+                    return
+                if item[SIDE_B_DATA]["fromHost"]:
+                    return item[SIDE_B_DATA]["longName"]
+                else:
+                    return
+
+        if role == self.DiffStateRole:
             column = index.column()
 
             if self.Columns[column] == "diff":
@@ -457,20 +377,20 @@ class ComparerModel(models.TreeModel):
     def headerData(self, section, orientation, role):
 
         if role == QtCore.Qt.DisplayRole:
-            if section == self.Columns.index("origin"):
-                return self._origin_shared_root
+            if section == self.Columns.index(SIDE_A):
+                return "A"
 
-            if section == self.Columns.index("contrast"):
-                return "Published"
+            if section == self.Columns.index(SIDE_B):
+                return "B"
 
             if section == self.Columns.index("diff"):
-                return "Diff State"
+                return "Diff"
 
         if role == QtCore.Qt.DecorationRole:
-            if section == self.Columns.index("origin"):
+            if section == self.Columns.index(SIDE_A):
                 return self.header_icon[0]
 
-            if section == self.Columns.index("contrast"):
+            if section == self.Columns.index(SIDE_B):
                 return self.header_icon[1]
 
             if section == self.Columns.index("diff"):

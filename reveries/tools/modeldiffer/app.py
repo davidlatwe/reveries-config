@@ -32,43 +32,92 @@ class Window(QtWidgets.QWidget):
         self.setWindowTitle("Model Differ")
         self.setWindowFlags(QtCore.Qt.Window)
 
+        page = {
+            "tab": QtWidgets.QTabWidget(),
+        }
+
+        page["tab"].addTab(QtWidgets.QWidget(), "+")
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(page["tab"])
+
+        # Connect
+        page["tab"].currentChanged.connect(self.on_tab_changed)
+
+        # Init
+        self.page = page
+        self.create_tab()
+        self.resize(840, 720)
+
+    def on_tab_changed(self, index):
+        if index != 0:
+            return
+        self.create_tab()
+
+    def create_tab(self):
         panel = {
+            "body": QtWidgets.QWidget(),
+            "top": QtWidgets.QWidget(),
             "control": QtWidgets.QWidget(),
             "table": QtWidgets.QWidget(),
         }
 
         widget = {
-            "originSelector": views.OriginSelector(),
-            "contrastSelector": views.ContrastSelector(),
-            "comparerTable": views.ComparerTable(),
+            "label": QtWidgets.QLabel("Table Name:"),
+            "line": QtWidgets.QLineEdit(),
+            "nameChk": QtWidgets.QCheckBox("Show Long Name"),
+            "selectorA": views.SelectorWidget(side=views.SIDE_A),
+            "selectorB": views.SelectorWidget(side=views.SIDE_B),
+            "comparer": views.ComparingTable(),
             "statusLine": widgets.StatusLineWidget(main_logger, self),
         }
 
+        layout = QtWidgets.QHBoxLayout(panel["top"])
+        layout.addWidget(widget["label"])
+        layout.addWidget(widget["line"])
+        layout.addWidget(widget["nameChk"])
+
         layout = QtWidgets.QHBoxLayout(panel["control"])
-        layout.addWidget(widget["originSelector"])
-        layout.addWidget(widget["contrastSelector"])
+        layout.addWidget(widget["selectorA"])
+        layout.addWidget(widget["selectorB"])
 
         layout = QtWidgets.QVBoxLayout(panel["table"])
-        layout.addWidget(widget["comparerTable"])
+        layout.addWidget(widget["comparer"])
         layout.addWidget(widget["statusLine"])
 
-        layout = QtWidgets.QVBoxLayout(self)
+        layout = QtWidgets.QVBoxLayout(panel["body"])
+        layout.addWidget(panel["top"])
+        layout.addSpacing(-14)
         layout.addWidget(panel["control"])
-        layout.addWidget(panel["table"])
+        layout.addSpacing(-24)
+        layout.addWidget(panel["table"], stretch=True)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        tab = self.page["tab"]
+
+        # Add Tab
+        name = "New %d" % tab.count()
+        index = tab.addTab(panel["body"], name)
+        tab.setCurrentIndex(index)
+        widget["line"].setText(name)
 
         # Connect
+        widget["selectorA"].connect_comparer(widget["comparer"])
+        widget["selectorB"].connect_comparer(widget["comparer"])
+        widget["nameChk"].stateChanged.connect(
+            widget["comparer"].on_name_mode_changed)
+        widget["line"].textChanged.connect(
+            lambda text: tab.setTabText(index, text))
 
-        widget["originSelector"].origin_picked.connect(
-            widget["comparerTable"].on_origin_picked)
-        widget["originSelector"].origin_picked.connect(
-            widget["contrastSelector"].on_origin_picked)
 
-        widget["contrastSelector"].version_changed.connect(
-            widget["comparerTable"].on_version_changed)
+def register_host_profiler(method):
+    from . import lib
+    lib.profile_from_host = method
 
-        # Init
 
-        self.resize(840, 520)
+def register_host_selector(method):
+    from . import lib
+    lib.select_from_host = method
 
 
 def show():
@@ -79,13 +128,8 @@ def show():
     except (RuntimeError, AttributeError):
         pass
 
-    # Get Maya main window
-    top_level_widgets = QtWidgets.QApplication.topLevelWidgets()
-    mainwindow = next(widget for widget in top_level_widgets
-                      if widget.objectName() == "MayaWindow")
-
     with lib.application():
-        window = Window(parent=mainwindow)
+        window = Window(parent=None)
         window.setStyleSheet(style.load_stylesheet())
         window.show()
 
