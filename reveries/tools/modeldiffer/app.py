@@ -2,7 +2,7 @@
 import sys
 import logging
 
-from avalon import style
+from avalon import io, style
 from avalon.tools import lib
 from avalon.vendor.Qt import QtWidgets, QtCore
 from avalon.vendor import qtawesome
@@ -134,3 +134,8 @@ def show():
         window.show()
 
         module.window = window
+
+
+def cli():
+    io.install()
+    show()

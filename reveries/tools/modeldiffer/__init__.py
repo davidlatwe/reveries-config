@@ -1,5 +1,6 @@
 from .app import (
     show,
+    cli,
     register_host_profiler,
     register_host_selector,
 )
@@ -7,6 +8,7 @@ from .app import (
 
 __all__ = [
     "show",
+    "cli",
     "register_host_profiler",
     "register_host_selector",
 ]

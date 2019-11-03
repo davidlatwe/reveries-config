@@ -92,6 +92,18 @@ reveries.maya.tools.show('mayalookassigner')
         cmds.menuItem("Swap Modle", parent="Menu_LookDev",
                       command=interactive.swap_to_published_model)
 
+        # Rig tools
+        cmds.menuItem("Menu_Rig",
+                      label="Rig",
+                      tearOff=True,
+                      subMenu=True,
+                      parent=self._menu)
+
+        cmds.menuItem("Model Differ", parent="Menu_Rig", command="""
+import reveries.maya.tools
+reveries.maya.tools.show('modeldiffer')
+""")
+
         # XGen tools
         cmds.menuItem("Menu_XGen",
                       label="XGen",
