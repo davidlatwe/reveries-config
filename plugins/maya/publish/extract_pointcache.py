@@ -117,7 +117,7 @@ class ExtractPointCache(PackageExtractor):
         # (NOTE) Deprecated
         # io.wrap_abc(entry_path, [(cache_file, "ROOT")])
 
-        packager.add_data({"entryFileName": entry_path})
+        packager.add_data({"entryFileName": entry_file})
         self.add_range_data()
 
     def extract_FBXCache(self, packager):

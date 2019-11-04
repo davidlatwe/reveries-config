@@ -22,7 +22,7 @@ from maya import cmds, mel
 from maya.api import OpenMaya as om
 
 from ..vendor import six
-from ..utils import _C4Hasher, get_representation_path_
+from ..utils import _C4Hasher, get_representation_path_, localtz
 from .pipeline import (
     find_stray_textures,
     env_embedded_path,
@@ -669,8 +669,9 @@ class Identifier(object):
             time = datetime.fromtimestamp(stm)
         else:
             time = bson.ObjectId(address).generation_time
+            time = time.astimezone(localtz)
 
-        return time
+        return time.strftime("%Y%m%dT%H%M%SZ")
 
 
 _identifier = Identifier()

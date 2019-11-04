@@ -53,7 +53,23 @@ def install():
 
         cmds.menuItem(divider=True)
 
-        cmds.menuItem("Snap!", command=interactive.active_view_snapshot)
+        # Utilities
+        cmds.menuItem("Menu_Utilities",
+                      label="Utilities",
+                      tearOff=True,
+                      subMenu=True,
+                      parent=self._menu)
+
+        cmds.menuItem("Snap Shot", parent="Menu_Utilities",
+                      command=interactive.active_view_snapshot)
+
+        cmds.menuItem("Set Avalon Id", parent="Menu_Utilities",
+                      command=interactive.apply_avalon_uuid)
+
+        cmds.menuItem("Avalon Id Editor", parent="Menu_Utilities", command="""
+import reveries.maya.tools
+reveries.maya.tools.show('avalonideditor')
+""")
 
         # Rendering tools
         cmds.menuItem("Menu_Render",
@@ -86,11 +102,20 @@ import reveries.maya.tools
 reveries.maya.tools.show('mayalookassigner')
 """)
 
-        cmds.menuItem("Set AvalonUUID", parent="Menu_LookDev",
-                      command=interactive.apply_avalon_uuid)
+        # cmds.menuItem("Swap Modle", parent="Menu_LookDev",
+        #               command=interactive.swap_to_published_model)
 
-        cmds.menuItem("Swap Modle", parent="Menu_LookDev",
-                      command=interactive.swap_to_published_model)
+        # Rig tools
+        cmds.menuItem("Menu_Rig",
+                      label="Rig",
+                      tearOff=True,
+                      subMenu=True,
+                      parent=self._menu)
+
+        cmds.menuItem("Model Differ", parent="Menu_Rig", command="""
+import reveries.maya.tools
+reveries.maya.tools.show('modeldiffer')
+""")
 
         # XGen tools
         cmds.menuItem("Menu_XGen",
