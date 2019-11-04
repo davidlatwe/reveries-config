@@ -18,8 +18,8 @@ class Window(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(Window, self).__init__(parent=parent)
 
-        self.setWindowIcon(qtawesome.icon("fa.list-alt", color="#770822"))
-        self.setWindowTitle("AvalonID Editor")
+        self.setWindowIcon(qtawesome.icon("fa.list", color="#DFDFDF"))
+        self.setWindowTitle("Avalon Id Editor")
         self.setWindowFlags(QtCore.Qt.Window)
 
         selection_outline = view.SelectionOutline()
