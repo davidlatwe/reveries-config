@@ -77,3 +77,10 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
 
         x = rect.x() + center + half - (self.ICON_SIZE) - self.ICON_MARGIN
         painter.drawPixmap(x, y, uvmap_pixmap)
+
+
+class PathTextDelegate(QtWidgets.QStyledItemDelegate):
+
+    def paint(self, painter, option, index):
+        option.textElideMode = QtCore.Qt.ElideLeft
+        super(PathTextDelegate, self).paint(painter, option, index)

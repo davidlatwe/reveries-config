@@ -326,6 +326,7 @@ class ComparingTable(QtWidgets.QWidget):
             "proxy": QtCore.QSortFilterProxyModel(),
             "view": QtWidgets.QTreeView(),
             "diff": delegates.DiffDelegate(),
+            "path": delegates.PathTextDelegate(),
         }
 
         data["view"].setIndentation(20)
@@ -352,6 +353,13 @@ class ComparingTable(QtWidgets.QWidget):
         column = data["model"].Columns.index("diff")
         data["view"].setItemDelegateForColumn(column, diff_delegate)
 
+        path_delegate = data["path"]
+        column = data["model"].Columns.index(SIDE_A)
+        data["view"].setItemDelegateForColumn(column, path_delegate)
+        column = data["model"].Columns.index(SIDE_B)
+        data["view"].setItemDelegateForColumn(column, path_delegate)
+
+        # Set Model
         data["proxy"].setSourceModel(data["model"])
         data["view"].setModel(data["proxy"])
 
