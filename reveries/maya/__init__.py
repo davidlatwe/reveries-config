@@ -31,14 +31,7 @@ PYMEL_MOCK_FLAG = os.path.join(os.environ["MAYA_APP_DIR"], "pymel.mock")
 
 def _override():
     import avalon.maya.commands as commands
-    import avalon.maya.pipeline as pipeline
-    import avalon.maya.lib as lib
-
     from .pipeline import has_turntable, set_scene_timeline, set_resolution
-
-    # Override avalon.maya container node lister
-    log.info("Overriding <avalon.maya.pipeline._ls>")
-    pipeline._ls = lambda: lib.lsattr("id", pipeline.AVALON_CONTAINER_ID)
 
     # Override avalon.maya menu function
     log.info("Overriding <avalon.maya.commands.reset_frame_range>")
