@@ -44,7 +44,7 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
                                                     # than its members
             # verify objectSet has valid id
             if cmds.getAttr(objset + ".id") != "pyblish.avalon.instance":
-                self.log.debug("Skipped non-avalon Set: \"%s\" " % objset)
+                # self.log.debug("Skipped non-avalon Set: \"%s\" " % objset)
                 continue
 
             try:
