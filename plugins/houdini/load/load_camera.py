@@ -76,6 +76,9 @@ class CameraLoader(HoudiniBaseLoader, api.Loader):
         node = container["node"]
         node.destroy()
 
+    def switch(self, container, representation):
+        self.update(container, representation)
+
     def create_and_connect(self, node, node_type, name=None):
         """Create a node within a node which and connect it to the input
 

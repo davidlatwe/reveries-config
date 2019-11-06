@@ -94,3 +94,6 @@ class AbcLoader(HoudiniBaseLoader, api.Loader):
 
         node = container["node"]
         node.destroy()
+
+    def switch(self, container, representation):
+        self.update(container, representation)
