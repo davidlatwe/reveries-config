@@ -1,6 +1,7 @@
 
 import pyblish.api
 from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries.plugins import context_process
 
 
 class SelectFosterParent(MayaSelectInvalidInstanceAction):
@@ -8,7 +9,7 @@ class SelectFosterParent(MayaSelectInvalidInstanceAction):
     label = "選取 fosterParent"
 
 
-class ValidateNoFosterParent(pyblish.api.ContextPlugin):
+class ValidateNoFosterParent(pyblish.api.InstancePlugin):
     """不可以有 fosterParent 存在
 
     Publish model，rig 的時候，場景不可以有任何 fosterParent 的殘留，如果有的話，
@@ -31,6 +32,9 @@ class ValidateNoFosterParent(pyblish.api.ContextPlugin):
     families = [
         "reveries.model",
         "reveries.rig",
+        "reveries.look",
+        "reveries.xgen",
+        "reveries.mayashare",
     ]
     actions = [
         pyblish.api.Category("選取"),
@@ -42,6 +46,13 @@ class ValidateNoFosterParent(pyblish.api.ContextPlugin):
         from maya import cmds
         return cmds.ls(type="fosterParent")
 
+    @context_process
     def process(self, context):
-        if self.get_invalid(context):
-            raise Exception("Found 'fosterParent' nodes.")
+        from maya import cmds
+        invalid = self.get_invalid(context)
+        if invalid:
+            for node in invalid:
+                if not cmds.referenceQuery(node, isNodeReferenced=True):
+                    raise Exception("Found 'fosterParent' nodes.")
+            else:
+                self.log.warning("Found 'fosterParent' nodes in reference.")
