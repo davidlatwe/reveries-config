@@ -31,7 +31,7 @@ class AssetOutliner(QtWidgets.QWidget):
         view.setHeaderHidden(False)
         view.setIndentation(10)
 
-        from_all_asset_btn = QtWidgets.QPushButton("Get All Assets")
+        from_all_asset_btn = QtWidgets.QPushButton("Get All Loaded Assets")
         from_selection_btn = QtWidgets.QPushButton("Get Assets From Selection")
 
         layout.addWidget(title)
