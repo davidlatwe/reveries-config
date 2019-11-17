@@ -45,6 +45,7 @@ class AssetModel(models.TreeModel):
                     "subset": item["subsets"][namespace],
                     "namespace": namespace,
                     "looks": item["looks"],
+                    "nodes": item["nodes"][namespace] or None,
                     "icon": "file-o"
                 })
                 asset_item.add_child(child)

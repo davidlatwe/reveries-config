@@ -107,42 +107,59 @@ class AssetOutliner(QtWidgets.QWidget):
         items = self.get_selected_items()
 
         # Collect the asset item entries per asset
-        assets = dict()
+        asset_nodes = dict()
         for item in items:
+            nodes = list()
             asset_name = item["asset"]["name"]
 
-            namespaces = item.get("namespace", item["namespaces"])
-            nodes = commands.get_groups_from_namespaces(namespaces)
+            if isinstance(item["nodes"], list):
+                # cached
+                nodes = item["nodes"]
 
-            assets[item.get("namespace") or asset_name] = item
-            assets[item.get("namespace") or asset_name]["nodes"] = nodes
+            elif "subset" in item:
+                namespace = item["namespace"]
+                if item["nodes"] is None:
+                    group = commands.group_from_namespace(namespace)
+                    if group is not None:
+                        nodes.append(group)
+                else:
+                    nodes += item["nodes"]
 
-        return assets
+            else:
+                for namespace in item["namespaces"]:
+                    namespace_nodes = item["nodes"][namespace]
+                    if namespace_nodes is None:
+                        group = commands.group_from_namespace(namespace)
+                        if group is not None:
+                            nodes.append(group)
+                    else:
+                        nodes += namespace_nodes
 
-    def select_asset_from_items(self):
+            item["nodes"] = nodes  # cache
+            asset_nodes[item.get("namespace") or asset_name] = item
+
+        return asset_nodes
+
+    def select_asset_from_items(self):  #
         """Select nodes from listed asset"""
 
-        items = self.get_nodes()
+        asset_nodes = self.get_nodes()
         nodes = []
-        for item in items.values():
+        for item in asset_nodes.values():
             nodes.extend(item["nodes"])
 
         commands.select(nodes)
 
     def remove_look_from_items(self):
-        namespaces = set()
+
+        asset_nodes = self.get_nodes()
+        nodes = []
         asset_ids = set()
-
-        for item in self.get_selected_items():
-            namespace = item.get("namespace")
-            if namespace:
-                namespaces.add(namespace)
-            else:
-                namespaces.update(item["namespaces"])
-
+        for item in asset_nodes.values():
+            nodes.extend(item["nodes"])
             asset_ids.add(str(item["asset"]["_id"]))
 
-        commands.remove_look(namespaces, asset_ids)
+        commands.remove_look(nodes, asset_ids)
 
     def right_mouse_menu(self, pos):
         """Build RMB menu for asset outliner"""

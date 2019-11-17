@@ -17,6 +17,8 @@ from ...pipeline import (
     parse_container,
 )
 
+from .models import UNDEFINED_SUBSET
+
 
 log = logging.getLogger(__name__)
 
@@ -34,28 +36,24 @@ def select(nodes):
     cmds.select(nodes, noExpand=True)
 
 
-def get_groups_from_namespaces(namespaces):
+def group_from_namespace(namespace):
     """Return group nodes from namespace
 
     Args:
-        namespaces (str, unicode or set): Target subsets' namespaces
+        namespace (str, unicode): Target subset's namespace
 
     Returns:
-        list: List of group node in long name
+        str: group node in long name
 
     """
-    if isinstance(namespaces, six.string_types):
-        namespaces = [namespaces]
+    container = get_container_from_namespace(namespace)
+    return get_group_from_container(container)
 
-    groups = list()
 
-    for namespace in namespaces:
-        container = get_container_from_namespace(namespace)
-        group = get_group_from_container(container)
-        if group is not None:
-            groups.append(group)
-
-    return groups
+def get_asset_id(node):
+    if not lib.hasAttr(node, lib.AVALON_ID_ATTR_LONG):
+        return None
+    return utils.get_id_namespace(node)
 
 
 def list_descendents(nodes):
@@ -83,23 +81,47 @@ def list_descendents(nodes):
 def get_selected_nodes():
     """Get information from current selection"""
 
+    host = api.registered_host()
+
+    nodes = list()
+
     selection = cmds.ls(selection=True, long=True)
     hierarchy = list_descendents(selection)
-    nodes = list(set(selection + hierarchy))
+
+    containers = list(host.ls())
+
+    for node in set(selection + hierarchy):
+
+        asset_id = get_asset_id(node)
+        if asset_id is None:
+            continue
+
+        for container in containers:
+            if cmds.sets(node, isMember=container["objectName"]):
+                subset = container["name"]
+                namespace = container["namespace"]
+                break
+        else:
+            subset = UNDEFINED_SUBSET
+            namespace = lib.get_ns(node)
+
+        nodes.append({
+            "node": node,
+            "assetId": asset_id,
+            "subset": subset,
+            "namespace": namespace,
+        })
 
     return nodes
 
 
 def get_all_asset_nodes():
-    """Get all assets from the scene, container based
-
-    Returns:
-        list: list of dictionaries
-    """
+    """Get all assets from the scene, container based"""
 
     host = api.registered_host()
 
-    nodes = []
+    nodes = list()
+
     for container in host.ls():
         # We only interested in surface assets !
         # (TODO): This black list should be somewhere else
@@ -110,48 +132,30 @@ def get_all_asset_nodes():
 
         # Gather all information
         container_name = container["objectName"]
-        nodes += cmds.sets(container_name, query=True, nodesOnly=True) or []
+        subset = container["name"]
+        namespace = container["namespace"]
+
+        for node in cmds.ls(cmds.sets(container_name,
+                                      query=True,
+                                      nodesOnly=True),
+                            long=True):
+
+            asset_id = get_asset_id(node)
+            if asset_id is None:
+                continue
+
+            nodes.append({
+                "node": node,
+                "assetId": asset_id,
+                "subset": subset,
+                "namespace": namespace,
+            })
 
     return nodes
 
 
-def get_asset_id_from_node(node):
-    """Get asset id by lookup container that this node belongs to
-    Args:
-        node (str): node long name
-
-    Returns:
-        str
-
-    """
-    return utils.get_id_namespace(node)
-
-
-def create_asset_id_hash(nodes):
-    """Create a hash based on `AvalonID` attribute value
-    Args:
-        nodes (list): a list of nodes
-
-    Returns:
-        dict
-    """
-    node_id_hash = dict()
-    for node in cmds.ls(nodes, long=True):
-        if not lib.hasAttr(node, lib.AVALON_ID_ATTR_LONG):
-            continue
-        asset_id = get_asset_id_from_node(node)
-        if asset_id is None:
-            continue
-
-        if asset_id not in node_id_hash:
-            node_id_hash[asset_id] = list()
-        node_id_hash[asset_id].append(node)
-
-    return node_id_hash
-
-
 def create_items_from_nodes(nodes):
-    """Create an item for the view based the container and content of it
+    """Create an item for the view
 
     It fetches the look document based on the asset ID found in the content.
     The item will contain all important information for the tool to work.
@@ -160,27 +164,32 @@ def create_items_from_nodes(nodes):
     it will log a warning message.
 
     Args:
-        nodes (list): list of maya nodes
+        nodes (set): A set of maya nodes
 
     Returns:
         list of dicts
 
     """
+    if not nodes:
+        return []
 
     asset_view_items = []
 
-    id_hashes = create_asset_id_hash(nodes)
-    if not id_hashes:
-        return asset_view_items
+    id_hashes = dict()
+    for node in nodes:
+        asset_id = node["assetId"]
+        if asset_id not in id_hashes:
+            id_hashes[asset_id] = list()
+        id_hashes[asset_id].append(node)
 
-    for _id, id_nodes in id_hashes.items():
-        asset = io.find_one({"_id": io.ObjectId(_id)},
+    for asset_id, asset_nodes in id_hashes.items():
+        asset = io.find_one({"_id": io.ObjectId(asset_id)},
                             projection={"name": True})
 
         # Skip if asset id is not found
         if not asset:
-            log.warning("Id not found in the database, skipping '%s'." % _id)
-            log.warning("Nodes: %s" % id_nodes)
+            log.warning("Asset id not found in the database, skipping '%s'."
+                        % asset_id)
             continue
 
         # Collect available look subsets for this asset
@@ -188,38 +197,27 @@ def create_items_from_nodes(nodes):
         loaded_looks = list_loaded_looks(asset["_id"])
 
         # Collect namespaces the asset is found in
-        namespaces = set()
-        for node in id_nodes:
-            namespace = lib.get_ns(node)
-            if namespace == ":":
-                # (TODO) Although we could list out nodes that were under root
-                #        namespace, but assigning looks to those nodes was not
-                #        guaranteed. Skip those nodes for now...
-                # (TODO) * Is namespace wrapped ?
-                #        * How to select nodes that does not have namespace ?
-                continue
-            namespaces.add(namespace)
-
         subsets = dict()
-        for namespace in namespaces:
-            try:
-                container = get_container_from_namespace(namespace)
-            except RuntimeError:
-                # This namespace does not belong to any container, possible
-                # because of it's a `mayashare` subset or from other dirty
-                # workflow.
-                # (TODO) subsets[namespace] = "(unknown)"
-                continue
+        namespace_nodes = dict()
 
-            subset = cmds.getAttr(container + ".name")
-            subsets[namespace] = subset
+        for node in asset_nodes:
+            namespace = node["namespace"]
+            subset = node["subset"]
+
+            if namespace not in namespace_nodes:
+                subsets[namespace] = subset
+                namespace_nodes[namespace] = set()
+
+            if subset == UNDEFINED_SUBSET:
+                namespace_nodes[namespace].add(node["node"])
 
         asset_view_items.append({"label": asset["name"],
                                  "asset": asset,
                                  "looks": looks,
                                  "loadedLooks": loaded_looks,
-                                 "namespaces": namespaces,
-                                 "subsets": subsets})
+                                 "namespaces": list(subsets.keys()),
+                                 "subsets": subsets,
+                                 "nodes": namespace_nodes})
 
     return asset_view_items
 
@@ -372,8 +370,27 @@ def assign_look(namespaces, look, via_uv):
     # Apply shader to target subset by namespace
     if isinstance(namespaces, six.string_types):
         namespaces = [namespaces]
-    target_namespaces = [ns + ":" for ns in namespaces]
 
+    # Gathering namespaces recursively
+    #
+    target_namespaces = set()
+
+    for namespace in namespaces:
+        target_namespaces.add(namespace)
+
+        if namespace == ":":
+            continue
+
+        child_namespaces = cmds.namespaceInfo(namespace,
+                                              listOnlyNamespaces=True,
+                                              absoluteName=True,
+                                              recurse=True) or []
+        target_namespaces.update(child_namespaces)
+
+    target_namespaces = list(ns + ":" for ns in target_namespaces)
+
+    # Assign
+    #
     if via_uv:
         _look_via_uv(look, relationships, target_namespaces)
     else:
@@ -525,7 +542,7 @@ def _look_via_uv(look, relationships, target_namespaces):
     _apply_ai_attrs(look, ai_attrs_by_id, target_namespaces)
 
 
-def remove_look(namespaces, asset_ids):
+def remove_look(nodes, asset_ids):
 
     look_sets = set()
     for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
@@ -537,11 +554,7 @@ def remove_look(namespaces, asset_ids):
         members = cmds.sets(container["objectName"], query=True)
         look_sets.update(cmds.ls(members, type="objectSet"))
 
-    shaded = list()
-    for namespace in namespaces:
-        container = get_container_from_namespace(namespace)
-        nodes = cmds.sets(container, query=True)
-        shaded += cmds.ls(nodes, type=("transform", "surfaceShape"))
+    shaded = cmds.ls(nodes, type=("transform", "surfaceShape"))
 
     for look_set in look_sets:
         for member in cmds.sets(look_set, query=True) or []:
