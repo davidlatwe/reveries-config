@@ -6,6 +6,9 @@ from avalon.vendor import qtawesome
 from avalon.style import colors
 
 
+UNDEFINED_SUBSET = "(Undefined)"
+
+
 class AssetModel(models.TreeModel):
 
     Columns = ["label", "subset"]
@@ -70,7 +73,11 @@ class AssetModel(models.TreeModel):
             if index.column() == 1:
                 node = index.internalPointer()
                 if "subset" in node:
-                    return qtawesome.icon("fa.bookmark", color="gray")
+                    if node["subset"] == UNDEFINED_SUBSET:
+                        return qtawesome.icon("fa.question-circle",
+                                              color="#DA4945")
+                    else:
+                        return qtawesome.icon("fa.bookmark", color="gray")
 
         return super(AssetModel, self).data(index, role)
 
