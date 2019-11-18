@@ -43,8 +43,8 @@ class AssetOutliner(QtWidgets.QWidget):
         layout.addWidget(view)
 
         # Build connections
-        asset_all.clicked.connect(self.list_all_assets)
-        asset_sel.clicked.connect(self.list_assets_from_selection)
+        asset_all.clicked.connect(self.on_all_loaded)
+        asset_sel.clicked.connect(self.on_selection)
 
         selection_model = view.selectionModel()
         selection_model.selectionChanged.connect(self.selection_changed)
@@ -82,7 +82,7 @@ class AssetOutliner(QtWidgets.QWidget):
 
         return items
 
-    def list_all_assets(self):
+    def on_all_loaded(self):
         """Add all items from the current scene"""
 
         with lib.preserve_expanded_rows(self.view):
@@ -94,7 +94,7 @@ class AssetOutliner(QtWidgets.QWidget):
 
         return len(items) > 0
 
-    def list_assets_from_selection(self):
+    def on_selection(self):
         """Add all selected items from the current scene"""
 
         with lib.preserve_expanded_rows(self.view):
