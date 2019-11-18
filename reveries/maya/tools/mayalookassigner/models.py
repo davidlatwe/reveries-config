@@ -75,8 +75,7 @@ class AssetModel(models.TreeModel):
                 node = index.internalPointer()
                 if "subset" in node:
                     if node["subset"] == UNDEFINED_SUBSET:
-                        return qtawesome.icon("fa.question-circle",
-                                              color="#DA4945")
+                        return qtawesome.icon("fa.question", color="#DA4945")
                     else:
                         return qtawesome.icon("fa.bookmark", color="gray")
 
