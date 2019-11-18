@@ -123,7 +123,7 @@ class AssetOutliner(QtWidgets.QWidget):
             with lib.preserve_selection(self.view):
                 self.clear()
                 nodes = commands.get_all_asset_nodes()
-                items = commands.create_items_from_nodes(nodes)
+                items = commands.create_items(nodes)
                 self.add_items(items)
 
         return len(items) > 0
@@ -135,7 +135,7 @@ class AssetOutliner(QtWidgets.QWidget):
             with lib.preserve_selection(self.view):
                 self.clear()
                 nodes = commands.get_selected_asset_nodes()
-                items = commands.create_items_from_nodes(nodes)
+                items = commands.create_items(nodes)
                 self.add_items(items)
 
     def list_selected_nodes(self):
@@ -145,8 +145,7 @@ class AssetOutliner(QtWidgets.QWidget):
             with lib.preserve_selection(self.view):
                 self.clear()
                 nodes = commands.get_selected_nodes()
-                items = commands.create_items_from_nodes(nodes,
-                                                         selected_only=True)
+                items = commands.create_items(nodes, selected_only=True)
                 self.add_items(items)
 
     def get_nodes(self):

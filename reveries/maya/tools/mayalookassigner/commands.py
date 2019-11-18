@@ -189,7 +189,7 @@ def get_all_asset_nodes():
     return nodes
 
 
-def create_items_from_nodes(nodes, selected_only=False):
+def create_items(nodes, selected_only=False):
     """Create an item for the view
 
     It fetches the look document based on the asset ID found in the content.
