@@ -189,7 +189,7 @@ def get_all_asset_nodes():
     return nodes
 
 
-def create_items_from_nodes(nodes):
+def create_items_from_nodes(nodes, selected_only=False):
     """Create an item for the view
 
     It fetches the look document based on the asset ID found in the content.
@@ -243,7 +243,7 @@ def create_items_from_nodes(nodes):
                 subsets[namespace] = subset
                 namespace_nodes[namespace] = set()
 
-            if subset == UNDEFINED_SUBSET:
+            if selected_only or subset == UNDEFINED_SUBSET:
                 namespace_nodes[namespace].add(node["node"])
 
         asset_view_items.append({"label": asset["name"],
