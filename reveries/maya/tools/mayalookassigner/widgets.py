@@ -32,7 +32,7 @@ class AssetOutliner(QtWidgets.QWidget):
         view.setHeaderHidden(False)
         view.setIndentation(10)
 
-        asset_all = QtWidgets.QPushButton("All Assets")
+        asset_all = QtWidgets.QPushButton("All Loaded")
         asset_sel = QtWidgets.QPushButton("From Selection")
 
         lister_layout = QtWidgets.QHBoxLayout()
