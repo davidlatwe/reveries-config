@@ -77,9 +77,8 @@ class AssetOutliner(QtWidgets.QWidget):
         """
 
         selection_model = self.view.selectionModel()
-        items = [row.data(self.model.ItemRole) for row in
-                 selection_model.selectedRows(0)]
-
+        items = [self.model.data(index, self.model.ItemRole) for index in
+                 selection_model.selectedIndexes()]
         return items
 
     def on_all_loaded(self):
