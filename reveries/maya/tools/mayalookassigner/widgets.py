@@ -106,51 +106,29 @@ class AssetOutliner(QtWidgets.QWidget):
     def get_nodes(self):
         """Find the nodes in the current scene per asset."""
 
-        items = self.get_selected_items()
-
-        # Collect the asset item entries per asset
         asset_nodes = dict()
-        for item in items:
-            nodes = list()
+
+        for item in self.get_selected_items():
             asset_name = item["asset"]["name"]
 
-            if isinstance(item["nodes"], list):
-                # cached
-                nodes = item["nodes"]
-
-            elif "subset" in item:
-                namespace = item["namespace"]
-                if not item["nodes"]:
-                    group = commands.group_from_namespace(namespace)
-                    if group is not None:
-                        nodes.append(group)
-                else:
-                    nodes += item["nodes"]
+            if "subset" in item:
+                key = (asset_name, item["namespace"])
+                asset_nodes[key] = item
 
             else:
-                for namespace in item["namespaces"]:
-                    namespace_nodes = item["nodes"][namespace]
-                    if not namespace_nodes:
-                        group = commands.group_from_namespace(namespace)
-                        if group is not None:
-                            nodes.append(group)
-                    else:
-                        nodes += namespace_nodes
-
-            item["nodes"] = nodes  # cache
-            asset_nodes[item.get("namespace") or asset_name] = item
+                for child in item.children():
+                    key = (asset_name, child["namespace"])
+                    asset_nodes[key] = child
 
         return asset_nodes
 
-    def select_asset_from_items(self):  #
-        """Select nodes from listed asset"""
-
+    def select_asset_from_items(self):
         asset_nodes = self.get_nodes()
-        nodes = []
+        nodes = set()
         for item in asset_nodes.values():
-            nodes.extend(item["nodes"])
+            nodes.update(item["selectBack"])
 
-        commands.select(nodes)
+        commands.select(list(nodes))
 
     def remove_look_from_items(self):
 

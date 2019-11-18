@@ -198,6 +198,7 @@ def create_items(nodes, selected_only=False):
         # Collect namespaces the asset is found in
         subsets = dict()
         namespace_nodes = dict()
+        namespace_selection = dict()
 
         for node in asset_nodes:
             namespace = node["namespace"]
@@ -207,16 +208,28 @@ def create_items(nodes, selected_only=False):
                 subsets[namespace] = subset
                 namespace_nodes[namespace] = set()
 
-            if selected_only or subset == UNDEFINED_SUBSET:
-                namespace_nodes[namespace].add(node["node"])
+            namespace_nodes[namespace].add(node["node"])
+
+        namespaces = list(subsets.keys())
+
+        if selected_only:
+            namespace_selection = namespace_nodes
+        else:
+            for namespace in namespaces:
+                selection = set()
+                group = group_from_namespace(namespace)
+                if group is not None:
+                    selection.add(group)
+                namespace_selection[namespace] = selection
 
         asset_view_items.append({"label": asset["name"],
                                  "asset": asset,
                                  "looks": looks,
                                  "loadedLooks": loaded_looks,
-                                 "namespaces": list(subsets.keys()),
+                                 "namespaces": namespaces,
                                  "subsets": subsets,
-                                 "nodes": namespace_nodes})
+                                 "nodesByNamespace": namespace_nodes,
+                                 "selectByNamespace": namespace_selection})
 
     return asset_view_items
 

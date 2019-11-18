@@ -225,10 +225,11 @@ class App(QtWidgets.QWidget):
         asset_nodes = self.asset_outliner.get_nodes()
 
         start = time.time()
-        for i, (asset, item) in enumerate(asset_nodes.items()):
+        for i, ((asset, namespace), item) in enumerate(asset_nodes.items()):
 
             # Label prefix
             prefix = "({}/{})".format(i + 1, len(asset_nodes))
+            asset = "[{}] {}".format(asset, namespace)
 
             # Assign the first matching look relevant for this asset
             # (since assigning multiple to the same nodes makes no sense)

@@ -36,6 +36,9 @@ class AssetModel(models.TreeModel):
 
             # Add namespace children
             namespaces = item["namespaces"]
+            namespace_nodes = item["nodesByNamespace"]
+            namespace_selection = item["selectByNamespace"]
+
             for namespace in sorted(namespaces):
                 child = models.Item()
                 child.update(item)
@@ -45,7 +48,8 @@ class AssetModel(models.TreeModel):
                     "subset": item["subsets"][namespace],
                     "namespace": namespace,
                     "looks": item["looks"],
-                    "nodes": item["nodes"][namespace],
+                    "nodes": namespace_nodes[namespace],
+                    "selectBack": namespace_selection[namespace],
                     "icon": "file-o"
                 })
                 asset_item.add_child(child)
