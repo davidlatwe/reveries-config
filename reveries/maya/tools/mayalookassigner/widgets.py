@@ -165,7 +165,7 @@ class AssetOutliner(QtWidgets.QWidget):
 
             elif "subset" in item:
                 namespace = item["namespace"]
-                if item["nodes"] is None:
+                if not item["nodes"]:
                     group = commands.group_from_namespace(namespace)
                     if group is not None:
                         nodes.append(group)
@@ -175,7 +175,7 @@ class AssetOutliner(QtWidgets.QWidget):
             else:
                 for namespace in item["namespaces"]:
                     namespace_nodes = item["nodes"][namespace]
-                    if namespace_nodes is None:
+                    if not namespace_nodes:
                         group = commands.group_from_namespace(namespace)
                         if group is not None:
                             nodes.append(group)
