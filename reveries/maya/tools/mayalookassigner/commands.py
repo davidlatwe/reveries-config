@@ -279,22 +279,22 @@ def list_loaded_looks(asset_id):
     cached_look = dict()
 
     for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
-                                  "loader": "LookLoader"}):
+                                  "loader": "LookLoader",
+                                  "assetId": str(asset_id)}):
 
-        if str(asset_id) == cmds.getAttr(container + ".assetId"):
-            subset_id = cmds.getAttr(container + ".subsetId")
-            if subset_id in cached_look:
-                look = cached_look[subset_id].copy()
-            else:
-                look = io.find_one({"_id": io.ObjectId(subset_id)})
-                cached_look[subset_id] = look
+        subset_id = cmds.getAttr(container + ".subsetId")
+        if subset_id in cached_look:
+            look = cached_look[subset_id].copy()
+        else:
+            look = io.find_one({"_id": io.ObjectId(subset_id)})
+            cached_look[subset_id] = look
 
-            namespace = cmds.getAttr(container + ".namespace")
-            # Example: ":Zombie_look_02_"
-            look["No."] = namespace.split("_")[-2]  # result: "02"
-            look["namespace"] = namespace
+        namespace = cmds.getAttr(container + ".namespace")
+        # Example: ":Zombie_look_02_"
+        look["No."] = namespace.split("_")[-2]  # result: "02"
+        look["namespace"] = namespace
 
-            look_subsets.append(look)
+        look_subsets.append(look)
 
     return look_subsets
 
