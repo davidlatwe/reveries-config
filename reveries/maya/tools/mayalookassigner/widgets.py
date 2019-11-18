@@ -32,43 +32,26 @@ class AssetOutliner(QtWidgets.QWidget):
         view.setHeaderHidden(False)
         view.setIndentation(10)
 
-        asset_label = QtWidgets.QLabel("List Mode :")
-        asset_label.setFixedWidth(60)
-        asset_lister = QtWidgets.QComboBox()
-        asset_lister.addItems([
-            "",  # placeholder item, not selectable
-            " All Assets",
-            " Assets From Selection",
-            " Selected Only",
-        ])
-        index = asset_lister.model().index(0, 0, QtCore.QModelIndex())
-        asset_lister.model().itemFromIndex(index).setSelectable(False)
-
-        asset_refresh = QtWidgets.QPushButton()
-        asset_refresh.setIcon(qtawesome.icon("fa.refresh",
-                                             color="#A2C4A6"))
-        asset_refresh.setFixedWidth(30)
+        asset_all = QtWidgets.QPushButton("All Assets")
+        asset_sel = QtWidgets.QPushButton("From Selection")
 
         lister_layout = QtWidgets.QHBoxLayout()
-        lister_layout.addWidget(asset_label)
-        lister_layout.addWidget(asset_lister)
-        lister_layout.addWidget(asset_refresh)
+        lister_layout.addWidget(asset_all)
+        lister_layout.addWidget(asset_sel)
 
         layout.addWidget(title)
         layout.addLayout(lister_layout)
         layout.addWidget(view)
 
         # Build connections
-        asset_lister.currentIndexChanged.connect(self.on_index_changed)
-        asset_refresh.clicked.connect(self.on_refresh)
+        asset_all.clicked.connect(self.list_all_assets)
+        asset_sel.clicked.connect(self.list_assets_from_selection)
 
         selection_model = view.selectionModel()
         selection_model.selectionChanged.connect(self.selection_changed)
 
         self.view = view
         self.model = model
-
-        self.lister = asset_lister
 
         self.setLayout(layout)
 
@@ -100,22 +83,6 @@ class AssetOutliner(QtWidgets.QWidget):
 
         return items
 
-    def on_index_changed(self, index):
-        if index == 0:
-            return
-        elif index == 1:
-            lister = self.list_all_assets
-        elif index == 2:
-            lister = self.list_assets_from_selection
-        else:
-            lister = self.list_selected_nodes
-
-        lib.schedule(lister, 200, channel="lookassigner")
-
-    def on_refresh(self):
-        index = self.lister.currentIndex()
-        self.on_index_changed(index)
-
     def list_all_assets(self):
         """Add all items from the current scene"""
 
@@ -135,16 +102,6 @@ class AssetOutliner(QtWidgets.QWidget):
             with lib.preserve_selection(self.view):
                 self.clear()
                 nodes = commands.get_selected_asset_nodes()
-                items = commands.create_items(nodes)
-                self.add_items(items)
-
-    def list_selected_nodes(self):
-        """Add all selected items from the current scene"""
-
-        with lib.preserve_expanded_rows(self.view):
-            with lib.preserve_selection(self.view):
-                self.clear()
-                nodes = commands.get_selected_nodes()
                 items = commands.create_items(nodes, selected_only=True)
                 self.add_items(items)
 

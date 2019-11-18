@@ -78,42 +78,6 @@ def list_descendents(nodes):
             return result
 
 
-def get_selected_nodes():
-    """Get information from current selection"""
-
-    host = api.registered_host()
-
-    nodes = list()
-
-    selection = cmds.ls(selection=True, long=True)
-
-    containers = list(host.ls())
-
-    for node in selection:
-
-        asset_id = get_asset_id(node)
-        if asset_id is None:
-            continue
-
-        for container in containers:
-            if cmds.sets(node, isMember=container["objectName"]):
-                subset = container["name"]
-                namespace = container["namespace"]
-                break
-        else:
-            subset = UNDEFINED_SUBSET
-            namespace = lib.get_ns(node)
-
-        nodes.append({
-            "node": node,
-            "assetId": asset_id,
-            "subset": subset,
-            "namespace": namespace,
-        })
-
-    return nodes
-
-
 def get_selected_asset_nodes():
 
     host = api.registered_host()
@@ -137,8 +101,8 @@ def get_selected_asset_nodes():
                 namespace = container["namespace"]
                 break
         else:
-            # (TODO) Need a warning
-            continue
+            subset = UNDEFINED_SUBSET
+            namespace = lib.get_ns(node)
 
         nodes.append({
             "node": node,
