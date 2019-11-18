@@ -77,12 +77,47 @@ class AssetModel(models.TreeModel):
                     if node["subset"] == UNDEFINED_SUBSET:
                         return qtawesome.icon("fa.question", color="#DA4945")
                     else:
-                        return qtawesome.icon("fa.bookmark", color="gray")
+                        return qtawesome.icon("fa.bookmark", color="#7DD880")
 
         return super(AssetModel, self).data(index, role)
 
+    def headerData(self, section, orientation, role):
 
-class LookModel(models.TreeModel):
+        if role == QtCore.Qt.DisplayRole:
+            if section == self.Columns.index("label"):
+                return "asset"
+
+        return super(AssetModel, self).headerData(section,
+                                                  orientation,
+                                                  role)
+
+
+class _LookModel(models.TreeModel):
+
+    def data(self, index, role):
+
+        if not index.isValid():
+            return
+
+        # Add icon
+        if role == QtCore.Qt.DecorationRole:
+            if index.column() == 0:
+                return qtawesome.icon("fa.bookmark", color="#7DD880")
+
+        return super(_LookModel, self).data(index, role)
+
+    def headerData(self, section, orientation, role):
+
+        if role == QtCore.Qt.DisplayRole:
+            if section == self.Columns.index("label"):
+                return "subset"
+
+        return super(_LookModel, self).headerData(section,
+                                                  orientation,
+                                                  role)
+
+
+class LookModel(_LookModel):
     """Model displaying a list of looks and matches for assets"""
 
     Columns = ["label", "version", "match"]
@@ -134,7 +169,7 @@ class LookModel(models.TreeModel):
         self.endResetModel()
 
 
-class LoadedLookModel(models.TreeModel):
+class LoadedLookModel(_LookModel):
     """Model displaying a list of loaded looks and matches for assets"""
 
     Columns = ["label", "No.", "match"]
