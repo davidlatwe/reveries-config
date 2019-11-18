@@ -1,7 +1,6 @@
 import logging
 
 from avalon.vendor.Qt import QtWidgets, QtCore
-from avalon.vendor import qtawesome
 
 from avalon.tools import lib
 

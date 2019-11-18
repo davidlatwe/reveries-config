@@ -188,16 +188,6 @@ class App(QtWidgets.QWidget):
     def echo(self, message):
         self.status.showMessage(message, 6000)
 
-    def refresh(self):
-        """Refresh the content"""
-
-        # Get all containers and information
-        self.asset_outliner.clear()
-        found_items = self.asset_outliner.list_all_assets()
-        if not found_items:
-            self.look_outliner.clear()
-            self.loaded_look_outliner.clear()
-
     def on_asset_selection_changed(self):
         """Get selected items from asset loader and fill look outliner"""
 
