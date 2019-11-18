@@ -86,6 +86,41 @@ def get_selected_nodes():
     nodes = list()
 
     selection = cmds.ls(selection=True, long=True)
+
+    containers = list(host.ls())
+
+    for node in selection:
+
+        asset_id = get_asset_id(node)
+        if asset_id is None:
+            continue
+
+        for container in containers:
+            if cmds.sets(node, isMember=container["objectName"]):
+                subset = container["name"]
+                namespace = container["namespace"]
+                break
+        else:
+            subset = UNDEFINED_SUBSET
+            namespace = lib.get_ns(node)
+
+        nodes.append({
+            "node": node,
+            "assetId": asset_id,
+            "subset": subset,
+            "namespace": namespace,
+        })
+
+    return nodes
+
+
+def get_selected_asset_nodes():
+
+    host = api.registered_host()
+
+    nodes = list()
+
+    selection = cmds.ls(selection=True, long=True)
     hierarchy = list_descendents(selection)
 
     containers = list(host.ls())
@@ -102,8 +137,8 @@ def get_selected_nodes():
                 namespace = container["namespace"]
                 break
         else:
-            subset = UNDEFINED_SUBSET
-            namespace = lib.get_ns(node)
+            # (TODO) Need a warning
+            continue
 
         nodes.append({
             "node": node,

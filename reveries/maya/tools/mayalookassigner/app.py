@@ -193,7 +193,7 @@ class App(QtWidgets.QWidget):
 
         # Get all containers and information
         self.asset_outliner.clear()
-        found_items = self.asset_outliner.get_all_assets()
+        found_items = self.asset_outliner.list_all_assets()
         if not found_items:
             self.look_outliner.clear()
             self.loaded_look_outliner.clear()
