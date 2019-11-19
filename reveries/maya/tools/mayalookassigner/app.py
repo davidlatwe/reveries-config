@@ -246,13 +246,14 @@ class App(QtWidgets.QWidget):
             commands.assign_look(nodes=item["nodes"],
                                  look=look,
                                  via_uv=uv)
+            # Only overload once
+            if overload:
+                self.overload.setChecked(False)
+                overload = False
 
         end = time.time()
 
         self.echo("Finished assigning.. ({0:.3f}s)".format(end - start))
-
-        if overload:
-            self.overload.setChecked(False)
 
 
 def show():
