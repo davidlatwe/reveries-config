@@ -69,10 +69,10 @@ class AssetOutliner(QtWidgets.QWidget):
         # todo: figure out why this workaround is needed.
         self.selection_changed.emit()
 
-    def add_items(self, items):
+    def add_items(self, items, by_selection=False):
         """Add new items to the outliner"""
 
-        self.model.add_items(items)
+        self.model.add_items(items, by_selection)
         self.refreshed.emit()
 
     def get_selected_items(self):
@@ -106,8 +106,8 @@ class AssetOutliner(QtWidgets.QWidget):
             with lib.preserve_selection(self.view):
                 self.clear()
                 nodes = commands.get_selected_asset_nodes()
-                items = commands.create_items(nodes, selected_only=True)
-                self.add_items(items)
+                items = commands.create_items(nodes, by_selection=True)
+                self.add_items(items, by_selection=True)
 
     def get_nodes(self):
         """Find the nodes in the current scene per asset."""

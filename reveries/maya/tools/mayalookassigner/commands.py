@@ -151,7 +151,7 @@ def get_all_asset_nodes():
     return nodes
 
 
-def create_items(nodes, selected_only=False):
+def create_items(nodes, by_selection=False):
     """Create an item for the view
 
     It fetches the look document based on the asset ID found in the content.
@@ -210,7 +210,7 @@ def create_items(nodes, selected_only=False):
 
         namespaces = list(subsets.keys())
 
-        if selected_only:
+        if by_selection:
             namespace_selection = namespace_nodes
         else:
             for namespace in namespaces:

@@ -13,7 +13,7 @@ class AssetModel(models.TreeModel):
 
     Columns = ["label", "subset"]
 
-    def add_items(self, items):
+    def add_items(self, items, by_selection=False):
         """
         Add items to model with needed data
         Args:
@@ -24,6 +24,8 @@ class AssetModel(models.TreeModel):
         """
 
         self.beginResetModel()
+
+        child_icon = "mouse-pointer" if by_selection else "file-o"
 
         # Add the items sorted by label
         sorter = (lambda x: x["label"])
@@ -50,7 +52,7 @@ class AssetModel(models.TreeModel):
                     "looks": item["looks"],
                     "nodes": namespace_nodes[namespace],
                     "selectBack": namespace_selection[namespace],
-                    "icon": "file-o"
+                    "icon": child_icon
                 })
                 asset_item.add_child(child)
 
