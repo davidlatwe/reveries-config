@@ -56,7 +56,10 @@ def update_full_scene():
     cmds.arnoldRenderView(option=["Update Full Scene", "1"])
 
 
-def apply_ai_attrs(relationships, namespace=None, target_namespaces=None):
+def apply_ai_attrs(relationships,
+                   namespace=None,
+                   target_namespaces=None,
+                   nodes=None):
     """Given a dictionary of `relationships`, apply ai attributes to nodes
 
     Arguments:
@@ -67,6 +70,7 @@ def apply_ai_attrs(relationships, namespace=None, target_namespaces=None):
 
     """
     namespace = namespace or ""
+    target_namespaces = target_namespaces or [None]
 
     ids = set()
     for id, attrs in relationships.items():
@@ -75,7 +79,7 @@ def apply_ai_attrs(relationships, namespace=None, target_namespaces=None):
 
     surfaces = defaultdict(set)
     for target_namespace in target_namespaces:
-        _map = lib.ls_nodes_by_id(ids, target_namespace)
+        _map = lib.ls_nodes_by_id(ids, target_namespace, nodes)
         for id, nodes in _map.items():
             surfaces[id].update(nodes)
 

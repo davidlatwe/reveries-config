@@ -245,8 +245,7 @@ class App(QtWidgets.QWidget):
                                                        look["name"],
                                                        asset))
             # Assign look
-            namespaces = item.get("namespace", item["namespaces"])
-            commands.assign_look(namespaces=namespaces,
+            commands.assign_look(nodes=item["nodes"],
                                  look=look,
                                  via_uv=uv)
 
