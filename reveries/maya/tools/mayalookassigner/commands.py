@@ -7,7 +7,6 @@ import maya.cmds as cmds
 
 from avalon import io, api
 from avalon.maya.pipeline import AVALON_CONTAINER_ID
-from avalon.vendor import six
 
 from ....utils import get_representation_path_
 from ....maya import lib, utils
