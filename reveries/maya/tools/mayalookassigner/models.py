@@ -109,7 +109,7 @@ class _LookModel(models.TreeModel):
         # Add icon
         if role == QtCore.Qt.DecorationRole:
             if index.column() == 0:
-                return qtawesome.icon("fa.bookmark", color="#BBC0C6")
+                return qtawesome.icon("fa.paint-brush", color="#BBC0C6")
 
         return super(_LookModel, self).data(index, role)
 
