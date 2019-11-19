@@ -115,7 +115,6 @@ class App(QtWidgets.QWidget):
         # Set column width
         asset_outliner.view.setColumnWidth(0, 200)
         look_outliner.view.setColumnWidth(0, 140)  # "label" column
-        look_outliner.view.setColumnWidth(1, 60)   # "version" column
         look_outliner.view.setColumnWidth(2, 50)   # "match" column
 
         loaded_look_outliner.view.setColumnWidth(0, 140)  # "label" column

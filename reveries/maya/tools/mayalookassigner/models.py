@@ -127,7 +127,7 @@ class _LookModel(models.TreeModel):
 class LookModel(_LookModel):
     """Model displaying a list of looks and matches for assets"""
 
-    Columns = ["label", "version", "match"]
+    Columns = ["label", "match"]
 
     def add_items(self, items):
         """Add items to model with needed data
@@ -152,10 +152,10 @@ class LookModel(_LookModel):
         for asset_item in items:
             asset = asset_item["asset"]
             for look in asset_item["looks"]:
-                key = (look["name"], look["version"])
+                key = look["name"]
                 look_subsets[key].append(asset)
 
-        for (subset, version), assets in sorted(look_subsets.iteritems()):
+        for subset, assets in sorted(look_subsets.iteritems()):
 
             # Define nice label without "look" prefix for readability
             label = subset if not subset.startswith("look") else subset[4:]
@@ -163,7 +163,6 @@ class LookModel(_LookModel):
             item_node = models.Item()
             item_node["label"] = label
             item_node["subset"] = subset
-            item_node["version"] = str(version)
 
             # Amount of matching assets for this look
             item_node["match"] = len(assets)
