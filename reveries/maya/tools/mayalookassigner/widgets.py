@@ -33,6 +33,12 @@ class AssetOutliner(QtWidgets.QWidget):
 
         asset_all = QtWidgets.QPushButton("All Loaded")
         asset_sel = QtWidgets.QPushButton("From Selection")
+        asset_all.setCheckable(True)
+        asset_sel.setCheckable(True)
+
+        asset_group = QtWidgets.QButtonGroup(self)
+        asset_group.addButton(asset_all)
+        asset_group.addButton(asset_sel)
 
         lister_layout = QtWidgets.QHBoxLayout()
         lister_layout.addWidget(asset_all)
