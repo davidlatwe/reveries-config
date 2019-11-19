@@ -70,7 +70,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         nodes = cmds.sets(container["objectName"], query=True)
         shaders = cmds.ls(nodes, type="shadingEngine")
-        shaded = cmds.ls(cmds.sets(shaders, query=True), long=True)
+        shaded = cmds.ls(cmds.sets(shaders, query=True))
 
         # Collect current reference's placeholder connections
         reference_node = self.get_reference_node(container)
@@ -83,7 +83,7 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
                                                  shapes=True,
                                                  type="surfaceShape") or []
         placeholder_map = {
-            cmds.ls(src.split(".", 1), long=True)[0]: (src, dst)
+            cmds.ls(src.split(".", 1))[0]: (src, dst)
             for src, dst in
             zip(placeholder_conns[1::2], placeholder_conns[::2])
         }
@@ -91,21 +91,14 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         shader_missing_nodes = set(placeholder_map.keys())
         shader_missing_fixes = list()
 
-        # Find shaded subsets from nodes
-        shaded_subsets = list()
-
-        shaded_nodes = set(cmds.ls(shaded, objectsOnly=True, long=True))
-        containers = {
-            con: set(cmds.ls(cmds.sets(con, query=True), long=True))
+        contents = [
+            set(cmds.ls(cmds.sets(con, query=True)))
             for con in lib.lsAttrs({"id": AVALON_CONTAINER_ID})
             if not cmds.getAttr(con + ".loader") == "LookLoader"
-        }
-        for con, content in containers.items():
-            if shaded_nodes.intersection(content):
-                shaded_subsets.append(con)
-
-                for node in shader_missing_nodes.intersection(content):
-                    shader_missing_fixes.append(placeholder_map[node])
+        ]
+        for content in contents:
+            for node in shader_missing_nodes.intersection(content):
+                shader_missing_fixes.append(placeholder_map[node])
 
         # Fix if missing
         if shader_missing_fixes:
@@ -132,13 +125,15 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
             container["_dropRefEdit"] = True
         super(LookLoader, self).update(container, representation)
 
-        if not shaded_subsets:
+        shaded_nodes = set(cmds.ls(shaded, objectsOnly=True))
+        if not shaded_nodes:
             self.log.warning("Version updated, but shader has no assignment.")
             return
 
         # Updated container data and re-assign shaders
         container = parse_container(cmds.ls(uuid)[0])
-        self._assign_shaders(representation, container, shaded_subsets)
+        nodes = cmds.listRelatives(list(shaded_nodes), parent=True, path=True)
+        self._assign_shaders(representation, container, nodes)
 
     def remove(self, container):
         from maya import cmds
@@ -157,12 +152,11 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
         return True
 
-    def _assign_shaders(self, representation, container, containers):
+    def _assign_shaders(self, representation, container, nodes):
         """Assign shaders to containers
         """
         import os
         from reveries.maya.tools.mayalookassigner import commands
-        from maya import cmds
 
         file_name = representation["data"]["linkFname"]
         relationship = os.path.join(self.package_path, file_name)
@@ -173,8 +167,5 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
                              "{!r} was not found".format(relationship))
             return
 
-        # Apply shader to target subset by namespace
-        target_namespaces = [cmds.getAttr(con + ".namespace") + ":"
-                             for con in containers]
-
-        commands.assign_look(target_namespaces, container, via_uv=False)
+        # Apply shader
+        commands.assign_look(nodes, container, via_uv=False)
