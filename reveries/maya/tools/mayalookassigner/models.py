@@ -178,7 +178,7 @@ class LookModel(_LookModel):
 class LoadedLookModel(_LookModel):
     """Model displaying a list of loaded looks and matches for assets"""
 
-    Columns = ["label", "No.", "match"]
+    Columns = ["label", "ident"]
 
     def add_items(self, items):
 
@@ -189,10 +189,10 @@ class LoadedLookModel(_LookModel):
         for asset_item in items:
             asset = asset_item["asset"]
             for look in asset_item["loadedLooks"]:
-                key = (look["name"], look["No."])
+                key = (look["name"], look["ident"])
                 look_subsets[key].append(asset)
 
-        for (subset, num), assets in sorted(look_subsets.iteritems()):
+        for (subset, ident), assets in sorted(look_subsets.iteritems()):
 
             # Define nice label without "look" prefix for readability
             label = subset if not subset.startswith("look") else subset[4:]
@@ -200,10 +200,7 @@ class LoadedLookModel(_LookModel):
             item_node = models.Item()
             item_node["label"] = label
             item_node["subset"] = subset
-            item_node["No."] = num
-
-            # Amount of matching assets for this look
-            item_node["match"] = len(assets)
+            item_node["ident"] = ident
 
             # Store the assets that have this subset available
             item_node["assets"] = assets

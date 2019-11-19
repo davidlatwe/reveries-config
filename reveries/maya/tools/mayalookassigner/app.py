@@ -118,8 +118,7 @@ class App(QtWidgets.QWidget):
         look_outliner.view.setColumnWidth(2, 50)   # "match" column
 
         loaded_look_outliner.view.setColumnWidth(0, 140)  # "label" column
-        loaded_look_outliner.view.setColumnWidth(1, 60)   # "No." column
-        loaded_look_outliner.view.setColumnWidth(2, 50)   # "match" column
+        loaded_look_outliner.view.setColumnWidth(1, 60)   # "ident" column
 
         # Open widgets
         self.asset_outliner = asset_outliner
@@ -206,8 +205,8 @@ class App(QtWidgets.QWidget):
             look_outliner = self.loaded_look_outliner
             look_getter = commands.get_loaded_look
             look_key = "loadedLooks"
-            match_tag = "No."
-            match_key = "No."
+            match_tag = "ident"
+            match_key = "ident"
         else:
             look_outliner = self.look_outliner
             look_getter = commands.load_look

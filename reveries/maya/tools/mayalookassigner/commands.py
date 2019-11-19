@@ -266,7 +266,11 @@ def list_loaded_looks(asset_id):
 
         namespace = cmds.getAttr(container + ".namespace")
         # Example: ":Zombie_look_02_"
-        look["No."] = namespace.split("_")[-2]  # result: "02"
+        # result: "Zombie 02"
+        asset = namespace[1:].rsplit("_", 3)[0]  # Zombie
+        num = namespace.split("_")[-2]  # "02"
+        ident = asset + " " + num
+        look["ident"] = ident
         look["namespace"] = namespace
 
         look_subsets.append(look)
