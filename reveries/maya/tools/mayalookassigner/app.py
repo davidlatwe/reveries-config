@@ -39,7 +39,7 @@ class App(QtWidgets.QWidget):
         # the widget gets garbage collected.
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
-        self.resize(680, 400)
+        self.resize(680, 580)
 
         self.setup_ui()
 

@@ -6,7 +6,7 @@ from avalon.vendor import qtawesome
 from avalon.style import colors
 
 
-UNDEFINED_SUBSET = "(Undefined)"
+UNDEFINED_SUBSET = "(Unknown)"
 
 
 class AssetModel(models.TreeModel):
@@ -81,9 +81,10 @@ class AssetModel(models.TreeModel):
                 node = index.internalPointer()
                 if "subset" in node:
                     if node["subset"] == UNDEFINED_SUBSET:
-                        return qtawesome.icon("fa.question", color="#DA4945")
+                        return qtawesome.icon("fa.question-circle",
+                                              color="#BD2D2D")
                     else:
-                        return qtawesome.icon("fa.bookmark", color="#7DD880")
+                        return qtawesome.icon("fa.bookmark", color="#BBC0C6")
 
         return super(AssetModel, self).data(index, role)
 
@@ -108,7 +109,7 @@ class _LookModel(models.TreeModel):
         # Add icon
         if role == QtCore.Qt.DecorationRole:
             if index.column() == 0:
-                return qtawesome.icon("fa.bookmark", color="#7DD880")
+                return qtawesome.icon("fa.bookmark", color="#BBC0C6")
 
         return super(_LookModel, self).data(index, role)
 
