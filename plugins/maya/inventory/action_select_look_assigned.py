@@ -34,8 +34,11 @@ class SelectAssigned(avalon.api.InventoryAction):
             containers = avalon.maya.ls()
             container_names = set(c["objectName"] for c in containers)
 
+            shaded = cmds.ls(sl=True, objectsOnly=True)
+            nodes = cmds.listRelatives(shaded, parent=True, path=True)
+
             selected_items = set()
-            for node in cmds.ls(sl=True, objectsOnly=True):
+            for node in nodes:
                 objsets = cmds.listSets(object=node) or []
                 for objset in objsets:
                     if objset in container_names:
