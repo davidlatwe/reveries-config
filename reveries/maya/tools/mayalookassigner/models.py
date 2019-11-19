@@ -165,7 +165,7 @@ class LookModel(_LookModel):
             item_node["subset"] = subset
 
             # Amount of matching assets for this look
-            item_node["match"] = len(assets)
+            item_node["match"] = len(set([_["name"] for _ in assets]))
 
             # Store the assets that have this subset available
             item_node["assets"] = assets
