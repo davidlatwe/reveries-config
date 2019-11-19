@@ -39,7 +39,7 @@ class App(QtWidgets.QWidget):
         # the widget gets garbage collected.
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
-        self.resize(680, 400)
+        self.resize(680, 580)
 
         self.setup_ui()
 
@@ -115,12 +115,10 @@ class App(QtWidgets.QWidget):
         # Set column width
         asset_outliner.view.setColumnWidth(0, 200)
         look_outliner.view.setColumnWidth(0, 140)  # "label" column
-        look_outliner.view.setColumnWidth(1, 60)   # "version" column
         look_outliner.view.setColumnWidth(2, 50)   # "match" column
 
         loaded_look_outliner.view.setColumnWidth(0, 140)  # "label" column
-        loaded_look_outliner.view.setColumnWidth(1, 60)   # "No." column
-        loaded_look_outliner.view.setColumnWidth(2, 50)   # "match" column
+        loaded_look_outliner.view.setColumnWidth(1, 60)   # "ident" column
 
         # Open widgets
         self.asset_outliner = asset_outliner
@@ -188,16 +186,6 @@ class App(QtWidgets.QWidget):
     def echo(self, message):
         self.status.showMessage(message, 6000)
 
-    def refresh(self):
-        """Refresh the content"""
-
-        # Get all containers and information
-        self.asset_outliner.clear()
-        found_items = self.asset_outliner.get_all_assets()
-        if not found_items:
-            self.look_outliner.clear()
-            self.loaded_look_outliner.clear()
-
     def on_asset_selection_changed(self):
         """Get selected items from asset loader and fill look outliner"""
 
@@ -217,8 +205,8 @@ class App(QtWidgets.QWidget):
             look_outliner = self.loaded_look_outliner
             look_getter = commands.get_loaded_look
             look_key = "loadedLooks"
-            match_tag = "No."
-            match_key = "No."
+            match_tag = "ident"
+            match_key = "ident"
         else:
             look_outliner = self.look_outliner
             look_getter = commands.load_look
@@ -235,10 +223,11 @@ class App(QtWidgets.QWidget):
         asset_nodes = self.asset_outliner.get_nodes()
 
         start = time.time()
-        for i, (asset, item) in enumerate(asset_nodes.items()):
+        for i, ((asset, namespace), item) in enumerate(asset_nodes.items()):
 
             # Label prefix
             prefix = "({}/{})".format(i + 1, len(asset_nodes))
+            asset = "[{}] {}".format(asset, namespace)
 
             # Assign the first matching look relevant for this asset
             # (since assigning multiple to the same nodes makes no sense)
@@ -254,17 +243,17 @@ class App(QtWidgets.QWidget):
                                                        look["name"],
                                                        asset))
             # Assign look
-            namespaces = item.get("namespace", item["namespaces"])
-            commands.assign_look(namespaces=namespaces,
+            commands.assign_look(nodes=item["nodes"],
                                  look=look,
                                  via_uv=uv)
+            # Only overload once
+            if overload:
+                self.overload.setChecked(False)
+                overload = False
 
         end = time.time()
 
         self.echo("Finished assigning.. ({0:.3f}s)".format(end - start))
-
-        if overload:
-            self.overload.setChecked(False)
 
 
 def show():

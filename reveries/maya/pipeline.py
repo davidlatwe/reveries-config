@@ -447,8 +447,10 @@ _uuid_required_node_types = {
     },
     "reveries.look": {
         "transform",
-        "shadingDependNode",
-        "THdependNode",
+        # (TODO): Map shaders with shadingEngine id
+        "shadingEngine",
+        # "shadingDependNode",
+        # "THdependNode",
     },
     "reveries.setdress": {
         "transform",
