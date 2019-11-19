@@ -51,7 +51,6 @@ class ExtractModel(PackageExtractor):
         clay_shader = "initialShadingGroup"
 
         # Perform extraction
-        self.log.info("Extracting %s" % str(self.member))
         cmds.select(self.member, noExpand=True)
 
         with contextlib.nested(

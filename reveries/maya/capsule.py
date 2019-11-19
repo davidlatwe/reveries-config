@@ -73,11 +73,13 @@ def no_smooth_preview():
 
 
 @contextlib.contextmanager
-def assign_shader(meshes, shadingEngine):
+def assign_shader(meshes, shadingEngine, on_object=True):
     """
     assign model to shading group
     """
     meshes_by_shader = dict()
+    all_shaded = set()
+    all_nodes = set()
 
     for mesh in cmds.ls(meshes, long=True, noIntermediate=True):
         for shader in cmds.listConnections(mesh,
@@ -100,18 +102,35 @@ def assign_shader(meshes, shadingEngine):
 
                 if mesh == node[0]:
                     shaded.add(assigned)
+                    all_nodes.add(node[0])
 
             meshes_by_shader[shader].update(shaded)
+            all_shaded.update(shaded)
+
+    all_shaded = list(all_shaded)
+    all_nodes = list(all_nodes)
 
     try:
-        for shaded in meshes_by_shader.values():
-            cmds.sets(list(shaded), edit=True, forceElement=shadingEngine)
+        if on_object:
+            group_ids = cmds.listConnections(all_nodes, type="groupId")
+            cmds.sets(all_nodes, edit=True, forceElement=shadingEngine)
+            # Delete unused groupId node
+            for group_id in cmds.ls(group_ids):
+                if not cmds.listConnections(group_id):
+                    cmds.delete(group_id)
+        else:
+            cmds.sets(all_shaded, edit=True, forceElement=shadingEngine)
 
         yield
 
     finally:
         for shader, shaded in meshes_by_shader.items():
-            cmds.sets(list(shaded), forceElement=shader)
+            # The commands needs to be deferred when the assignment was
+            # face-assign changed to object-assign (on_object=True), or
+            # the viewport will not display correctly. Although toggling
+            # `displaySmoothness` can force refresh...
+            commands = "cmds.sets(%s, edit=True, forceElement='%s');"
+            cmds.evalDeferred(commands % (list(shaded), shader))
 
 
 @contextlib.contextmanager
