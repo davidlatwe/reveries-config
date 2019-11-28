@@ -1119,8 +1119,8 @@ def apply_shaders(relationships,
                                   target_namespace,
                                   nodes)
 
-            for id, nodes in _map.items():
-                surface_cache[id].update(nodes)
+            for id, nodes_ in _map.items():
+                surface_cache[id].update(nodes_)
 
         surfaces = []
         for id, faces in face_map.items():
@@ -1212,8 +1212,8 @@ def apply_crease_edges(relationships,
                                   target_namespace,
                                   nodes)
 
-            for id, nodes in _map.items():
-                surface_cache[id].update(nodes)
+            for id, nodes_ in _map.items():
+                surface_cache[id].update(nodes_)
 
         edges = []
         for id, edge_ids in edge_map.items():
