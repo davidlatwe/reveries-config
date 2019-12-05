@@ -3,6 +3,8 @@ import contextlib
 import avalon.api
 import avalon.maya
 
+from avalon.tools import inputs
+
 from reveries import utils
 from reveries.maya import pipeline
 from reveries.maya.plugins import ReferenceLoader
@@ -25,6 +27,11 @@ class RigLoader(ReferenceLoader, avalon.api.Loader):
 
     representations = [
         "mayaBinary",
+    ]
+
+    options = [
+        inputs.Int("count", default=1, min=1, help="Batch load count."),
+        inputs.Double3("offset", help="Offset loaded subsets."),
     ]
 
     def process_reference(self, context, name, namespace, group, options):
