@@ -54,3 +54,7 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
             self.log.warning("Found not versioned textures, creating "
                              "instance for publish.")
             create_texture_subset_from_standin(instance, stray)
+
+        # Yeti
+        if cmds.ls(instance, type="pgYetiMaya"):
+            instance.data["hasYeti"] = True

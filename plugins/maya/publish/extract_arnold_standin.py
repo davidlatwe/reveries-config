@@ -9,7 +9,7 @@ from reveries.plugins import PackageExtractor
 from reveries.maya import capsule
 from reveries import lib
 
-from maya import cmds
+from maya import cmds, mel
 
 
 class ExtractArnoldStandIn(PackageExtractor):
@@ -53,6 +53,7 @@ class ExtractArnoldStandIn(PackageExtractor):
             "fileNodeAttrs": file_node_attrs,
             "member": self.member,
             "cachePath": cache_path,
+            "hasYeti": self.data.get("hasYeti", False)
         }
         data_path = os.path.join(package_path, ".remoteData.json")
 
@@ -89,6 +90,14 @@ class ExtractArnoldStandIn(PackageExtractor):
             "defaultArnoldRenderOptions.autotx": False,
             "defaultArnoldRenderOptions.use_existing_tiled_textures": True,
         }
+
+        # Yeti
+        if data["hasYeti"]:
+            # In Deadline, this is a script job instead of rendering job, so
+            # the `pgYetiPreRender` Pre-Render MEL will not be triggered.
+            # We need to call it by ourselve, or Yeti will complain about
+            # cache temp dir not exist.
+            mel.eval("pgYetiPreRender;")
 
         with contextlib.nested(
             capsule.no_undo(),

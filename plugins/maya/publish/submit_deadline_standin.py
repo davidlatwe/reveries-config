@@ -113,6 +113,10 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
             "IdOnly": True
         }
 
+        if instance.data.get("hasYeti"):
+            # Change Deadline group for Yeti
+            payload["JobInfo"]["Group"] = "yeti_render"
+
         # Environment
 
         environment = self.assemble_environment(instance)
