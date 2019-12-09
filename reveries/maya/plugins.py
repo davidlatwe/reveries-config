@@ -259,7 +259,23 @@ class ReferenceLoader(MayaBaseLoader):
         node = container["objectName"]
 
         # Get reference node from container
-        reference_node = self.get_reference_node(container)
+        try:
+            reference_node = self.get_reference_node(container)
+        except AssertionError:
+            # Reference node not found, try removing as imported subset
+            self.log.info("Removing '%s' from Maya as imported.."
+                          % container["name"])
+            namespace = container["namespace"]
+            container_content = cmds.sets(node, query=True)
+            nodes = cmds.ls(container_content, long=True)
+            nodes.append(node)
+            try:
+                cmds.delete(nodes)
+            except ValueError:
+                pass
+            cmds.namespace(removeNamespace=namespace,
+                           deleteNamespaceContent=True)
+            return True
 
         self.log.info("Removing '%s' from Maya.." % container["name"])
 
