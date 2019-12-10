@@ -110,7 +110,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 self.log.info(name)
 
                 namespace = lib.get_ns(out_set)
-                set_member = cmds.sets(out_set, query=True) or []
+                set_member = cmds.ls(cmds.sets(out_set, query=True), long=True)
                 cacheables = lib.pick_cacheable(set_member)
                 cacheables = lib.get_visible_in_frame_range(cacheables,
                                                             int(start_frame),

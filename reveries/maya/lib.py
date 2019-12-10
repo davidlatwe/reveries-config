@@ -1765,26 +1765,38 @@ def pick_cacheable(nodes):
     """Filter out cacheable (deformable) nodes
 
     Args:
-        nodes (list): A list of node names
+        nodes (list): A list of node's long names
 
     Returns:
         list: A list of cacheable transfrom node names
 
     """
-    nodes += cmds.listRelatives(nodes,
-                                allDescendents=True,
-                                fullPath=True) or []
-    shapes = set(cmds.ls(nodes,
-                         type="deformableShape",
-                         noIntermediate=True,
-                         long=True))
+    def parenthood(node):
+        yield node
+        while "|" in node:
+            node = node.rsplit("|", 1)[0]
+            if node:
+                yield node
+    hierarchy = set()
+    for node in nodes:
+        hierarchy.update(parenthood(node))
+
+    nodes += cmds.listRelatives(nodes, allDescendents=True, path=True) or []
+    shapes = set(cmds.ls(nodes, noIntermediate=True, type="deformableShape"))
+
     cacheables = set()
     for node in shapes:
-        parent = cmds.listRelatives(node, parent=True, fullPath=True)
-        transforms = cmds.ls(parent, long=True)
-        cacheables.update(transforms)
+        parents = cmds.listRelatives(node,
+                                     allParents=True,  # Include instances
+                                     fullPath=True)
+        cacheables.update(parents)
 
-    return list(cacheables)
+    # Only return nodes that exists in the hierarchy. This prevents getting
+    # nodes that was not part of the hierarchy but instanced from there.
+    return [
+        n for n in cacheables
+        if any(n.startswith(h) for h in hierarchy)
+    ]
 
 
 def polyConstraint(components, *args, **kwargs):
