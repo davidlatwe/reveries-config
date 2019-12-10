@@ -90,10 +90,14 @@ class ExtractPointCache(PackageExtractor):
                     # Replace duplicat named nodes with unique named
                     root = list(set(root) - set(duplicated)) + unique_named
 
-                root += cmds.listRelatives(root,
-                                           allDescendents=True,
-                                           fullPath=True,
-                                           noIntermediate=True) or []
+                for node in set(root):
+                    # (NOTE) If a descendent is instanced, it will appear only
+                    #        once on the list returned.
+                    root += cmds.listRelatives(node,
+                                               allDescendents=True,
+                                               fullPath=True,
+                                               noIntermediate=True) or []
+                root = list(set(root))
                 cmds.select(root, replace=True, noExpand=True)
 
                 io.export_alembic(
