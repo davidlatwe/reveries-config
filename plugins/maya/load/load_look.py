@@ -22,6 +22,8 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
 
     def process_reference(self, context, name, namespace, group, options):
         from maya import cmds
+        from reveries.maya import lib
+        from avalon.maya.pipeline import AVALON_CONTAINER_ID
 
         representation = context["representation"]
 
@@ -30,6 +32,16 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
         expanded = os.path.expandvars(entry_path).replace("\\", "/")
         loaded = expanded in cmds.file(query=True, reference=True)
         overload = options.get("overload")
+
+        if loaded:
+            # Has been referenced, but is it containerized ?
+            id = str(representation["_id"])
+            loaded = bool(lib.lsAttrs({"id": AVALON_CONTAINER_ID,
+                                       "loader": "LookLoader",
+                                       "representation": id}))
+            if not loaded:
+                self.log.warning("Look has been referenced, but not "
+                                 "containerized.., will load a new one.")
 
         if not loaded or overload:
 
@@ -47,7 +59,8 @@ class LookLoader(ReferenceLoader, avalon.api.Loader):
             )
 
         else:
-            self.log.warning("Already Existed in scene.")
+            reference = cmds.referenceQuery(expanded, referenceNode=True)
+            self.log.warning("Already referenced in scene: %s" % reference)
             return
 
         self[:] = nodes
