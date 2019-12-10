@@ -620,7 +620,8 @@ def attribute_mute(attr_mute):
     """
     original = [(attr, cmds.mute(attr, query=True)) for attr in attr_mute]
     try:
-        cmds.mute(attr_mute)
+        for attr in attr_mute:
+            cmds.mute(attr)
         yield
 
     finally:
