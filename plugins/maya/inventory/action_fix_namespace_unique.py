@@ -4,6 +4,13 @@ import avalon.maya
 from avalon import io
 
 
+# Cache for faster action filtering on GUI
+cache = {
+    "mainContainers": None,
+    "loadedNamespaces": None,
+}
+
+
 class FixNamespaceUnique(avalon.api.InventoryAction):
     """Fix container to ensure namespace unique
 
@@ -22,20 +29,28 @@ class FixNamespaceUnique(avalon.api.InventoryAction):
 
     @staticmethod
     def is_compatible(container):
+        """Action will be visibile only if the selected container require this fix
+        """
         from maya import cmds
         from avalon.maya.pipeline import AVALON_CONTAINERS
-        from reveries.maya import lib
 
         if not container:
             return False
 
-        main_containers = cmds.ls(AVALON_CONTAINERS[1:] + "*", recursive=True)
+        if cache["mainContainers"] is None:
+            cache["mainContainers"] = cmds.ls(AVALON_CONTAINERS[1:] + "*",
+                                              recursive=True)
+        if cache["loadedNamespaces"] is None:
+            cache["loadedNamespaces"] = [cmds.getAttr(con + ".namespace")
+                                         for con in avalon.maya.pipeline._ls()]
+
+        main_containers = cache["mainContainers"]
+        namespaces = cache["loadedNamespaces"]
+
         parents = cmds.listSets(object=container["objectName"]) or []
         # Must be a root container
         if any(main in parents for main in main_containers):
-            namespace = container["namespace"]
-            filter = {"id": "pyblish.avalon.container", "namespace": namespace}
-            if len(lib.lsAttrs(filter)) > 1:
+            if namespaces.count(container["namespace"]) > 1:
                 return True
         return False
 
