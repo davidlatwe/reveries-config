@@ -48,13 +48,6 @@ class RepairMissMatchedAsset(RepairInstanceAction):
     symptom = "asset_id"
 
 
-def ls_subset_groups():
-    groups = set()
-    for node in lib.lsAttrs({"id": AVALON_CONTAINER_ID}):
-        groups.add(pipeline.get_group_from_container(node))
-    return groups
-
-
 class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     """物件要有編號 (AvalonID)
 
@@ -238,7 +231,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     @classmethod
     def _get_avalon_uuid(cls, instance):
         uuids = defaultdict(list)
-        group_nodes = ls_subset_groups()
+        group_nodes = cls.ls_subset_groups()
 
         asset_id = str(instance.context.data["assetDoc"]["_id"])
 
@@ -275,3 +268,17 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                 uuids["missMatched"].append(node)
 
         return uuids
+
+    @classmethod
+    def ls_subset_groups(cls):
+        groups = set()
+
+        for node in lib.lsAttrs({"id": AVALON_CONTAINER_ID}):
+            try:
+                group = pipeline.get_group_from_container(node)
+            except Exception as e:
+                cls.log.warning(e)
+            else:
+                groups.add(group)
+
+        return groups

@@ -31,17 +31,26 @@ class AssetOutliner(QtWidgets.QWidget):
         view.setHeaderHidden(False)
         view.setIndentation(10)
 
-        from_all_asset_btn = QtWidgets.QPushButton("Get All Assets")
-        from_selection_btn = QtWidgets.QPushButton("Get Assets From Selection")
+        asset_all = QtWidgets.QPushButton("All Loaded")
+        asset_sel = QtWidgets.QPushButton("From Selection")
+        asset_all.setCheckable(True)
+        asset_sel.setCheckable(True)
+
+        asset_group = QtWidgets.QButtonGroup(self)
+        asset_group.addButton(asset_all)
+        asset_group.addButton(asset_sel)
+
+        lister_layout = QtWidgets.QHBoxLayout()
+        lister_layout.addWidget(asset_all)
+        lister_layout.addWidget(asset_sel)
 
         layout.addWidget(title)
-        layout.addWidget(from_all_asset_btn)
-        layout.addWidget(from_selection_btn)
+        layout.addLayout(lister_layout)
         layout.addWidget(view)
 
         # Build connections
-        from_selection_btn.clicked.connect(self.get_selected_assets)
-        from_all_asset_btn.clicked.connect(self.get_all_assets)
+        asset_all.clicked.connect(self.on_all_loaded)
+        asset_sel.clicked.connect(self.on_selection)
 
         selection_model = view.selectionModel()
         selection_model.selectionChanged.connect(self.selection_changed)
@@ -60,10 +69,10 @@ class AssetOutliner(QtWidgets.QWidget):
         # todo: figure out why this workaround is needed.
         self.selection_changed.emit()
 
-    def add_items(self, items):
+    def add_items(self, items, by_selection=False):
         """Add new items to the outliner"""
 
-        self.model.add_items(items)
+        self.model.add_items(items, by_selection)
         self.refreshed.emit()
 
     def get_selected_items(self):
@@ -74,75 +83,69 @@ class AssetOutliner(QtWidgets.QWidget):
         """
 
         selection_model = self.view.selectionModel()
-        items = [row.data(self.model.ItemRole) for row in
+        items = [self.model.data(index, self.model.ItemRole) for index in
                  selection_model.selectedRows(0)]
-
         return items
 
-    def get_all_assets(self):
+    def on_all_loaded(self):
         """Add all items from the current scene"""
 
         with lib.preserve_expanded_rows(self.view):
             with lib.preserve_selection(self.view):
                 self.clear()
                 nodes = commands.get_all_asset_nodes()
-                items = commands.create_items_from_nodes(nodes)
+                items = commands.create_items(nodes)
                 self.add_items(items)
 
         return len(items) > 0
 
-    def get_selected_assets(self):
+    def on_selection(self):
         """Add all selected items from the current scene"""
 
         with lib.preserve_expanded_rows(self.view):
             with lib.preserve_selection(self.view):
                 self.clear()
-                nodes = commands.get_selected_nodes()
-                items = commands.create_items_from_nodes(nodes)
-                self.add_items(items)
+                nodes = commands.get_selected_asset_nodes()
+                items = commands.create_items(nodes, by_selection=True)
+                self.add_items(items, by_selection=True)
 
     def get_nodes(self):
         """Find the nodes in the current scene per asset."""
 
-        items = self.get_selected_items()
-
-        # Collect the asset item entries per asset
-        assets = dict()
-        for item in items:
-            asset_name = item["asset"]["name"]
-
-            namespaces = item.get("namespace", item["namespaces"])
-            nodes = commands.get_groups_from_namespaces(namespaces)
-
-            assets[item.get("namespace") or asset_name] = item
-            assets[item.get("namespace") or asset_name]["nodes"] = nodes
-
-        return assets
-
-    def select_asset_from_items(self):
-        """Select nodes from listed asset"""
-
-        items = self.get_nodes()
-        nodes = []
-        for item in items.values():
-            nodes.extend(item["nodes"])
-
-        commands.select(nodes)
-
-    def remove_look_from_items(self):
-        namespaces = set()
-        asset_ids = set()
+        asset_nodes = dict()
 
         for item in self.get_selected_items():
-            namespace = item.get("namespace")
-            if namespace:
-                namespaces.add(namespace)
-            else:
-                namespaces.update(item["namespaces"])
+            asset_name = item["asset"]["name"]
 
+            if "subset" in item:
+                key = (asset_name, item["namespace"])
+                asset_nodes[key] = item
+
+            else:
+                for child in item.children():
+                    key = (asset_name, child["namespace"])
+                    asset_nodes[key] = child
+
+        return asset_nodes
+
+    def select_asset_from_items(self):
+        asset_nodes = self.get_nodes()
+        nodes = set()
+        for item in asset_nodes.values():
+            nodes.update(item["selectBack"])
+
+        commands.select(list(nodes))
+
+    def remove_look_from_items(self):
+
+        asset_nodes = self.get_nodes()
+        nodes = []
+        asset_ids = set()
+        for item in asset_nodes.values():
+            nodes.extend(item["nodes"])
             asset_ids.add(str(item["asset"]["_id"]))
 
-        commands.remove_look(namespaces, asset_ids)
+        commands.remove_look(nodes, asset_ids)
 
     def right_mouse_menu(self, pos):
         """Build RMB menu for asset outliner"""
@@ -200,6 +203,7 @@ class LookOutliner(QtWidgets.QWidget):
         view = views.View()
         view.setModel(proxy)
         view.setMinimumHeight(80)
+        view.setIndentation(4)
         view.setToolTip("Use right mouse button menu for direct actions")
         view.customContextMenuRequested.connect(self.right_mouse_menu)
         view.sortByColumn(0, QtCore.Qt.AscendingOrder)

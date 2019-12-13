@@ -1076,6 +1076,7 @@ def serialise_shaders(nodes):
 def apply_shaders(relationships,
                   namespace=None,
                   target_namespaces=None,
+                  nodes=None,
                   auto_fix_on_renderlayer_adjustment_fail=True):
     """Given a dictionary of `relationships`, apply shaders to surfaces
 
@@ -1113,9 +1114,13 @@ def apply_shaders(relationships,
 
         surface_cache = defaultdict(set)
         for target_namespace in target_namespaces:
-            _map = ls_nodes_by_id(set(face_map.keys()), target_namespace)
-            for id, nodes in _map.items():
-                surface_cache[id].update(nodes)
+
+            _map = ls_nodes_by_id(set(face_map.keys()),
+                                  target_namespace,
+                                  nodes)
+
+            for id, nodes_ in _map.items():
+                surface_cache[id].update(nodes_)
 
         surfaces = []
         for id, faces in face_map.items():
@@ -1162,7 +1167,10 @@ def apply_shaders(relationships,
                     pass
 
 
-def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
+def apply_crease_edges(relationships,
+                       namespace=None,
+                       target_namespaces=None,
+                       nodes=None):
     """Given a dictionary of `relationships`, apply crease value to edges
 
     Arguments:
@@ -1199,9 +1207,13 @@ def apply_crease_edges(relationships, namespace=None, target_namespaces=None):
 
         surface_cache = defaultdict(set)
         for target_namespace in target_namespaces:
-            _map = ls_nodes_by_id(set(edge_map.keys()), target_namespace)
-            for id, nodes in _map.items():
-                surface_cache[id].update(nodes)
+
+            _map = ls_nodes_by_id(set(edge_map.keys()),
+                                  target_namespace,
+                                  nodes)
+
+            for id, nodes_ in _map.items():
+                surface_cache[id].update(nodes_)
 
         edges = []
         for id, edge_ids in edge_map.items():
@@ -1275,7 +1287,7 @@ def hasAttrExact(node, attr):
     return cmds.attributeQuery(attr, node=node, exists=True)
 
 
-def ls_nodes_by_id(ids, namespace=None):
+def ls_nodes_by_id(ids, namespace=None, nodes=None):
     """Return nodes by matching Avalon UUID
 
     This function is faster then using `lsAttrs({"AvalonID": id})` because
@@ -1298,7 +1310,7 @@ def ls_nodes_by_id(ids, namespace=None):
 
     namespace = namespace or ""
 
-    all_nodes = set()
+    namespace_nodes = set()
     selection_list = om.MSelectionList()
     try:
         selection_list.add("{0}*.{1}".format(namespace, AVALON_ID_ATTR_LONG),
@@ -1316,7 +1328,12 @@ def ls_nodes_by_id(ids, namespace=None):
                 fn_node = dag_fn.setObject(node)
                 # Include all instances
                 for path in fn_node.getAllPaths():
-                    all_nodes.add(path.partialPathName())
+                    namespace_nodes.add(path.partialPathName())
+
+    if nodes:
+        all_nodes = namespace_nodes.intersection(set(nodes))
+    else:
+        all_nodes = namespace_nodes
 
     id_map = defaultdict(set)
     for node in all_nodes:
@@ -1748,26 +1765,38 @@ def pick_cacheable(nodes):
     """Filter out cacheable (deformable) nodes
 
     Args:
-        nodes (list): A list of node names
+        nodes (list): A list of node's long names
 
     Returns:
         list: A list of cacheable transfrom node names
 
     """
-    nodes += cmds.listRelatives(nodes,
-                                allDescendents=True,
-                                fullPath=True) or []
-    shapes = set(cmds.ls(nodes,
-                         type="deformableShape",
-                         noIntermediate=True,
-                         long=True))
+    def parenthood(node):
+        yield node
+        while "|" in node:
+            node = node.rsplit("|", 1)[0]
+            if node:
+                yield node
+    hierarchy = set()
+    for node in nodes:
+        hierarchy.update(parenthood(node))
+
+    nodes += cmds.listRelatives(nodes, allDescendents=True, path=True) or []
+    shapes = set(cmds.ls(nodes, noIntermediate=True, type="deformableShape"))
+
     cacheables = set()
     for node in shapes:
-        parent = cmds.listRelatives(node, parent=True, fullPath=True)
-        transforms = cmds.ls(parent, long=True)
-        cacheables.update(transforms)
+        parents = cmds.listRelatives(node,
+                                     allParents=True,  # Include instances
+                                     fullPath=True)
+        cacheables.update(parents)
 
-    return list(cacheables)
+    # Only return nodes that exists in the hierarchy. This prevents getting
+    # nodes that was not part of the hierarchy but instanced from there.
+    return [
+        n for n in cacheables
+        if any(n.startswith(h) for h in hierarchy)
+    ]
 
 
 def polyConstraint(components, *args, **kwargs):

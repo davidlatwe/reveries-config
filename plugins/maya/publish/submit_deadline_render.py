@@ -159,7 +159,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
             environment["MAYA_MODULE_PATH"] = ";".join(filtered)
 
         parsed_environment = {
-            "EnvironmentKeyValue%d" % index: "{key}={value}".format(
+            "EnvironmentKeyValue%d" % index: u"{key}={value}".format(
                 key=key,
                 value=environment[key]
             ) for index, key in enumerate(environment)

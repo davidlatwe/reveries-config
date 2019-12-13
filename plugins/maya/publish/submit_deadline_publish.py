@@ -113,7 +113,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             environment = self.assemble_environment(instance)
 
             parsed_environment = {
-                "EnvironmentKeyValue%d" % index: "{key}={value}".format(
+                "EnvironmentKeyValue%d" % index: u"{key}={value}".format(
                     key=key,
                     value=environment[key]
                 ) for index, key in enumerate(environment)

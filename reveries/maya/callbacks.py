@@ -175,6 +175,8 @@ def on_import(_):
     maya_utils.update_id_verifiers(imported_nodes)
     _nodes["_"] = None
 
+    sticker.reveal()  # Show custom icon
+
 
 def before_import_reference(_):
     avalon.logger.info("Running callback before import reference..")

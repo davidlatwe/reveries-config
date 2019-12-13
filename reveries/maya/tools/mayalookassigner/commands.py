@@ -7,7 +7,6 @@ import maya.cmds as cmds
 
 from avalon import io, api
 from avalon.maya.pipeline import AVALON_CONTAINER_ID
-from avalon.vendor import six
 
 from ....utils import get_representation_path_
 from ....maya import lib, utils
@@ -16,6 +15,8 @@ from ...pipeline import (
     get_group_from_container,
     parse_container,
 )
+
+from .models import UNDEFINED_SUBSET
 
 
 log = logging.getLogger(__name__)
@@ -34,28 +35,24 @@ def select(nodes):
     cmds.select(nodes, noExpand=True)
 
 
-def get_groups_from_namespaces(namespaces):
+def group_from_namespace(namespace):
     """Return group nodes from namespace
 
     Args:
-        namespaces (str, unicode or set): Target subsets' namespaces
+        namespace (str, unicode): Target subset's namespace
 
     Returns:
-        list: List of group node in long name
+        str: group node in long name
 
     """
-    if isinstance(namespaces, six.string_types):
-        namespaces = [namespaces]
+    container = get_container_from_namespace(namespace)
+    return get_group_from_container(container)
 
-    groups = list()
 
-    for namespace in namespaces:
-        container = get_container_from_namespace(namespace)
-        group = get_group_from_container(container)
-        if group is not None:
-            groups.append(group)
-
-    return groups
+def get_asset_id(node):
+    if not lib.hasAttr(node, lib.AVALON_ID_ATTR_LONG):
+        return None
+    return utils.get_id_namespace(node)
 
 
 def list_descendents(nodes):
@@ -73,33 +70,56 @@ def list_descendents(nodes):
     result = []
     while True:
         nodes = cmds.listRelatives(nodes,
-                                   fullPath=True)
+                                   path=True)
         if nodes:
             result.extend(nodes)
         else:
             return result
 
 
-def get_selected_nodes():
-    """Get information from current selection"""
+def get_selected_asset_nodes():
 
-    selection = cmds.ls(selection=True, long=True)
+    host = api.registered_host()
+
+    nodes = list()
+
+    selection = cmds.ls(selection=True)
     hierarchy = list_descendents(selection)
-    nodes = list(set(selection + hierarchy))
+
+    containers = list(host.ls())
+
+    for node in set(selection + hierarchy):
+
+        asset_id = get_asset_id(node)
+        if asset_id is None:
+            continue
+
+        for container in containers:
+            if cmds.sets(node, isMember=container["objectName"]):
+                subset = container["name"]
+                namespace = container["namespace"]
+                break
+        else:
+            subset = UNDEFINED_SUBSET
+            namespace = lib.get_ns(node)
+
+        nodes.append({
+            "node": node,
+            "assetId": asset_id,
+            "subset": subset,
+            "namespace": namespace,
+        })
 
     return nodes
 
 
 def get_all_asset_nodes():
-    """Get all assets from the scene, container based
-
-    Returns:
-        list: list of dictionaries
-    """
+    """Get all assets from the scene, container based"""
 
     host = api.registered_host()
 
-    nodes = []
+    nodes = list()
+
     for container in host.ls():
         # We only interested in surface assets !
         # (TODO): This black list should be somewhere else
@@ -110,48 +130,29 @@ def get_all_asset_nodes():
 
         # Gather all information
         container_name = container["objectName"]
-        nodes += cmds.sets(container_name, query=True, nodesOnly=True) or []
+        subset = container["name"]
+        namespace = container["namespace"]
+
+        for node in cmds.ls(cmds.sets(container_name,
+                                      query=True,
+                                      nodesOnly=True)):
+
+            asset_id = get_asset_id(node)
+            if asset_id is None:
+                continue
+
+            nodes.append({
+                "node": node,
+                "assetId": asset_id,
+                "subset": subset,
+                "namespace": namespace,
+            })
 
     return nodes
 
 
-def get_asset_id_from_node(node):
-    """Get asset id by lookup container that this node belongs to
-    Args:
-        node (str): node long name
-
-    Returns:
-        str
-
-    """
-    return utils.get_id_namespace(node)
-
-
-def create_asset_id_hash(nodes):
-    """Create a hash based on `AvalonID` attribute value
-    Args:
-        nodes (list): a list of nodes
-
-    Returns:
-        dict
-    """
-    node_id_hash = dict()
-    for node in cmds.ls(nodes, long=True):
-        if not lib.hasAttr(node, lib.AVALON_ID_ATTR_LONG):
-            continue
-        asset_id = get_asset_id_from_node(node)
-        if asset_id is None:
-            continue
-
-        if asset_id not in node_id_hash:
-            node_id_hash[asset_id] = list()
-        node_id_hash[asset_id].append(node)
-
-    return node_id_hash
-
-
-def create_items_from_nodes(nodes):
-    """Create an item for the view based the container and content of it
+def create_items(nodes, by_selection=False):
+    """Create an item for the view
 
     It fetches the look document based on the asset ID found in the content.
     The item will contain all important information for the tool to work.
@@ -160,27 +161,32 @@ def create_items_from_nodes(nodes):
     it will log a warning message.
 
     Args:
-        nodes (list): list of maya nodes
+        nodes (set): A set of maya nodes
 
     Returns:
         list of dicts
 
     """
+    if not nodes:
+        return []
 
     asset_view_items = []
 
-    id_hashes = create_asset_id_hash(nodes)
-    if not id_hashes:
-        return asset_view_items
+    id_hashes = dict()
+    for node in nodes:
+        asset_id = node["assetId"]
+        if asset_id not in id_hashes:
+            id_hashes[asset_id] = list()
+        id_hashes[asset_id].append(node)
 
-    for _id, id_nodes in id_hashes.items():
-        asset = io.find_one({"_id": io.ObjectId(_id)},
+    for asset_id, asset_nodes in id_hashes.items():
+        asset = io.find_one({"_id": io.ObjectId(asset_id)},
                             projection={"name": True})
 
         # Skip if asset id is not found
         if not asset:
-            log.warning("Id not found in the database, skipping '%s'." % _id)
-            log.warning("Nodes: %s" % id_nodes)
+            log.warning("Asset id not found in the database, skipping '%s'."
+                        % asset_id)
             continue
 
         # Collect available look subsets for this asset
@@ -188,38 +194,40 @@ def create_items_from_nodes(nodes):
         loaded_looks = list_loaded_looks(asset["_id"])
 
         # Collect namespaces the asset is found in
-        namespaces = set()
-        for node in id_nodes:
-            namespace = lib.get_ns(node)
-            if namespace == ":":
-                # (TODO) Although we could list out nodes that were under root
-                #        namespace, but assigning looks to those nodes was not
-                #        guaranteed. Skip those nodes for now...
-                # (TODO) * Is namespace wrapped ?
-                #        * How to select nodes that does not have namespace ?
-                continue
-            namespaces.add(namespace)
-
         subsets = dict()
-        for namespace in namespaces:
-            try:
-                container = get_container_from_namespace(namespace)
-            except RuntimeError:
-                # This namespace does not belong to any container, possible
-                # because of it's a `mayashare` subset or from other dirty
-                # workflow.
-                # (TODO) subsets[namespace] = "(unknown)"
-                continue
+        namespace_nodes = dict()
+        namespace_selection = dict()
 
-            subset = cmds.getAttr(container + ".name")
-            subsets[namespace] = subset
+        for node in asset_nodes:
+            namespace = node["namespace"]
+            subset = node["subset"]
+
+            if namespace not in namespace_nodes:
+                subsets[namespace] = subset
+                namespace_nodes[namespace] = set()
+
+            namespace_nodes[namespace].add(node["node"])
+
+        namespaces = list(subsets.keys())
+
+        if by_selection:
+            namespace_selection = namespace_nodes
+        else:
+            for namespace in namespaces:
+                selection = set()
+                group = group_from_namespace(namespace)
+                if group is not None:
+                    selection.add(group)
+                namespace_selection[namespace] = selection
 
         asset_view_items.append({"label": asset["name"],
                                  "asset": asset,
                                  "looks": looks,
                                  "loadedLooks": loaded_looks,
                                  "namespaces": namespaces,
-                                 "subsets": subsets})
+                                 "subsets": subsets,
+                                 "nodesByNamespace": namespace_nodes,
+                                 "selectByNamespace": namespace_selection})
 
     return asset_view_items
 
@@ -246,22 +254,26 @@ def list_loaded_looks(asset_id):
     cached_look = dict()
 
     for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
-                                  "loader": "LookLoader"}):
+                                  "loader": "LookLoader",
+                                  "assetId": str(asset_id)}):
 
-        if str(asset_id) == cmds.getAttr(container + ".assetId"):
-            subset_id = cmds.getAttr(container + ".subsetId")
-            if subset_id in cached_look:
-                look = cached_look[subset_id].copy()
-            else:
-                look = io.find_one({"_id": io.ObjectId(subset_id)})
-                cached_look[subset_id] = look
+        subset_id = cmds.getAttr(container + ".subsetId")
+        if subset_id in cached_look:
+            look = cached_look[subset_id].copy()
+        else:
+            look = io.find_one({"_id": io.ObjectId(subset_id)})
+            cached_look[subset_id] = look
 
-            namespace = cmds.getAttr(container + ".namespace")
-            # Example: ":Zombie_look_02_"
-            look["No."] = namespace.split("_")[-2]  # result: "02"
-            look["namespace"] = namespace
+        namespace = cmds.getAttr(container + ".namespace")
+        # Example: ":Zombie_look_02_"
+        # result: "Zombie 02"
+        asset = namespace[1:].rsplit("_", 3)[0]  # Zombie
+        num = namespace.split("_")[-2]  # "02"
+        ident = asset + " " + num
+        look["ident"] = ident
+        look["namespace"] = namespace
 
-            look_subsets.append(look)
+        look_subsets.append(look)
 
     return look_subsets
 
@@ -349,7 +361,7 @@ def get_relationship(look):
     return relationship
 
 
-def assign_look(namespaces, look, via_uv):
+def assign_look(nodes, look, via_uv):
     """Assign looks via namespaces
 
     Args:
@@ -369,46 +381,43 @@ def assign_look(namespaces, look, via_uv):
     with open(relationship) as f:
         relationships = json.load(f)
 
-    # Apply shader to target subset by namespace
-    if isinstance(namespaces, six.string_types):
-        namespaces = [namespaces]
-    target_namespaces = [ns + ":" for ns in namespaces]
-
+    # Assign
+    #
     if via_uv:
-        _look_via_uv(look, relationships, target_namespaces)
+        _look_via_uv(look, relationships, nodes)
     else:
         _apply_shaders(look,
                        relationships["shaderById"],
-                       target_namespaces)
+                       nodes)
         _apply_crease_edges(look,
                             relationships["creaseSets"],
-                            target_namespaces)
+                            nodes)
 
         arnold_attrs = relationships.get("arnoldAttrs",
                                          relationships.get("alSmoothSets"))
         _apply_ai_attrs(look,
                         arnold_attrs,
-                        target_namespaces)
+                        nodes)
 
 
-def _apply_shaders(look, relationship, target_namespaces):
+def _apply_shaders(look, relationship, nodes):
     namespace = look["namespace"][1:]
 
     lib.apply_shaders(relationship,
                       namespace,
-                      target_namespaces)
+                      nodes=nodes)
 
 
-def _apply_crease_edges(look, relationship, target_namespaces):
+def _apply_crease_edges(look, relationship, nodes):
     namespace = look["namespace"][1:]
 
     crease_sets = lib.apply_crease_edges(relationship,
                                          namespace,
-                                         target_namespaces)
+                                         nodes=nodes)
     cmds.sets(crease_sets, forceElement=look["objectName"])
 
 
-def _apply_ai_attrs(look, relationship, target_namespaces):
+def _apply_ai_attrs(look, relationship, nodes):
     namespace = look["namespace"][1:]
 
     if relationship is not None:
@@ -420,11 +429,11 @@ def _apply_ai_attrs(look, relationship, target_namespaces):
             arnold.utils.apply_ai_attrs(
                 relationship,
                 namespace,
-                target_namespaces
+                nodes=nodes,
             )
 
 
-def _look_via_uv(look, relationships, target_namespaces):
+def _look_via_uv(look, relationships, nodes):
     """Assign looks via namespaces and using UV hash as hint
 
     In some cases, a setdress liked subset may assembled from a numbers of
@@ -441,29 +450,31 @@ def _look_via_uv(look, relationships, target_namespaces):
     hasher = utils.MeshHasher()
     uv_via_id = dict()
     id_via_uv = dict()
-    for target_namespace in target_namespaces:
-        for mesh in cmds.ls(target_namespace + "*",
-                            type="mesh",  # We can only hash meshes.
-                            long=True):
-            node = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
 
-            id = utils.get_id(node)
-            if id in uv_via_id:
-                continue
+    hierarchy = list_descendents(nodes)
 
-            hasher.clear()
-            hasher.set_mesh(node)
-            hasher.update_uvmap()
-            uv_hash = hasher.digest().get("uvmap")
+    for mesh in cmds.ls(list(set(nodes + hierarchy)),
+                        type="mesh",  # We can only hash meshes.
+                        ):
+        node = cmds.listRelatives(mesh, parent=True, path=True)[0]
 
-            if uv_hash is None:
-                continue
+        id = utils.get_id(node)
+        if id in uv_via_id:
+            continue
 
-            uv_via_id[id] = uv_hash
+        hasher.clear()
+        hasher.set_mesh(node)
+        hasher.update_uvmap()
+        uv_hash = hasher.digest().get("uvmap")
 
-            if uv_hash not in id_via_uv:
-                id_via_uv[uv_hash] = set()
-            id_via_uv[uv_hash].add(id)
+        if uv_hash is None:
+            continue
+
+        uv_via_id[id] = uv_hash
+
+        if uv_hash not in id_via_uv:
+            id_via_uv[uv_hash] = set()
+        id_via_uv[uv_hash].add(id)
 
     # Apply shaders
     #
@@ -482,7 +493,7 @@ def _look_via_uv(look, relationships, target_namespaces):
             same_uv_ids = id_via_uv[uv_hash]
             shader_by_id[shader] += [".".join([i, faces]) for i in same_uv_ids]
 
-    _apply_shaders(look, shader_by_id, target_namespaces)
+    _apply_shaders(look, shader_by_id, nodes)
 
     # Apply crease edges
     #
@@ -501,7 +512,7 @@ def _look_via_uv(look, relationships, target_namespaces):
             same_uv_ids = id_via_uv[uv_hash]
             crease_by_id[level] += [".".join([i, edges]) for i in same_uv_ids]
 
-    _apply_crease_edges(look, crease_by_id, target_namespaces)
+    _apply_crease_edges(look, crease_by_id, nodes)
 
     # Apply Arnold attributes
     #
@@ -522,10 +533,10 @@ def _look_via_uv(look, relationships, target_namespaces):
         for i in same_uv_ids:
             ai_attrs_by_id[i] = attrs
 
-    _apply_ai_attrs(look, ai_attrs_by_id, target_namespaces)
+    _apply_ai_attrs(look, ai_attrs_by_id, nodes)
 
 
-def remove_look(namespaces, asset_ids):
+def remove_look(nodes, asset_ids):
 
     look_sets = set()
     for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
@@ -537,11 +548,7 @@ def remove_look(namespaces, asset_ids):
         members = cmds.sets(container["objectName"], query=True)
         look_sets.update(cmds.ls(members, type="objectSet"))
 
-    shaded = list()
-    for namespace in namespaces:
-        container = get_container_from_namespace(namespace)
-        nodes = cmds.sets(container, query=True)
-        shaded += cmds.ls(nodes, type=("transform", "surfaceShape"))
+    shaded = cmds.ls(nodes, type=("transform", "surfaceShape"))
 
     for look_set in look_sets:
         for member in cmds.sets(look_set, query=True) or []:

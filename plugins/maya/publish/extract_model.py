@@ -51,7 +51,6 @@ class ExtractModel(PackageExtractor):
         clay_shader = "initialShadingGroup"
 
         # Perform extraction
-        self.log.info("Extracting %s" % str(self.member))
         cmds.select(self.member, noExpand=True)
 
         with contextlib.nested(
@@ -81,7 +80,10 @@ class ExtractModel(PackageExtractor):
                 # Construction history inherited from collection
                 # This enables a selective export of nodes
                 # relevant to this particular plug-in.
-                constructionHistory=False
+                constructionHistory=False,
+                channels=False,
+                constraints=False,
+                expressions=False,
             )
 
         packager.add_data({

@@ -4,6 +4,7 @@ import avalon.api
 import reveries.maya.lib
 from reveries.maya import utils
 from reveries.maya.plugins import ReferenceLoader
+from avalon.vendor import qargparse
 
 
 class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
@@ -24,6 +25,11 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
         "Alembic",
         "FBXCache",
         "GPUCache",
+    ]
+
+    options = [
+        qargparse.Integer("count", default=1, min=1, help="Batch load count."),
+        qargparse.Double3("offset", help="Offset loaded subsets."),
     ]
 
     def process_reference(self, context, name, namespace, group, options):
