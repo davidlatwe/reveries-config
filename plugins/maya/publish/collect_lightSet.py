@@ -1,18 +1,19 @@
 
 import pyblish.api
-
+from maya import cmds
 from reveries import plugins
-from reveries.maya import pipeline
+from reveries.maya import pipeline, utils
 
 
-def create_texture_subset_from_lightSet(instance, textures):
+def create_texture_subset_from_lightSet(instance, textures, use_txmaps):
     """
     """
     family = "reveries.texture"
     subset = instance.data["subset"]
     subset = "texture" + subset[0].upper() + subset[1:]
-
-    data = {"useTxMaps": True}
+    data = {
+        "useTxMaps": use_txmaps,
+    }
 
     plugins.create_dependency_instance(instance,
                                        subset,
@@ -29,7 +30,6 @@ class CollectLightSet(pyblish.api.InstancePlugin):
     families = ["reveries.lightset"]
 
     def process(self, instance):
-        from maya import cmds
 
         lights = list()
         light_types = dict()
@@ -63,15 +63,16 @@ class CollectLightSet(pyblish.api.InstancePlugin):
 
         instance[:] = list(set(upstream_nodes + instance.data["dagMembers"]))
 
-        self.collect_ai_mesh_light(instance)
-        self.collect_ai_shader_emission(instance)
+        is_arnold = utils.get_renderer_by_layer() == "arnold"
+        if is_arnold:
+            self.collect_ai_mesh_light(instance)
+            self.collect_ai_shader_emission(instance)
 
         stray = pipeline.find_stray_textures(instance)
         if stray:
-            create_texture_subset_from_lightSet(instance, stray)
+            create_texture_subset_from_lightSet(instance, stray, is_arnold)
 
     def collect_ai_mesh_light(self, instance):
-        from maya import cmds
 
         if "aiMeshLight" in instance.data["lightsByType"]:
             self.log.info("Collecting Arnold mesh light sources..")
@@ -81,10 +82,6 @@ class CollectLightSet(pyblish.api.InstancePlugin):
                 instance.data["lights"] += cmds.ls(mesh, long=True)
 
     def collect_ai_shader_emission(self, instance):
-        from maya import cmds
-
-        if not cmds.pluginInfo("mtoa", query=True, loaded=True):
-            return
 
         self.log.info("Collecting Arnold shader emission light sources..")
 

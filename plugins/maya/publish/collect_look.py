@@ -2,16 +2,18 @@
 import pyblish.api
 from maya import cmds
 from reveries import plugins
+from reveries.maya import pipeline, utils
 
 
-def create_texture_subset_from_look(instance, textures):
+def create_texture_subset_from_look(instance, textures, use_txmaps):
     """
     """
     family = "reveries.texture"
     subset = instance.data["subset"]
     subset = "texture" + subset[0].upper() + subset[1:]
-
-    data = {"useTxMaps": True}
+    data = {
+        "useTxMaps": use_txmaps,
+    }
 
     plugins.create_dependency_instance(instance,
                                        subset,
@@ -30,8 +32,6 @@ class CollectLook(pyblish.api.InstancePlugin):
     families = ["reveries.look"]
 
     def process(self, instance):
-        from reveries.maya import pipeline
-
         surfaces = cmds.ls(instance,
                            noIntermediate=True,
                            type="surfaceShape")
@@ -46,4 +46,5 @@ class CollectLook(pyblish.api.InstancePlugin):
 
         stray = pipeline.find_stray_textures(instance)
         if stray:
-            create_texture_subset_from_look(instance, stray)
+            is_arnold = utils.get_renderer_by_layer() == "arnold"
+            create_texture_subset_from_look(instance, stray, is_arnold)
