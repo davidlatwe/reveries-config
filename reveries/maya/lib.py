@@ -1085,6 +1085,7 @@ def apply_shaders(relationships,
             shaders and how they relate to surfaces.
         namespace (str, optional): namespace that need to apply to shaders
         target_namespaces (list, optional): model namespaces
+        nodes (list, optional): surface nodes' short name
         auto_fix_on_renderlayer_adjustment_fail (bool): Default True
 
     """
