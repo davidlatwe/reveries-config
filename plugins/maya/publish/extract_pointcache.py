@@ -125,23 +125,38 @@ class ExtractPointCache(PackageExtractor):
         self.add_range_data()
 
     def extract_FBXCache(self, packager):
-        from reveries.maya import io
+        from reveries.maya import io, capsule
         from maya import cmds
 
         cmds.select(self.data["outCache"], replace=True)
 
-        packager.skip_stage()
+        with capsule.undo_chunk_when_no_undo():
 
-        entry_file = packager.file_name("ma")
-        cache_file = packager.file_name("fbx")
-        package_path = packager.create_package()
-        entry_path = os.path.join(package_path, entry_file)
-        cache_path = os.path.join(package_path, cache_file)
+            # (TODO) Make namespace preserving optional on GUI
+            if not self.data.get("keepNamespace", False):
 
-        with io.export_fbx_set_pointcache("FBXCacheSET"):
-            io.export_fbx(cache_path)
+                namespaces_to_remove = set()
+                for node in self.data["outCache"]:
+                    for name in node.split("|"):
+                        if ":" in name:
+                            namespaces_to_remove.add(name.rsplit(":", 1)[0])
 
-        io.wrap_fbx(entry_path, [(cache_file, "ROOT")])
+                for namespace in reversed(sorted(namespaces_to_remove)):
+                    cmds.namespace(removeNamespace=namespace,
+                                   mergeNamespaceWithParent=True)
+
+            packager.skip_stage()
+
+            entry_file = packager.file_name("ma")
+            cache_file = packager.file_name("fbx")
+            package_path = packager.create_package()
+            entry_path = os.path.join(package_path, entry_file)
+            cache_path = os.path.join(package_path, cache_file)
+
+            with io.export_fbx_set_pointcache("FBXCacheSET"):
+                io.export_fbx(cache_path)
+
+            io.wrap_fbx(entry_path, [(cache_file, "ROOT")])
 
         packager.add_data({"entryFileName": entry_file})
         self.add_range_data()
