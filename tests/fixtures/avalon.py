@@ -143,6 +143,11 @@ def _project_data(PROJECT_PATH):
     config = _load_toml(CONFIG_TOML)
     inventory = _load_toml(INVENT_TOML)
 
+    # Change Apps for testing usage
+    config["apps"] = [
+        {"name": "mayapy"},
+    ]
+
     return config, inventory
 
 
