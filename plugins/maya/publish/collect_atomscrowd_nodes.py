@@ -12,7 +12,7 @@ class CollectAtomsCrowdNodes(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     families = [
         "reveries.atomscrowd",
-        "reveries.imgseq",
+        "reveries.renderlayer",
     ]
 
     def process(self, instance):

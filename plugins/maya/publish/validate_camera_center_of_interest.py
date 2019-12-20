@@ -12,7 +12,7 @@ class ValidateCameraCenterOfInterest(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Center Of Interest"
     families = [
-        "reveries.imgseq",
+        "reveries.renderlayer",
         "reveries.camera",
     ]
 

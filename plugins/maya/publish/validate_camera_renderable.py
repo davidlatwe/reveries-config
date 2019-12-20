@@ -10,7 +10,7 @@ class ValidateSingleRenderableCamera(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Single Renderable Camera"
     families = [
-        "reveries.imgseq",
+        "reveries.renderlayer",
     ]
 
     def process(self, instance):

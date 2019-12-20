@@ -19,7 +19,7 @@ class ValidateDeadlineMayaScheduling(pyblish.api.InstancePlugin):
     families = [
         "reveries.pointcache",
         "reveries.standin",
-        "reveries.imgseq",
+        "reveries.renderlayer",
     ]
     actions = [
         pyblish.api.Category("Select"),

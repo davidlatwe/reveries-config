@@ -25,7 +25,6 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
     label = "Avalon Instances"
 
     branched = {
-        "reveries.imgseq": "renderType",
         "reveries.xgen": "XGenType",
     }
 

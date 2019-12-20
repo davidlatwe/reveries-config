@@ -60,18 +60,8 @@ label = "Shot Package"
 icon = "shopping-basket"
 
 [[families]]
-name = "reveries.imgseq"
-label = "Image Sequence"
-icon = "film"
-
-[[families]]
-name = "reveries.imgseq.playblast"
-label = "Playblast"
-icon = "film"
-
-[[families]]
-name = "reveries.imgseq.render"
-label = "Renders"
+name = "reveries.renderlayer"
+label = "Render Layer"
 icon = "film"
 
 [[families]]

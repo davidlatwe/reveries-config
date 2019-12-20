@@ -17,7 +17,7 @@ class ValidateCameraNotDefault(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     families = [
         "reveries.camera",
-        "reveries.imgseq",
+        "reveries.renderlayer",
     ]
     actions = [
         pyblish.api.Category("Select"),

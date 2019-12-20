@@ -17,7 +17,7 @@ class ValidateCameraVersioned(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Is Versioned Camera"
     families = [
-        "reveries.imgseq",
+        "reveries.renderlayer",
     ]
 
     actions = [

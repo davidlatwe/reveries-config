@@ -23,7 +23,7 @@ class ValidateNoAtomsUnknownNodes(pyblish.api.InstancePlugin):
     label = "No Atoms Unknown Nodes"
     hosts = ["maya"]
     families = [
-        "reveries.imgseq",
+        "reveries.renderlayer",
     ]
 
     actions = [
