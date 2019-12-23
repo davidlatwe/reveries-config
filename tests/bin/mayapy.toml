@@ -14,6 +14,10 @@ description = ""
 "{AVALON_CORE}/res/workspace.mel" = "workspace.mel"
 
 [environment]
+MAYA_DISABLE_CLIC_IPM = "Yes"  # Disable the AdSSO process
+MAYA_DISABLE_CIP = "Yes"  # Shorten time to boot
+MAYA_DISABLE_CER = "Yes"
+PYMEL_SKIP_MEL_INIT = "Yes"
 PYTHONPATH = [
 	"{AVALON_CORE}/setup/maya",
 	"{PYTHONPATH}"
