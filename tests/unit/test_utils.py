@@ -67,12 +67,6 @@ def test_get_timeline_data(find_one):
     data = reveries.utils.get_timeline_data()
     assert data == ASSET_DATA
 
-    # Handle is invalid
-    INVALID_DATA = (100, 999, 0, 24)
-    find_one.side_effect = make_side_effect(INVALID_DATA)
-    with pytest.raises(ValueError):
-        reveries.utils.get_timeline_data()
-
 
 @mock.patch('reveries.utils.get_timeline_data')
 def test_compose_timeline_data(time_data):
@@ -83,22 +77,29 @@ def test_compose_timeline_data(time_data):
     assert data == (90, 210, 24)
 
 
+@mock.patch.dict('avalon.Session', {"AVALON_ASSET": "TestShot"})
 @mock.patch('avalon.io.find_one')
 def test_get_resolution_data(find_one):
 
-    find_one.return_value = {
-        "data": {
-            "resolution_width": 960,
-            "resolution_height": 540,
-        }
-    }
-    data = reveries.utils.get_resolution_data()
-    assert data == (960, 540)
+    def side_effect(spec):
+        if spec == {"type": "project"}:
+            return find_one(spec)
+        if spec == {"name": "TestShot", "type": "asset"}:
+            return {"data": {
+                "resolution_width": 960,
+                "resolution_height": 540,
+            }}
+
+    find_one.side_effect = side_effect
 
     # Test default value
     find_one.return_value = {"data": {}}
     data = reveries.utils.get_resolution_data()
     assert data == (1920, 1080)
+
+    # Test Asset value
+    data = reveries.utils.get_resolution_data(asset_name="TestShot")
+    assert data == (960, 540)
 
 
 @mock.patch('pyblish_qml.ipc.formatting.format_result')
@@ -204,7 +205,11 @@ def test_get_representation_path_(registered_root):
     template_publish = ("{root}/{project}/{app}/{silo}/{asset}/publish/"
                         "{subset}/v{version:0>3}/{representation}")
 
-    representation = {"type": "representation", "name": "MayaBinary"}
+    representation = {
+        "type": "representation",
+        "name": "MayaBinary",
+        "data": {},
+    }
     parents = [
         {"type": "version", "name": 5},
         {"type": "subset", "name": "modelDefault"},
