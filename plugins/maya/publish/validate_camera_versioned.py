@@ -32,31 +32,24 @@ class ValidateCameraVersioned(pyblish.api.InstancePlugin):
         from reveries.maya import lib
         from maya import cmds
 
-        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
+        invalid = list()
+        camera = instance.data["camera"]
 
-        cameras = set(instance.data["renderCam"])
-
-        has_versioned = set()
         # Is camera being containerized ?
-        for cam in cameras:
-            transform = cmds.listRelatives(cam, parent=True, fullPath=True)[0]
-            for set_ in cmds.listSets(object=transform) or []:
-                if set_ in containers:
-                    has_versioned.add(cam)
-                    break
+        containers = lib.lsAttr("id", AVALON_CONTAINER_ID)
+        transform = cmds.listRelatives(camera, parent=True, fullPath=True)[0]
+        for set_ in cmds.listSets(object=transform) or []:
+            if set_ in containers:
+                break
+        else:
+            # Is camera being publish ?
+            camera_instances = [i for i in instance.context
+                                if (i.data["family"] == cls.camera_family and
+                                    i.data.get("publish", True))]
+            if not any(camera in inst for inst in camera_instances):
+                invalid.append(camera)
 
-        # Is camera being publish ?
-        not_containerized = cameras - has_versioned
-        camera_instances = [i for i in instance.context
-                            if (i.data["family"] == cls.camera_family and
-                                i.data.get("publish", True))]
-        for cam in not_containerized:
-            for inst in camera_instances:
-                if cam in inst:
-                    has_versioned.add(cam)
-                    break
-
-        return list(cameras - has_versioned)
+        return invalid
 
     def process(self, instance):
         invalid = self.get_invalid(instance)

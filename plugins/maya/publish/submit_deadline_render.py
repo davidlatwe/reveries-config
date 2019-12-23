@@ -18,7 +18,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
     label = "Deadline Render"
 
     families = [
-        "reveries.imgseq.render",
+        "reveries.renderlayer",
     ]
 
     targets = ["deadline"]

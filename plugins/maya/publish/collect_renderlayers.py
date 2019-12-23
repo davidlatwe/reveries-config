@@ -3,6 +3,7 @@ import os
 from maya import cmds
 
 import pyblish.api
+import avalon.api
 from reveries.maya import lib, utils
 
 
@@ -12,31 +13,48 @@ def get_render_attr(attr, layer):
                                     layer)
 
 
-class CollectRenderlayers(pyblish.api.InstancePlugin):
-    """Gather instances by active render layers
+class CollectRenderlayers(pyblish.api.ContextPlugin):
+    """Create instances by active render layers
+
+    Whenever a renderlayer has multiple renderable cameras then each
+    camera will get its own instance. As such, the amount of instances
+    will be "renderable cameras (in layer) x layers".
+
     """
 
     order = pyblish.api.CollectorOrder - 0.299
     hosts = ["maya"]
-    label = "Collect Renderlayers"
-    families = [
-        "reveries.imgseq.render"
-    ]
+    label = "Render Layers"
 
     targets = ["deadline"]
 
-    def process(self, instance):
+    def process(self, context):
 
-        context = instance.context
-        original = instance
+        asset = avalon.api.Session["AVALON_ASSET"]
+        filepath = context.data["currentMaking"].replace("\\", "/")
 
-        member = instance[:]
-        member += cmds.listRelatives(member,
-                                     allDescendents=True,
-                                     fullPath=True) or []
-        cameras = cmds.ls(member, type="camera", long=True)
-        if not cameras:
+        # Get render globals node
+        try:
+            render_globals = cmds.ls("renderglobalsDefault")[0]
+        except IndexError:
+            self.log.info("Skipping renderlayer collection, no "
+                          "renderGlobalsDefault found..")
             return
+
+        base = {
+            "publish": True,
+            "time": avalon.api.time(),
+            "author": context.data["user"],
+            "asset": asset,
+
+            "family": "reveries.renderlayer",
+            "families": [
+                "reveries.renderlayer",
+            ],
+            # Add source to allow tracing back to the scene from
+            # which was submitted originally
+            "source": filepath,
+        }
 
         # Get all valid renderlayers
         # This is how Maya populates the renderlayer display
@@ -58,32 +76,14 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                               cmds.getAttr("%s.displayOrder" % l))
 
         # Create instance by renderlayers
-        collected = False
         for layer in renderlayers:
-
-            all_render_cams = lib.ls_renderable_cameras(layer)
-            render_cams = list(set(cameras).intersection(set(all_render_cams)))
-
-            if not render_cams:
-                self.log.warning("No renderable camera in %s, skipping.."
-                                 "" % layer)
-                continue
-            collected = True
-
-            self.log.debug("Creating instance for renderlayer: %s" % layer)
 
             # Check if layer is in valid (linked) layers
             if layer not in valid_layers:
                 self.log.warning("%s is invalid, skipping" % layer)
                 continue
 
-            layer_members = cmds.editRenderLayerMembers(layer,
-                                                        query=True,
-                                                        fullNames=True)
-            # (NOTE): Some of renderLayer member may not exists..
-            layer_members = cmds.ls(layer_members)
-
-            layername = lib.pretty_layer_name(layer)
+            self.log.debug("Creating instance for renderlayer: %s" % layer)
 
             renderer = get_render_attr("currentRenderer", layer)
             name_preview = utils.compose_render_filename(layer)
@@ -98,30 +98,70 @@ class CollectRenderlayers(pyblish.api.InstancePlugin):
                 "renderer": renderer,
                 "fileNamePrefix": utils.get_render_filename_prefix(layer),
                 "fileExt": ext,
-                "renderCam": render_cams,
             }
+            overrides = self.parse_render_globals(layer, render_globals)
+            data.update(**overrides)
+            data.update(base)
 
-            data.update(original.data)
+            layername = lib.pretty_layer_name(layer)
 
-            data["families"] = self.families[:]
-            data["dependencies"] = dict()
-            data["futureDependencies"] = dict()
+            render_cams = lib.ls_renderable_cameras(layer)
+            if not render_cams:
+                self.log.warning("No renderable camera in %s, skipping.."
+                                 "" % layer)
 
-            data["subset"] += "." + layername
-            data["category"] = "[{renderer}] {layer}".format(
-                renderer=data["renderer"], layer=layername)
+            # Keep track of the amount of all renderable cameras in the
+            # layer so we can use this information elsewhere, however note
+            # that we split instances per camera below as `data["camera"]`
+            data["cameras"] = render_cams
 
-            instance = context.create_instance(data["subset"])
-            instance.data.update(data)
+            for camera in render_cams:
 
-            # Push renderlayer members into instance,
-            # for collecting dependencies
-            instance += layer_members
+                # Define nice label
+                label = "{0} ({1})".format(layername, data["asset"])
+                if len(render_cams) > 1:
+                    # If more than one camera, include camera name in label
+                    cam_name = cmds.ls(cmds.listRelatives(camera,
+                                                          parent=True,
+                                                          fullPath=True))[0]
+                    label += " - {0}".format(cam_name)
 
-        if collected:
-            # Original instance contain renderable camera,
-            # we can safely remove it
-            context.remove(original)
-            # Sort by renderlayers, masterLayer will be on top
-            L = (lambda i: i.data["subset"].split(".")[-1])
-            context.sort(key=lambda i: 0 if L(i) == "masterLayer" else L(i))
+                    # Prefix the camera after the layername
+                    nice_cam = cam_name.replace(":", "_").replace("|", "_")
+                    subset = "{0}_{1}".format(layername, nice_cam)
+                    self.log.info(subset)
+                else:
+                    subset = layername
+
+                # Always end with start frame and end frame in label
+                label += "  [{0}-{1}]".format(int(data["startFrame"]),
+                                              int(data["endFrame"]))
+
+                data["label"] = label
+                data["subset"] = subset
+                data["camera"] = camera
+
+                data["dependencies"] = dict()
+                data["futureDependencies"] = dict()
+
+                data["category"] = "[{renderer}] {layer}".format(
+                    renderer=data["renderer"], layer=layername)
+
+                instance = context.create_instance(data["subset"])
+                instance.data.update(data)
+
+    def parse_render_globals(self, layer, render_globals):
+        overrides = dict()
+
+        attributes = [
+            "deadlinePriority",
+            "deadlinePool",
+            "deadlineFramesPerTask",
+            "deadlineSuspendJob",
+        ]
+
+        for attr in attributes:
+            value = lib.query_by_renderlayer(render_globals, attr, layer)
+            overrides[attr] = value
+
+        return overrides
