@@ -65,10 +65,15 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         output_prefix = instance.data["fileNamePrefix"]
         renderlayer = instance.data["renderlayer"]
         renderer = instance.data["renderer"]
-        rendercam = instance.data["renderCam"][0]
+        rendercam = instance.data["camera"]
 
         deadline_pool = instance.data["deadlinePool"]
         deadline_prior = instance.data["deadlinePriority"]
+
+        if instance.data["deadlineSuspendJob"]:
+            init_state = "Suspended"
+        else:
+            init_state = "Active"
 
         frame_start = int(instance.data["startFrame"])
         frame_end = int(instance.data["endFrame"])
@@ -112,6 +117,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
                 "Priority": deadline_prior,
                 "Frames": frames,
                 "ChunkSize": frame_per_task,
+                "InitialStatus": init_state,
 
                 "ExtraInfo0": project["name"],
             },
