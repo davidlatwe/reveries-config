@@ -18,11 +18,13 @@ env:
     - AVALON_CORE=$PWD/core
     - AVALON_LAUNCHER=$PWD/launcher
     - AVALON_SETUP=$PWD/setup
+    - AVALON_SFTPC=$PWD/avalon-sftpc
     - PYTHONPATH=$PYTHONPATH:$PYBLISH_BASE
     - PYTHONPATH=$PYTHONPATH:$PYBLISH_QML
     - PYTHONPATH=$PYTHONPATH:$AVALON_CORE
     - PYTHONPATH=$PYTHONPATH:$AVALON_LAUNCHER
     - PYTHONPATH=$PYTHONPATH:$AVALON_SETUP
+    - PYTHONPATH=$PYTHONPATH:$AVALON_SFTPC
     - PYTHONPATH=$PYTHONPATH:$PWD
     - AVALON_MONGO=mongodb://localhost:27017
     - AVALON_DB=avalon:test
@@ -38,6 +40,7 @@ before_install:
   - git clone https://github.com/getavalon/launcher.git
   - git clone https://github.com/pyblish/pyblish-base.git
   - git clone https://github.com/pyblish/pyblish-qml.git
+  - git clone https://github.com/davidlatwe/avalon-sftpc.git
   - pip install tox coveralls
 
 install:

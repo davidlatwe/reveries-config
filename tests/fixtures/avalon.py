@@ -48,11 +48,13 @@ def minmum_environment_setup():
                 "AVALON_CORE",
                 "AVALON_LAUNCHER",
                 "AVALON_SETUP",
+                "AVALON_SFTPC",
                 "AVALON_CONFIG"):
         os.environ[key] = _backup[key]
 
     os.environ["PYTHONPATH"] = os.pathsep.join([
         os.environ["HOST_WORKDIR"],  # config dir
+        os.environ["AVALON_SFTPC"],
     ])
 
     os.environ["PATH"] = os.pathsep.join([
