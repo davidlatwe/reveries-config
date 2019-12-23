@@ -1,6 +1,7 @@
 
 import os
 import json
+import copy
 import platform
 import pyblish.api
 from reveries.maya import utils
@@ -24,6 +25,9 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
     targets = ["deadline"]
 
     def process(self, instance):
+        import reveries
+
+        reveries_path = reveries.__file__
 
         instance.data["submitted"] = True
 
@@ -180,6 +184,29 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         # Submit
 
         submitter = context.data["deadlineSubmitter"]
+        index = submitter.add_job(payload)
+
+        # Publish script
+
+        payload = copy.deepcopy(payload)
+
+        script_file = os.path.join(os.path.dirname(reveries_path),
+                                   "scripts",
+                                   "deadline_publish.py")
+        # Clean up
+        payload["JobInfo"].pop("Frames")
+        payload["JobInfo"].pop("ChunkSize")
+        # Update
+        payload["JobInfo"].update({
+            "Name": "|| Publish: " + payload["JobInfo"]["Name"],
+            "JobDependencies": index,
+            "InitialStatus": "Active",
+        })
+        payload["PluginInfo"].update({
+            "ScriptJob": True,
+            "ScriptFilename": script_file,
+        })
+
         submitter.add_job(payload)
 
     def assemble_environment(self, instance):
