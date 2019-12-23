@@ -1,5 +1,4 @@
 
-import pytest
 import os
 import tempfile
 
@@ -77,14 +76,18 @@ def test_compose_timeline_data(time_data):
     assert data == (90, 210, 24)
 
 
-@mock.patch.dict('avalon.Session', {"AVALON_ASSET": "TestShot"})
 @mock.patch('avalon.io.find_one')
 def test_get_resolution_data(find_one):
 
     def side_effect(spec):
         if spec == {"type": "project"}:
-            return find_one(spec)
-        if spec == {"name": "TestShot", "type": "asset"}:
+            return {"data": {
+                "resolution_width": 1920,
+                "resolution_height": 1080,
+            }}
+        elif spec == {"name": "defaultShot", "type": "asset"}:
+            return {"data": {}}
+        elif spec == {"name": "TestShot", "type": "asset"}:
             return {"data": {
                 "resolution_width": 960,
                 "resolution_height": 540,
@@ -93,8 +96,7 @@ def test_get_resolution_data(find_one):
     find_one.side_effect = side_effect
 
     # Test default value
-    find_one.return_value = {"data": {}}
-    data = reveries.utils.get_resolution_data()
+    data = reveries.utils.get_resolution_data(asset_name="defaultShot")
     assert data == (1920, 1080)
 
     # Test Asset value
