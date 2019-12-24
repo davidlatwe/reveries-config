@@ -52,7 +52,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         use_rendersetup = context.data["usingRenderSetup"]
 
         project_id = str(project["_id"])[-4:].upper()
-        project_code = project["data"].get("codename", project_id)
+        project_code = project["data"].get("codename") or project_id
         fname = os.path.basename(fpath)
 
         batch_name = "({projcode}): [{asset}] {filename}".format(

@@ -45,7 +45,7 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
         maya_version = context.data["mayaVersion"]
 
         project_id = str(project["_id"])[-4:].upper()
-        project_code = project["data"].get("codename", project_id)
+        project_code = project["data"].get("codename") or project_id
         fname = os.path.basename(fpath)
 
         batch_name = "({projcode}): [{asset}] {filename}".format(
