@@ -128,31 +128,23 @@ class ExtractPointCache(PackageExtractor):
         from reveries.maya import io, capsule
         from maya import cmds
 
+        packager.skip_stage()
+
+        entry_file = packager.file_name("ma")
+        cache_file = packager.file_name("fbx")
+        package_path = packager.create_package()
+        entry_path = os.path.join(package_path, entry_file)
+        cache_path = os.path.join(package_path, cache_file)
+
         cmds.select(self.data["outCache"], replace=True)
 
-        with capsule.undo_chunk_when_no_undo():
+        # (TODO) Make namespace preserving optional on GUI
+        if self.data.get("keepNamespace", False):
+            nodes = list()
+        else:
+            nodes = self.data["outCache"]
 
-            # (TODO) Make namespace preserving optional on GUI
-            if not self.data.get("keepNamespace", False):
-
-                namespaces_to_remove = set()
-                for node in self.data["outCache"]:
-                    for name in node.split("|"):
-                        if ":" in name:
-                            namespaces_to_remove.add(name.rsplit(":", 1)[0])
-
-                for namespace in reversed(sorted(namespaces_to_remove)):
-                    cmds.namespace(removeNamespace=namespace,
-                                   mergeNamespaceWithParent=True)
-
-            packager.skip_stage()
-
-            entry_file = packager.file_name("ma")
-            cache_file = packager.file_name("fbx")
-            package_path = packager.create_package()
-            entry_path = os.path.join(package_path, entry_file)
-            cache_path = os.path.join(package_path, cache_file)
-
+        with capsule.StripNamespace(nodes):
             with io.export_fbx_set_pointcache("FBXCacheSET"):
                 io.export_fbx(cache_path)
 

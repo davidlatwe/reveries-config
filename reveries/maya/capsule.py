@@ -3,6 +3,7 @@ import contextlib
 import collections
 
 import maya.OpenMaya as om
+import maya.api.OpenMaya as om2
 from maya import cmds, mel
 from avalon.vendor.six import string_types
 from . import lib
@@ -334,6 +335,79 @@ def relative_namespaced():
         yield
     finally:
         cmds.namespace(relativeNames=relative)
+
+
+class StripNamespace(object):
+    """Context manager for striping namespaces from nodes
+
+    This allows nodes to masquerade as if they never had namespace,
+    including those considered read-only due to file referencing.
+
+    Referenced from:
+        https://www.csa3d.com/code/exporting-with-referenced-namespaces.html
+
+    Args:
+        nodes (list): A list of nodes' long name
+
+    """
+
+    def __init__(self, nodes):
+        hierarchy = set()
+        for node in nodes:
+            while node:
+                hierarchy.add(node)
+                node, tail = node.rsplit("|", 1)
+            else:
+                hierarchy.add(tail)
+
+        self.hierarchy = list(sorted(hierarchy, reverse=True))
+        self.original_names = dict()  # (UUID, name_within_namespace)
+
+    def __enter__(self):
+        for node in self.hierarchy:
+
+            # Ensure node was *not* auto-renamed (IE: shape nodes)
+            if cmds.objExists(node):
+
+                # get an api handle to the node
+                selection = om2.MGlobal.getSelectionListByName(node)
+                api_obj = selection.getDependNode(0)
+                api_node = om2.MFnDependencyNode(api_obj)
+
+                # strip namespace by renaming via api, bypassing read-only
+                # restrictions
+                _, tail = node.rsplit("|", 1)
+                stripped = tail.rsplit(":", 1)[-1]
+                api_node.setName(stripped)
+
+                # remember the original name to return upon exit
+                uuid = api_node.uuid().asString()
+                self.original_names[uuid] = tail
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        for uuid, name in self.original_names.items():
+
+            current_name = self.as_name(uuid)
+            if not current_name:
+                continue
+
+            selection = om2.MGlobal.getSelectionListByName(current_name)
+            api_obj = selection.getDependNode(0)
+            api_node = om2.MFnDependencyNode(api_obj)
+            api_node.setName(name)
+
+    @classmethod
+    def as_name(cls, uuid):
+        """
+        Convenience method to extract the name from uuid
+
+        :type uuid: basestring
+        :rtype: unicode|None
+        """
+        names = cmds.ls(uuid)
+        return names[0] if names else None
 
 
 @contextlib.contextmanager
