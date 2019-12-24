@@ -7,16 +7,10 @@ from avalon.vendor import clique
 # from reveries.plugins import DelegatablePackageExtractor
 from reveries.plugins import PackageExtractor
 from reveries.maya import utils
-from reveries import lib
 
 
-# (TODO) This will be deprecated. Use filesequence publisher instead.
-
-class _ExtractRender(PackageExtractor):
+class ExtractRender(PackageExtractor):
     """Start GUI rendering if not delegate to Deadline
-
-    # Change to use File sequence publisher
-
     """
 
     label = "Extract Render"
@@ -24,13 +18,14 @@ class _ExtractRender(PackageExtractor):
     hosts = ["maya"]
 
     families = [
-        "reveries.imgseq.render",
+        "reveries.renderlayer",
     ]
 
     representations = [
-        "imageSequence",
-        "imageSequenceSet",
+        "renderLayer",
     ]
+
+    targets = ["localhost"]
 
     def process(self, instance):
         # Update output path since the scene file name has changed by
@@ -39,36 +34,20 @@ class _ExtractRender(PackageExtractor):
         # delegated.
 
         renderer = instance.data["renderer"]
-        layer = instance.data["renderlayer"]
+        renderlayer = instance.data["renderlayer"]
         output_dir = instance.context.data["outputDir"]
-        cam = instance.data["renderCam"][0]
+        rendercam = instance.data["camera"]
 
         instance.data["outputPaths"] = utils.get_output_paths(output_dir,
                                                               renderer,
-                                                              layer,
-                                                              cam)
+                                                              renderlayer,
+                                                              rendercam)
         super(ExtractRender, self).process(instance)
 
-    def extract_imageSequence(self, packager):
-        """Extract per renderlayer that has no AOVs
+    def extract_renderLayer(self, packager):
+        """Extract per renderlayer that has AOVs (Arbitrary Output Variable)
         """
-        if not lib.in_remote():
-            self.start_local_rendering()
-
-        repr_dir = packager.create_package()
-
-        # Assume the rendering has been completed at this time being,
-        # start to check and extract the rendering outputs
-        aov_name, aov_path = next(iter(self.data["outputPaths"].items()))
-
-        self.add_sequence(packager, aov_path, aov_name, repr_dir)
-
-    def extract_imageSequenceSet(self, packager):
-        """Extract per renderlayer that has AOVs
-        """
-        if not lib.in_remote():
-            self.start_local_rendering()
-
+        packager.skip_stage()
         repr_dir = packager.create_package()
 
         # Assume the rendering has been completed at this time being,
@@ -110,7 +89,7 @@ class _ExtractRender(PackageExtractor):
         project = self.context.data["projectDoc"]
         width, height = reveries.utils.get_resolution_data(project)
         e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
-        camera = self.data["renderCam"][0]
+        camera = self.data["camera"]
 
         packager.add_data({"sequence": {
             aov_name: {
@@ -136,9 +115,3 @@ class _ExtractRender(PackageExtractor):
             src = seq_dir + "/" + file
             dst = os.path.join(repr_dir, aov_name, file)
             packager.add_hardlink(src, dst)
-
-    def start_local_rendering(self):
-        """Start rendering at local with GUI
-        """
-        # reveries.maya.io.gui_rendering()
-        raise NotImplementedError

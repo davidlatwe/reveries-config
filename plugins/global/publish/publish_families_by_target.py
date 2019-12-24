@@ -39,7 +39,6 @@ class PublishFamiliesByTarget(pyblish.api.ContextPlugin):
         "localhost": [
             family for family in ALL_FAMILIES if family not in [
                 # Exclusion
-                "reveries.renderlayer",
             ]
         ],
 
