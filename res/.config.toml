@@ -52,6 +52,13 @@ color = "#C4CEDC"
 order = -99
 
 
+[[groups]]
+name = "Renders"
+icon = "birthday-cake"
+color = "#FF5247"
+order = 10
+
+
 # Family name should be lower case
 
 [[families]]

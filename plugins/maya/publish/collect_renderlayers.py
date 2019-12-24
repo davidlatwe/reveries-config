@@ -143,6 +143,7 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
 
                 data["label"] = label
                 data["subset"] = subset
+                data["subsetGroup"] = "Renders"
                 data["camera"] = camera
 
                 data["dependencies"] = dict()
