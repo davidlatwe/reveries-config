@@ -1,7 +1,9 @@
 
 import os
+import json
 import pyblish.api
 import reveries.utils
+import reveries.lib
 
 from avalon.vendor import clique
 # from reveries.plugins import DelegatablePackageExtractor
@@ -25,37 +27,44 @@ class ExtractRender(PackageExtractor):
         "renderLayer",
     ]
 
-    targets = ["localhost"]
-
-    def process(self, instance):
-        # Update output path since the scene file name has changed by
-        # plugin `AvalonLockScene`.
-        # And we need to do this in `process`, before the instance gets
-        # delegated.
-
-        renderer = instance.data["renderer"]
-        renderlayer = instance.data["renderlayer"]
-        output_dir = instance.context.data["outputDir"]
-        rendercam = instance.data["camera"]
-
-        instance.data["outputPaths"] = utils.get_output_paths(output_dir,
-                                                              renderer,
-                                                              renderlayer,
-                                                              rendercam)
-        super(ExtractRender, self).process(instance)
-
     def extract_renderLayer(self, packager):
         """Extract per renderlayer that has AOVs (Arbitrary Output Variable)
         """
         packager.skip_stage()
-        repr_dir = packager.create_package()
+        package_path = packager.create_package()
+        data_path = os.path.join(package_path, ".remoteData.json")
 
-        # Assume the rendering has been completed at this time being,
-        # start to check and extract the rendering outputs
-        for aov_name, aov_path in self.data["outputPaths"].items():
-            self.add_sequence(packager, aov_path, aov_name, repr_dir)
+        if reveries.lib.in_remote():
+            # Render job completed, running publish job in Deadline
+            self.log.info("Reading render output path from disk..")
 
-    def add_sequence(self, packager, aov_path, aov_name, repr_dir):
+            with open(data_path, "r") as fp:
+                output_paths = json.load(fp)
+
+            self.log.info("Extracting render output..")
+            # Assume the rendering has been completed at this time being,
+            # start to check and extract the rendering outputs
+            for aov_name, aov_path in output_paths.items():
+                self.add_sequence(packager, aov_path, aov_name, package_path)
+
+        else:
+            # About to submit render job
+            self.log.info("Computing render output path and save to disk..")
+
+            # Computing output path may take a while
+            output_dir = self.context.data["outputDir"]
+            output_paths = utils.get_output_paths(output_dir,
+                                                  self.data["renderer"],
+                                                  self.data["renderlayer"],
+                                                  self.data["camera"])
+            self.data["outputPaths"] = output_paths
+            # Save to disk for later use
+            with open(data_path, "w") as fp:
+                json.dump(output_paths, fp, indent=4)
+
+            self.log.info("Ready to submit render job..")
+
+    def add_sequence(self, packager, aov_path, aov_name, package_path):
         """
         """
         from maya import cmds
@@ -87,14 +96,14 @@ class ExtractRender(PackageExtractor):
                        sequence.tail)
 
         project = self.context.data["projectDoc"]
-        width, height = reveries.utils.get_resolution_data(project)
         e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
         camera = self.data["camera"]
 
         packager.add_data({"sequence": {
             aov_name: {
                 "imageFormat": self.data["fileExt"],
-                "entryFileName": entry_fname,
+                "fname": entry_fname,
+                "dirPath": seq_dir,
                 "seqStart": list(sequence.indexes)[0],
                 "seqEnd": list(sequence.indexes)[-1],
                 "startFrame": start_frame,
@@ -104,7 +113,7 @@ class ExtractRender(PackageExtractor):
                 "edit_out": e_out,
                 "handles": handles,
                 "focalLength": cmds.getAttr(camera + ".focalLength"),
-                "resolution": (width, height),
+                "resolution": self.data["resolution"],
                 "fps": self.context.data["fps"],
                 "cameraUUID": utils.get_id(camera),
                 "renderlayer": self.data["renderlayer"],
@@ -113,5 +122,5 @@ class ExtractRender(PackageExtractor):
 
         for file in [entry_fname % i for i in sequence.indexes]:
             src = seq_dir + "/" + file
-            dst = os.path.join(repr_dir, aov_name, file)
+            dst = os.path.join(package_path, aov_name, file)
             packager.add_hardlink(src, dst)
