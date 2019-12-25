@@ -2,6 +2,7 @@
 import avalon.maya
 
 from reveries.maya.pipeline import put_instance_icon
+from reveries import lib
 
 
 class PointCacheCreator(avalon.maya.Creator):
@@ -18,21 +19,17 @@ class PointCacheCreator(avalon.maya.Creator):
     def process(self):
         # Build pipeline render settings
 
-        project = avalon.io.find_one({"type": "project"},
-                                     projection={"data": True})
-        pipeline = project["data"]["pipeline"]["maya"]
-        deadline = project["data"]["deadline"]["maya"]
-
-        cache_type = pipeline["pointcache"]
-        priority = deadline["priorities"]["pointcache"]
-
-        self.data["extractType"] = cache_type[:]
+        self.data["extractType"] = [
+            "Alembic",
+            "GPUCache",
+            "FBXCache",
+        ]
 
         self.data["staticCache"] = False
         self.data["isDummy"] = False
 
-        self.data["deadlinePriority"] = priority
-        self.data["deadlinePool"] = ["none"] + deadline["pool"]
+        self.data["deadlinePriority"] = 80
+        self.data["deadlinePool"] = lib.get_deadline_pools()
 
         # Apply Euler filter to rotations for Alembic
         self.data["eulerFilter"] = False

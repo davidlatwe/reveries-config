@@ -6,6 +6,8 @@ import logging
 import subprocess
 import pyblish.util
 import avalon.io
+import avalon.api
+from avalon.vendor import requests
 
 
 AVALON_ID = "AvalonID"
@@ -174,3 +176,25 @@ def to_remote():
     registered = set(pyblish.api.registered_targets())
 
     return registered.intersection(remote)
+
+
+def get_deadline_pools():
+    """Listing Deadline pools via Deadlin web service
+    """
+    log = logging.getLogger("Deadline")
+
+    pools = ["none"]
+
+    AVALON_DEADLINE = avalon.api.Session["AVALON_DEADLINE"]
+    argument = "{}/api/pools?NamesOnly=true".format(AVALON_DEADLINE)
+    try:
+        response = requests.get(argument)
+    except Exception as e:
+        log.warning(str(e))
+    else:
+        if response.ok:
+            pools = response.json()
+        else:
+            log.warning("No pools retrieved")
+
+    return pools

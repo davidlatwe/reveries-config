@@ -19,28 +19,3 @@ admin = [
 [pipeline]
 [pipeline.maya]
 turntable = "LookDevStage"
-# Whether to use `all` lights or `default` light in playblast
-playblastLights = "default"
-pointcache = [
-    "Alembic",
-    "GPUCache",
-    "FBXCache",
-]  # This also determined the preferable cache format by order.
-
-[deadline]
-publishUser = "avalon"
-
-[deadline.maya]
-pool = [
-	"1---less_than_15minutes",
-	"2---about_30minutes",
-	"3---about_90minutes",
-	"4---more_than_120minutes",
-]
-defaultPool = "1---less_than_15minutes"
-defaultPriority = 80
-
-[deadline.maya.priorities]
-pointcache = 95
-render = 80
-playblast = 95

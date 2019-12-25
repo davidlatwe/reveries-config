@@ -50,8 +50,6 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             filename=fname
         )
 
-        deadline = project["data"]["deadline"]["maya"]
-
         # Instance data
 
         for instance in context:
@@ -67,8 +65,9 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             subset = instance.data["subset"]
             version = instance.data["versionNext"]
 
-            deadline_pool = instance.data.get("deadlinePool",
-                                              deadline["defaultPool"])
+            deadline_pool = instance.data["deadlinePool"]
+            deadline_prio = instance.data["deadlinePriority"]
+            deadline_group = instance.data.get("deadlineGroup")
 
             job_name = "{subset} v{version:0>3}".format(
                 subset=subset,
@@ -86,8 +85,8 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                     "MachineName": platform.node(),
                     "Comment": comment,
                     "Pool": deadline_pool,
-                    # "Group": deadline_group,
-                    "Priority": 100,
+                    "Priority": deadline_prio,
+                    "Group": deadline_group,
 
                     "ExtraInfo0": project["name"],
                 },

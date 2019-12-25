@@ -33,16 +33,11 @@ class ValidateDeadlineMayaScheduling(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
+        priority_limit = 80
         priority = instance.data["deadlinePriority"]
-        pool = instance.data["deadlinePool"]
-
-        project = instance.context.data["projectDoc"]
-        deadline = project["data"]["deadline"]["maya"]
-
-        job_type = instance.data.get("renderType", "pointcache")
-        priority_limit = deadline["priorities"][job_type]
-
         assert priority <= priority_limit, ("Deadline priority should not be "
                                             "greater than %d."
                                             "" % priority_limit)
+
+        pool = instance.data["deadlinePool"]
         assert not pool == "none", ("Deadline pool did not set.")

@@ -2,6 +2,7 @@
 import avalon.io
 import avalon.maya
 from reveries.maya.pipeline import put_instance_icon
+from reveries import lib
 
 
 class RenderCreator(avalon.maya.Creator):
@@ -23,12 +24,14 @@ class RenderCreator(avalon.maya.Creator):
         self.data.pop("active", None)
 
         # Build pipeline render settings
-        project = avalon.io.find_one({"type": "project"},
-                                     projection={"data": True})
-        deadline = project["data"]["deadline"]["maya"]
 
-        self.data["deadlinePriority"] = deadline["priorities"]["render"]
-        self.data["deadlinePool"] = ["none"] + deadline["pool"]
+        self.data["deadlinePriority"] = 80
+        self.data["deadlinePool"] = lib.get_deadline_pools()
+        self.data["deadlineGroup"] = [
+            "none",
+            "farm_gpu",  # For RedShift, local in-house setup
+        ]
+
         self.data["deadlineFramesPerTask"] = 1
         self.data["deadlineSuspendJob"] = False
 
