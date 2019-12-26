@@ -130,8 +130,14 @@ def assign_shader(meshes, shadingEngine, on_object=True):
             # face-assign changed to object-assign (on_object=True), or
             # the viewport will not display correctly. Although toggling
             # `displaySmoothness` can force refresh...
-            commands = "cmds.sets(%s, edit=True, forceElement='%s');"
-            cmds.evalDeferred(commands % (list(shaded), shader))
+            #
+            # commands = "cmds.sets(%s, edit=True, forceElement='%s');"
+            # cmds.evalDeferred(commands % (list(shaded), shader))
+            #
+            # (NOTE) We need shader be restored immediately, if viewport
+            #        does not display correctly due to above issue, use
+            #        `displaySmoothness` to force refresh.
+            cmds.sets(list(shaded), edit=True, forceElement=shader)
 
 
 @contextlib.contextmanager
