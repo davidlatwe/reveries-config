@@ -1,6 +1,7 @@
 
 import os
 import json
+import contextlib
 import pyblish.api
 from reveries.plugins import PackageExtractor
 from reveries.maya import xgen, utils, capsule
@@ -59,7 +60,10 @@ class ExtractXGenInteractive(PackageExtractor):
             #
             # io.export_xgen_IGS_presets(descriptions, entry_path)
 
-            with capsule.maintained_selection():
+            with contextlib.nested(
+                capsule.no_display_layers(self.member),
+                capsule.maintained_selection(),
+            ):
                 cmds.select(descriptions)
 
                 cmds.file(entry_path,
