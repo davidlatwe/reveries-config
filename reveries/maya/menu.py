@@ -1,5 +1,6 @@
 import sys
 import logging
+import maya.utils
 import pyblish.api
 import pyblish_qml.api
 from avalon import api, tools
@@ -45,13 +46,14 @@ def install():
                       command=publish_in_local)
 
         # Append to Avalon's menu
-        cmds.menuItem(divider=True)
+        cmds.menuItem(divider=True, parent=self._menu)
 
         cmds.menuItem("Deadline Publish...",
                       command=publish_in_deadline,
-                      image=tools.publish.ICON)
+                      image=tools.publish.ICON,
+                      parent=self._menu)
 
-        cmds.menuItem(divider=True)
+        cmds.menuItem(divider=True, parent=self._menu)
 
         # Utilities
         cmds.menuItem("Menu_Utilities",
@@ -161,7 +163,9 @@ with open({!r}, "w") as flag:
 """.format(PYMEL_MOCK_FLAG))
 
     # Allow time for uninstallation to finish.
-    QtCore.QTimer.singleShot(200, deferred)
+    maya.utils.executeDeferred(
+        lambda: QtCore.QTimer.singleShot(100, deferred)
+    )
 
 
 def uninstall():
