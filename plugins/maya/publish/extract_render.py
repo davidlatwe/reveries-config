@@ -103,7 +103,7 @@ class ExtractRender(PackageExtractor):
             aov_name: {
                 "imageFormat": self.data["fileExt"],
                 "fname": entry_fname,
-                "dirPath": seq_dir,
+                "seqSrcDir": seq_dir,
                 "seqStart": list(sequence.indexes)[0],
                 "seqEnd": list(sequence.indexes)[-1],
                 "startFrame": start_frame,
