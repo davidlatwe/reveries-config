@@ -1,7 +1,7 @@
 
 import os
 import avalon.api
-
+from avalon.vendor import qargparse
 from reveries.maya.plugins import ReferenceLoader, ImportLoader
 
 
@@ -42,6 +42,11 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
 
     representations = [
         "Ass",
+    ]
+
+    options = [
+        qargparse.Integer("count", default=1, min=1, help="Batch load count."),
+        qargparse.Double3("offset", help="Offset loaded subsets."),
     ]
 
     def process_import(self, context, name, namespace, group, options):
