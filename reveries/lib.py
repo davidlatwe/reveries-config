@@ -126,13 +126,8 @@ def publish_remote():
     log = logging.getLogger("Pyblish")
 
     if not avalon.io._is_installed:
-        log.info("Fixing database connections..")
-        os.environ["PATH"] += ";" + os.getenv("AVALON_TOOLS", "")
-        subprocess.call("db_connection_fixer", shell=True)
-        # Reinstall
-        log.info("Reinstalling..")
-        host = avalon.api.registered_host()
-        avalon.api.install(host)
+        log.error("Fatal Error: Avalon not installed, see log..")
+        sys.exit(2)
 
     # Start publish
 
