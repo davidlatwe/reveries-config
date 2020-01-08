@@ -199,7 +199,3 @@ class SelectionModel(models.TreeModel):
         self._selecting_back = True
         cmds.select(nodes, noExpand=True)
         self._selecting_back = False
-
-
-class SelectionModelProxy(QtCore.QSortFilterProxyModel):
-    pass
