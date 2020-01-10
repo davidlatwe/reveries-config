@@ -3,9 +3,15 @@ import uuid
 from contextlib import contextmanager
 
 import hou
+import os
+import json
 
 from avalon import api, io
 from avalon.houdini import lib as houdini
+
+
+# Get Houdini root nodes
+sceneRoot = hou.node('/obj/')
 
 
 def set_id(node, unique_id, overwrite=False):
@@ -198,3 +204,69 @@ def attribute_values(node, data):
 
 def set_scene_fps(fps):
     hou.setFps(fps)
+
+
+def export_nodes(export_nodes_paths, file_path):
+    """Export nodes as ".cpio" text file.
+
+    list node's paths to select export nodes:
+    >>> export_nodes_paths = ['/obj/pp', '/obj/geo1']
+
+    """
+    nodes = hou.nodes(export_nodes_paths)
+    path = os.path.abspath(file_path + '.cpio')
+    sceneRoot.saveChildrenToFile(nodes, [], path)
+
+
+def load_nodes(file_path):
+    file = os.path.abspath(file_path + '.cpio')
+    sceneRoot.loadItemsFromFile(file)
+
+
+def export_shaderparm(asset_node, shader_file_path):
+    """Export nodes's shader parm to ".json" file.
+
+    Select asset node to export parm:
+    >>> char = hou.node('/obj/char_nono')
+
+    """
+    stylesheet_data = asset_node.parm('shop_materialstylesheet').eval()
+    with open(shader_file_path, 'w') as f:
+        f.write(stylesheet_data)
+        f.close()
+
+
+def assign_shaderparm(asset_node, shader_file_path):
+    """Add shader parm to asset by reading shader ".json" file.
+
+    Select asset node to add parm:
+    >>> char = hou.node('/obj/char_nono')
+
+    """
+    data_tags = {'script_action_icon': 'DATATYPES_stylesheet',
+            'script_action_help': 'Open in Material Style Sheet editor.',
+            'spare_category': 'Shaders',
+            'script_action': "import toolutils\np = toolutils.dataTree('Material Style Sheets')\np.setCurrentPath(kwargs['node'].path() + '/Style Sheet Parameter')",
+            'editor': '1'}
+    group = asset_node.parmTemplateGroup()
+    folder = hou.FolderParmTemplate('folder', 'Shaders')
+    folder.addParmTemplate(hou.StringParmTemplate('shop_materialstylesheet', 'Material Style Sheet', 1, tags=data_tags))
+    group.append(folder)
+    asset_node.setParmTemplateGroup(group)
+
+    file = open(shader_file_path, 'r')
+    data = json.load(file)
+    data_convert = json.dumps(data, indent=4)
+    asset_node.parm('shop_materialstylesheet').set(data_convert)
+
+
+def create_empty_shadernetwork(asset_name):
+    shaderpack_name = 'SHADER_' + str.upper(asset_name)
+    shaderpack_node = sceneRoot.createNode('geo', shaderpack_name)
+    shaderpack_node.setColor(hou.Color(0.282353, 0.819608, 0.8))
+
+    shaderpack_node.createNode('shopnet', 'shopnet')
+    shaderpack_node.createNode('matnet', 'matnet').setPosition(hou.Vector2(3,0))
+    shaderpack_node.setCurrent(on=True, clear_all_selected=True)
+    shaderpack_node.setDisplayFlag(True)
+
