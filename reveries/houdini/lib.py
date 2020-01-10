@@ -10,7 +10,7 @@ from avalon import api, io
 from avalon.houdini import lib as houdini
 
 
-# Get Houdini root nodes
+# Get Houdini root node
 sceneRoot = hou.node('/obj/')
 
 
@@ -206,61 +206,117 @@ def set_scene_fps(fps):
     hou.setFps(fps)
 
 
-def export_nodes(export_nodes_paths, file_path):
-    """Export nodes as ".cpio" text file.
+def export_nodes(nodes_paths, file_path):
+    """Export nodes as text file.
 
-    list node's paths to select export nodes:
-    >>> export_nodes_paths = ['/obj/pp', '/obj/geo1']
+    Example:
+        sceneRoot = hou.node('/obj/')
+        nodes_paths = ["/obj/nono_shader_day", "/obj/nono_shader_night"]
+        file = "O:/Project/Char/Nono/publish/Nono_shader.cpio"
+        export_nodes(nodes_paths, file)
+        # Result: "output file"
+
+    Args:
+        nodes_paths(list): List of nodes' path
+        file_path(str): cpio format file path
 
     """
-    nodes = hou.nodes(export_nodes_paths)
-    path = os.path.abspath(file_path + '.cpio')
+
+    nodes = hou.nodes(nodes_paths)
+    path = os.path.abspath(file_path)
     sceneRoot.saveChildrenToFile(nodes, [], path)
 
 
 def load_nodes(file_path):
-    file = os.path.abspath(file_path + '.cpio')
+    """Load nodes from text file.
+
+    Example:
+        sceneRoot = hou.node('/obj/')
+        file = "O:/Project/Char/Nono/publish/Nono_shader.cpio"
+        load_nodes(file)
+
+    Args:
+        file_path(str): cpio format file path
+
+    Returns:
+        hou.Nodes
+
+    """
+
+    file = os.path.abspath(file_path)
     sceneRoot.loadItemsFromFile(file)
 
 
-def export_shaderparm(asset_node, shader_file_path):
-    """Export nodes's shader parm to ".json" file.
+def export_shaderparm(node, shader_file_path):
+    """Export char nodes's shader parm to file.
 
-    Select asset node to export parm:
-    >>> char = hou.node('/obj/char_nono')
+    Example:
+        char = hou.node("/obj/char_nono")
+        char_shader_path = "O:/Project/Char/Nono/publish/stylesheet.json"
+        export_shaderparm(char, char_shader_path)
+        # Result: "output file"
+
+    Args:
+        node(hou.Node): node instance
+        shader_file_path(str): json format file path
 
     """
-    stylesheet_data = asset_node.parm('shop_materialstylesheet').eval()
+    stylesheet_data = node.parm('shop_materialstylesheet').eval()
     with open(shader_file_path, 'w') as f:
         f.write(stylesheet_data)
         f.close()
 
 
-def assign_shaderparm(asset_node, shader_file_path):
-    """Add shader parm to asset by reading shader ".json" file.
+def assign_shaderparm(node, shader_file_path):
+    """Add shader parm to node by reading shader file's data.
 
-    Select asset node to add parm:
-    >>> char = hou.node('/obj/char_nono')
+    Example:
+        char = hou.node("/obj/char_nono")
+        char_shader_path = "O:/Project/Char/Nono/publish/stylesheet.json"
+        assign_shaderparm(char, char_shader_path)
+        # Result: "output"
+
+    Args:
+        node(hou.Node): node instance
+        shader_file_path(str): json format file path
+
+    Returns:
+        hou.Parm
 
     """
+
     data_tags = {'script_action_icon': 'DATATYPES_stylesheet',
             'script_action_help': 'Open in Material Style Sheet editor.',
             'spare_category': 'Shaders',
             'script_action': "import toolutils\np = toolutils.dataTree('Material Style Sheets')\np.setCurrentPath(kwargs['node'].path() + '/Style Sheet Parameter')",
             'editor': '1'}
-    group = asset_node.parmTemplateGroup()
+    group = node.parmTemplateGroup()
     folder = hou.FolderParmTemplate('folder', 'Shaders')
     folder.addParmTemplate(hou.StringParmTemplate('shop_materialstylesheet', 'Material Style Sheet', 1, tags=data_tags))
     group.append(folder)
-    asset_node.setParmTemplateGroup(group)
+    node.setParmTemplateGroup(group)
 
     file = open(shader_file_path, 'r')
     data = json.load(file)
     data_convert = json.dumps(data, indent=4)
-    asset_node.parm('shop_materialstylesheet').set(data_convert)
+    node.parm('shop_materialstylesheet').set(data_convert)
 
 
 def create_empty_shadernetwork(asset_name):
+    """Create asset's SOP shader network.
+
+    Example:
+        sceneRoot = hou.node('/obj/')
+        name = "char_nono"
+        create_empty_shadernetwork(name)
+
+    Args:
+        asset_name(str): name of the asset
+
+    Returns:
+        hou.Nodes
+
+    """
     shaderpack_name = 'SHADER_' + str.upper(asset_name)
     shaderpack_node = sceneRoot.createNode('geo', shaderpack_name)
     shaderpack_node.setColor(hou.Color(0.282353, 0.819608, 0.8))
