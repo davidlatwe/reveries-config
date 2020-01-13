@@ -15,7 +15,9 @@ nav:
       - Scene Inventory: avalon_tool_scene_mgr.md
   - Publish:
     - Overview: publish_overview.md
-    - Maya: publish_maya.md
+    - Maya:
+      - Overview: publish_maya.md
+      - Render: publish_maya_render.md
     - Houdini: publish_houdini.md
     - Nuke: publish_nuke.md
   - Utilities:
