@@ -285,21 +285,34 @@ def assign_shaderparm(node, shader_file_path):
 
     """
 
-    data_tags = {'script_action_icon': 'DATATYPES_stylesheet',
-            'script_action_help': 'Open in Material Style Sheet editor.',
-            'spare_category': 'Shaders',
-            'script_action': "import toolutils\np = toolutils.dataTree('Material Style Sheets')\np.setCurrentPath(kwargs['node'].path() + '/Style Sheet Parameter')",
-            'editor': '1'}
+    data_tags = {
+        'script_action_icon': 'DATATYPES_stylesheet',
+        'script_action_help': 'Open in Material Style Sheet editor.',
+        'spare_category': 'Shaders',
+        'script_action': """
+import tooltils
+p = toolutils.dataTree('Material Style Sheets')
+p.setCurrentPath(kwargs['node'].path() + '/Style Sheet Parameter')
+        """,
+        'editor': '1'
+    }
     group = node.parmTemplateGroup()
     folder = hou.FolderParmTemplate('folder', 'Shaders')
-    folder.addParmTemplate(hou.StringParmTemplate('shop_materialstylesheet', 'Material Style Sheet', 1, tags=data_tags))
+    parm_string = hou.StringParmTemplate(
+        name='shop_materialstylesheet',
+        label='Material Style Sheet',
+        num_components=1,
+        tags=data_tags
+    )
+    folder.addParmTemplate(parm_string)
     group.append(folder)
     node.setParmTemplateGroup(group)
 
-    file = open(shader_file_path, 'r')
-    data = json.load(file)
-    data_convert = json.dumps(data, indent=4)
-    node.parm('shop_materialstylesheet').set(data_convert)
+    with open(shader_file_path, 'r') as file:
+        data = json.load(file)
+        data_convert = json.dumps(data, indent=4)
+        node.parm('shop_materialstylesheet').set(data_convert)
+        file.close()
 
 
 def create_empty_shadernetwork(asset_name):
@@ -317,12 +330,16 @@ def create_empty_shadernetwork(asset_name):
         hou.Nodes
 
     """
-    shaderpack_name = 'SHADER_' + str.upper(asset_name)
+    NODE_COLOR = (0.282353, 0.819608, 0.8)
+    NODE_POS = (3, 0)
+
+    shaderpack_name = 'SHADER_' + asset_name.upper()
     shaderpack_node = sceneRoot.createNode('geo', shaderpack_name)
-    shaderpack_node.setColor(hou.Color(0.282353, 0.819608, 0.8))
+    shaderpack_node.setColor(hou.Color(*NODE_COLOR))
 
     shaderpack_node.createNode('shopnet', 'shopnet')
-    shaderpack_node.createNode('matnet', 'matnet').setPosition(hou.Vector2(3,0))
+    shaderpack_node.createNode('matnet', 'matnet').setPosition(
+        hou.Vector2(*NODE_POS)
+    )
     shaderpack_node.setCurrent(on=True, clear_all_selected=True)
     shaderpack_node.setDisplayFlag(True)
-
