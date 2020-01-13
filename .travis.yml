@@ -41,7 +41,7 @@ before_install:
   - git clone https://github.com/pyblish/pyblish-base.git
   - git clone https://github.com/pyblish/pyblish-qml.git
   - git clone https://github.com/davidlatwe/avalon-sftpc.git
-  - pip install tox coveralls
+  - pip install tox coveralls mkdocs mkdocs-material
 
 install:
   - docker run --name avalon-mongo -p 27017:27017 -d mongo
@@ -56,9 +56,18 @@ before_script:
 
 script:
   - tox
+  - mkdocs build --clean
 
 after_success:
   - coveralls
+
+deploy: # Deploy documentation to Github in the gh_pages branch
+    provider: pages
+    skip_cleanup: true
+    github_token: $github_token
+    local_dir: site
+    on:
+        branch: master
 
 sudo: required
 dist: trusty

@@ -258,6 +258,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 "name": subset_name,
                 "data": {
                     "families": families,
+                    "subsetGroup": instance.data.get("subsetGroup", ""),
                 },
                 "parent": asset_id,
             }

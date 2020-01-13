@@ -17,7 +17,7 @@ class ValidateRenderResolution(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder + 0.2
     hosts = ["maya"]
     families = [
-        "reveries.imgseq.render",
+        "reveries.renderlayer",
     ]
 
     optional = True
@@ -59,8 +59,7 @@ class ValidateRenderResolution(pyblish.api.InstancePlugin):
                                                             is_turntable)
         valid_resolutions.append((proj_width, proj_height))
 
-        layer = instance.data["renderlayer"]
-        scene_width, scene_height = maya_utils.get_render_resolution(layer)
+        scene_width, scene_height = instance.data["resolution"]
 
         invalid = True
         for res in valid_resolutions:

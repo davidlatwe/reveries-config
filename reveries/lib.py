@@ -6,6 +6,8 @@ import logging
 import subprocess
 import pyblish.util
 import avalon.io
+import avalon.api
+from avalon.vendor import requests
 
 
 AVALON_ID = "AvalonID"
@@ -124,13 +126,8 @@ def publish_remote():
     log = logging.getLogger("Pyblish")
 
     if not avalon.io._is_installed:
-        log.info("Fixing database connections..")
-        os.environ["PATH"] += ";" + os.getenv("AVALON_TOOLS", "")
-        subprocess.call("db_connection_fixer", shell=True)
-        # Reinstall
-        log.info("Reinstalling..")
-        host = avalon.api.registered_host()
-        avalon.api.install(host)
+        log.error("Fatal Error: Avalon not installed, see log..")
+        sys.exit(2)
 
     # Start publish
 
@@ -174,3 +171,25 @@ def to_remote():
     registered = set(pyblish.api.registered_targets())
 
     return registered.intersection(remote)
+
+
+def get_deadline_pools():
+    """Listing Deadline pools via Deadlin web service
+    """
+    log = logging.getLogger("Deadline")
+
+    pools = ["none"]
+
+    AVALON_DEADLINE = avalon.api.Session["AVALON_DEADLINE"]
+    argument = "{}/api/pools?NamesOnly=true".format(AVALON_DEADLINE)
+    try:
+        response = requests.get(argument)
+    except Exception as e:
+        log.warning(str(e))
+    else:
+        if response.ok:
+            pools = response.json()
+        else:
+            log.warning("No pools retrieved")
+
+    return pools

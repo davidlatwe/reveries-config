@@ -39,7 +39,7 @@ class ValidateWorkfileInWorkspace(pyblish.api.InstancePlugin):
     label = "確認工作檔存在於工作區"
     families = [
         "reveries.pointcache",
-        "reveries.imgseq",
+        "reveries.renderlayer",
     ]
 
     @context_process

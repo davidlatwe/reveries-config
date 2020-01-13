@@ -45,7 +45,7 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
         maya_version = context.data["mayaVersion"]
 
         project_id = str(project["_id"])[-4:].upper()
-        project_code = project["data"].get("codename", project_id)
+        project_code = project["data"].get("codename") or project_id
         fname = os.path.basename(fpath)
 
         batch_name = "({projcode}): [{asset}] {filename}".format(
@@ -60,7 +60,8 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
         version = instance.data["versionNext"]
 
         deadline_pool = instance.data["deadlinePool"]
-        deadline_prior = instance.data["deadlinePriority"]
+        deadline_prio = instance.data["deadlinePriority"]
+        deadline_group = instance.data.get("deadlineGroup")
 
         frame_start = int(instance.data["startFrame"])
         frame_end = int(instance.data["endFrame"])
@@ -88,8 +89,8 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
                 "MachineName": platform.node(),
                 "Comment": comment,
                 "Pool": deadline_pool,
-                # "Group": deadline_group,
-                "Priority": deadline_prior,
+                "Priority": deadline_prio,
+                "Group": deadline_group,
 
                 "Frames": frames,
                 "ChunkSize": 1,
@@ -166,13 +167,9 @@ class SubmitDeadlineStandIn(pyblish.api.InstancePlugin):
         payload["JobInfo"].pop("ChunkSize")
         # Update
         payload["JobInfo"].update({
-            # Put all dependent jobs in one place
-            "BatchName": "[Avalon] Maya Publish Dependent Jobs",
-
-            "Name": batch_name + "@" + payload["JobInfo"]["Name"],
-            "UserName": project["data"]["deadline"]["publishUser"],
-            "Priority": 100,
+            "Name": "|| Publish: " + payload["JobInfo"]["Name"],
             "JobDependencies": index,
+            "InitialStatus": "Active",
         })
         payload["PluginInfo"].update({
             "ScriptJob": True,

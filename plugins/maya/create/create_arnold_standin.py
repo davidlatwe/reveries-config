@@ -2,6 +2,7 @@
 import avalon.maya
 
 from reveries.maya.pipeline import put_instance_icon
+from reveries import lib
 
 
 class ArnoldStandInCreator(avalon.maya.Creator):
@@ -26,12 +27,7 @@ class ArnoldStandInCreator(avalon.maya.Creator):
 
         self.data["staticCache"] = True
 
-        project = avalon.io.find_one({"type": "project"},
-                                     projection={"data": True})
-        deadline = project["data"]["deadline"]["maya"]
-        priority = deadline["priorities"]["pointcache"]
-
-        self.data["deadlinePriority"] = priority
-        self.data["deadlinePool"] = ["none"] + deadline["pool"]
+        self.data["deadlinePriority"] = 80
+        self.data["deadlinePool"] = lib.get_deadline_pools()
 
         return put_instance_icon(super(ArnoldStandInCreator, self).process())

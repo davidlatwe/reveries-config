@@ -14,7 +14,7 @@ class ValidateRenderFileExtension(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder + 0.2
     hosts = ["maya"]
     families = [
-        "reveries.imgseq.render",
+        "reveries.renderlayer",
     ]
 
     extensions = ("exr", "deepexr", "png", "tif", "jpg", "jpeg")

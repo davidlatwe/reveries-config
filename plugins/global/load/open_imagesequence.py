@@ -7,6 +7,11 @@ import avalon.api
 from reveries.plugins import PackageLoader
 
 
+"""
+Deprecated
+"""
+
+
 def open(filepath):
     """Open file with system default executable"""
     if sys.platform.startswith('darwin'):

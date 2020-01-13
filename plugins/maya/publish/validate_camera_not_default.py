@@ -17,7 +17,7 @@ class ValidateCameraNotDefault(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     families = [
         "reveries.camera",
-        "reveries.imgseq",
+        "reveries.renderlayer",
     ]
     actions = [
         pyblish.api.Category("Select"),
@@ -26,9 +26,16 @@ class ValidateCameraNotDefault(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
-        cameras = instance.data.get("renderCam")
-        if not cameras:
+
+        if instance.data["family"] == "reveries.renderlayer":
+            cameras = [instance.data["camera"], ]
+
+        elif instance.data["family"] == "reveries.camera":
             cameras = cmds.ls(instance, type="camera", long=True)
+
+        else:
+            raise Exception("The family of '%s' was not handled, "
+                            "this is a bug.")
 
         defaults = [cam for cam in cameras if
                     cmds.camera(cam, query=True, startupCamera=True)]

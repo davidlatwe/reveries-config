@@ -1,9 +1,9 @@
 
 import os
 import json
+import copy
 import platform
 import pyblish.api
-from reveries.maya import utils
 
 
 class SubmitDeadlineRender(pyblish.api.InstancePlugin):
@@ -18,12 +18,15 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
     label = "Deadline Render"
 
     families = [
-        "reveries.imgseq.render",
+        "reveries.renderlayer",
     ]
 
     targets = ["deadline"]
 
     def process(self, instance):
+        import reveries
+
+        reveries_path = reveries.__file__
 
         instance.data["submitted"] = True
 
@@ -48,7 +51,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         use_rendersetup = context.data["usingRenderSetup"]
 
         project_id = str(project["_id"])[-4:].upper()
-        project_code = project["data"].get("codename", project_id)
+        project_code = project["data"].get("codename") or project_id
         fname = os.path.basename(fpath)
 
         batch_name = "({projcode}): [{asset}] {filename}".format(
@@ -65,10 +68,16 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         output_prefix = instance.data["fileNamePrefix"]
         renderlayer = instance.data["renderlayer"]
         renderer = instance.data["renderer"]
-        rendercam = instance.data["renderCam"][0]
+        rendercam = instance.data["camera"]
 
         deadline_pool = instance.data["deadlinePool"]
-        deadline_prior = instance.data["deadlinePriority"]
+        deadline_prio = instance.data["deadlinePriority"]
+        deadline_group = instance.data.get("deadlineGroup")
+
+        if instance.data["deadlineSuspendJob"]:
+            init_state = "Suspended"
+        else:
+            init_state = "Active"
 
         frame_start = int(instance.data["startFrame"])
         frame_end = int(instance.data["endFrame"])
@@ -81,13 +90,8 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
             step=frame_step,
         )
 
-        # (NOTE) This takes long time to process
-        output_paths = utils.get_output_paths(output_dir,
-                                              renderer,
-                                              renderlayer,
-                                              rendercam)
         output_path_keys = dict()
-        for count, outpath in enumerate(output_paths.values()):
+        for count, outpath in enumerate(instance.data["outputPaths"].values()):
             head, tail = os.path.split(outpath)
             output_path_keys["OutputDirectory%d" % count] = head
             output_path_keys["OutputFilename%d" % count] = tail
@@ -108,10 +112,11 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
                 "MachineName": platform.node(),
                 "Comment": comment,
                 "Pool": deadline_pool,
-                # "Group": deadline_group,
-                "Priority": deadline_prior,
+                "Group": deadline_group,
+                "Priority": deadline_prio,
                 "Frames": frames,
                 "ChunkSize": frame_per_task,
+                "InitialStatus": init_state,
 
                 "ExtraInfo0": project["name"],
             },
@@ -174,6 +179,29 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         # Submit
 
         submitter = context.data["deadlineSubmitter"]
+        index = submitter.add_job(payload)
+
+        # Publish script
+
+        payload = copy.deepcopy(payload)
+
+        script_file = os.path.join(os.path.dirname(reveries_path),
+                                   "scripts",
+                                   "deadline_publish.py")
+        # Clean up
+        payload["JobInfo"].pop("Frames")
+        payload["JobInfo"].pop("ChunkSize")
+        # Update
+        payload["JobInfo"].update({
+            "Name": "|| Publish: " + payload["JobInfo"]["Name"],
+            "JobDependencies": index,
+            "InitialStatus": "Active",
+        })
+        payload["PluginInfo"].update({
+            "ScriptJob": True,
+            "ScriptFilename": script_file,
+        })
+
         submitter.add_job(payload)
 
     def assemble_environment(self, instance):

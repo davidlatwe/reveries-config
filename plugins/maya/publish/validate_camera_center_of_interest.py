@@ -12,7 +12,7 @@ class ValidateCameraCenterOfInterest(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Center Of Interest"
     families = [
-        "reveries.imgseq",
+        "reveries.renderlayer",
         "reveries.camera",
     ]
 
@@ -20,9 +20,15 @@ class ValidateCameraCenterOfInterest(pyblish.api.InstancePlugin):
     def get_invalid(cls, instance):
         invalid = list()
 
-        cameras = instance.data.get("renderCam")
-        if not cameras:
+        if instance.data["family"] == "reveries.renderlayer":
+            cameras = [instance.data["camera"], ]
+
+        elif instance.data["family"] == "reveries.camera":
             cameras = cmds.ls(instance, type="camera", long=True)
+
+        else:
+            raise Exception("The family of '%s' was not handled, "
+                            "this is a bug.")
 
         for cam in cameras:
             coi_value = cmds.getAttr(cam + ".centerOfInterest")

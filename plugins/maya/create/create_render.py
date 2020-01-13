@@ -1,80 +1,53 @@
 
 import avalon.io
 import avalon.maya
-from reveries.maya import lib
 from reveries.maya.pipeline import put_instance_icon
-from reveries.plugins import message_box_error
-
-
-error__invalid_name = """
-{!r} is not a valid render subset name, a render subset name
-should starts with one of these variation name:
-{}
-"""
-
-avalon_instance_id = "pyblish.avalon.instance"
+from reveries import lib
 
 
 class RenderCreator(avalon.maya.Creator):
-    """Create image sequence from rendering or playblast
-
-    Each imgseq objectSet should contain one camera.
-
-    Since the camera and the image sequence has direct input-output
-    relation, the imgseq subset name should be related to camera subset
-    name.
-
-    * Playblast should only be extracted from masterLayer.
-    * Render type subset will be suffix with renderlayer name, if used.
-
-    """
+    """Submit Mayabatch renderlayers to Deadline"""
 
     label = "Render"
-    family = "reveries.imgseq"
+    family = "reveries.renderglobals"
     icon = "film"
 
-    defaults = [
-        "render",
-        "playblast",
-    ]
+    def __init__(self, *args, **kwargs):
+        super(RenderCreator, self).__init__(*args, **kwargs)
 
-    def process(self):
+        # We won't be publishing this one
+        self.data["id"] = "avalon.renderglobals"
+
+        # We don't need subset or asset attributes
+        self.data.pop("subset", None)
+        self.data.pop("asset", None)
+        self.data.pop("active", None)
 
         # Build pipeline render settings
 
-        project = avalon.io.find_one({"type": "project"},
-                                     projection={"data": True})
-        deadline = project["data"]["deadline"]["maya"]
-        variant = None
+        self.data["deadlinePriority"] = 80
+        self.data["deadlinePool"] = lib.get_deadline_pools()
+        self.data["deadlineGroup"] = [
+            "none",
+            "farm_gpu",  # For RedShift, local in-house setup
+        ]
 
-        for var in self.defaults:
-            prefix = "imgseq" + var
-            if self.data["subset"].lower().startswith(prefix):
-                priority = deadline["priorities"][var]
-                variant = var
-                break
+        self.data["deadlineFramesPerTask"] = 1
+        self.data["deadlineSuspendJob"] = False
 
-        if variant is None:
-            msg = error__invalid_name.format(self.data["subset"],
-                                             ", ".join(self.defaults))
-            message_box_error("Invalid Subset Name", msg)
-            raise RuntimeError(msg)
+    def process(self):
+        from maya import cmds
 
         # Return if existed
-        instance = lib.lsAttrs({"id": avalon_instance_id,
-                                "family": self.family,
-                                "subset": self.data["subset"],
-                                "renderType": variant})
-        if instance:
-            self.log.warning("Already existed.")
-            return instance[0]
+        exists = cmds.ls("renderglobalsDefault")
+        assert len(exists) <= 1, (
+            "More than one renderglobal exists, this is a bug"
+        )
 
-        self.data["deadlinePriority"] = priority
-        self.data["deadlinePool"] = ["none"] + deadline["pool"]
-        self.data["deadlineFramesPerTask"] = 1
-        self.data["renderType"] = variant
-        self.data["publishOrder"] = 999
+        if exists:
+            instance = exists[0]
+            cmds.warning("%s already exists." % instance)
+        else:
+            instance = put_instance_icon(super(RenderCreator, self).process())
 
-        instance = super(RenderCreator, self).process()
-
-        return put_instance_icon(instance)
+        return instance

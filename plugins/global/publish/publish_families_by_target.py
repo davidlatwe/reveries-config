@@ -13,9 +13,7 @@ class PublishFamiliesByTarget(pyblish.api.ContextPlugin):
 
     ALL_FAMILIES = set([
         "reveries.shotpkg",
-        "reveries.imgseq",
-        "reveries.imgseq.playblast",
-        "reveries.imgseq.render",
+        "reveries.renderlayer",
         "reveries.model",
         "reveries.xgen",
         "reveries.xgen.legacy",
@@ -41,7 +39,6 @@ class PublishFamiliesByTarget(pyblish.api.ContextPlugin):
         "localhost": [
             family for family in ALL_FAMILIES if family not in [
                 # Exclusion
-                "reveries.imgseq.render",
             ]
         ],
 
@@ -49,9 +46,7 @@ class PublishFamiliesByTarget(pyblish.api.ContextPlugin):
             "reveries.pointcache",
             "reveries.standin",
             "reveries.camera",
-            "reveries.imgseq",
-            "reveries.imgseq.playblast",
-            "reveries.imgseq.render",
+            "reveries.renderlayer",
         ],
 
     }

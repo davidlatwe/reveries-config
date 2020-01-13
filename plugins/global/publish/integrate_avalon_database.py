@@ -46,9 +46,18 @@ class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
         else:
             self.log.info("Version existed, representation file has been "
                           "overwritten.")
+            # Update version document "data.time"
             filter_ = {"_id": existed_version["_id"]}
             update = {"$set": {"data.time": context.data["time"]}}
             io.update_many(filter_, update)
+            # Update representation documents "data"
+            for representation in representations:
+                filter_ = {
+                    "name": representation["name"],
+                    "parent": existed_version["_id"],
+                }
+                update = {"$set": {"data": representation["data"]}}
+                io.update_many(filter_, update)
 
     def write_database(self, instance, version, representations):
         """Write version and representations to database
