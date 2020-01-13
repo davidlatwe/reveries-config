@@ -307,6 +307,15 @@ class ImportLoader(MayaBaseLoader):
 
     def load(self, context, name=None, namespace=None, options=None):
 
+        from maya import cmds
+
+        options = options or dict()
+
+        count = options.get("count", 1)
+        if count > 1:
+            options["count"] -= 1
+            self.load(context, name, options=options.copy())
+
         load_plugin(context["representation"]["name"])
 
         asset = context['asset']
@@ -333,6 +342,10 @@ class ImportLoader(MayaBaseLoader):
         nodes = self[:]
         if not nodes:
             return
+
+        if "offset" in options and cmds.objExists(group_name):
+            offset = [i * (count - 1) for i in options["offset"]]
+            cmds.setAttr(group_name + ".t", *offset)
 
         container_id = options.get("containerId", generate_container_id())
 
