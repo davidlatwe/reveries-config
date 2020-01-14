@@ -164,6 +164,12 @@ class OpenSourceShared(OpenMayaSource, avalon.api.Loader):
 
 
 class OpenSourceImgseq(OpenMayaSource, avalon.api.Loader):
-
+    """Deprecated"""
     families = ["reveries.imgseq"]
     representations = ["imageSequence", "imageSequenceSet"]
+
+
+class OpenSourceRenderlayer(OpenMayaSource, avalon.api.Loader):
+
+    families = ["reveries.renderlayer"]
+    representations = ["renderLayer"]
