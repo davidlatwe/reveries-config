@@ -19,6 +19,7 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
     def process(self, context):
         from avalon.nuke import lib
 
+        nodes = list()
         for node in lib.lsattr("avalon:id",
                                value="pyblish.avalon.instance"):
             try:
@@ -27,6 +28,10 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
             except NameError:
                 # node has no active switch
                 pass
+
+            nodes.append(node)
+
+        for node in sorted(nodes, key=lambda n: n.fullName()):
 
             node_name = node.fullName()
             data = lib.get_avalon_knob_data(node)
