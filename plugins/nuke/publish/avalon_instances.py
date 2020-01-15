@@ -37,6 +37,10 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
             data = lib.get_avalon_knob_data(node)
             data["objectName"] = node_name
 
+            # For dependency tracking
+            data["dependencies"] = dict()
+            data["futureDependencies"] = dict()
+
             # Create the instance
             self.log.info("Creating instance for {}".format(node_name))
             instance = context.create_instance(data["subset"])
