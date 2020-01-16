@@ -32,6 +32,7 @@ class CreateWrite(api.Creator):
 
             data = OrderedDict([
                 (("divid", ""), lib.Knobby("Text_Knob", "")),
+                ("deadlineFramesPerTask", 1),
                 ("deadlineSuspendJob", False),
                 ("deadlinePriority", 80),
                 ("deadlinePool", reveries_lib.get_deadline_pools()),
