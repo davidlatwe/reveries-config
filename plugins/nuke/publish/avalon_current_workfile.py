@@ -19,6 +19,7 @@ class CurrentWorkfile(pyblish.api.ContextPlugin):
             current_file = nuke.scriptName()
         except RuntimeError:
             # no filename available, have you saved?
-            current_file = ""
+            current_file = "Untitled"
 
         context.data["currentMaking"] = os.path.normpath(current_file)
+        context.data["label"] = os.path.basename(current_file)

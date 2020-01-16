@@ -51,4 +51,6 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
             instance[:] = [node]
             instance.data.update(data)
 
+            instance.data["label"] = instance.name
+
         return context
