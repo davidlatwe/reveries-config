@@ -6,7 +6,7 @@ import platform
 import pyblish.api
 
 
-class SubmitDeadlineRender(pyblish.api.InstancePlugin):
+class SubmitDeadlineWrite(pyblish.api.InstancePlugin):
     """Publish via rendering Nuke Write nodes on Deadline
 
     Submitting jobs per write(instance) to deadline.
@@ -15,7 +15,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ExtractorOrder + 0.2
     hosts = ["nuke"]
-    label = "Deadline Render"
+    label = "Deadline Write"
 
     families = [
         "reveries.write",
@@ -60,7 +60,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         subset = instance.data["subset"]
         version = instance.data["versionNext"]
 
-        write_node = instance.data["writeNode"]
+        write_node = instance[0]
 
         deadline_pool = instance.data["deadlinePool"]
         deadline_prio = instance.data["deadlinePriority"]
@@ -83,10 +83,9 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         )
 
         output_path_keys = dict()
-        for count, outpath in enumerate(instance.data["outputPaths"].values()):
-            head, tail = os.path.split(outpath)
-            output_path_keys["OutputDirectory%d" % count] = head
-            output_path_keys["OutputFilename%d" % count] = tail
+        head, tail = os.path.split(instance.data["outputPath"])
+        output_path_keys["OutputDirectory0"] = head
+        output_path_keys["OutputFilename0"] = tail
 
         job_name = "{subset} v{version:0>3}".format(
             subset=subset,
