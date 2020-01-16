@@ -22,6 +22,10 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
         nodes = list()
         for node in lib.lsattr("avalon:id",
                                value="pyblish.avalon.instance"):
+
+            if node["disable"].value():
+                continue
+
             try:
                 if not node["avalon:active"].value():
                     continue
