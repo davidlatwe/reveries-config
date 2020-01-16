@@ -114,3 +114,12 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 "namespace": "%s_%s" % (asset_name, family_name)
             }
             pipeline.update_container(node, update)
+
+    def remove(self, container):
+        nodes = list(container["_members"])
+        nodes.append(container["_node"])
+
+        for node in nodes:
+            for copy in lib.find_copies(node):
+                nuke.delete(copy)
+            nuke.delete(node)
