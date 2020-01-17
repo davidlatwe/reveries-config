@@ -118,6 +118,9 @@ reveries.maya.tools.show('mayalookassigner')
 import reveries.maya.tools
 reveries.maya.tools.show('modeldiffer')
 """)
+        cmds.menuItem("Transfer UV",
+                      parent="Menu_Rig",
+                      command=interactive.update_uv)
 
         # XGen tools
         cmds.menuItem("Menu_XGen",

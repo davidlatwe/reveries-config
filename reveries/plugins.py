@@ -281,8 +281,9 @@ class PackageExtractor(pyblish.api.InstancePlugin):
         """
         context = instance.context
         # If any error occurred, skip extraction.
-        assert all(result["success"] for result in context.data["results"]), (
-            "Atomicity not held, aborting.")
+        if not all(result["success"] for result in context.data["results"]):
+            self.log.warning("Atomicity not held, aborting.")
+            return
 
         self.context = context
         self.data = instance.data

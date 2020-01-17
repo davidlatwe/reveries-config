@@ -78,8 +78,14 @@ class ExtractRender(PackageExtractor):
         start_frame = self.data["startFrame"]
         end_frame = self.data["endFrame"]
 
+        patterns = [
+            clique.PATTERNS["frames"],
+            clique.DIGITS_PATTERN,
+        ]
+        minimum_items = 1 if start_frame == end_frame else 2
         collections, _ = clique.assemble(os.listdir(seq_dir),
-                                         patterns=[clique.PATTERNS["frames"]])
+                                         patterns=patterns,
+                                         minimum_items=minimum_items)
 
         assert len(collections), "Extraction failed, no sequence found."
 

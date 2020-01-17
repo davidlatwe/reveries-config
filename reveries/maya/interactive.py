@@ -406,3 +406,51 @@ def set_refwires_frame_by_nucleus(*args):
 
     for pal in palettes:
         xgen.legacy.set_refWires_frame(start_frame, pal)
+
+
+def update_uv(*args):
+    """Update Rig deformed geo's UV"""
+    def get_meshes(node):
+        return cmds.listRelatives(node, shapes=True, path=True, type="mesh")
+
+    def get_target_mesh(meshes):
+        """Locate original mesh shape to transfer UV to"""
+        return next(m for m in meshes
+                    if cmds.getAttr(m + ".intermediateObject")
+                    and not cmds.referenceQuery(m, isNodeReferenced=True))
+
+    selection = cmds.ls(sl=True)
+
+    if len(selection) == 2:
+        # Update UV from another model
+        source, target = selection
+        meshes = get_meshes(target)
+        target = get_target_mesh(meshes)
+
+    elif len(selection) == 1:
+        # Update UV from referenced intermediate shape node
+        transform = selection[0]
+        meshes = get_meshes(transform)
+        target = get_target_mesh(meshes)
+        source = meshes[0]
+
+        if target == source:
+            raise Exception("Source and target is the same.")
+    else:
+        raise Exception("No object to update.")
+
+    cmds.setAttr(target + ".intermediateObject", False)
+
+    cmds.transferAttributes(source,
+                            target,
+                            transferPositions=0,
+                            transferNormals=0,
+                            transferUVs=2,
+                            transferColors=0,
+                            sampleSpace=1,
+                            searchMethod=3,
+                            flipUVs=0)
+
+    cmds.delete(target, constructionHistory=True)
+
+    cmds.setAttr(target + ".intermediateObject", True)

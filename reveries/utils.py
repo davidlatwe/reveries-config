@@ -520,6 +520,7 @@ class AssetGraber(object):
         parents = io.parenthood(representation)
         src_package = get_representation_path_(representation, parents)
         parents = parents[:-1] + [self._project]
+        representation["data"]["reprRoot"] = self._project["data"].get("root")
         dst_package = get_representation_path_(representation, parents)
         self._copy_dir(src_package, dst_package)
 

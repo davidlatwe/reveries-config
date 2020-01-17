@@ -18,8 +18,9 @@ class OverlayClipInfoOnIntegrated(pyblish.api.InstancePlugin):
     def process(self, instance):
 
         context = instance.context
-        assert all(result["success"] for result in context.data["results"]), (
-            "Atomicity not held, aborting.")
+        if not all(result["success"] for result in context.data["results"]):
+            self.log.warning("Atomicity not held, aborting.")
+            return
 
         representation = io.find_one({
             "type": "representation",

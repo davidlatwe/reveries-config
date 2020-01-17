@@ -16,8 +16,9 @@ class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
 
         context = instance.context
 
-        assert all(result["success"] for result in context.data["results"]), (
-            "Atomicity not held, aborting.")
+        if not all(result["success"] for result in context.data["results"]):
+            self.log.warning("Atomicity not held, aborting.")
+            return
 
         # Integrate representations' to database
         self.log.info("Integrating representations to database ...")
