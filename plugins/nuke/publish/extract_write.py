@@ -68,7 +68,7 @@ class ExtractWrite(PackageExtractor):
         e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
 
         packager.add_data({"sequence": {
-            None: {
+            "_": {
                 "imageFormat": self.data["fileExt"],
                 "fname": entry_fname,
                 "seqSrcDir": seq_dir,
