@@ -17,6 +17,11 @@ class SubmitLocalWrite(pyblish.api.InstancePlugin):
     def process(self, instance):
         import nuke
 
+        context = instance.context
+        if not all(result["success"] for result in context.data["results"]):
+            self.log.warning("Atomicity not held, aborting.")
+            return
+
         write = instance[0]
         nuke.render(write,
                     start=instance.data["startFrame"],
