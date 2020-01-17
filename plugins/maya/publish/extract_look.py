@@ -44,6 +44,13 @@ class ExtractLook(PackageExtractor):
         entry_file = packager.file_name("ma")
         package_path = packager.create_package()
 
+        # Serialise shaders relationships
+        #
+        self.log.info("Serialising shaders..")
+
+        shader_by_id = lib.serialise_shaders(self.data["dagMembers"])
+        assert shader_by_id, "The map of shader relationship is empty."
+
         # Extract shaders
         #
         entry_path = os.path.join(package_path, entry_file)
@@ -87,15 +94,6 @@ class ExtractLook(PackageExtractor):
                       constraints=False,
                       shader=True,
                       expressions=True)
-
-        # Serialise shaders relationships
-        #
-        link_file = packager.file_name("json")
-        link_path = os.path.join(package_path, link_file)
-
-        self.log.info("Serialising shaders..")
-
-        shader_by_id = lib.serialise_shaders(self.data["dagMembers"])
 
         # Animatable attrs
         # Custom attributes in assembly node which require to be animated.
@@ -229,6 +227,10 @@ class ExtractLook(PackageExtractor):
         }
 
         self.log.info("Extracting serialisation..")
+
+        link_file = packager.file_name("json")
+        link_path = os.path.join(package_path, link_file)
+
         with open(link_path, "w") as f:
             json.dump(relationships, f)
 
