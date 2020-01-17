@@ -1,6 +1,4 @@
 
-import os
-import nuke
 from . import pipeline
 
 
@@ -22,8 +20,5 @@ def _lock_published_script():
 Published script is locked, and can not be overwritten.
 Please save the script in new name."""
 
-    root = nuke.Root()
-    filename = root.name()
-    if os.path.isfile(filename):
-        if os.path.dirname(filename).endswith("_published"):
-            raise Exception(message)
+    if pipeline.is_locked():
+        raise Exception(message)

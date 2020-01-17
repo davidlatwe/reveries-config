@@ -1,4 +1,5 @@
 
+import os
 import logging
 import nuke
 
@@ -13,6 +14,15 @@ def eval_deferred(func, *args, **kwargs):
         func(*args, **kwargs)
         nuke.callbacks.removeUpdateUI(_deferred)
     nuke.callbacks.addUpdateUI(_deferred)
+
+
+def is_locked():
+    root = nuke.Root()
+    filename = root.name()
+    if os.path.isfile(filename):
+        if os.path.dirname(filename).endswith("_published"):
+            return True
+    return False
 
 
 def set_global_timeline():
