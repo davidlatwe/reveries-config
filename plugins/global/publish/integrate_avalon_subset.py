@@ -34,6 +34,22 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
+        # Atomicity
+        #
+        # Guarantee atomic publishes - each asset contains
+        # an identical set of members.
+        #     __
+        #    /     o
+        #   /       \
+        #  |    o    |
+        #   \       /
+        #    o   __/
+        #
+        context = instance.context
+        if not all(result["success"] for result in context.data["results"]):
+            self.log.warning("Atomicity not held, aborting.")
+            return
+
         self.transfers = dict(packages=list(),
                               files=list(),
                               hardlinks=list())
@@ -50,20 +66,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     def register(self, instance):
 
         context = instance.context
-
-        # Atomicity
-        #
-        # Guarantee atomic publishes - each asset contains
-        # an identical set of members.
-        #     __
-        #    /     o
-        #   /       \
-        #  |    o    |
-        #   \       /
-        #    o   __/
-        #
-        assert all(result["success"] for result in context.data["results"]), (
-            "Atomicity not held, aborting.")
 
         # Check packages
         #
