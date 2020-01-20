@@ -33,9 +33,15 @@ class FixNamespaceUnique(avalon.api.InventoryAction):
         """
         from maya import cmds
         from avalon.maya.pipeline import AVALON_CONTAINERS
+        from reveries.maya import lib
 
         if not container:
             return False
+
+        namespace = lib.get_ns(container["subsetGroup"])
+        if container["namespace"] != namespace:
+            # Use `UpdateNamespace` action to update namespace first.
+            return
 
         if cache["mainContainers"] is None:
             cache["mainContainers"] = cmds.ls(AVALON_CONTAINERS[1:] + "*",
