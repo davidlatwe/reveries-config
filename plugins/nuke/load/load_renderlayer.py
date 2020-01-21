@@ -63,10 +63,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         asset = context["asset"]
 
         asset_name = asset["data"].get("shortName", asset["name"])
-        if context["subset"]["schema"] == "avalon-core:subset-3.0":
-            families = context["subset"]["data"]["families"]
-        else:
-            families = context["version"]["data"]["families"]
+        families = context["subset"]["data"]["families"]
         family_name = families[0].split(".")[-1]
         namespace = namespace or "%s_%s" % (asset_name, family_name)
         pipeline.containerise(name=context["subset"]["name"],
