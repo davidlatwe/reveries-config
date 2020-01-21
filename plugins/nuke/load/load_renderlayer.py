@@ -83,7 +83,6 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             if node.Class() == "Read":
                 data = lib.get_avalon_knob_data(node)
                 read_nodes[data["aov"]] = node
-                break
 
         with lib.sync_copies(list(read_nodes.values())):
             for name, data in representation["data"]["sequence"].items():
