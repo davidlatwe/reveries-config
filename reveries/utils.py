@@ -10,13 +10,15 @@ import getpass
 import pymongo
 import datetime
 
-from distutils.dir_util import copy_tree
+from distutils import dir_util, errors as distutils_err
 
 from avalon import io, Session
 
 import pyblish.api
 import avalon
 from pyblish_qml.ipc import formatting
+
+from .plugins import message_box_error
 
 
 class LocalTZ(datetime.tzinfo):
@@ -530,7 +532,11 @@ class AssetGraber(object):
         dst = os.path.normpath(dst)
         print("Copying: %s" % src)
         print("     To: %s" % dst)
-        copy_tree(src, dst)
+        try:
+            dir_util.copy_tree(src, dst)
+        except distutils_err.DistutilsFileError as e:
+            message_box_error("Error", e)
+            raise e
 
 
 def get_versions_from_sourcefile(source, project):

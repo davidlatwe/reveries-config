@@ -111,9 +111,19 @@ def ls_renderable_layers():
         list: A list of renderable renderlayer node names
 
     """
+    is_render_setup = is_using_renderSetup()
+
+    def is_correct_layer_type(layer):
+        layer_type = bool(cmds.listConnections(layer,
+                                               destination=True,
+                                               source=False,
+                                               type="renderSetupLayer"))
+        return is_render_setup == layer_type
+
     return [i for i in cmds.ls(type="renderLayer") if
             cmds.getAttr("{}.renderable".format(i)) and not
-            cmds.referenceQuery(i, isNodeReferenced=True)]
+            cmds.referenceQuery(i, isNodeReferenced=True) and
+            is_correct_layer_type(i)]
 
 
 def query_by_renderlayer(node, attr, layer):

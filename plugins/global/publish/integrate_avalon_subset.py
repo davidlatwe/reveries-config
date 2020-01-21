@@ -228,6 +228,9 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             raise OSError(msg)
 
     def hardlink_file(self, src, dst):
+        if os.path.isfile(dst):
+            self.log.warning("File exists, skip creating hardlink: %s" % dst)
+            return
 
         dirname = os.path.dirname(dst)
         try:
