@@ -114,6 +114,8 @@ def ls_renderable_layers():
     is_render_setup = is_using_renderSetup()
 
     def is_correct_layer_type(layer):
+        if layer == "defaultRenderLayer":
+            return True
         layer_type = bool(cmds.listConnections(layer,
                                                destination=True,
                                                source=False,
