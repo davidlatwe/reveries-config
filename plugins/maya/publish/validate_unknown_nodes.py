@@ -43,7 +43,8 @@ class ValidateUnknownNodes(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, context):
         from maya import cmds
-        return cmds.ls(type="unknown")
+        return [node for node in cmds.ls(type="unknown")
+                if not cmds.referenceQuery(node, isNodeReferenced=True)]
 
     @context_process
     def process(self, context):
