@@ -17,6 +17,9 @@ def eval_deferred(func, *args, **kwargs):
 
 
 def is_locked():
+    if _ignore_lock["_"]:
+        return False
+
     def is_publish_source(filename):
         return os.path.dirname(filename).endswith("_published")
 
@@ -32,8 +35,22 @@ def is_locked():
 
 
 def is_write_locked(write):
+    if _ignore_lock["_"]:
+        return False
+
     output = write["file"].value()
     return "/publish/" in output
+
+
+_ignore_lock = {"_": False}
+
+
+def unlock():
+    _ignore_lock["_"] = True
+
+
+def lock():
+    _ignore_lock["_"] = False
 
 
 def set_global_timeline():
