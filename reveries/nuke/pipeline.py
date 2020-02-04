@@ -17,10 +17,16 @@ def eval_deferred(func, *args, **kwargs):
 
 
 def is_locked():
+    def is_publish_source(filename):
+        return os.path.dirname(filename).endswith("_published")
+
+    def is_published_script(filename):
+        return "/publish/" in filename
+
     root = nuke.Root()
     filename = root.name()
     if os.path.isfile(filename):
-        if os.path.dirname(filename).endswith("_published"):
+        if is_publish_source(filename) or is_published_script(filename):
             return True
     return False
 
