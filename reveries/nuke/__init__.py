@@ -19,6 +19,10 @@ LOAD_PATH = os.path.join(PLUGINS_DIR, "nuke", "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "nuke", "create")
 INVENTORY_PATH = os.path.join(PLUGINS_DIR, "nuke", "inventory")
 
+# pyblish-qml can only run in modal mode in Nuke,
+# see pyblish/pyblish-qml#264 for detail.
+os.environ["PYBLISH_QML_MODAL"] = "True"
+
 
 def install():
     from . import callbacks, pipeline
