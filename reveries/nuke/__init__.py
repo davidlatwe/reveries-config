@@ -37,6 +37,7 @@ def install():
     avalon.on("taskChanged", callbacks.on_task_changed)
     nuke.callbacks.addOnScriptSave(callbacks.on_save)
     nuke.callbacks.addOnScriptLoad(callbacks.on_load)
+    nuke.callbacks.addBeforeRender(callbacks.before_render)
 
     pipeline.eval_deferred(callbacks.on_task_changed)
 
@@ -53,5 +54,6 @@ def uninstall():
     log.info("Uninstalling callbacks ... ")
     nuke.callbacks.removeOnScriptSave(callbacks.on_save)
     nuke.callbacks.removeOnScriptLoad(callbacks.on_load)
+    nuke.callbacks.removeBeforeRender(callbacks.before_render)
 
     menu.uninstall()

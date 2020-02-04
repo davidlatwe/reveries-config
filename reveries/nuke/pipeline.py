@@ -25,6 +25,11 @@ def is_locked():
     return False
 
 
+def is_write_locked(write):
+    output = write["file"].value()
+    return "/publish/" in output
+
+
 def set_global_timeline():
     start, end, fps = utils.compose_timeline_data()
     log.info("Setup project timeline: %d-%d @%f FPS"
