@@ -23,7 +23,7 @@ class UpdateNamespace(avalon.api.InventoryAction):
     def is_compatible(container):
         from reveries.maya import lib
 
-        if "subsetGroup" not in container.keys():
+        if not ("subsetGroup" in container and container["subsetGroup"]):
             return False
 
         namespace = lib.get_ns(container["subsetGroup"])

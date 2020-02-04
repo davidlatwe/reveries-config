@@ -38,7 +38,7 @@ class FixNamespaceUnique(avalon.api.InventoryAction):
         if not container:
             return False
 
-        if "subsetGroup" not in container.keys():
+        if not ("subsetGroup" in container and container["subsetGroup"]):
             return False
 
         namespace = lib.get_ns(container["subsetGroup"])
