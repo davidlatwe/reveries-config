@@ -29,6 +29,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 file_name,
             ).replace("\\", "/")
         )
+        read["label"].setValue(aov_name)
 
     def set_range(self, read, start, end):
         read["first"].setValue(start)
