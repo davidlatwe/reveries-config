@@ -95,3 +95,7 @@ class ExtractWrite(PackageExtractor):
             src = seq_dir + "/" + file
             dst = os.path.join(package_path, file)
             packager.add_hardlink(src, dst)
+
+        seq_pattern = os.path.join(package_path,
+                                   entry_fname).replace("\\", "/")
+        self.data["publishedSeqPatternPath"] = seq_pattern

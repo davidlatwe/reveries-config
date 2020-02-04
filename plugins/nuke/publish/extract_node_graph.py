@@ -44,7 +44,15 @@ class ExtractNodeGraph(PackageExtractor):
             for n in walk_tree(node):
                 n["selected"].setValue(True)
 
-            nuke.nodeCopy(fpath)
+            if node.Class() == "Write":
+                # Swap image file path to published path bedore copy
+                output = node["file"].value()
+                node["file"].setValue(self.data["publishedSeqPatternPath"])
+                nuke.nodeCopy(fpath)
+                node["file"].setValue(output)
+
+            else:
+                nuke.nodeCopy(fpath)
 
         packager.add_data({
             "outputNode": node.fullName(),
