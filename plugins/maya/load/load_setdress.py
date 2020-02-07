@@ -85,8 +85,8 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             self.log.warning("Matrix override preserved on %s",
                              assembly)
         elif self.has_input_connections(assembly):
-                self.log.warning("Input connection preserved on %s",
-                                 assembly)
+            self.log.warning("Input connection preserved on %s",
+                             assembly)
         else:
             new_matrix = data_new["matrix"]
             with self.keep_scale_pivot(assembly):
