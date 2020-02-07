@@ -328,12 +328,10 @@ def change_subset(container, data, namespace, root):
     """
     from avalon.pipeline import get_representation_context
 
-    current_repr_id = container["representation"]
-    current_repr = get_representation_context(current_repr_id)
-    loader = data["loaderCls"](current_repr)
-
-    new_repr = data["representationDoc"]
-    loader.update(container, new_repr)
+    if data["representation"] != container["representation"]:
+        current_repr = get_representation_context(container["representation"])
+        loader = data["loaderCls"](current_repr)
+        loader.update(container, data["representationDoc"])
 
     try:
         # Update parenting and matrix
