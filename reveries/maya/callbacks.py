@@ -5,7 +5,7 @@ from maya.api import OpenMaya as om  # API 2.0
 from maya import cmds, OpenMaya
 from avalon import maya, api as avalon
 
-from .. import utils
+from .. import utils, plugins
 from .vendor import sticker
 
 from . import PYMEL_MOCK_FLAG, utils as maya_utils, lib, pipeline
@@ -31,6 +31,27 @@ def _outliner_hide_set_member():
                                       outlinerEditor=True)
         # Set options
         cmds.outlinerEditor(outliner, edit=True, **options)
+
+
+def _pop_sceneinventory():
+    avalon.logger.warning("Scene has outdated content.")
+
+    # Find maya main window
+    parent = maya.pipeline.get_main_window()
+
+    if parent is None:
+        avalon.logger.info("Skipping outdated content pop-up "
+                           "because Maya window can't be found.")
+    else:
+        # Show outdated pop-up
+        respond = plugins.message_box_warning(
+            title="Maya scene has outdated content",
+            message="There are outdated subsets in your Maya scene.",
+            optional=True
+        )
+        if respond:
+            import avalon.tools.cbsceneinventory as tool
+            tool.show(parent=parent)
 
 
 def on_task_changed(_, *args):
@@ -122,13 +143,14 @@ def on_open(_):
                              type="file"))
     maya_utils.fix_texture_file_nodes(list(nodes))
 
-    # For log reading and debug
-    #
     if cmds.about(batch=True):
+        # For log reading and debug
         print("Maya API version: %s" % cmds.about(api=True))
         if cmds.pluginInfo("mtoa", q=True, loaded=True):
             version = cmds.pluginInfo("mtoa", q=True, version=True)
             print("MtoA version: %s" % version)
+    else:
+        _pop_sceneinventory()
 
 
 def on_save(_):

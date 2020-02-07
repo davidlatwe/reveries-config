@@ -3,11 +3,12 @@ import os
 import sys
 import math
 import logging
-import subprocess
 import pyblish.util
 import avalon.io
 import avalon.api
 from avalon.vendor import requests
+
+log = logging.getLogger(__name__)
 
 
 AVALON_ID = "AvalonID"
@@ -193,3 +194,56 @@ def get_deadline_pools():
             log.warning("No pools retrieved")
 
     return pools
+
+
+def is_latest(representation):
+    """Return whether the representation is from latest version
+
+    Args:
+        representation (dict): The representation document from the database.
+
+    Returns:
+        bool: Whether the representation is of latest version.
+
+    """
+
+    version = avalon.io.find_one({"_id": representation['parent']})
+
+    # Get highest version under the parent
+    highest_version = avalon.io.find_one({
+        "type": "version",
+        "parent": version["parent"]
+    }, sort=[("name", -1)], projection={"name": True})
+
+    if version["name"] == highest_version["name"]:
+        return True
+    else:
+        return False
+
+
+def any_outdated():
+    """Return whether the current scene has any outdated content"""
+
+    checked = set()
+    host = avalon.api.registered_host()
+    for container in host.ls():
+        representation = avalon.io.ObjectId(container["representation"])
+        if representation in checked:
+            continue
+
+        representation_doc = avalon.io.find_one(
+            {"_id": representation, "type": "representation"},
+            projection={"parent": True}
+        )
+
+        if representation_doc and not is_latest(representation_doc):
+            return True
+
+        elif not representation_doc:
+            log.debug("Container '{objectName}' has an invalid "
+                      "representation, it is missing in the "
+                      "database".format(**container))
+
+        checked.add(representation)
+
+    return False
