@@ -90,6 +90,7 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
 
     def update(self, container, representation):
         import maya.cmds as cmds
+        from avalon import io
         from reveries.maya import pipeline
         from reveries.utils import get_representation_path_
 
@@ -99,7 +100,7 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
         if not standins:
             raise Exception("No Arnold Stand-In node, this is a bug.")
 
-        parents = avalon.io.parenthood(representation)
+        parents = io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
 
         entry_path, use_sequence = self.retrive(representation)
