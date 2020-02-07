@@ -36,7 +36,7 @@ from .hierarchy import (
     get_loader,
     add_subset,
     change_subset,
-    get_referenced_containers,
+    get_updatable_containers,
 )
 
 
@@ -533,8 +533,18 @@ class HierarchicalLoader(MayaBaseLoader):
         # should coming from `options`
         force_update = container.pop("_force_update", False)
 
+        nodes = cmds.sets(container["objectName"], query=True)
+        reference_node = next(iter(lib.get_reference_nodes(nodes)), None)
+
+        if reference_node is None:
+            title = "Abort"
+            message = ("This subset has been imported and cannot be updated.")
+            self.log.error(message)
+            message_box_error(title, message)
+            raise RuntimeError(message)
+
         # Get and check current sub-containers
-        reference_node, current_subcons = get_referenced_containers(container)
+        current_subcons = get_updatable_containers(container)
 
         # Load members data
         parents = avalon.io.parenthood(representation)

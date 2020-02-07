@@ -283,43 +283,43 @@ def add_subset(data, namespace, root, on_update=None):
                       forceElement=container["objectName"])
 
 
-def get_referenced_containers(container):
+def get_updatable_containers(container):
+    """Get sub-containers and ensure they are updatable
     """
-    """
+    updatable_import_loaders = (
+        "ArnoldAssLoader",
+        "AnimationLoader",
+        "ArnoldVolumeLoader",
+        "AtomsCrowdCacheLoader",
+    )
+
     def get_ref_node(node):
         """Find one reference node in the members of objectSet"""
         members = cmds.sets(node, query=True)
         return next(iter(lib.get_reference_nodes(members)), None)
 
-    def abort_alert():
+    def abort_alert(name):
         """Error message box"""
         title = "Abort"
-        message = ("Imported container not supported; container must be "
-                   "referenced.")
+        message = ("Found not updatable child subset %s, abort." % name)
         _log.error(message)
         message_box_error(title, message)
 
         raise RuntimeError(message)
 
-    container_node = container["objectName"]
-
-    # Assume asset has been referenced
-    reference_node = get_ref_node(container_node)
-    if not reference_node:
-        abort_alert()
-
     # Get current sub-containers
     current_subcons = dict()
 
     for sub_con in parse_sub_containers(container):
-        # Assume all sub-asset has been referenced
         if not get_ref_node(sub_con["objectName"]):
-            abort_alert()
+            loader = sub_con["loader"]
+            if loader not in updatable_import_loaders:
+                abort_alert(sub_con["objectName"])
 
         sub_ns = sub_con["namespace"].rsplit(":", 1)[-1]
         current_subcons[sub_ns] = sub_con
 
-    return reference_node, current_subcons
+    return current_subcons
 
 
 @contextlib.contextmanager
