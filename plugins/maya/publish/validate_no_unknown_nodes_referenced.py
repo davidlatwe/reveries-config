@@ -10,7 +10,7 @@ class SelectUnknownNodes(MayaSelectInvalidContextAction):
 
 
 class ValidateNoUnknownNodesReferenced(pyblish.api.InstancePlugin):
-    """Can not publish with unknown nodes referenced
+    """Please not publishing when unknown nodes have been referenced
     """
 
     order = pyblish.api.ValidatorOrder - 0.1
@@ -42,8 +42,5 @@ class ValidateNoUnknownNodesReferenced(pyblish.api.InstancePlugin):
     def process(self, context):
         unknown = self.get_invalid(context)
 
-        for node in unknown:
-            self.log.error(node)
-
         if unknown:
-            raise Exception("Scene referenced unknown nodes.")
+            self.log.warning("Scene referenced unknown nodes.")
