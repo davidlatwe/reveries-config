@@ -15,7 +15,7 @@ class DeleteUnknownNodes(RepairContextAction):
     label = "Delete Unknown"
 
 
-class ValidateUnknownNodes(pyblish.api.InstancePlugin):
+class ValidateNoUnknownNodes(pyblish.api.InstancePlugin):
     """Can not publish unknown nodes
     """
 
