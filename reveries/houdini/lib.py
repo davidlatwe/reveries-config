@@ -3,9 +3,15 @@ import uuid
 from contextlib import contextmanager
 
 import hou
+import os
+import json
 
 from avalon import api, io
 from avalon.houdini import lib as houdini
+
+
+# Get Houdini root node
+sceneRoot = hou.node('/obj/')
 
 
 def set_id(node, unique_id, overwrite=False):
@@ -198,3 +204,142 @@ def attribute_values(node, data):
 
 def set_scene_fps(fps):
     hou.setFps(fps)
+
+
+def export_nodes(nodes_paths, file_path):
+    """Export nodes as text file.
+
+    Example:
+        sceneRoot = hou.node('/obj/')
+        nodes_paths = ["/obj/nono_shader_day", "/obj/nono_shader_night"]
+        file = "O:/Project/Char/Nono/publish/Nono_shader.cpio"
+        export_nodes(nodes_paths, file)
+        # Result: "output file"
+
+    Args:
+        nodes_paths(list): List of nodes' path
+        file_path(str): cpio format file path
+
+    """
+
+    nodes = hou.nodes(nodes_paths)
+    path = os.path.abspath(file_path)
+    sceneRoot.saveChildrenToFile(nodes, [], path)
+
+
+def load_nodes(file_path):
+    """Load nodes from text file.
+
+    Example:
+        sceneRoot = hou.node('/obj/')
+        file = "O:/Project/Char/Nono/publish/Nono_shader.cpio"
+        load_nodes(file)
+
+    Args:
+        file_path(str): cpio format file path
+
+    Returns:
+        hou.Nodes
+
+    """
+
+    file = os.path.abspath(file_path)
+    sceneRoot.loadItemsFromFile(file)
+
+
+def export_shaderparm(node, shader_file_path):
+    """Export char nodes's shader parm to file.
+
+    Example:
+        char = hou.node("/obj/char_nono")
+        char_shader_path = "O:/Project/Char/Nono/publish/stylesheet.json"
+        export_shaderparm(char, char_shader_path)
+        # Result: "output file"
+
+    Args:
+        node(hou.Node): node instance
+        shader_file_path(str): json format file path
+
+    """
+    stylesheet_data = node.parm('shop_materialstylesheet').eval()
+    with open(shader_file_path, 'w') as f:
+        f.write(stylesheet_data)
+        f.close()
+
+
+def assign_shaderparm(node, shader_file_path):
+    """Add shader parm to node by reading shader file's data.
+
+    Example:
+        char = hou.node("/obj/char_nono")
+        char_shader_path = "O:/Project/Char/Nono/publish/stylesheet.json"
+        assign_shaderparm(char, char_shader_path)
+        # Result: "output"
+
+    Args:
+        node(hou.Node): node instance
+        shader_file_path(str): json format file path
+
+    Returns:
+        hou.Parm
+
+    """
+
+    data_tags = {
+        'script_action_icon': 'DATATYPES_stylesheet',
+        'script_action_help': 'Open in Material Style Sheet editor.',
+        'spare_category': 'Shaders',
+        'script_action': """
+import tooltils
+p = toolutils.dataTree('Material Style Sheets')
+p.setCurrentPath(kwargs['node'].path() + '/Style Sheet Parameter')
+        """,
+        'editor': '1'
+    }
+    group = node.parmTemplateGroup()
+    folder = hou.FolderParmTemplate('folder', 'Shaders')
+    parm_string = hou.StringParmTemplate(
+        name='shop_materialstylesheet',
+        label='Material Style Sheet',
+        num_components=1,
+        tags=data_tags
+    )
+    folder.addParmTemplate(parm_string)
+    group.append(folder)
+    node.setParmTemplateGroup(group)
+
+    with open(shader_file_path, 'r') as file:
+        data = json.load(file)
+        data_convert = json.dumps(data, indent=4)
+        node.parm('shop_materialstylesheet').set(data_convert)
+        file.close()
+
+
+def create_empty_shadernetwork(asset_name):
+    """Create asset's SOP shader network.
+
+    Example:
+        sceneRoot = hou.node('/obj/')
+        name = "char_nono"
+        create_empty_shadernetwork(name)
+
+    Args:
+        asset_name(str): name of the asset
+
+    Returns:
+        hou.Nodes
+
+    """
+    NODE_COLOR = (0.282353, 0.819608, 0.8)
+    NODE_POS = (3, 0)
+
+    shaderpack_name = 'SHADER_' + asset_name.upper()
+    shaderpack_node = sceneRoot.createNode('geo', shaderpack_name)
+    shaderpack_node.setColor(hou.Color(*NODE_COLOR))
+
+    shaderpack_node.createNode('shopnet', 'shopnet')
+    shaderpack_node.createNode('matnet', 'matnet').setPosition(
+        hou.Vector2(*NODE_POS)
+    )
+    shaderpack_node.setCurrent(on=True, clear_all_selected=True)
+    shaderpack_node.setDisplayFlag(True)
