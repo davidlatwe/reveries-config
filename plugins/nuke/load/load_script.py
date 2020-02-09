@@ -7,62 +7,44 @@ from reveries.plugins import PackageLoader
 from reveries.utils import get_representation_path_
 
 
-class RenderLayerLoader(PackageLoader, avalon.api.Loader):
+class ScriptLoader(PackageLoader, avalon.api.Loader):
 
-    label = "Load RenderLayer"
+    label = "Load As Precomp"
     icon = "camera-retro"
     color = "#28EDC9"
 
     hosts = ["nuke"]
 
-    families = ["reveries.renderlayer"]
-
-    representations = [
-        "renderLayer",
+    families = [
+        "reveries.write",
     ]
 
-    def set_path(self, read, aov_name, file_name):
-        read["file"].setValue(
+    representations = [
+        "nkscript",
+    ]
+
+    def setup_precomp(self, precomp, representation):
+        precomp["file"].setValue(
             os.path.join(
                 self.package_path,
-                aov_name,  # AOV name
-                file_name,
+                representation["data"]["scriptName"],
             ).replace("\\", "/")
         )
-        read["label"].setValue(aov_name)
-
-    def set_range(self, read, start, end):
-        read["first"].setValue(start)
-        read["last"].setValue(end)
-        read["origfirst"].setValue(start)
-        read["origlast"].setValue(end)
-
-    def set_format(self, read, resolution):
-        w, h = resolution
-        for format in nuke.formats():
-            if format.width() == w and format.height() == h:
-                read["format"].setValue(format.name())
-                break
+        precomp["output"].setValue(representation["data"]["outputNode"])
+        precomp["useOutput"].setValue(True)
+        precomp["reading"].setValue(True)
+        precomp["postage_stamp"].setValue(True)
 
     def load(self, context, name=None, namespace=None, options=None):
 
         representation = context["representation"]
 
-        nodes = list()
+        precomp = nuke.Node("Precomp")
+        self.setup_precomp(precomp, representation)
 
-        for name, data in representation["data"]["sequence"].items():
-            read = nuke.Node("Read")
-            nodes.append(read)
-
-            self.set_path(read, aov_name=name, file_name=data["fname"])
-            self.set_format(read, data["resolution"])
-            self.set_range(read, start=data["seqStart"], end=data["seqEnd"])
-
-            # Mark aov name
-            lib.set_avalon_knob_data(read, {("aov", "AOV"): name})
+        nodes = [precomp]
 
         asset = context["asset"]
-
         asset_name = asset["data"].get("shortName", asset["name"])
         families = context["subset"]["data"]["families"]
         family_name = families[0].split(".")[-1]
@@ -75,27 +57,14 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                               no_backdrop=True)
 
     def update(self, container, representation):
-        read_nodes = dict()
 
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
 
-        for node in container["_members"]:
-            if node.Class() == "Read":
-                data = lib.get_avalon_knob_data(node)
-                read_nodes[data["aov"]] = node
-
-        with lib.sync_copies(list(read_nodes.values())):
-            for name, data in representation["data"]["sequence"].items():
-                read = read_nodes.get(name)
-                if not read:
-                    continue
-
-                self.set_path(read, aov_name=name, file_name=data["fname"])
-                self.set_format(read, data["resolution"])
-                self.set_range(read,
-                               start=data["seqStart"],
-                               end=data["seqEnd"])
+        members = container["_members"]
+        with lib.sync_copies(members):
+            precomp = members[0]
+            self.setup_precomp(precomp, representation)
 
         node = container["_node"]
         with lib.sync_copies([node], force=True):

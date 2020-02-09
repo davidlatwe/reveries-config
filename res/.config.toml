@@ -38,6 +38,9 @@ name = "layout"
 [[tasks]]
 name = "lighting"
 
+[[tasks]]
+name = "compositing"
+
 [template]
 # Arg {user} been removed.
 # To re-implement {user} into path, better work file management tool is required.
@@ -51,11 +54,10 @@ icon = "trash-o"
 color = "#C4CEDC"
 order = -99
 
-
 [[groups]]
 name = "Renders"
-icon = "birthday-cake"
-color = "#FF5247"
+icon = "server"
+color = "#22EAAA"
 order = 10
 
 
@@ -67,9 +69,14 @@ label = "Shot Package"
 icon = "shopping-basket"
 
 [[families]]
+name = "reveries.write"
+label = "Write"
+icon = "ticket"
+
+[[families]]
 name = "reveries.renderlayer"
 label = "Render Layer"
-icon = "film"
+icon = "server"
 
 [[families]]
 name = "reveries.model"
