@@ -155,7 +155,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         from reveries.maya.utils import get_id
 
         transform_id_map = dict()
-        for transform in cmds.ls(nodes, type="transform", long=True):
+        for transform in cmds.ls(nodes, type="transform"):
             transform_id_map[get_id(transform)] = transform
 
         return transform_id_map
@@ -171,7 +171,11 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         current_NS = cmds.namespaceInfo(currentNamespace=True,
                                         absoluteName=True)
         for container_id, sub_matrix in data["subMatrix"].items():
-            container = container_from_id_path(container_id, current_NS)
+
+            container = container_from_id_path(container_id,
+                                               current_NS,
+                                               self.cached_container_by_id)
+
             full_NS = cmds.getAttr(container + ".namespace")
             nodes = cmds.namespaceInfo(full_NS, listOnlyDependencyNodes=True)
             # Collect hidden nodes' address

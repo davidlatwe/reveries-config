@@ -131,7 +131,9 @@ def container_to_id_path(container):
     return "|".join(walk_container_id(container["objectName"]))
 
 
-def container_from_id_path(container_id_path, parent_namespace):
+def container_from_id_path(container_id_path,
+                           parent_namespace,
+                           cached_containers=None):
     """Find container node from container id path
 
     Args:
@@ -144,9 +146,16 @@ def container_from_id_path(container_id_path, parent_namespace):
     """
     container_ids = container_id_path.split("|")
 
-    leaf_containers = lib.lsAttr("containerId",
-                                 container_ids.pop(),  # leaf container id
-                                 parent_namespace + "::")
+    if cached_containers is None:
+        leaf_containers = lib.lsAttr("containerId",
+                                     container_ids.pop(),  # leaf container id
+                                     parent_namespace + "::")
+    else:
+        leaf_containers = [
+            node for node in
+            cached_containers.get(container_ids.pop(), [])
+            if node.startswith(parent_namespace + ":")
+        ]
 
     walkers = {leaf: climb_container_id(leaf) for leaf in leaf_containers}
 
@@ -231,7 +240,7 @@ def _attach_subset(slot, namespace, root, subset_group):
     # Namespace is missing from root node(s), add namespace
     # manually
     slot = lib.to_namespace(slot, namespace)
-    slot = cmds.ls(root + slot, long=True)
+    slot = cmds.ls(root + slot)
 
     if not len(slot) == 1:
         raise RuntimeError("Too many or no parent, this is a bug.")
@@ -239,7 +248,7 @@ def _attach_subset(slot, namespace, root, subset_group):
     slot = slot[0]
     current_parent = cmds.listRelatives(subset_group,
                                         parent=True,
-                                        fullPath=True) or []
+                                        path=True) or []
     if slot not in current_parent:
         subset_group = cmds.parent(subset_group, slot, relative=True)[0]
 
@@ -323,20 +332,30 @@ def get_updatable_containers(container):
 
 
 @contextlib.contextmanager
-def change_subset(container, data, namespace, root):
+def change_subset(container, namespace, root, data_new, data_old, force):
     """
     """
     from avalon.pipeline import get_representation_context
 
-    if data["representation"] != container["representation"]:
+    is_repr_diff = (data_old["representation"] !=
+                    data_new["representation"])
+    has_override = (data_old["representation"] !=
+                    container["representation"])
+    require_update = (data_new["representation"] !=
+                      container["representation"])
+
+    if is_repr_diff and has_override and not force:
+        container["_representationUpdateSkept"] = True
+
+    elif require_update:
         current_repr = get_representation_context(container["representation"])
-        loader = data["loaderCls"](current_repr)
-        loader.update(container, data["representationDoc"])
+        loader = data_new["loaderCls"](current_repr)
+        loader.update(container, data_new["representationDoc"])
 
     try:
         # Update parenting and matrix
         with capsule.namespaced(namespace, new=False) as namespace:
-            subset_group = _attach_subset(data["slot"],
+            subset_group = _attach_subset(data_new["slot"],
                                           namespace,
                                           root,
                                           container["subsetGroup"])

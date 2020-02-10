@@ -155,7 +155,7 @@ def get_container_from_group(group):
     return nodes[0]
 
 
-def get_group_from_container(container):
+def get_group_from_container(container, long=True):
     """Get top group node name from container node
 
     Arguments:
@@ -168,7 +168,7 @@ def get_group_from_container(container):
                                      destination=False,
                                      plugs=False)
 
-        return cmds.ls(group, long=True)[0]
+        return cmds.ls(group, long=long)[0]
 
     except ValueError:
         # The subset of family 'look' does not have subsetGroup.

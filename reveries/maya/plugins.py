@@ -407,6 +407,28 @@ def _parse_members_data(entry_path):
 class HierarchicalLoader(MayaBaseLoader):
     """Hierarchical referencing based asset loader
     """
+    cached_container_by_id = None
+
+    def _cache_current_container_ids(self):
+        from maya import cmds
+
+        container_by_id = dict()
+
+        for attr in lib.lsAttr("containerId"):
+            id = cmds.getAttr(attr)
+            if id not in container_by_id:
+                container_by_id[id] = set()
+            node = ":" + attr.rsplit(".", 1)[0]
+            container_by_id[id].add(node)
+
+        self.cached_container_by_id = container_by_id
+
+    def _cache_container_id(self, container):
+        id = container["containerId"]
+        if id not in self.cached_container_by_id:
+            self.cached_container_by_id[id] = set()
+        node = ":" + container["objectName"]
+        self.cached_container_by_id[id].add(node)
 
     def _members_data_from_container(self, container):
         current_repr = avalon.io.find_one({
@@ -493,6 +515,7 @@ class HierarchicalLoader(MayaBaseLoader):
         update_id_verifiers(hierarchy)
 
         # Load sub-subsets
+        self._cache_current_container_ids()
         sub_containers = []
         for data in members:
 
@@ -503,6 +526,7 @@ class HierarchicalLoader(MayaBaseLoader):
             root = group_name
             with add_subset(data, namespace, root) as sub_container:
 
+                self._cache_container_id(sub_container)
                 self.apply_variation(data=data,
                                      container=sub_container)
 
@@ -581,6 +605,7 @@ class HierarchicalLoader(MayaBaseLoader):
                 current_members[namespace_old] = data_old
 
         # Update sub-subsets
+        self._cache_current_container_ids()
         namespace = container["namespace"]
         group_name = self.group_name(namespace, container["name"])
 
@@ -597,34 +622,23 @@ class HierarchicalLoader(MayaBaseLoader):
                 sub_container = current_subcons[sub_ns]
                 data_old = current_members[sub_ns]
 
-                is_repr_diff = (data_old["representation"] !=
-                                data_new["representation"])
-                has_override = (data_old["representation"] !=
-                                sub_container["representation"])
-
                 if sub_container["loader"] == data_new["loader"]:
-
-                    if is_repr_diff and has_override and not force_update:
-                        self.log.warning("Your scene had local representation "
-                                         "overrides within the set. New "
-                                         "representations not loaded for %s.",
-                                         sub_container["namespace"])
-
-                    else:
-                        # Update
-                        root = group_name
-                        with change_subset(sub_container,
-                                           data_new,
-                                           namespace,
-                                           root) as sub_container:
-
-                            self.update_variation(data_new=data_new,
-                                                  data_old=data_old,
-                                                  container=sub_container,
-                                                  force=force_update)
-                else:
                     # Update
-                    # But Loaders are different, remove first, add later
+                    root = group_name
+                    with change_subset(sub_container,
+                                       namespace,
+                                       root,
+                                       data_new,
+                                       data_old,
+                                       force_update) as sub_container:
+
+                        self.update_variation(data_new=data_new,
+                                              data_old=data_old,
+                                              container=sub_container,
+                                              force=force_update)
+                else:
+                    # Update, but Loaders are different, remove first, add
+                    # later.
                     avalon.api.remove(sub_container)
                     add_list.append(data_new)
 
@@ -637,6 +651,7 @@ class HierarchicalLoader(MayaBaseLoader):
             on_update = container
             with add_subset(data, namespace, root, on_update) as sub_container:
 
+                self._cache_container_id(sub_container)
                 self.apply_variation(data=data,
                                      container=sub_container)
 
