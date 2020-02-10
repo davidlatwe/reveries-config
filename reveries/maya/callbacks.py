@@ -5,10 +5,10 @@ from maya.api import OpenMaya as om  # API 2.0
 from maya import cmds, OpenMaya
 from avalon import maya, api as avalon
 
-from .. import utils, plugins
+from .. import utils, plugins, lib
 from .vendor import sticker
 
-from . import PYMEL_MOCK_FLAG, utils as maya_utils, lib, pipeline
+from . import PYMEL_MOCK_FLAG, utils as maya_utils, lib as maya_lib, pipeline
 
 
 def _outliner_hide_set_member():
@@ -114,7 +114,7 @@ def on_init(_):
 def before_new(_):
     # We need to save current FPS here because after scene renewed, FPS will
     # be changed to Maya default FPS.
-    pipeline._current_fps["_"] = lib.current_fps()
+    pipeline._current_fps["_"] = maya_lib.current_fps()
 
 
 def on_new(_):
@@ -150,7 +150,8 @@ def on_open(_):
             version = cmds.pluginInfo("mtoa", q=True, version=True)
             print("MtoA version: %s" % version)
     else:
-        _pop_sceneinventory()
+        if lib.any_outdated():
+            _pop_sceneinventory()
 
 
 def on_save(_):
