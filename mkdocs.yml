@@ -19,7 +19,9 @@ nav:
       - Overview: publish_maya.md
       - Render: publish_maya_render.md
     - Houdini: publish_houdini.md
-    - Nuke: publish_nuke.md
+    - Nuke:
+      - Overview: publish_nuke.md
+      - Render: publish_nuke_write.md
   - Utilities:
     - Overview: utilities_overview.md
 
