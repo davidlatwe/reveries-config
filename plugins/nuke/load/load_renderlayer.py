@@ -41,8 +41,12 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         w, h = resolution
         for format in nuke.formats():
             if format.width() == w and format.height() == h:
-                read["format"].setValue(format.name())
-                break
+                try:
+                    read["format"].setValue(format.name())
+                except TypeError:
+                    self.log.warning("Unrecognized format")
+                finally:
+                    break
 
     def load(self, context, name=None, namespace=None, options=None):
 
