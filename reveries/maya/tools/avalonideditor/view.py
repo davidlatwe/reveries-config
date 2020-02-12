@@ -1,7 +1,6 @@
-
 from avalon.vendor.Qt import QtWidgets, QtCore
 
-from . import model, delegate
+from . import model, delegates
 
 
 class SelectionOutline(QtWidgets.QWidget):
@@ -29,7 +28,7 @@ class SelectionOutline(QtWidgets.QWidget):
         view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 
         # Delegate
-        time_delegate = delegate.PrettyTimeDelegate()
+        time_delegate = delegates.PrettyTimeDelegate()
         column = self.model.Columns.index("time")
         view.setItemDelegateForColumn(column, time_delegate)
 
