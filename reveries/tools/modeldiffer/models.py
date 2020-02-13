@@ -246,30 +246,31 @@ class ComparerModel(models.TreeModel):
             data["longName"] = data.get("fullPath", name)
             data["shortName"] = name[len(shared_root):]
             data["fromHost"] = host
+            id = data["avalonId"]
+
+            state = 0
+            matched = None
 
             if name in items:
-                # Has matched
-                item = items[items.index(name)]
-                item.add_this(side, data, matched=1)
-                item.compare()
+                matched = items[items.index(name)]
+                state |= 1
+
+            for item in items:
+                if item.id == id:
+                    matched = item
+                    state |= 2
+                    break
+
+            if matched:
+                matched.add_this(side, data, matched=state)
+                matched.compare()
             else:
-                id = data["avalonId"]
-
-                for item in items:
-                    if item.id == id:
-                        # Matched by Id
-                        item.add_this(side, data, matched=2)
-                        item.compare()
-                        break
-
-                else:
-                    # No match
-                    item = ComparerItem(name, id)
-                    item.add_this(side, data)
-                    last = self.rowCount(root_index)
-                    self.beginInsertRows(root_index, last, last)
-                    self.add_child(item)
-                    self.endInsertRows()
+                item = ComparerItem(name, id)
+                item.add_this(side, data)
+                last = self.rowCount(root_index)
+                self.beginInsertRows(root_index, last, last)
+                self.add_child(item)
+                self.endInsertRows()
 
     def data(self, index, role):
 

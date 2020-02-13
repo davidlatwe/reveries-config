@@ -368,13 +368,13 @@ class ComparingTable(QtWidgets.QWidget):
 
         # Init
         header = data["view"].header()
-        header.setMinimumSectionSize(delegates.DiffDelegate.ICON_SPACE)
+        header.setMinimumSectionSize(data["diff"].ICON_SPACE)
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
         header.setSectionsMovable(False)
 
-        data["view"].setColumnWidth(1, 90)  # "diff" column
+        data["view"].setColumnWidth(1, data["diff"].ICON_SPACE)
 
         self.data = data
 

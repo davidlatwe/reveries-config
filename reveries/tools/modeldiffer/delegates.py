@@ -8,24 +8,29 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
 
     ICON_SIZE = 16
     ICON_MARGIN = 6
-    ICON_SPACE = ICON_SIZE * 3 + ICON_MARGIN * 4
+    ICON_COUNT = 4
+    ICON_SPACE = ICON_SIZE * ICON_COUNT + ICON_MARGIN * (ICON_COUNT + 1)
+
+    ID_ICONS = [
+        ("hashtag", "#6A6A6A"),  # Not Match
+        ("hashtag", "#A290B9"),  # Match By Id, & 2
+    ]
 
     NAME_ICONS = [
-        ("link", "#6A6A6A"),  # Not Match
-        ("link", "#5CA6EC"),  # Match By Name
-        ("link", "#ECA25C"),  # Match By Id
+        ("align-left", "#6A6A6A"),  # Not Match
+        ("align-left", "#A290B9"),  # Match By Name, & 1
     ]
 
     POINTS_ICONS = [
         ("cube", "#EC534E"),  # Point Not Match
         ("cube", "#38DB8C"),  # Point Ok
-        ("cube", "#6A6A6A"),  # Point Dimmed
+        ("cube", "#6A6A6A"),  # Point Dimmed (Item not matched)
     ]
 
     UVMAP_ICONS = [
         ("delicious", "#EC534E"),  # UV Not Match
         ("delicious", "#38DB8C"),  # UV Ok
-        ("delicious", "#6A6A6A"),  # UV Dimmed
+        ("delicious", "#6A6A6A"),  # UV Dimmed (Item not matched)
     ]
 
     DiffStateRole = models.ComparerModel.DiffStateRole
@@ -37,6 +42,11 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
             qtawesome.icon("fa.{}".format(icon),
                            color=color).pixmap(self.ICON_SIZE, self.ICON_SIZE)
             for icon, color in self.NAME_ICONS
+        ]
+        self.id_pixmap = [
+            qtawesome.icon("fa.{}".format(icon),
+                           color=color).pixmap(self.ICON_SIZE, self.ICON_SIZE)
+            for icon, color in self.ID_ICONS
         ]
         self.points_pixmap = [
             qtawesome.icon("fa.{}".format(icon),
@@ -60,23 +70,20 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
         states = index.data(self.DiffStateRole)
         name_state, points_state, uvmap_state = states
 
-        name_pixmap = self.name_pixmap[name_state]
-        points_pixmap = self.points_pixmap[points_state]
-        uvmap_pixmap = self.uvmap_pixmap[uvmap_state]
+        pixmaps = [
+            self.id_pixmap[bool(name_state & 2)],
+            self.name_pixmap[bool(name_state & 1)],
+            self.points_pixmap[points_state],
+            self.uvmap_pixmap[uvmap_state],
+        ]
 
         rect = option.rect
-        center = rect.width() / 2
-        half = self.ICON_SPACE / 2
         y = rect.y() + rect.height() / 2 - (self.ICON_SIZE / 2)
+        x = rect.x() + self.ICON_MARGIN
 
-        x = rect.x() + center - half + self.ICON_MARGIN
-        painter.drawPixmap(x, y, name_pixmap)
-
-        x = rect.x() + center - (self.ICON_SIZE / 2)
-        painter.drawPixmap(x, y, points_pixmap)
-
-        x = rect.x() + center + half - (self.ICON_SIZE) - self.ICON_MARGIN
-        painter.drawPixmap(x, y, uvmap_pixmap)
+        for i, pixmap in enumerate(pixmaps):
+            painter.drawPixmap(x, y, pixmap)
+            x += self.ICON_SIZE + self.ICON_MARGIN
 
 
 class PathTextDelegate(QtWidgets.QStyledItemDelegate):
