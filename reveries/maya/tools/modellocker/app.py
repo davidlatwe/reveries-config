@@ -6,6 +6,8 @@ from avalon.tools import lib
 from avalon.vendor.Qt import QtWidgets, QtCore
 from avalon.vendor import qtawesome
 
+from . import view
+
 
 module = sys.modules[__name__]
 module.window = None
@@ -19,6 +21,22 @@ class Window(QtWidgets.QWidget):
         self.setWindowIcon(qtawesome.icon("fa.lock", color="#DFDFDF"))
         self.setWindowTitle("Model Locker")
         self.setWindowFlags(QtCore.Qt.Window)
+
+        widgets = {
+            "main": view.SelectionOutline(self)
+        }
+
+        widgets["main"].start()
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(widgets["main"])
+
+        self.widgets = widgets
+        self.resize(560, 640)
+
+    def closeEvent(self, event):
+        self.widgets["main"].stop()
+        return super(Window, self).closeEvent(event)
 
 
 def show():
