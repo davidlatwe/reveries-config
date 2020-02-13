@@ -177,7 +177,7 @@ class ComparerItem(models.Item):
 
 class ComparerModel(models.TreeModel):
 
-    Columns = ["diff", SIDE_A, SIDE_B]
+    Columns = [SIDE_A, "diff", SIDE_B]
 
     DiffStateRole = QtCore.Qt.UserRole + 2
     HostSelectRole = QtCore.Qt.UserRole + 3

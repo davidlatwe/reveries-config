@@ -345,9 +345,6 @@ class ComparingTable(QtWidgets.QWidget):
         data["view"].setSelectionMode(
             QtWidgets.QAbstractItemView.ExtendedSelection)
 
-        header = data["view"].header()
-        header.setMinimumSectionSize(delegates.DiffDelegate.ICON_SPACE)
-
         # Delegate
         diff_delegate = data["diff"]
         column = data["model"].Columns.index("diff")
@@ -370,9 +367,14 @@ class ComparingTable(QtWidgets.QWidget):
         data["view"].customContextMenuRequested.connect(self.on_context_menu)
 
         # Init
+        header = data["view"].header()
+        header.setMinimumSectionSize(delegates.DiffDelegate.ICON_SPACE)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        header.setSectionsMovable(False)
 
-        data["view"].setColumnWidth(0, 90)  # "diff" column
-        data["view"].setColumnWidth(1, 310)   # "side A" column
+        data["view"].setColumnWidth(1, 90)  # "diff" column
 
         self.data = data
 
