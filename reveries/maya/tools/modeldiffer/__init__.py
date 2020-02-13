@@ -72,10 +72,13 @@ def profile_from_host(container=None):
         #
         root = pipeline.get_group_from_container(container["objectName"])
 
-        meshes = cmds.ls(cmds.sets(container["objectName"], query=True),
-                         type="mesh",
-                         noIntermediate=True,
-                         long=True)
+        transforms = cmds.ls(cmds.sets(container["objectName"], query=True),
+                             type="transform")
+        meshes = cmds.listRelatives(transforms,
+                                    shapes=True,
+                                    noIntermediate=True,
+                                    path=True,
+                                    type="mesh")
     else:
         # From selection (only compare with mesh hash values)
         #
@@ -87,7 +90,7 @@ def profile_from_host(container=None):
         meshes = cmds.listRelatives(cmds.ls(selection=True, long=True),
                                     shapes=True,
                                     noIntermediate=True,
-                                    fullPath=True,
+                                    path=True,
                                     type="mesh")
 
     if not meshes:
