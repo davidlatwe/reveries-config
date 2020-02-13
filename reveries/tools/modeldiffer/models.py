@@ -182,19 +182,8 @@ class ComparerModel(models.TreeModel):
     DiffStateRole = QtCore.Qt.UserRole + 2
     HostSelectRole = QtCore.Qt.UserRole + 3
 
-    HEADER_ICONS = [
-        ("cubes", SIDE_COLOR[SIDE_A]),
-        ("cubes", SIDE_COLOR[SIDE_B]),
-        ("adjust", "#BEBEBE"),
-    ]
-
     def __init__(self, parent=None):
         super(ComparerModel, self).__init__(parent=parent)
-
-        self.header_icon = [
-            qtawesome.icon("fa.{}".format(icon), color=color)
-            for icon, color in self.HEADER_ICONS
-        ]
 
         self._use_long_name = False
         self._origin_shared_root = ""
@@ -315,6 +304,9 @@ class ComparerModel(models.TreeModel):
                 if not item[SIDE_B_DATA]["fromHost"]:
                     return QtGui.QColor("gray")
 
+        if role == QtCore.Qt.TextAlignmentRole:
+            return QtCore.Qt.AlignCenter
+
         if role == QtCore.Qt.FontRole:
             column = index.column()
 
@@ -379,23 +371,13 @@ class ComparerModel(models.TreeModel):
 
         if role == QtCore.Qt.DisplayRole:
             if section == self.Columns.index(SIDE_A):
-                return "A"
+                return "Geometries"
 
             if section == self.Columns.index(SIDE_B):
-                return "B"
+                return "Geometries"
 
             if section == self.Columns.index("diff"):
                 return "Diff"
-
-        if role == QtCore.Qt.DecorationRole:
-            if section == self.Columns.index(SIDE_A):
-                return self.header_icon[0]
-
-            if section == self.Columns.index(SIDE_B):
-                return self.header_icon[1]
-
-            if section == self.Columns.index("diff"):
-                return self.header_icon[2]
 
         return super(ComparerModel, self).headerData(section,
                                                      orientation,
