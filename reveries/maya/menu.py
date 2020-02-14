@@ -65,7 +65,7 @@ def install():
         cmds.menuItem("Snap Shot", parent="Menu_Utilities",
                       command=interactive.active_view_snapshot)
 
-        cmds.menuItem("Model Differ", parent="Menu_Rig", command="""
+        cmds.menuItem("Model Differ", parent="Menu_Utilities", command="""
 import reveries.maya.tools
 reveries.maya.tools.show('modeldiffer')
 """)
