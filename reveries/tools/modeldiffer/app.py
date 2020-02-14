@@ -67,8 +67,8 @@ class Window(QtWidgets.QWidget):
             "ctrl": {
                 "tabs": {
                     "main": QtWidgets.QTabWidget(),
-                    "details": QtWidgets.QWidget(),
-                    "selectors": {
+                    "focus": views.FocusComparing(),
+                    "select": {
                         "main": QtWidgets.QWidget(),
                         "selectorA": views.SelectorWidget(side=views.SIDE_A),
                         "selectorB": views.SelectorWidget(side=views.SIDE_B),
@@ -92,7 +92,7 @@ class Window(QtWidgets.QWidget):
             layout.addWidget(top["line"])
             layout.addWidget(top["nameChk"])
 
-        with widget.pin("ctrl.tabs.selectors") as selectors:
+        with widget.pin("ctrl.tabs.select") as selectors:
             layout = QtWidgets.QHBoxLayout(selectors["main"])
             layout.addWidget(selectors["selectorA"])
             layout.addSpacing(-12)
@@ -102,8 +102,8 @@ class Window(QtWidgets.QWidget):
         with widget.pin("ctrl.tabs") as ctrl:
             icon_1 = lib.icon("hand-o-right", "white")
             icon_2 = lib.icon("bullseye", "#BEBEBE")
-            ctrl["main"].addTab(ctrl["selectors"]["main"], icon_1, "Select")
-            ctrl["main"].addTab(ctrl["details"], icon_2, "Details")
+            ctrl["main"].addTab(ctrl["select"]["main"], icon_1, "Select")
+            ctrl["main"].addTab(ctrl["focus"], icon_2, "Focus")
             ctrl["main"].setTabPosition(QtWidgets.QTabWidget.West)
 
         with widget.pin("table.tabs") as table:
@@ -128,7 +128,7 @@ class Window(QtWidgets.QWidget):
 
         # Connect
         with widget.pin("table.tabs") as table:
-            with widget.pin("ctrl.tabs.selectors") as selectors:
+            with widget.pin("ctrl.tabs.select") as selectors:
                 selectors["selectorA"].connect_comparer(table["comparer"])
                 selectors["selectorB"].connect_comparer(table["comparer"])
 

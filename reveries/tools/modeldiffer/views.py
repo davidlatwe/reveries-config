@@ -428,3 +428,36 @@ class ComparingTable(QtWidgets.QWidget):
                 nodes.append(node)
 
         lib.select_from_host(nodes)
+
+
+class FocusComparing(QtWidgets.QWidget):
+
+    def __init__(self, parent=None):
+        super(FocusComparing, self).__init__(parent=parent)
+
+        widget = {
+            "main": QtWidgets.QWidget(),
+            "secA": {
+                ""
+            },
+            "diff": {
+                "name": None,
+                "hierarchy": None,
+                "id": None,
+                "mesh": None,
+                "uv": None,
+            },
+        }
+
+
+class FocusWidget(QtWidgets.QWidget):
+
+    def __init__(self, parent=None):
+        super(FocusWidget, self).__init__(parent=parent)
+
+        widget = {
+            "main": QtWidgets.QWidget(),
+            "name": None,
+            "longName": None,
+            "avalonId": None,
+        }
