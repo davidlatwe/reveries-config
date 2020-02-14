@@ -114,6 +114,11 @@ reveries.maya.tools.show('mayalookassigner')
                       subMenu=True,
                       parent=self._menu)
 
+        cmds.menuItem("Model Locker", parent="Menu_Rig", command="""
+import reveries.maya.tools
+reveries.maya.tools.show('modellocker')
+""")
+
         cmds.menuItem("Model Differ", parent="Menu_Rig", command="""
 import reveries.maya.tools
 reveries.maya.tools.show('modeldiffer')
