@@ -1,9 +1,10 @@
 
 import logging
 
-from avalon.vendor.Qt import QtWidgets, QtCore
+from avalon.vendor.Qt import QtWidgets, QtCore, QtGui
 from avalon import api, io
 from . import models, delegates, lib
+from ...lib import pindict
 
 
 main_logger = logging.getLogger("modeldiffer")
@@ -317,6 +318,8 @@ class DatabaseSelectorWidget(QtWidgets.QWidget):
 
 class ComparingTable(QtWidgets.QWidget):
 
+    item_picked = QtCore.Signal(str, dict)
+
     def __init__(self, parent=None):
         super(ComparingTable, self).__init__(parent=parent)
 
@@ -364,6 +367,7 @@ class ComparingTable(QtWidgets.QWidget):
 
         # Connect
         data["view"].customContextMenuRequested.connect(self.on_context_menu)
+        data["view"].clicked.connect(self.on_clicked)
 
         # Init
         header = data["view"].header()
@@ -429,35 +433,271 @@ class ComparingTable(QtWidgets.QWidget):
 
         lib.select_from_host(names)
 
+    def on_clicked(self, index):
+        column = index.column()
+        if column == 1:
+            # Diff section
+            return
+
+        selection_model = self.data["view"].selectionModel()
+        selection = selection_model.selection()
+        selected = index in selection.indexes()
+
+        node = index.data(models.ComparerModel.ItemRole)
+        if column == 0:  # Left Side
+            data = node.get(models.SIDE_A_DATA) if selected else None
+            self.item_picked.emit(SIDE_A, data)
+
+        else:  # Right Side
+            data = node.get(models.SIDE_B_DATA) if selected else None
+            self.item_picked.emit(SIDE_B, data)
+
 
 class FocusComparing(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(FocusComparing, self).__init__(parent=parent)
 
-        widget = {
-            "main": QtWidgets.QWidget(),
-            "secA": {
-                ""
+        widget = pindict.to_pindict({
+            "overallDiff": {
+                "main": QtWidgets.QGroupBox("Compare Features"),
+                "name": {
+                    "main": QtWidgets.QWidget(),
+                    "icon": QtWidgets.QLabel(),
+                    "label": QtWidgets.QLabel("Hierarchy"),
+                    "status": QtWidgets.QLabel("--"),
+                },
+                "id": {
+                    "main": QtWidgets.QWidget(),
+                    "icon": QtWidgets.QLabel(),
+                    "label": QtWidgets.QLabel("Avalon Id"),
+                    "status": QtWidgets.QLabel("--"),
+                },
+                "mesh": {
+                    "main": QtWidgets.QWidget(),
+                    "icon": QtWidgets.QLabel(),
+                    "label": QtWidgets.QLabel("Mesh"),
+                    "status": QtWidgets.QLabel("--"),
+                },
+                "uv": {
+                    "main": QtWidgets.QWidget(),
+                    "icon": QtWidgets.QLabel(),
+                    "label": QtWidgets.QLabel("UV"),
+                    "status": QtWidgets.QLabel("--"),
+                },
             },
-            "diff": {
-                "name": None,
-                "hierarchy": None,
-                "id": None,
-                "mesh": None,
-                "uv": None,
+            "featureMenu": {
+                "main": QtWidgets.QWidget(),
+                "label": QtWidgets.QLabel("Focus On"),
+                "list": QtWidgets.QComboBox(),
             },
+            "focus": {
+                "main": QtWidgets.QWidget(),
+                "featureA": FocusFeature(SIDE_A),
+                "featureB": FocusFeature(SIDE_B),
+            },
+        })
+
+        with widget.pin("overallDiff") as diff:
+            layout = QtWidgets.QVBoxLayout(diff["main"])
+
+            for key in ["name", "id", "mesh", "uv"]:
+                with widget.pin("overallDiff." + key) as feature:
+                    lay = QtWidgets.QHBoxLayout(feature["main"])
+                    lay.addWidget(feature["label"])
+                    lay.addSpacing(8)
+                    lay.addWidget(feature["icon"])
+                    lay.addSpacing(12)
+                    lay.addWidget(feature["status"], stretch=True)
+
+                    feature["label"].setFixedWidth(60)
+                    feature["label"].setAlignment(QtCore.Qt.AlignRight)
+
+                    icon = delegates.FEATURE_ICONS[key]
+                    pixmap = lib.icon(icon, "#6A6A6A").pixmap(16, 16)
+                    feature["icon"].setPixmap(pixmap)
+
+                layout.addWidget(feature["main"])
+                layout.addSpacing(-12)
+            layout.addSpacing(12)
+            layout.setContentsMargins(0, 0, 0, 0)
+
+        with widget.pin("featureMenu") as menu:
+            layout = QtWidgets.QHBoxLayout(menu["main"])
+            layout.addWidget(menu["label"])
+            layout.addWidget(menu["list"])
+            layout.addStretch()
+
+        with widget.pin("focus") as focus:
+            layout = QtWidgets.QVBoxLayout(focus["main"])
+            layout.addWidget(focus["featureA"])
+            layout.addSpacing(-4)
+            layout.addWidget(focus["featureB"])
+            layout.setContentsMargins(0, 0, 0, 0)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addSpacing(-16)
+        layout.addWidget(widget["overallDiff"]["main"])
+        layout.addWidget(widget["featureMenu"]["main"])
+        layout.addSpacing(-8)
+        layout.addWidget(widget["focus"]["main"])
+
+        with widget.pin("featureMenu") as menu:
+            menu["list"].addItem(" Hierarchy", "longName")
+            menu["list"].addItem(" Avalon Id", "avalonId")
+            menu["list"].addItem(" Mesh", "points")
+            menu["list"].addItem(" UV", "uvmap")
+            menu["list"].currentIndexChanged.connect(self.on_focused)
+
+        self.widget = widget
+        self.nodes = {
+            SIDE_A: dict(),
+            SIDE_B: dict(),
         }
 
+    def on_focused(self, index=None):
+        with self.widget.pin("featureMenu.list") as menu:
+            feature = menu.currentData()
 
-class FocusWidget(QtWidgets.QWidget):
+        with self.widget.pin("focus") as focus:
+            value = self.nodes[SIDE_A].get(feature) or ""
+            focus["featureA"].set_value(value)
+            value = self.nodes[SIDE_B].get(feature) or ""
+            focus["featureB"].set_value(value)
 
-    def __init__(self, parent=None):
-        super(FocusWidget, self).__init__(parent=parent)
+    def on_picked(self, side, data=None):
+        if data is None:
+            self.nodes[side].clear()
+        else:
+            self.nodes[side].update(data)
+
+        # Compare
+        self.update()
+
+    def update(self):
+        node_A = self.nodes[SIDE_A]
+        node_B = self.nodes[SIDE_B]
+
+        with self.widget.pin("overallDiff.name") as name:
+            name_A = node_A.get("longName")
+            name_B = node_B.get("longName")
+
+            if name_A and name_B:
+                if name_A == name_B:
+                    status = "Match"
+                    color = "#A290B9"
+                else:
+                    status = "Not Match"
+                    color = "#E8705D"
+            else:
+                status = "--"
+                color = "#6A6A6A"
+
+            icon = delegates.FEATURE_ICONS["name"]
+            pixmap = lib.icon(icon, color).pixmap(16, 16)
+            name["icon"].setPixmap(pixmap)
+            name["status"].setText(status)
+
+        with self.widget.pin("overallDiff.id") as id:
+            id_A = node_A.get("avalonId")
+            id_B = node_B.get("avalonId")
+
+            if id_A and id_B:
+                if id_A == id_B:
+                    status = "Match"
+                    color = "#A290B9"
+                else:
+                    status = "Not Match"
+                    color = "#E8705D"
+            else:
+                status = "--"
+                color = "#6A6A6A"
+
+            icon = delegates.FEATURE_ICONS["id"]
+            pixmap = lib.icon(icon, color).pixmap(16, 16)
+            id["icon"].setPixmap(pixmap)
+            id["status"].setText(status)
+
+        with self.widget.pin("overallDiff.mesh") as mesh:
+            mesh_A = node_A.get("points")
+            mesh_B = node_B.get("points")
+
+            if mesh_A and mesh_B:
+                if mesh_A == mesh_B:
+                    status = "Match"
+                    color = "#A290B9"
+                else:
+                    status = "Not Match"
+                    color = "#E8705D"
+            else:
+                status = "--"
+                color = "#6A6A6A"
+
+            icon = delegates.FEATURE_ICONS["mesh"]
+            pixmap = lib.icon(icon, color).pixmap(16, 16)
+            mesh["icon"].setPixmap(pixmap)
+            mesh["status"].setText(status)
+
+        with self.widget.pin("overallDiff.uv") as uv:
+            uv_A = node_A.get("uvmap")
+            uv_B = node_B.get("uvmap")
+
+            if uv_A and uv_B:
+                if uv_A == uv_B:
+                    status = "Match"
+                    color = "#A290B9"
+                else:
+                    status = "Not Match"
+                    color = "#E8705D"
+            else:
+                status = "--"
+                color = "#6A6A6A"
+
+            icon = delegates.FEATURE_ICONS["uv"]
+            pixmap = lib.icon(icon, color).pixmap(16, 16)
+            uv["icon"].setPixmap(pixmap)
+            uv["status"].setText(status)
+
+        self.on_focused()
+
+
+class FocusFeature(QtWidgets.QWidget):
+
+    def __init__(self, side, parent=None):
+        super(FocusFeature, self).__init__(parent=parent)
 
         widget = {
-            "main": QtWidgets.QWidget(),
-            "name": None,
-            "longName": None,
-            "avalonId": None,
+            "sideA": QtWidgets.QLabel(),
+            "sideB": QtWidgets.QLabel(),
+            "value": QtWidgets.QLineEdit(),
         }
+
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.addSpacing(20)
+        layout.addWidget(widget["sideA"])
+        layout.addSpacing(-6)
+        layout.addWidget(widget["sideB"])
+        layout.addWidget(widget["value"])
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        font = QtGui.QFont("Monospace")
+        font.setStyleHint(QtGui.QFont.TypeWriter)
+        widget["value"].setFont(font)
+        widget["value"].setReadOnly(True)
+
+        ICON_SIZE = 20
+        # Left
+        icon = "chevron-circle-left" if side == SIDE_A else "circle"
+        color = SIDE_COLOR[side] if side == SIDE_A else "#3A3A3A"
+        pixmap = lib.icon(icon, color).pixmap(ICON_SIZE, ICON_SIZE)
+        widget["sideA"].setPixmap(pixmap)
+        # Right
+        icon = "chevron-circle-right" if side == SIDE_B else "circle"
+        color = SIDE_COLOR[side] if side == SIDE_B else "#3A3A3A"
+        pixmap = lib.icon(icon, color).pixmap(ICON_SIZE, ICON_SIZE)
+        widget["sideB"].setPixmap(pixmap)
+
+        self.widget = widget
+
+    def set_value(self, value):
+        self.widget["value"].setText(value)

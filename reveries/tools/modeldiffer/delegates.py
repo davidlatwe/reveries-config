@@ -3,33 +3,47 @@ from avalon.vendor.Qt import QtWidgets, QtCore
 from . import models, lib
 
 
+FEATURE_ICONS = {
+    "id": "hashtag",
+    "name": "align-left",
+    "mesh": "cube",
+    "uv": "delicious",
+}
+
+
 class DiffDelegate(QtWidgets.QStyledItemDelegate):
 
     ICON_SIZE = 16
     ICON_MARGIN = 6
-    ICON_COUNT = 4
+    ICON_COUNT = 6
     ICON_SPACE = ICON_SIZE * ICON_COUNT + ICON_MARGIN * (ICON_COUNT + 1)
 
     ID_ICONS = [
-        ("hashtag", "#6A6A6A"),  # Not Match
-        ("hashtag", "#A290B9"),  # Match By Id, & 2
+        (FEATURE_ICONS["id"], "#6A6A6A"),  # Not Match
+        (FEATURE_ICONS["id"], "#A290B9"),  # Match By Id, & 2
     ]
 
     NAME_ICONS = [
-        ("align-left", "#6A6A6A"),  # Not Match
-        ("align-left", "#A290B9"),  # Match By Name, & 1
+        (FEATURE_ICONS["name"], "#6A6A6A"),  # Not Match
+        (FEATURE_ICONS["name"], "#A290B9"),  # Match By Name, & 1
     ]
 
     POINTS_ICONS = [
-        ("cube", "#EC534E"),  # Point Not Match
-        ("cube", "#38DB8C"),  # Point Ok
-        ("cube", "#6A6A6A"),  # Point Dimmed (Item not matched)
+        (FEATURE_ICONS["mesh"], "#EC534E"),  # Point Not Match
+        (FEATURE_ICONS["mesh"], "#38DB8C"),  # Point Ok
+        (FEATURE_ICONS["mesh"], "#6A6A6A"),  # Point Dimmed (Item not matched)
     ]
 
     UVMAP_ICONS = [
-        ("delicious", "#EC534E"),  # UV Not Match
-        ("delicious", "#38DB8C"),  # UV Ok
-        ("delicious", "#6A6A6A"),  # UV Dimmed (Item not matched)
+        (FEATURE_ICONS["uv"], "#EC534E"),  # UV Not Match
+        (FEATURE_ICONS["uv"], "#38DB8C"),  # UV Ok
+        (FEATURE_ICONS["uv"], "#6A6A6A"),  # UV Dimmed (Item not matched)
+    ]
+
+    LOCK_ICONS = [
+        ("ellipsis-h", "#6A6A6A"),  # Not published
+        ("unlock", "#A0BBA7"),  # Not Protected
+        ("lock", "#C1B891"),  # Protected
     ]
 
     DiffStateRole = models.ComparerModel.DiffStateRole
@@ -51,6 +65,9 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
         self.uvmap_pixmap = [
             lib.icon(n, c).pixmap(*s) for n, c in self.UVMAP_ICONS
         ]
+        self.lock_icon = [
+            lib.icon(n, c).pixmap(*s) for n, c in self.LOCK_ICONS
+        ]
 
     def sizeHint(self, option, index):
         size = option.rect.size()
@@ -64,10 +81,12 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
         name_state, points_state, uvmap_state = states
 
         pixmaps = [
+            self.lock_icon[0],
             self.id_pixmap[bool(name_state & 2)],
             self.name_pixmap[bool(name_state & 1)],
             self.points_pixmap[points_state],
             self.uvmap_pixmap[uvmap_state],
+            self.lock_icon[1],
         ]
 
         rect = option.rect

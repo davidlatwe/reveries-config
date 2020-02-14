@@ -61,7 +61,7 @@ class Window(QtWidgets.QWidget):
                 "main": QtWidgets.QWidget(),
                 "label": QtWidgets.QLabel("Table Name:"),
                 "line": QtWidgets.QLineEdit(),
-                "nameChk": QtWidgets.QCheckBox("Show Long Name"),
+                "nameChk": QtWidgets.QCheckBox("Show Namespace"),
             },
 
             "ctrl": {
@@ -131,6 +131,9 @@ class Window(QtWidgets.QWidget):
             with widget.pin("ctrl.tabs.select") as selectors:
                 selectors["selectorA"].connect_comparer(table["comparer"])
                 selectors["selectorB"].connect_comparer(table["comparer"])
+
+            with widget.pin("ctrl.tabs.focus") as focus:
+                table["comparer"].item_picked.connect(focus.on_picked)
 
             with widget.pin("top") as top:
                 top["nameChk"].stateChanged.connect(
