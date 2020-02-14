@@ -421,13 +421,13 @@ class ComparingTable(QtWidgets.QWidget):
         source_selection = self.data["proxy"].mapSelectionToSource(selection)
 
         model = self.data["model"]
-        nodes = list()
+        names = list()
         for index in source_selection.indexes():
-            node = index.data(model.HostSelectRole)
-            if node is not None:
-                nodes.append(node)
+            name = index.data(model.HostSelectRole)
+            if name is not None:
+                names.append(name)
 
-        lib.select_from_host(nodes)
+        lib.select_from_host(names)
 
 
 class FocusComparing(QtWidgets.QWidget):
