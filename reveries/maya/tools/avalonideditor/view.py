@@ -1,6 +1,7 @@
 from avalon.vendor.Qt import QtWidgets, QtCore
 
-from . import model, delegates
+from .. import delegates
+from . import model
 
 
 class SelectionOutline(QtWidgets.QWidget):
