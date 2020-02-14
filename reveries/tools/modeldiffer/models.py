@@ -2,7 +2,6 @@
 import logging
 
 from avalon.tools import models
-from avalon.vendor import qtawesome
 from avalon.vendor.Qt import QtGui, QtCore
 from avalon import api, io
 
@@ -29,7 +28,7 @@ class HostContainerListModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         super(HostContainerListModel, self).__init__(parent=parent)
         self.placeholder_item = QtGui.QStandardItem(
-            qtawesome.icon("fa.hand-o-right", color="white"),
+            lib.icon("hand-o-right", color="white"),
             "< Select Container.. >"
         )
 
@@ -70,7 +69,7 @@ class DatabaseDocumentModel(QtGui.QStandardItemModel):
 
         self.placeholder = "< Select %s.. >" % level.capitalize()
         self.placeholder_item = QtGui.QStandardItem(
-            qtawesome.icon("fa.hand-o-right", color="white"),
+            lib.icon("hand-o-right", color="white"),
             self.placeholder
         )
 

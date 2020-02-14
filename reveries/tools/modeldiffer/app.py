@@ -3,11 +3,10 @@ import sys
 import logging
 
 from avalon import io, style
-from avalon.tools import lib
+from avalon.tools import lib as tools_lib
 from avalon.vendor.Qt import QtWidgets, QtCore
-from avalon.vendor import qtawesome
 
-from . import views
+from . import views, lib
 from .. import widgets
 
 
@@ -27,8 +26,7 @@ class Window(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(Window, self).__init__(parent=parent)
 
-        self.setWindowIcon(qtawesome.icon("fa.share-alt-square",
-                                          color="#EC905C"))
+        self.setWindowIcon(lib.icon("share-alt-square", color="#EC905C"))
         self.setWindowTitle("Model Differ")
         self.setWindowFlags(QtCore.Qt.Window)
 
@@ -111,12 +109,10 @@ class Window(QtWidgets.QWidget):
 
 
 def register_host_profiler(method):
-    from . import lib
     lib.profile_from_host = method
 
 
 def register_host_selector(method):
-    from . import lib
     lib.select_from_host = method
 
 
@@ -128,7 +124,7 @@ def show():
     except (RuntimeError, AttributeError):
         pass
 
-    with lib.application():
+    with tools_lib.application():
         window = Window(parent=None)
         window.setStyleSheet(style.load_stylesheet())
         window.show()

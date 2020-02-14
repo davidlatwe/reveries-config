@@ -1,7 +1,6 @@
 
 from avalon.vendor.Qt import QtWidgets, QtCore
-from avalon.vendor import qtawesome
-from . import models
+from . import models, lib
 
 
 class DiffDelegate(QtWidgets.QStyledItemDelegate):
@@ -38,25 +37,19 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, parent=None):
         super(DiffDelegate, self).__init__(parent)
 
+        s = (self.ICON_SIZE, self.ICON_SIZE)
+
         self.name_pixmap = [
-            qtawesome.icon("fa.{}".format(icon),
-                           color=color).pixmap(self.ICON_SIZE, self.ICON_SIZE)
-            for icon, color in self.NAME_ICONS
+            lib.icon(n, c).pixmap(*s) for n, c in self.NAME_ICONS
         ]
         self.id_pixmap = [
-            qtawesome.icon("fa.{}".format(icon),
-                           color=color).pixmap(self.ICON_SIZE, self.ICON_SIZE)
-            for icon, color in self.ID_ICONS
+            lib.icon(n, c).pixmap(*s) for n, c in self.ID_ICONS
         ]
         self.points_pixmap = [
-            qtawesome.icon("fa.{}".format(icon),
-                           color=color).pixmap(self.ICON_SIZE, self.ICON_SIZE)
-            for icon, color in self.POINTS_ICONS
+            lib.icon(n, c).pixmap(*s) for n, c in self.POINTS_ICONS
         ]
         self.uvmap_pixmap = [
-            qtawesome.icon("fa.{}".format(icon),
-                           color=color).pixmap(self.ICON_SIZE, self.ICON_SIZE)
-            for icon, color in self.UVMAP_ICONS
+            lib.icon(n, c).pixmap(*s) for n, c in self.UVMAP_ICONS
         ]
 
     def sizeHint(self, option, index):

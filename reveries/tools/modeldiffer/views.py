@@ -1,7 +1,6 @@
 
 import logging
 
-from avalon.vendor import qtawesome
 from avalon.vendor.Qt import QtWidgets, QtCore
 from avalon import api, io
 from . import models, delegates, lib
@@ -30,7 +29,7 @@ class SelectorWidget(QtWidgets.QWidget):
         super(SelectorWidget, self).__init__(parent=parent)
 
         def icon(name):
-            return qtawesome.icon("fa.{}".format(name), color=SIDE_COLOR[side])
+            return lib.icon(name, color=SIDE_COLOR[side])
 
         body = {
             "tab": QtWidgets.QTabWidget(),

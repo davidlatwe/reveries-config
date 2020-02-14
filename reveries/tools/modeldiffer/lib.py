@@ -1,9 +1,14 @@
 
 import logging
 from avalon import io
+from avalon.vendor import qtawesome
 
 
 main_logger = logging.getLogger("modeldiffer")
+
+
+def icon(name, color=None):
+    return qtawesome.icon("fa.{}".format(name), color=color)
 
 
 def profile_from_database(version_id):
