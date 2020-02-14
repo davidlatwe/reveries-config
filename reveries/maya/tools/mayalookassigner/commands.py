@@ -70,7 +70,8 @@ def list_descendents(nodes):
     result = []
     while True:
         nodes = cmds.listRelatives(nodes,
-                                   path=True)
+                                   path=True,
+                                   type="transform")
         if nodes:
             result.extend(nodes)
         else:
@@ -79,14 +80,19 @@ def list_descendents(nodes):
 
 def get_selected_asset_nodes():
 
-    host = api.registered_host()
+    def get_member(node):
+        return set(cmds.ls(cmds.sets(node, query=True), type="transform"))
 
     nodes = list()
 
     selection = cmds.ls(selection=True)
     hierarchy = list_descendents(selection)
 
-    containers = list(host.ls())
+    containers = {
+        node: get_member(node) for node in
+        cmds.ls("*.id", objectsOnly=True, type="objectSet", recursive=True)
+        if cmds.getAttr(node + ".id") == "pyblish.avalon.container"
+    }
 
     for node in set(selection + hierarchy):
 
@@ -94,10 +100,10 @@ def get_selected_asset_nodes():
         if asset_id is None:
             continue
 
-        for container in containers:
-            if cmds.sets(node, isMember=container["objectName"]):
-                subset = container["name"]
-                namespace = container["namespace"]
+        for container, members in containers.items():
+            if node in members:
+                subset = cmds.getAttr(container + ".name")
+                namespace = cmds.getAttr(container + ".namespace")
                 break
         else:
             subset = UNDEFINED_SUBSET
