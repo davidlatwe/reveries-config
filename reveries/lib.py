@@ -3,6 +3,7 @@ import os
 import sys
 import math
 import logging
+import contextlib
 import pyblish.util
 import avalon.io
 import avalon.api
@@ -247,3 +248,25 @@ def any_outdated():
         checked.add(representation)
 
     return False
+
+
+class pindict(dict):  # For experimental code style
+    @contextlib.contextmanager
+    def pin(self, key, default=None):
+        if "." in key:
+            value = self
+            for k in key.split("."):
+                value = value[k]
+            yield value
+        else:
+            yield self.get(key, default)
+
+    @classmethod
+    def to_pindict(cls, _dict):
+        new = pindict()
+        for key, value in _dict.items():
+            if isinstance(value, dict):
+                new[key] = cls.to_pindict(value)
+            else:
+                new[key] = value
+        return new

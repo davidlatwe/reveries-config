@@ -1,5 +1,4 @@
 
-import contextlib
 from maya.api import OpenMaya  # API 2.0
 from maya import cmds
 from avalon.vendor.Qt import Qt, QtWidgets, QtCore
@@ -8,12 +7,7 @@ from avalon.tools import lib as tools_lib
 
 from . import model
 from ... import callbacks
-
-
-class pindict(dict):  # For experimental code style
-    @contextlib.contextmanager
-    def pin(self, key, default=None):
-        yield self.get(key, default)
+from ....lib import pindict
 
 
 class SelectionOutline(QtWidgets.QWidget):
