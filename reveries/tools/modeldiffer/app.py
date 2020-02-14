@@ -8,6 +8,7 @@ from avalon.vendor.Qt import QtWidgets, QtCore
 
 from . import views, lib
 from .. import widgets
+from ...lib import pindict
 
 
 module = sys.modules[__name__]
@@ -53,59 +54,89 @@ class Window(QtWidgets.QWidget):
         self.create_tab()
 
     def create_tab(self):
-        panel = {
-            "body": QtWidgets.QWidget(),
-            "top": QtWidgets.QWidget(),
-            "control": QtWidgets.QWidget(),
-            "table": QtWidgets.QWidget(),
-        }
+        widget = pindict.to_pindict({
+            "main": QtWidgets.QWidget(),
 
-        widget = {
-            "label": QtWidgets.QLabel("Table Name:"),
-            "line": QtWidgets.QLineEdit(),
-            "nameChk": QtWidgets.QCheckBox("Show Long Name"),
-            "selectorA": views.SelectorWidget(side=views.SIDE_A),
-            "selectorB": views.SelectorWidget(side=views.SIDE_B),
-            "comparer": views.ComparingTable(),
+            "top": {
+                "main": QtWidgets.QWidget(),
+                "label": QtWidgets.QLabel("Table Name:"),
+                "line": QtWidgets.QLineEdit(),
+                "nameChk": QtWidgets.QCheckBox("Show Long Name"),
+            },
+
+            "ctrl": {
+                "tabs": {
+                    "main": QtWidgets.QTabWidget(),
+                    "details": QtWidgets.QWidget(),
+                    "selectors": {
+                        "main": QtWidgets.QWidget(),
+                        "selectorA": views.SelectorWidget(side=views.SIDE_A),
+                        "selectorB": views.SelectorWidget(side=views.SIDE_B),
+                    },
+                },
+            },
+
+            "table": {
+                "tabs": {
+                    "main": QtWidgets.QTabWidget(),
+                    "comparer": views.ComparingTable(),
+                },
+            },
+
             "statusLine": widgets.StatusLineWidget(main_logger, self),
-        }
+        })
 
-        layout = QtWidgets.QHBoxLayout(panel["top"])
-        layout.addWidget(widget["label"])
-        layout.addWidget(widget["line"])
-        layout.addWidget(widget["nameChk"])
+        with widget.pin("top") as top:
+            layout = QtWidgets.QHBoxLayout(top["main"])
+            layout.addWidget(top["label"])
+            layout.addWidget(top["line"])
+            layout.addWidget(top["nameChk"])
 
-        layout = QtWidgets.QHBoxLayout(panel["control"])
-        layout.addWidget(widget["selectorA"])
-        layout.addWidget(widget["selectorB"])
+        with widget.pin("ctrl.tabs.selectors") as selectors:
+            layout = QtWidgets.QHBoxLayout(selectors["main"])
+            layout.addWidget(selectors["selectorA"])
+            layout.addSpacing(-12)
+            layout.addWidget(selectors["selectorB"])
+            layout.setContentsMargins(2, 2, 2, 2)
 
-        layout = QtWidgets.QVBoxLayout(panel["table"])
-        layout.addWidget(widget["comparer"])
+        with widget.pin("ctrl.tabs") as ctrl:
+            icon_1 = lib.icon("hand-o-right", "white")
+            icon_2 = lib.icon("bullseye", "#BEBEBE")
+            ctrl["main"].addTab(ctrl["selectors"]["main"], icon_1, "Select")
+            ctrl["main"].addTab(ctrl["details"], icon_2, "Details")
+            ctrl["main"].setTabPosition(QtWidgets.QTabWidget.West)
+
+        with widget.pin("table.tabs") as table:
+            icon = lib.icon("adjust", "#BEBEBE")
+            table["main"].addTab(table["comparer"], icon, "Compare")
+            table["main"].setTabPosition(QtWidgets.QTabWidget.West)
+
+        layout = QtWidgets.QVBoxLayout(widget["main"])
+        layout.addWidget(widget["top"]["main"])
+        layout.addWidget(widget["ctrl"]["tabs"]["main"])
+        layout.addWidget(widget["table"]["tabs"]["main"], stretch=True)
         layout.addWidget(widget["statusLine"])
-
-        layout = QtWidgets.QVBoxLayout(panel["body"])
-        layout.addWidget(panel["top"])
-        layout.addSpacing(-14)
-        layout.addWidget(panel["control"])
-        layout.addSpacing(-24)
-        layout.addWidget(panel["table"], stretch=True)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(4, 4, 4, 4)
 
         tab = self.page["tab"]
 
         # Add Tab
         name = "New %d" % tab.count()
-        index = tab.addTab(panel["body"], name)
+        index = tab.addTab(widget["main"], name)
         tab.setCurrentIndex(index)
-        widget["line"].setText(name)
+        widget["top"]["line"].setText(name)
 
         # Connect
-        widget["selectorA"].connect_comparer(widget["comparer"])
-        widget["selectorB"].connect_comparer(widget["comparer"])
-        widget["nameChk"].stateChanged.connect(
-            widget["comparer"].on_name_mode_changed)
-        widget["line"].textChanged.connect(
-            lambda text: tab.setTabText(index, text))
+        with widget.pin("table.tabs") as table:
+            with widget.pin("ctrl.tabs.selectors") as selectors:
+                selectors["selectorA"].connect_comparer(table["comparer"])
+                selectors["selectorB"].connect_comparer(table["comparer"])
+
+            with widget.pin("top") as top:
+                top["nameChk"].stateChanged.connect(
+                    table["comparer"].on_name_mode_changed)
+                top["line"].textChanged.connect(
+                    lambda text: tab.setTabText(index, text))
 
 
 def register_host_profiler(method):

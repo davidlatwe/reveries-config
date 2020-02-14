@@ -232,7 +232,7 @@ class ComparerModel(models.TreeModel):
         for name, data in profile.items():
 
             data["longName"] = data.get("fullPath", name)
-            data["shortName"] = name[len(shared_root):]
+            data["shortName"] = name.rsplit("|", 1)[-1]
             data["fromHost"] = host
             id = data["avalonId"]
 
@@ -377,6 +377,21 @@ class ComparerModel(models.TreeModel):
 
             if section == self.Columns.index("diff"):
                 return "Diff"
+
+        if role == QtCore.Qt.ForegroundRole:
+            if section == self.Columns.index(SIDE_A):
+                return QtGui.QColor(SIDE_COLOR[SIDE_A])
+
+            if section == self.Columns.index(SIDE_B):
+                return QtGui.QColor(SIDE_COLOR[SIDE_B])
+
+        if role == QtCore.Qt.TextAlignmentRole:
+            return QtCore.Qt.AlignCenter
+
+        if role == QtCore.Qt.FontRole:
+            font = QtGui.QFont()
+            font.setBold(True)
+            return font
 
         return super(ComparerModel, self).headerData(section,
                                                      orientation,
