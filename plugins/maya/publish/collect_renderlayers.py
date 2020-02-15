@@ -188,5 +188,5 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
         members = cmds.listConnections(layer + ".renderInfo",
                                        destination=True,
                                        source=False,
-                                       shapes=False)
+                                       shapes=False) or []
         return list(set(members))
