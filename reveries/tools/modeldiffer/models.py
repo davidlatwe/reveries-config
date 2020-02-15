@@ -7,6 +7,8 @@ from avalon import api, io
 
 from . import lib
 
+main_logger = logging.getLogger("modeldiffer")
+
 
 SIDE_A = "origin"
 SIDE_B = "contrast"
@@ -15,12 +17,13 @@ SIDE_A_DATA = "originData"
 SIDE_B_DATA = "contrastData"
 
 SIDE_COLOR = {
-    SIDE_A: "#ECD781",
-    SIDE_B: "#E79A73",
+    SIDE_A: "#76D7C4",
+    SIDE_B: "#E59866",
 }
 
-
-main_logger = logging.getLogger("modeldiffer")
+COLOR_DARK = "#404040"
+COLOR_BRIGHT = "#A6ACAF"
+COLOR_DANGER = "#E57373"
 
 
 class HostContainerListModel(QtGui.QStandardItemModel):

@@ -19,31 +19,31 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
     ICON_SPACE = ICON_SIZE * ICON_COUNT + ICON_MARGIN * (ICON_COUNT + 1)
 
     ID_ICONS = [
-        (FEATURE_ICONS["id"], "#6A6A6A"),  # Not Match
-        (FEATURE_ICONS["id"], "#A290B9"),  # Match By Id, & 2
+        (FEATURE_ICONS["id"], models.COLOR_DARK),  # Not Match
+        (FEATURE_ICONS["id"], models.COLOR_BRIGHT),  # Match By Id, & 2
     ]
 
     NAME_ICONS = [
-        (FEATURE_ICONS["name"], "#6A6A6A"),  # Not Match
-        (FEATURE_ICONS["name"], "#A290B9"),  # Match By Name, & 1
+        (FEATURE_ICONS["name"], models.COLOR_DARK),  # Not Match
+        (FEATURE_ICONS["name"], models.COLOR_BRIGHT),  # Match By Name, & 1
     ]
 
     POINTS_ICONS = [
-        (FEATURE_ICONS["mesh"], "#EC534E"),  # Point Not Match
-        (FEATURE_ICONS["mesh"], "#38DB8C"),  # Point Ok
-        (FEATURE_ICONS["mesh"], "#6A6A6A"),  # Point Dimmed (Item not matched)
+        (FEATURE_ICONS["mesh"], models.COLOR_DANGER),  # Point Not Match
+        (FEATURE_ICONS["mesh"], models.COLOR_BRIGHT),  # Point Ok
+        (FEATURE_ICONS["mesh"], models.COLOR_DARK),  # Point Dimmed
     ]
 
     UVMAP_ICONS = [
-        (FEATURE_ICONS["uv"], "#EC534E"),  # UV Not Match
-        (FEATURE_ICONS["uv"], "#38DB8C"),  # UV Ok
-        (FEATURE_ICONS["uv"], "#6A6A6A"),  # UV Dimmed (Item not matched)
+        (FEATURE_ICONS["uv"], models.COLOR_DANGER),  # UV Not Match
+        (FEATURE_ICONS["uv"], models.COLOR_BRIGHT),  # UV Ok
+        (FEATURE_ICONS["uv"], models.COLOR_DARK),  # UV Dimmed
     ]
 
     LOCK_ICONS = [
-        ("ellipsis-h", "#6A6A6A"),  # Not published
-        ("unlock", "#A0BBA7"),  # Not Protected
-        ("lock", "#C1B891"),  # Protected
+        ("ellipsis-h", models.COLOR_DARK),  # Not published
+        ("unlock", models.COLOR_DARK),  # Not Protected
+        ("lock", "#B9770E"),  # Protected
     ]
 
     DiffStateRole = models.ComparerModel.DiffStateRole

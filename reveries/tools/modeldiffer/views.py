@@ -368,7 +368,7 @@ class ComparingTable(QtWidgets.QWidget):
         """)
         data["view"].setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         data["view"].setAllColumnsShowFocus(True)
-        data["view"].setAlternatingRowColors(True)
+        data["view"].setAlternatingRowColors(False)
         data["view"].setSortingEnabled(True)
         data["view"].setSelectionBehavior(
             QtWidgets.QAbstractItemView.SelectItems)
@@ -561,7 +561,7 @@ class FocusComparing(QtWidgets.QWidget):
                     feature["label"].setAlignment(QtCore.Qt.AlignRight)
 
                     icon = delegates.FEATURE_ICONS[key]
-                    pixmap = lib.icon(icon, "#6A6A6A").pixmap(16, 16)
+                    pixmap = lib.icon(icon, models.COLOR_DARK).pixmap(16, 16)
                     feature["icon"].setPixmap(pixmap)
 
                 layout.addWidget(feature["main"])
@@ -656,13 +656,13 @@ class FocusComparing(QtWidgets.QWidget):
                 if name_A and name_B:
                     if name_A == name_B:
                         status = "Match"
-                        color = "#A290B9"
+                        color = models.COLOR_BRIGHT
                     else:
                         status = "Not Match"
-                        color = "#E8705D"
+                        color = models.COLOR_DANGER
                 else:
                     status = "--"
-                    color = "#6A6A6A"
+                    color = models.COLOR_DARK
 
                 icon = delegates.FEATURE_ICONS[feature]
                 pixmap = lib.icon(icon, color).pixmap(16, 16)
