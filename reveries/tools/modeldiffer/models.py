@@ -211,6 +211,7 @@ class ComparerModel(models.TreeModel):
         self._use_long_name = value
 
     def refresh_side(self, side, profile, host=False):
+        profile = profile or dict()
 
         items = self._root_item.children()
         root_index = QtCore.QModelIndex()
@@ -232,7 +233,7 @@ class ComparerModel(models.TreeModel):
 
         # Place new data
 
-        shared_root = self.extract_shared_root(profile)
+        shared_root = self.extract_shared_root(profile) if profile else ""
         self._origin_shared_root = shared_root
 
         for name, data in profile.items():
