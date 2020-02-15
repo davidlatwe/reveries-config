@@ -492,10 +492,9 @@ class FocusComparing(QtWidgets.QWidget):
                 "list": QtWidgets.QComboBox(),
             },
             "focus": {
-                "main": QtWidgets.QWidget(),
-                "featureA": FocusFeature(SIDE_A),
-                "featureB": FocusFeature(SIDE_B),
-            },
+                "view": QtWidgets.QTreeView(),
+                "model": models.FocusModel(),
+            }
         })
 
         with widget.pin("overallDiff") as diff:
@@ -529,18 +528,14 @@ class FocusComparing(QtWidgets.QWidget):
             layout.addStretch()
 
         with widget.pin("focus") as focus:
-            layout = QtWidgets.QVBoxLayout(focus["main"])
-            layout.addWidget(focus["featureA"])
-            layout.addSpacing(-4)
-            layout.addWidget(focus["featureB"])
-            layout.setContentsMargins(0, 0, 0, 0)
+            focus["view"].setModel(focus["model"])
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addSpacing(-16)
         layout.addWidget(widget["overallDiff"]["main"])
         layout.addWidget(widget["featureMenu"]["main"])
         layout.addSpacing(-8)
-        layout.addWidget(widget["focus"]["main"])
+        layout.addWidget(widget["focus"]["view"])
 
         with widget.pin("featureMenu") as menu:
             menu["list"].addItem(" Hierarchy", "longName")
@@ -550,154 +545,72 @@ class FocusComparing(QtWidgets.QWidget):
             menu["list"].currentIndexChanged.connect(self.on_focused)
 
         self.widget = widget
-        self.nodes = {
-            SIDE_A: dict(),
-            SIDE_B: dict(),
-        }
+
+        with widget.pin("focus") as focus:
+            focus["view"].setHeaderHidden(True)
+            focus["view"].setUniformRowHeights(True)
+            focus["view"].setIndentation(6)
+            focus["view"].setStyleSheet("""
+                QTreeView::item{
+                    padding: 6px 1px;
+                    border: 0px;
+                }
+            """)
+            focus["view"].setAllColumnsShowFocus(True)
+            focus["view"].setAlternatingRowColors(True)
+            focus["view"].setSelectionMode(focus["view"].NoSelection)
+            focus["view"].setFixedHeight(self.calculate_focus_table_height())
+            focus["view"].setColumnWidth(0, 28)
+
+    def calculate_focus_table_height(self):
+        with self.widget.pin("focus") as focus:
+            height = focus["view"].sizeHintForRow(0) * 2 + 4  # MagicNum
+        return height
 
     def on_focused(self, index=None):
         with self.widget.pin("featureMenu.list") as menu:
             feature = menu.currentData()
-
         with self.widget.pin("focus") as focus:
-            value = self.nodes[SIDE_A].get(feature) or ""
-            focus["featureA"].set_value(value)
-            value = self.nodes[SIDE_B].get(feature) or ""
-            focus["featureB"].set_value(value)
+            focus["model"].set_focus(feature)
 
     def on_picked(self, side, data=None):
-        if data is None:
-            self.nodes[side].clear()
-        else:
-            self.nodes[side].update(data)
-
+        with self.widget.pin("focus") as focus:
+            data = data or dict()
+            focus["model"].set_side(side, data)
         # Compare
         self.update()
 
     def update(self):
-        node_A = self.nodes[SIDE_A]
-        node_B = self.nodes[SIDE_B]
+        with self.widget.pin("focus") as focus:
+            node_A = focus["model"].nodes[SIDE_A]
+            node_B = focus["model"].nodes[SIDE_B]
 
-        with self.widget.pin("overallDiff.name") as name:
-            name_A = node_A.get("longName")
-            name_B = node_B.get("longName")
+        features = [
+            ("name", "longName"),
+            ("id", "avalonId"),
+            ("mesh", "points"),
+            ("uv", "uvmap"),
+        ]
 
-            if name_A and name_B:
-                if name_A == name_B:
-                    status = "Match"
-                    color = "#A290B9"
+        for feature, key in features:
+            with self.widget.pin("overallDiff." + feature) as widget:
+                name_A = node_A.get(key)
+                name_B = node_B.get(key)
+
+                if name_A and name_B:
+                    if name_A == name_B:
+                        status = "Match"
+                        color = "#A290B9"
+                    else:
+                        status = "Not Match"
+                        color = "#E8705D"
                 else:
-                    status = "Not Match"
-                    color = "#E8705D"
-            else:
-                status = "--"
-                color = "#6A6A6A"
+                    status = "--"
+                    color = "#6A6A6A"
 
-            icon = delegates.FEATURE_ICONS["name"]
-            pixmap = lib.icon(icon, color).pixmap(16, 16)
-            name["icon"].setPixmap(pixmap)
-            name["status"].setText(status)
-
-        with self.widget.pin("overallDiff.id") as id:
-            id_A = node_A.get("avalonId")
-            id_B = node_B.get("avalonId")
-
-            if id_A and id_B:
-                if id_A == id_B:
-                    status = "Match"
-                    color = "#A290B9"
-                else:
-                    status = "Not Match"
-                    color = "#E8705D"
-            else:
-                status = "--"
-                color = "#6A6A6A"
-
-            icon = delegates.FEATURE_ICONS["id"]
-            pixmap = lib.icon(icon, color).pixmap(16, 16)
-            id["icon"].setPixmap(pixmap)
-            id["status"].setText(status)
-
-        with self.widget.pin("overallDiff.mesh") as mesh:
-            mesh_A = node_A.get("points")
-            mesh_B = node_B.get("points")
-
-            if mesh_A and mesh_B:
-                if mesh_A == mesh_B:
-                    status = "Match"
-                    color = "#A290B9"
-                else:
-                    status = "Not Match"
-                    color = "#E8705D"
-            else:
-                status = "--"
-                color = "#6A6A6A"
-
-            icon = delegates.FEATURE_ICONS["mesh"]
-            pixmap = lib.icon(icon, color).pixmap(16, 16)
-            mesh["icon"].setPixmap(pixmap)
-            mesh["status"].setText(status)
-
-        with self.widget.pin("overallDiff.uv") as uv:
-            uv_A = node_A.get("uvmap")
-            uv_B = node_B.get("uvmap")
-
-            if uv_A and uv_B:
-                if uv_A == uv_B:
-                    status = "Match"
-                    color = "#A290B9"
-                else:
-                    status = "Not Match"
-                    color = "#E8705D"
-            else:
-                status = "--"
-                color = "#6A6A6A"
-
-            icon = delegates.FEATURE_ICONS["uv"]
-            pixmap = lib.icon(icon, color).pixmap(16, 16)
-            uv["icon"].setPixmap(pixmap)
-            uv["status"].setText(status)
+                icon = delegates.FEATURE_ICONS[feature]
+                pixmap = lib.icon(icon, color).pixmap(16, 16)
+                widget["icon"].setPixmap(pixmap)
+                widget["status"].setText(status)
 
         self.on_focused()
-
-
-class FocusFeature(QtWidgets.QWidget):
-
-    def __init__(self, side, parent=None):
-        super(FocusFeature, self).__init__(parent=parent)
-
-        widget = {
-            "sideA": QtWidgets.QLabel(),
-            "sideB": QtWidgets.QLabel(),
-            "value": QtWidgets.QLineEdit(),
-        }
-
-        layout = QtWidgets.QHBoxLayout(self)
-        layout.addSpacing(20)
-        layout.addWidget(widget["sideA"])
-        layout.addSpacing(-6)
-        layout.addWidget(widget["sideB"])
-        layout.addWidget(widget["value"])
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        font = QtGui.QFont("Monospace")
-        font.setStyleHint(QtGui.QFont.TypeWriter)
-        widget["value"].setFont(font)
-        widget["value"].setReadOnly(True)
-
-        ICON_SIZE = 20
-        # Left
-        icon = "chevron-circle-left" if side == SIDE_A else "circle"
-        color = SIDE_COLOR[side] if side == SIDE_A else "#3A3A3A"
-        pixmap = lib.icon(icon, color).pixmap(ICON_SIZE, ICON_SIZE)
-        widget["sideA"].setPixmap(pixmap)
-        # Right
-        icon = "chevron-circle-right" if side == SIDE_B else "circle"
-        color = SIDE_COLOR[side] if side == SIDE_B else "#3A3A3A"
-        pixmap = lib.icon(icon, color).pixmap(ICON_SIZE, ICON_SIZE)
-        widget["sideB"].setPixmap(pixmap)
-
-        self.widget = widget
-
-    def set_value(self, value):
-        self.widget["value"].setText(value)

@@ -2,7 +2,7 @@
 import logging
 
 from avalon.tools import models
-from avalon.vendor.Qt import QtGui, QtCore
+from avalon.vendor.Qt import Qt, QtGui, QtCore
 from avalon import api, io
 
 from . import lib
@@ -396,3 +396,70 @@ class ComparerModel(models.TreeModel):
         return super(ComparerModel, self).headerData(section,
                                                      orientation,
                                                      role)
+
+
+class FocusModel(models.TreeModel):
+
+    Columns = ["side", "value"]
+
+    def __init__(self, parent=None):
+        super(FocusModel, self).__init__(parent=parent)
+        self._feature = None
+        self._side_icons = [
+            lib.icon("bullseye", color=SIDE_COLOR[SIDE_A]),
+            lib.icon("bullseye", color=SIDE_COLOR[SIDE_B]),
+        ]
+
+        node_a = models.Item({"side": SIDE_A})
+        node_b = models.Item({"side": SIDE_B})
+
+        self.nodes = {
+            SIDE_A: node_a,
+            SIDE_B: node_b,
+        }
+        self.add_child(node_a)
+        self.add_child(node_b)
+
+    def set_focus(self, feature):
+        self._feature = feature
+        self.on_changed()
+
+    def set_side(self, side, data):
+        data["side"] = side
+        self.nodes[side].clear()
+        self.nodes[side].update(data)
+        self.on_changed()
+
+    def on_changed(self):
+        index_a = self.index(0, 1, QtCore.QModelIndex())
+        index_b = self.index(1, 1, QtCore.QModelIndex())
+        # passing `list()` for PyQt5 (see PYSIDE-462)
+        args = () if Qt.IsPySide or Qt.IsPyQt4 else ([],)
+        self.dataChanged.emit(index_a, index_b, *args)
+
+    def data(self, index, role):
+
+        if not index.isValid():
+            return
+
+        if role == QtCore.Qt.DisplayRole:
+            if self.Columns[index.column()] == "value":
+                item = index.internalPointer()
+                return item.get(self._feature, "")
+            else:
+                return ""
+
+        if role == QtCore.Qt.DecorationRole:
+            if self.Columns[index.column()] == "side":
+                if index.row():
+                    return self._side_icons[1]
+                else:
+                    return self._side_icons[0]
+
+        if role == QtCore.Qt.FontRole:
+
+            font = QtGui.QFont("Monospace")
+            font.setStyleHint(QtGui.QFont.TypeWriter)
+            return font
+
+        return super(FocusModel, self).data(index, role)
