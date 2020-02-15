@@ -1,7 +1,7 @@
 
 import logging
 
-from avalon.vendor.Qt import QtWidgets, QtCore, QtGui
+from avalon.vendor.Qt import QtWidgets, QtCore
 from avalon import api, io
 from . import models, delegates, lib
 from ...lib import pindict
@@ -261,6 +261,7 @@ class DatabaseSelectorWidget(QtWidgets.QWidget):
         self.widget = widget
         self.model = model
         self.view = view
+        self._first_run = True
 
         silo = api.Session.get("AVALON_SILO")
         if silo:
@@ -277,9 +278,35 @@ class DatabaseSelectorWidget(QtWidgets.QWidget):
         child_model = self.model[child_level]
         child_box = self.widget[child_level]
 
+        name_role = models.DatabaseDocumentModel.NameFieldRole
+        doc_name = child_box.currentData(role=name_role)
         data = combobox.currentData()
+
         child_model.reset(data)
-        child_box.setCurrentIndex(0)
+        child_count = child_box.count()
+
+        if not child_count > 1:
+            child_box.setCurrentIndex(0)
+
+        elif child_level == "asset":
+            child_box.setCurrentIndex(0)
+
+        elif child_level == "subset":
+            if doc_name:
+                index = child_box.findData(doc_name, role=name_role)
+                index = 1 if index == -1 else index
+            else:
+                index = 1
+            child_box.setCurrentIndex(index)
+
+        elif child_level == "version":
+            index = child_count - 1
+            child_box.setCurrentIndex(index)
+            if self._first_run:
+                # Wait for GUI to be ready
+                self._first_run = False
+                data = child_box.currentData()
+                lib.schedule(lambda: self.version_changed.emit(data), 500)
 
     def on_silo_changed(self):
         self._on_level_changed("silo", "asset")

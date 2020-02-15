@@ -58,6 +58,8 @@ class HostContainerListModel(QtGui.QStandardItemModel):
 
 class DatabaseDocumentModel(QtGui.QStandardItemModel):
 
+    NameFieldRole = QtCore.Qt.UserRole + 10
+
     def __init__(self, level, parent=None):
         super(DatabaseDocumentModel, self).__init__(parent=parent)
         self.lister = {
@@ -87,6 +89,7 @@ class DatabaseDocumentModel(QtGui.QStandardItemModel):
             item = QtGui.QStandardItem(document["name"])
 
             item.setData(document["_id"], QtCore.Qt.UserRole)
+            item.setData(document["name"], self.NameFieldRole)
 
             self.appendRow(item)
 

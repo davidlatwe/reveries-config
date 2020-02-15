@@ -2,9 +2,13 @@
 import logging
 from avalon import io
 from avalon.vendor import qtawesome
+from avalon.tools import lib
 
 
 main_logger = logging.getLogger("modeldiffer")
+
+
+schedule = lib.schedule
 
 
 def icon(name, color=None):
