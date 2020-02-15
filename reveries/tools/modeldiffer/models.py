@@ -386,6 +386,15 @@ class ComparerModel(models.TreeModel):
 
         return super(ComparerModel, self).data(index, role)
 
+    def flags(self, index):
+        flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+        # Make the side column editable
+        if index.column() in (0, 2):  # side columns
+            flags |= QtCore.Qt.ItemIsEditable
+
+        return flags
+
     def headerData(self, section, orientation, role):
 
         if role == QtCore.Qt.DisplayRole:
@@ -490,3 +499,12 @@ class FocusModel(models.TreeModel):
             return font
 
         return super(FocusModel, self).data(index, role)
+
+    def flags(self, index):
+        flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+        # Make the value column editable
+        if index.column() == 1:  # value columns
+            flags |= QtCore.Qt.ItemIsEditable
+
+        return flags

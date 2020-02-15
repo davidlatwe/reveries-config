@@ -103,3 +103,12 @@ class PathTextDelegate(QtWidgets.QStyledItemDelegate):
     def paint(self, painter, option, index):
         option.textElideMode = QtCore.Qt.ElideLeft
         super(PathTextDelegate, self).paint(painter, option, index)
+
+    def createEditor(self, parent, option, index):
+        editor = QtWidgets.QLineEdit(parent)
+        editor.setReadOnly(True)
+        return editor
+
+    def setEditorData(self, editor, index):
+        value = index.data(QtCore.Qt.DisplayRole)
+        editor.setText(value)

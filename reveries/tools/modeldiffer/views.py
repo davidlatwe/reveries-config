@@ -514,6 +514,7 @@ class FocusComparing(QtWidgets.QWidget):
             "focus": {
                 "view": QtWidgets.QTreeView(),
                 "model": models.FocusModel(),
+                "pathDelegate": delegates.PathTextDelegate(),
             }
         })
 
@@ -547,9 +548,6 @@ class FocusComparing(QtWidgets.QWidget):
             layout.addWidget(menu["list"])
             layout.addStretch()
 
-        with widget.pin("focus") as focus:
-            focus["view"].setModel(focus["model"])
-
         layout = QtWidgets.QVBoxLayout(self)
         layout.addSpacing(-16)
         layout.addWidget(widget["overallDiff"]["main"])
@@ -557,6 +555,7 @@ class FocusComparing(QtWidgets.QWidget):
         layout.addSpacing(-8)
         layout.addWidget(widget["focus"]["view"])
 
+        # Init
         with widget.pin("featureMenu") as menu:
             menu["list"].addItem(" Hierarchy", "longName")
             menu["list"].addItem(" Avalon Id", "avalonId")
@@ -564,6 +563,8 @@ class FocusComparing(QtWidgets.QWidget):
             menu["list"].addItem(" UV", "uvmap")
 
         with widget.pin("focus") as focus:
+            focus["view"].setModel(focus["model"])
+            focus["view"].setItemDelegateForColumn(1, focus["pathDelegate"])
             focus["view"].setHeaderHidden(True)
             focus["view"].setUniformRowHeights(True)
             focus["view"].setIndentation(6)
