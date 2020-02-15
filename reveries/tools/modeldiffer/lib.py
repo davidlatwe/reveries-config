@@ -35,17 +35,19 @@ def profile_from_database(version_id):
 
     profile = dict()
 
-    for id, meshes_data in model_profile.items():
-        for data in meshes_data:
+    for id, meshes in model_profile.items():
+        # Currently, meshes with duplicated id are not supported,
+        # and may remain unsupported in the future.
+        data = meshes[0]
 
-            name = data.pop("hierarchy")
-            # No need to compare normals
-            data.pop("normals")
+        name = data.pop("hierarchy")
+        # No need to compare normals
+        data.pop("normals")
 
-            data["avalonId"] = id
-            data["protected"] = id in model_protected
+        data["avalonId"] = id
+        data["protected"] = id in model_protected
 
-            profile[name] = data
+        profile[name] = data
 
     return profile
 
