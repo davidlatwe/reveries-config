@@ -188,6 +188,12 @@ class ComparerModel(models.TreeModel):
         self._origin_shared_root = ""
         self._contrast_shared_root = ""
 
+        self._focused_indexes = {SIDE_A: None, SIDE_B: None}
+        self._focused_icons = [
+            lib.icon("bullseye", color=SIDE_COLOR[SIDE_A]),
+            lib.icon("bullseye", color=SIDE_COLOR[SIDE_B]),
+        ]
+
     def extract_shared_root(self, nodes):
         shared_root = ""
         for path in next(iter(nodes))[1:].split("|"):
@@ -260,6 +266,9 @@ class ComparerModel(models.TreeModel):
                 self.add_child(item)
                 self.endInsertRows()
 
+    def set_fouced(self, side, index):
+        self._focused_indexes[side] = index
+
     def data(self, index, role):
 
         if not index.isValid():
@@ -285,6 +294,17 @@ class ComparerModel(models.TreeModel):
                     return item[SIDE_B_DATA]["longName"]
                 else:
                     return item[SIDE_B_DATA]["shortName"]
+
+        if role == QtCore.Qt.DecorationRole:
+            column = index.column()
+
+            if self.Columns[column] == SIDE_A:
+                if index == self._focused_indexes[SIDE_A]:
+                    return self._focused_icons[0]
+
+            elif self.Columns[column] == SIDE_B:
+                if index == self._focused_indexes[SIDE_B]:
+                    return self._focused_icons[1]
 
         if role == QtCore.Qt.ForegroundRole:
             column = index.column()

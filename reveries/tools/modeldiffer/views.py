@@ -331,7 +331,7 @@ class ComparingTable(QtWidgets.QWidget):
             "path": delegates.PathTextDelegate(),
         }
 
-        data["view"].setIndentation(20)
+        data["view"].setIndentation(2)
         data["view"].setStyleSheet("""
             QTreeView::item{
                 padding: 6px 1px;
@@ -439,18 +439,24 @@ class ComparingTable(QtWidgets.QWidget):
             # Diff section
             return
 
+        side = SIDE_A if column == 0 else SIDE_B
+        side_data = models.SIDE_A_DATA if column == 0 else models.SIDE_B_DATA
+
         selection_model = self.data["view"].selectionModel()
         selection = selection_model.selection()
         selected = index in selection.indexes()
 
-        node = index.data(models.ComparerModel.ItemRole)
-        if column == 0:  # Left Side
-            data = node.get(models.SIDE_A_DATA) if selected else None
-            self.item_picked.emit(SIDE_A, data)
+        if selected:
+            node = index.data(models.ComparerModel.ItemRole)
+            data = node.get(side_data)
+            index = self.data["proxy"].mapToSource(index) if data else None
+            self.data["model"].set_fouced(side, index)
+        else:
+            data = None
+            self.data["model"].set_fouced(side, None)
 
-        else:  # Right Side
-            data = node.get(models.SIDE_B_DATA) if selected else None
-            self.item_picked.emit(SIDE_B, data)
+        self.item_picked.emit(side, data)
+        self.update()
 
 
 class FocusComparing(QtWidgets.QWidget):
