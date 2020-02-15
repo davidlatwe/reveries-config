@@ -318,7 +318,7 @@ class DatabaseSelectorWidget(QtWidgets.QWidget):
 
 class ComparingTable(QtWidgets.QWidget):
 
-    item_picked = QtCore.Signal(str, dict)
+    picked = QtCore.Signal(str, dict)
 
     def __init__(self, parent=None):
         super(ComparingTable, self).__init__(parent=parent)
@@ -367,7 +367,7 @@ class ComparingTable(QtWidgets.QWidget):
 
         # Connect
         data["view"].customContextMenuRequested.connect(self.on_context_menu)
-        data["view"].clicked.connect(self.on_clicked)
+        data["view"].clicked.connect(self.on_focused)
 
         # Init
         header = data["view"].header()
@@ -433,7 +433,7 @@ class ComparingTable(QtWidgets.QWidget):
 
         lib.select_from_host(names)
 
-    def on_clicked(self, index):
+    def on_focused(self, index):
         column = index.column()
         if column == 1:
             # Diff section
@@ -455,7 +455,7 @@ class ComparingTable(QtWidgets.QWidget):
             data = None
             self.data["model"].set_fouced(side, None)
 
-        self.item_picked.emit(side, data)
+        self.picked.emit(side, data)
         self.update()
 
 
@@ -548,7 +548,7 @@ class FocusComparing(QtWidgets.QWidget):
             menu["list"].addItem(" Avalon Id", "avalonId")
             menu["list"].addItem(" Mesh", "points")
             menu["list"].addItem(" UV", "uvmap")
-            menu["list"].currentIndexChanged.connect(self.on_focused)
+            menu["list"].currentIndexChanged.connect(self.on_feature_changed)
 
         self.widget = widget
 
@@ -573,7 +573,7 @@ class FocusComparing(QtWidgets.QWidget):
             height = focus["view"].sizeHintForRow(0) * 2 + 4  # MagicNum
         return height
 
-    def on_focused(self, index=None):
+    def on_feature_changed(self, index=None):
         with self.widget.pin("featureMenu.list") as menu:
             feature = menu.currentData()
         with self.widget.pin("focus") as focus:
@@ -585,6 +585,7 @@ class FocusComparing(QtWidgets.QWidget):
             focus["model"].set_side(side, data)
         # Compare
         self.update()
+        self.on_feature_changed()
 
     def update(self):
         with self.widget.pin("focus") as focus:
@@ -618,5 +619,3 @@ class FocusComparing(QtWidgets.QWidget):
                 pixmap = lib.icon(icon, color).pixmap(16, 16)
                 widget["icon"].setPixmap(pixmap)
                 widget["status"].setText(status)
-
-        self.on_focused()
