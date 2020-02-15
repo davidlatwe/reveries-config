@@ -22,6 +22,7 @@ def profile_from_database(version_id):
         return
 
     model_profile = representation["data"].get("modelProfile")
+    model_protected = representation["data"].get("modelProtected", [])
 
     if model_profile is None:
         main_logger.critical("'data.modelProfile' not found."
@@ -38,6 +39,7 @@ def profile_from_database(version_id):
             data.pop("normals")
 
             data["avalonId"] = id
+            data["protected"] = id in model_protected
 
             profile[name] = data
 

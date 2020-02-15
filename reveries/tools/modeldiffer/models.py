@@ -382,7 +382,17 @@ class ComparerModel(models.TreeModel):
                 points_state = item["points"]
                 uvmap_state = item["uvmap"]
 
-                return name_state, points_state, uvmap_state
+                if not item.get(SIDE_A_DATA) or item[SIDE_A_DATA]["fromHost"]:
+                    protected_A = -1
+                else:
+                    protected_A = item[SIDE_A_DATA]["protected"]
+                if not item.get(SIDE_B_DATA) or item[SIDE_B_DATA]["fromHost"]:
+                    protected_B = -1
+                else:
+                    protected_B = item[SIDE_B_DATA]["protected"]
+                protected = (protected_A, protected_B)
+
+                return name_state, points_state, uvmap_state, protected
 
         return super(ComparerModel, self).data(index, role)
 

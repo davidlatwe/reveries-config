@@ -78,15 +78,16 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
         # super(DiffDelegate, self).paint(painter, option, index)
 
         states = index.data(self.DiffStateRole)
-        name_state, points_state, uvmap_state = states
+        name_state, points_state, uvmap_state, protected = states
+        protected_A, protected_B = protected
 
         pixmaps = [
-            self.lock_icon[0],
+            self.lock_icon[protected_A + 1],
             self.id_pixmap[bool(name_state & 2)],
             self.name_pixmap[bool(name_state & 1)],
             self.points_pixmap[points_state],
             self.uvmap_pixmap[uvmap_state],
-            self.lock_icon[1],
+            self.lock_icon[protected_B + 1],
         ]
 
         rect = option.rect
