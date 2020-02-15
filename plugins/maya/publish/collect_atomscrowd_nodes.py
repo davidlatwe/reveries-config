@@ -27,3 +27,15 @@ class CollectAtomsCrowdNodes(pyblish.api.InstancePlugin):
 
         # For Rendering
         instance.data["hasAtomsCrowds"] = bool(atoms_proxies)
+
+        if atoms_nodes:
+            self.log.info("AtomsNode collected.")
+
+        if agent_groups:
+            self.log.info("AgentGroupNode collected.")
+
+        if atoms_proxies:
+            self.log.info("AtomsProxy collected.")
+            if "reveries.renderlayer" in instance.data["families"]:
+                self.log.info("This renderLayer will be switched to "
+                              "Deadline AtomsCrowd render group.")

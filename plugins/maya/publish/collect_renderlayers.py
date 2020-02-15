@@ -108,6 +108,8 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
             data.update(**overrides)
             data.update(base)
 
+            members = self.colllect_renderlayer_members(layer)
+
             layername = lib.pretty_layer_name(layer)
 
             render_cams = lib.ls_renderable_cameras(layer)
@@ -155,6 +157,7 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
 
                 instance = context.create_instance(data["subset"])
                 instance.data.update(data)
+                instance[:] += members
 
     def parse_render_globals(self, layer, render_globals):
         overrides = dict()
@@ -171,3 +174,19 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
             overrides[attr] = value
 
         return overrides
+
+    def colllect_renderlayer_members(self, layer):
+        # (NOTE) Using `listConnections` over `editRenderLayerMembers` was
+        #        because `editRenderLayerMembers` can only return either
+        #        full path or just node name.
+        #        Not tested but I guess `listConnections` will be faster.
+        #
+        #        Nodes that has it's attribute `renderLayerInfo` connected
+        #        to renderLayer node's `renderInfo` is that renderLayer's
+        #        member.
+        #
+        members = cmds.listConnections(layer + ".renderInfo",
+                                       destination=True,
+                                       source=False,
+                                       shapes=False)
+        return list(set(members))
