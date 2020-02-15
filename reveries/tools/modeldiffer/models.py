@@ -440,6 +440,13 @@ class FocusModel(models.TreeModel):
         self.add_child(node_a)
         self.add_child(node_b)
 
+    def reset_sides(self):
+        self.nodes[SIDE_A].clear()
+        self.nodes[SIDE_A].update({"side": SIDE_A})
+        self.nodes[SIDE_B].clear()
+        self.nodes[SIDE_B].update({"side": SIDE_B})
+        self.on_changed()
+
     def set_focus(self, feature):
         self._feature = feature
         self.on_changed()

@@ -133,22 +133,17 @@ class Window(QtWidgets.QWidget):
                 selectors["selectorB"].connect_comparer(table["comparer"])
 
             with widget.pin("ctrl.tabs") as ctrl:
-                ctrl["main"].currentChanged.connect(self.on_ctrl_tab_changed)
                 table["comparer"].picked.connect(ctrl["focus"].on_picked)
+                ctrl["main"].currentChanged.connect(
+                    ctrl["focus"].focus_enabled)
+                ctrl["main"].currentChanged.connect(
+                    table["comparer"].focus_enabled)
 
             with widget.pin("top") as top:
                 top["nameChk"].stateChanged.connect(
                     table["comparer"].on_name_mode_changed)
                 top["line"].textChanged.connect(
                     lambda text: tab.setTabText(index, text))
-
-    def on_ctrl_tab_changed(self, index):
-        if index == 1:
-            # Focus tab
-            pass
-        else:
-            # Select tab
-            pass
 
 
 def register_host_profiler(method):

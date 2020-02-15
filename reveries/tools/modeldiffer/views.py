@@ -319,6 +319,7 @@ class DatabaseSelectorWidget(QtWidgets.QWidget):
 class ComparingTable(QtWidgets.QWidget):
 
     picked = QtCore.Signal(str, dict)
+    focus_enabled = QtCore.Signal(int)
 
     def __init__(self, parent=None):
         super(ComparingTable, self).__init__(parent=parent)
@@ -365,10 +366,6 @@ class ComparingTable(QtWidgets.QWidget):
         layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(data["view"])
 
-        # Connect
-        data["view"].customContextMenuRequested.connect(self.on_context_menu)
-        data["view"].clicked.connect(self.on_focused)
-
         # Init
         header = data["view"].header()
         header.setMinimumSectionSize(data["diff"].ICON_SPACE)
@@ -380,6 +377,12 @@ class ComparingTable(QtWidgets.QWidget):
         data["view"].setColumnWidth(1, data["diff"].ICON_SPACE)
 
         self.data = data
+        self._focusing = False
+
+        # Connect
+        data["view"].customContextMenuRequested.connect(self.on_context_menu)
+        data["view"].clicked.connect(self.on_focused)
+        self.focus_enabled.connect(self.on_focus_enabled)
 
     def on_context_menu(self, point):
         point_index = self.data["view"].indexAt(point)
@@ -433,7 +436,16 @@ class ComparingTable(QtWidgets.QWidget):
 
         lib.select_from_host(names)
 
+    def on_focus_enabled(self, enable):
+        if not enable:
+            self.data["model"].set_fouced(SIDE_A, None)
+            self.data["model"].set_fouced(SIDE_B, None)
+        self._focusing = enable
+
     def on_focused(self, index):
+        if not self._focusing:
+            return
+
         column = index.column()
         if column == 1:
             # Diff section
@@ -460,6 +472,8 @@ class ComparingTable(QtWidgets.QWidget):
 
 
 class FocusComparing(QtWidgets.QWidget):
+
+    focus_enabled = QtCore.Signal(int)
 
     def __init__(self, parent=None):
         super(FocusComparing, self).__init__(parent=parent)
@@ -548,9 +562,6 @@ class FocusComparing(QtWidgets.QWidget):
             menu["list"].addItem(" Avalon Id", "avalonId")
             menu["list"].addItem(" Mesh", "points")
             menu["list"].addItem(" UV", "uvmap")
-            menu["list"].currentIndexChanged.connect(self.on_feature_changed)
-
-        self.widget = widget
 
         with widget.pin("focus") as focus:
             focus["view"].setHeaderHidden(True)
@@ -562,16 +573,23 @@ class FocusComparing(QtWidgets.QWidget):
                     border: 0px;
                 }
             """)
-            focus["view"].setAllColumnsShowFocus(True)
-            focus["view"].setAlternatingRowColors(True)
             focus["view"].setSelectionMode(focus["view"].NoSelection)
-            focus["view"].setFixedHeight(self.calculate_focus_table_height())
+            height = focus["view"].sizeHintForRow(0) * 2 + 4  # MagicNum
+            focus["view"].setFixedHeight(height)
             focus["view"].setColumnWidth(0, 28)
 
-    def calculate_focus_table_height(self):
-        with self.widget.pin("focus") as focus:
-            height = focus["view"].sizeHintForRow(0) * 2 + 4  # MagicNum
-        return height
+        self.widget = widget
+        self._focusing = False
+
+        # Connect
+        with widget.pin("featureMenu") as menu:
+            menu["list"].currentIndexChanged.connect(self.on_feature_changed)
+        self.focus_enabled.connect(self.on_focus_enabled)
+
+    def on_focus_enabled(self, enable):
+        if not enable:
+            self.widget["focus"]["model"].reset_sides()
+        self._focusing = enable
 
     def on_feature_changed(self, index=None):
         with self.widget.pin("featureMenu.list") as menu:
@@ -580,6 +598,9 @@ class FocusComparing(QtWidgets.QWidget):
             focus["model"].set_focus(feature)
 
     def on_picked(self, side, data=None):
+        if not self._focusing:
+            return
+
         with self.widget.pin("focus") as focus:
             data = data or dict()
             focus["model"].set_side(side, data)
