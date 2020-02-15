@@ -18,6 +18,7 @@ DEVELOPER_DIR = os.environ.get("AVALON_DEV_PLUGINS", "")
 
 # Global plugin paths
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "global", "publish")
+INVENTORY_PATH = os.path.join(PLUGINS_DIR, "global", "inventory")
 LOADER_PATH = os.path.join(PLUGINS_DIR, "global", "load")
 DEV_LOADER_PATH = os.path.join(DEVELOPER_DIR, "global", "load")
 
@@ -45,6 +46,7 @@ __all__ = [
 def install():  # pragma: no cover
     print("Registering global plug-ins..")
     pyblish.register_plugin_path(PUBLISH_PATH)
+    avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
     avalon.register_plugin_path(avalon.Loader, LOADER_PATH)
     avalon.register_plugin_path(avalon.Loader, DEV_LOADER_PATH)
     # Remove pyblish-base default plugins
@@ -56,6 +58,7 @@ def install():  # pragma: no cover
 def uninstall():  # pragma: no cover
     print("Deregistering global plug-ins..")
     pyblish.deregister_plugin_path(PUBLISH_PATH)
+    avalon.deregister_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
     avalon.deregister_plugin_path(avalon.Loader, LOADER_PATH)
     avalon.deregister_plugin_path(avalon.Loader, DEV_LOADER_PATH)
     # Restore pyblish-base default plugins
