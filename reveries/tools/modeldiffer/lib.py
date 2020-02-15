@@ -9,6 +9,7 @@ main_logger = logging.getLogger("modeldiffer")
 
 
 schedule = lib.schedule
+defer = lib.defer
 
 
 def icon(name, color=None):

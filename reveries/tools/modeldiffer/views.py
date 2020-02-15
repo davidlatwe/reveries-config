@@ -306,7 +306,7 @@ class DatabaseSelectorWidget(QtWidgets.QWidget):
                 # Wait for GUI to be ready
                 self._first_run = False
                 data = child_box.currentData()
-                lib.schedule(lambda: self.version_changed.emit(data), 500)
+                lib.defer(500, lambda: self.version_changed.emit(data))
 
     def on_silo_changed(self):
         self._on_level_changed("silo", "asset")
