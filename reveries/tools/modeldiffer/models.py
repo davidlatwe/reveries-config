@@ -139,8 +139,8 @@ class ComparerItem(models.Item):
             SIDE_A_DATA: None,
             SIDE_B_DATA: None,
             "matchMethod": 0,
-            "points": 2,
-            "uvmap": 2,
+            "points": 0,
+            "uvmap": 0,
         }
         super(ComparerItem, self).__init__(data)
 
@@ -167,8 +167,8 @@ class ComparerItem(models.Item):
         self.update({
             other: None,
             "matchMethod": 0,
-            "points": 2,
-            "uvmap": 2,
+            "points": 0,
+            "uvmap": 0,
         })
 
     def compare(self):

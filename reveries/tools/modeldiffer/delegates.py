@@ -29,15 +29,13 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
     ]
 
     POINTS_ICONS = [
-        (FEATURE_ICONS["mesh"], models.COLOR_DANGER),  # Point Not Match
+        (FEATURE_ICONS["mesh"], models.COLOR_DARK),  # Point Not Match
         (FEATURE_ICONS["mesh"], models.COLOR_BRIGHT),  # Point Ok
-        (FEATURE_ICONS["mesh"], models.COLOR_DARK),  # Point Dimmed
     ]
 
     UVMAP_ICONS = [
-        (FEATURE_ICONS["uv"], models.COLOR_DANGER),  # UV Not Match
+        (FEATURE_ICONS["uv"], models.COLOR_DARK),  # UV Not Match
         (FEATURE_ICONS["uv"], models.COLOR_BRIGHT),  # UV Ok
-        (FEATURE_ICONS["uv"], models.COLOR_DARK),  # UV Dimmed
     ]
 
     LOCK_ICONS = [
