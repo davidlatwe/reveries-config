@@ -407,10 +407,10 @@ class ComparerModel(models.TreeModel):
 
         if role == QtCore.Qt.DisplayRole:
             if section == self.Columns.index(SIDE_A):
-                return "Geometries"
+                return "Name"
 
             if section == self.Columns.index(SIDE_B):
-                return "Geometries"
+                return "Name"
 
             if section == self.Columns.index("diff"):
                 return "Diff"
