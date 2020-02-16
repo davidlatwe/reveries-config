@@ -11,8 +11,6 @@ try:
 except ImportError:
     pass
 
-from datetime import datetime
-
 from avalon import api, io
 from avalon.maya.pipeline import AVALON_CONTAINERS
 
@@ -21,8 +19,9 @@ import avalon_sftpc
 from maya import cmds, mel
 from maya.api import OpenMaya as om
 
+from .. import lib as reveries_lib
 from ..vendor import six
-from ..utils import _C4Hasher, get_representation_path_, localtz
+from ..utils import _C4Hasher, get_representation_path_
 from .pipeline import (
     find_stray_textures,
     env_embedded_path,
@@ -662,16 +661,7 @@ class Identifier(object):
         address = self.read_address(node)
         if address is None:
             return None
-
-        if "-" in address:
-            _ut = uuid.UUID(address + "-0000-000000000000").time
-            stm = (_ut - 0x01b21dd213814000) * 100 / 1e9
-            time = datetime.fromtimestamp(stm)
-        else:
-            time = bson.ObjectId(address).generation_time
-            time = time.astimezone(localtz)
-
-        return time.strftime("%Y%m%dT%H%M%SZ")
+        return reveries_lib.avalon_id_timestamp(address)
 
 
 _identifier = Identifier()

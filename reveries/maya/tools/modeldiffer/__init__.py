@@ -6,7 +6,7 @@ from maya import cmds
 from avalon import style
 from avalon.tools import lib
 from avalon.vendor.Qt import QtWidgets
-from ....maya import utils, pipeline
+from ....maya import utils
 from ....tools.modeldiffer import app
 
 
@@ -70,24 +70,23 @@ def profile_from_host(container=None):
         # In this mode, we know where the hierarchy root is, so
         # we can compare with node names.
         #
-        root = pipeline.get_group_from_container(container["objectName"])
-
-        meshes = cmds.ls(cmds.sets(container["objectName"], query=True),
-                         type="mesh",
-                         noIntermediate=True,
-                         long=True)
+        transforms = cmds.ls(cmds.sets(container["objectName"], query=True),
+                             type="transform")
+        meshes = cmds.listRelatives(transforms,
+                                    shapes=True,
+                                    noIntermediate=True,
+                                    path=True,
+                                    type="mesh")
     else:
         # From selection (only compare with mesh hash values)
         #
         # In this mode, we can not be sure that the mesh long name is
         # comapreable, so the name will not be compared.
         #
-        root = None
-
         meshes = cmds.listRelatives(cmds.ls(selection=True, long=True),
                                     shapes=True,
                                     noIntermediate=True,
-                                    fullPath=True,
+                                    path=True,
                                     type="mesh")
 
     if not meshes:
@@ -98,16 +97,10 @@ def profile_from_host(container=None):
 
     for mesh in meshes:
         transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
-
-        if root and transform.startswith(root):
-            namespace = container["namespace"][1:] + ":"
-            name = transform[len(root):].replace(namespace, "")
-        else:
-            name = transform
+        name = transform
 
         data = {
             "avalonId": utils.get_id(transform),
-            "fullPath": transform,
             "points": None,
             "uvmap": None,
         }

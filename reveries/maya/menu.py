@@ -72,6 +72,10 @@ def install():
 import reveries.maya.tools
 reveries.maya.tools.show('avalonideditor')
 """)
+        cmds.menuItem("Model Differ", parent="Menu_Utilities", command="""
+import reveries.maya.tools
+reveries.maya.tools.show('modeldiffer')
+""")
 
         # Rendering tools
         cmds.menuItem("Menu_Render",
@@ -114,9 +118,9 @@ reveries.maya.tools.show('mayalookassigner')
                       subMenu=True,
                       parent=self._menu)
 
-        cmds.menuItem("Model Differ", parent="Menu_Rig", command="""
+        cmds.menuItem("Model Locker", parent="Menu_Rig", command="""
 import reveries.maya.tools
-reveries.maya.tools.show('modeldiffer')
+reveries.maya.tools.show('modellocker')
 """)
         cmds.menuItem("Transfer UV",
                       parent="Menu_Rig",

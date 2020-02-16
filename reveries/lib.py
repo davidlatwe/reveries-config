@@ -3,10 +3,18 @@ import os
 import sys
 import math
 import logging
+import contextlib
+import datetime
+import uuid
 import pyblish.util
 import avalon.io
 import avalon.api
 from avalon.vendor import requests
+
+try:
+    import bson
+except ImportError:
+    pass
 
 log = logging.getLogger(__name__)
 
@@ -17,6 +25,15 @@ DEFAULT_MATRIX = [1.0, 0.0, 0.0, 0.0,
                   0.0, 1.0, 0.0, 0.0,
                   0.0, 0.0, 1.0, 0.0,
                   0.0, 0.0, 0.0, 1.0]
+
+
+class LocalTZ(datetime.tzinfo):
+    """Local time zone info, I guess."""
+    delta = datetime.datetime.now() - datetime.datetime.utcnow()
+    utcoffset = dst = lambda self, dt: self.delta
+
+
+localtz = LocalTZ()
 
 
 def matrix_equals(a, b, tolerance=1e-10):
@@ -247,3 +264,37 @@ def any_outdated():
         checked.add(representation)
 
     return False
+
+
+class pindict(dict):  # For experimental code style
+    @contextlib.contextmanager
+    def pin(self, key, default=None):
+        if "." in key:
+            value = self
+            for k in key.split("."):
+                value = value[k]
+            yield value
+        else:
+            yield self.get(key, default)
+
+    @classmethod
+    def to_pindict(cls, _dict):
+        new = pindict()
+        for key, value in _dict.items():
+            if isinstance(value, dict):
+                new[key] = cls.to_pindict(value)
+            else:
+                new[key] = value
+        return new
+
+
+def avalon_id_timestamp(id):
+    if "-" in id:
+        _ut = uuid.UUID(id + "-0000-000000000000").time
+        stm = (_ut - 0x01b21dd213814000) * 100 / 1e9
+        time = datetime.datetime.fromtimestamp(stm)
+    else:
+        time = bson.ObjectId(id).generation_time
+        time = time.astimezone(localtz)
+
+    return time.strftime("%Y%m%dT%H%M%SZ")

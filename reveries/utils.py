@@ -1,4 +1,3 @@
-# -*-coding: utf-8
 
 import os
 import tempfile
@@ -8,7 +7,6 @@ import shutil
 import weakref
 import getpass
 import pymongo
-import datetime
 
 from distutils import dir_util, errors as distutils_err
 
@@ -19,15 +17,6 @@ import avalon
 from pyblish_qml.ipc import formatting
 
 from .plugins import message_box_error
-
-
-class LocalTZ(datetime.tzinfo):
-    """Local time zone info, I guess. ¯\_(ツ)_/¯ """
-    delta = datetime.datetime.now() - datetime.datetime.utcnow()
-    utcoffset = dst = lambda self, dt: self.delta
-
-
-localtz = LocalTZ()
 
 
 def temp_dir(prefix="pyblish_tmp_"):

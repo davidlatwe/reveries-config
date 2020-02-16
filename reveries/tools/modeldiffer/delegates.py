@@ -1,31 +1,47 @@
 
 from avalon.vendor.Qt import QtWidgets, QtCore
-from avalon.vendor import qtawesome
-from . import models
+from . import models, lib
+
+
+FEATURE_ICONS = {
+    "id": "hashtag",
+    "name": "align-left",
+    "mesh": "cube",
+    "uv": "delicious",
+}
 
 
 class DiffDelegate(QtWidgets.QStyledItemDelegate):
 
     ICON_SIZE = 16
     ICON_MARGIN = 6
-    ICON_SPACE = ICON_SIZE * 3 + ICON_MARGIN * 4
+    ICON_COUNT = 6
+    ICON_SPACE = ICON_SIZE * ICON_COUNT + ICON_MARGIN * (ICON_COUNT + 1)
+
+    ID_ICONS = [
+        (FEATURE_ICONS["id"], models.COLOR_DARK),  # Not Match
+        (FEATURE_ICONS["id"], models.COLOR_BRIGHT),  # Match By Id, & 2
+    ]
 
     NAME_ICONS = [
-        ("link", "#6A6A6A"),  # Not Match
-        ("link", "#5CA6EC"),  # Match By Name
-        ("link", "#ECA25C"),  # Match By Id
+        (FEATURE_ICONS["name"], models.COLOR_DARK),  # Not Match
+        (FEATURE_ICONS["name"], models.COLOR_BRIGHT),  # Match By Name, & 1
     ]
 
     POINTS_ICONS = [
-        ("cube", "#EC534E"),  # Point Not Match
-        ("cube", "#38DB8C"),  # Point Ok
-        ("cube", "#6A6A6A"),  # Point Dimmed
+        (FEATURE_ICONS["mesh"], models.COLOR_DARK),  # Point Not Match
+        (FEATURE_ICONS["mesh"], models.COLOR_BRIGHT),  # Point Ok
     ]
 
     UVMAP_ICONS = [
-        ("delicious", "#EC534E"),  # UV Not Match
-        ("delicious", "#38DB8C"),  # UV Ok
-        ("delicious", "#6A6A6A"),  # UV Dimmed
+        (FEATURE_ICONS["uv"], models.COLOR_DARK),  # UV Not Match
+        (FEATURE_ICONS["uv"], models.COLOR_BRIGHT),  # UV Ok
+    ]
+
+    LOCK_ICONS = [
+        ("ellipsis-h", models.COLOR_DARK),  # Not published
+        ("unlock", models.COLOR_DARK),  # Not Protected
+        ("lock", "#B9770E"),  # Protected
     ]
 
     DiffStateRole = models.ComparerModel.DiffStateRole
@@ -33,20 +49,22 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, parent=None):
         super(DiffDelegate, self).__init__(parent)
 
+        s = (self.ICON_SIZE, self.ICON_SIZE)
+
         self.name_pixmap = [
-            qtawesome.icon("fa.{}".format(icon),
-                           color=color).pixmap(self.ICON_SIZE, self.ICON_SIZE)
-            for icon, color in self.NAME_ICONS
+            lib.icon(n, c).pixmap(*s) for n, c in self.NAME_ICONS
+        ]
+        self.id_pixmap = [
+            lib.icon(n, c).pixmap(*s) for n, c in self.ID_ICONS
         ]
         self.points_pixmap = [
-            qtawesome.icon("fa.{}".format(icon),
-                           color=color).pixmap(self.ICON_SIZE, self.ICON_SIZE)
-            for icon, color in self.POINTS_ICONS
+            lib.icon(n, c).pixmap(*s) for n, c in self.POINTS_ICONS
         ]
         self.uvmap_pixmap = [
-            qtawesome.icon("fa.{}".format(icon),
-                           color=color).pixmap(self.ICON_SIZE, self.ICON_SIZE)
-            for icon, color in self.UVMAP_ICONS
+            lib.icon(n, c).pixmap(*s) for n, c in self.UVMAP_ICONS
+        ]
+        self.lock_icon = [
+            lib.icon(n, c).pixmap(*s) for n, c in self.LOCK_ICONS
         ]
 
     def sizeHint(self, option, index):
@@ -58,25 +76,25 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
         # super(DiffDelegate, self).paint(painter, option, index)
 
         states = index.data(self.DiffStateRole)
-        name_state, points_state, uvmap_state = states
+        name_state, points_state, uvmap_state, protected = states
+        protected_A, protected_B = protected
 
-        name_pixmap = self.name_pixmap[name_state]
-        points_pixmap = self.points_pixmap[points_state]
-        uvmap_pixmap = self.uvmap_pixmap[uvmap_state]
+        pixmaps = [
+            self.lock_icon[protected_A + 1],
+            self.id_pixmap[bool(name_state & 1)],
+            self.name_pixmap[bool(name_state & 2)],
+            self.points_pixmap[points_state],
+            self.uvmap_pixmap[uvmap_state],
+            self.lock_icon[protected_B + 1],
+        ]
 
         rect = option.rect
-        center = rect.width() / 2
-        half = self.ICON_SPACE / 2
         y = rect.y() + rect.height() / 2 - (self.ICON_SIZE / 2)
+        x = rect.x() + self.ICON_MARGIN
 
-        x = rect.x() + center - half + self.ICON_MARGIN
-        painter.drawPixmap(x, y, name_pixmap)
-
-        x = rect.x() + center - (self.ICON_SIZE / 2)
-        painter.drawPixmap(x, y, points_pixmap)
-
-        x = rect.x() + center + half - (self.ICON_SIZE) - self.ICON_MARGIN
-        painter.drawPixmap(x, y, uvmap_pixmap)
+        for i, pixmap in enumerate(pixmaps):
+            painter.drawPixmap(x, y, pixmap)
+            x += self.ICON_SIZE + self.ICON_MARGIN
 
 
 class PathTextDelegate(QtWidgets.QStyledItemDelegate):
@@ -84,3 +102,12 @@ class PathTextDelegate(QtWidgets.QStyledItemDelegate):
     def paint(self, painter, option, index):
         option.textElideMode = QtCore.Qt.ElideLeft
         super(PathTextDelegate, self).paint(painter, option, index)
+
+    def createEditor(self, parent, option, index):
+        editor = QtWidgets.QLineEdit(parent)
+        editor.setReadOnly(True)
+        return editor
+
+    def setEditorData(self, editor, index):
+        value = index.data(QtCore.Qt.DisplayRole)
+        editor.setText(value)

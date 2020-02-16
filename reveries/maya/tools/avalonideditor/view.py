@@ -1,7 +1,7 @@
-
 from avalon.vendor.Qt import QtWidgets, QtCore
 
-from . import model, delegate
+from .. import delegates
+from . import model
 
 
 class SelectionOutline(QtWidgets.QWidget):
@@ -29,7 +29,7 @@ class SelectionOutline(QtWidgets.QWidget):
         view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 
         # Delegate
-        time_delegate = delegate.PrettyTimeDelegate()
+        time_delegate = delegates.PrettyTimeDelegate()
         column = self.model.Columns.index("time")
         view.setItemDelegateForColumn(column, time_delegate)
 
@@ -112,7 +112,3 @@ class SelectionOutline(QtWidgets.QWidget):
         selection = selection_model.selection()
         source_selection = self.proxy.mapSelectionToSource(selection)
         self.model.select_back(source_selection.indexes())
-
-
-class Diagnose(QtWidgets.QWidget):
-    pass
