@@ -591,6 +591,7 @@ class FocusComparing(QtWidgets.QWidget):
         with widget.pin("featureMenu") as menu:
             menu["list"].addItem(" Hierarchy", "longName")
             menu["list"].addItem(" Avalon Id", "avalonId")
+            menu["list"].addItem(" Full Path", "fullPath")
             menu["list"].addItem(" Mesh", "points")
             menu["list"].addItem(" UV", "uvmap")
 
