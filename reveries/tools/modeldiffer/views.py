@@ -628,6 +628,7 @@ class FocusComparing(QtWidgets.QWidget):
     def on_focus_enabled(self, enable):
         if not enable:
             self.widget["focus"]["model"].reset_sides()
+            self.update()  # Reset
         self._focusing = enable
 
     def on_feature_changed(self, index=None):
