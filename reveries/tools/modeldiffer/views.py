@@ -24,7 +24,7 @@ class SelectorWidget(QtWidgets.QWidget):
 
     container_picked = QtCore.Signal(str, dict)
     host_selected = QtCore.Signal(str)
-    version_changed = QtCore.Signal(str, io.ObjectId)
+    version_changed = QtCore.Signal(str, io.ObjectId, io.ObjectId)
 
     def __init__(self, side, parent=None):
         super(SelectorWidget, self).__init__(parent=parent)
@@ -81,9 +81,9 @@ class SelectorWidget(QtWidgets.QWidget):
         if self._host_tab_enabled:
             self.host_selected.emit(self.side)
 
-    def on_version_changed(self, version_id):
+    def on_version_changed(self, subset_id, version_id):
         if not self._host_tab_enabled:
-            self.version_changed.emit(self.side, version_id)
+            self.version_changed.emit(self.side, subset_id, version_id)
 
 
 class HostSelectorWidget(QtWidgets.QWidget):
@@ -184,7 +184,7 @@ class HostSelectorWidget(QtWidgets.QWidget):
 
 class DatabaseSelectorWidget(QtWidgets.QWidget):
 
-    version_changed = QtCore.Signal(io.ObjectId)
+    version_changed = QtCore.Signal(io.ObjectId, io.ObjectId)
 
     def __init__(self, parent=None):
         super(DatabaseSelectorWidget, self).__init__(parent=parent)
@@ -310,11 +310,10 @@ class DatabaseSelectorWidget(QtWidgets.QWidget):
         elif child_level == "version":
             index = child_count - 1
             child_box.setCurrentIndex(index)
-            if self._first_run:
-                # Wait for GUI to be ready
+
+            if self._first_run:  # Wait for GUI to be ready
                 self._first_run = False
-                data = child_box.currentData()
-                lib.defer(500, lambda: self.version_changed.emit(data))
+                lib.defer(500, self.on_version_changed)
 
     def on_silo_changed(self):
         self._on_level_changed("silo", "asset")
@@ -326,10 +325,12 @@ class DatabaseSelectorWidget(QtWidgets.QWidget):
         self._on_level_changed("subset", "version")
 
     def on_version_changed(self):
-        combobox = self.widget["version"]
-        data = combobox.currentData()
-        if data:
-            self.version_changed.emit(data)
+        version_box = self.widget["version"]
+        version_id = version_box.currentData()
+        if version_id:
+            subset_box = self.widget["subset"]
+            subset_id = subset_box.currentData()
+            self.version_changed.emit(subset_id, version_id)
 
     def on_container_picked(self, container):
         if container is None:
@@ -438,8 +439,8 @@ class ComparingTable(QtWidgets.QWidget):
         if not action:
             return
 
-    def on_version_changed(self, side, version_id):
-        profile = lib.profile_from_database(version_id)
+    def on_version_changed(self, side, subset_id, version_id):
+        profile = lib.profile_from_database(subset_id, version_id)
         self.data["model"].refresh_side(side, profile)
         self.update()
 

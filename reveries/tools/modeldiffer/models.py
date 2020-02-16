@@ -132,7 +132,6 @@ class ComparerItem(models.Item):
     ]
 
     def __init__(self, name, id):
-        self.name = name
         self.id = id
 
         data = {
@@ -145,7 +144,7 @@ class ComparerItem(models.Item):
         super(ComparerItem, self).__init__(data)
 
     def __eq__(self, other):
-        return self.name == other
+        return self.id == other
 
     def get_this(self, side):
         return side + "Data"
@@ -195,19 +194,6 @@ class ComparerModel(models.TreeModel):
             lib.icon("bullseye", color=SIDE_COLOR[SIDE_A]),
             lib.icon("bullseye", color=SIDE_COLOR[SIDE_B]),
         ]
-
-    def extract_shared_root(self, nodes):
-        shared_root = ""
-        for path in next(iter(nodes))[1:].split("|"):
-            path = "|" + path
-
-            for name in nodes:
-                if not name.startswith(shared_root + path + "|"):
-                    return shared_root
-            else:
-                shared_root += path
-
-        return shared_root
 
     def refresh_side(self, side, profile, host=False):
         profile = profile or dict()
