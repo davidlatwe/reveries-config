@@ -2,7 +2,8 @@
 import logging
 from avalon import io
 from avalon.vendor import qtawesome
-from avalon.tools import lib
+from avalon.tools import lib, delegates
+from ... import lib as reveries_lib
 
 
 main_logger = logging.getLogger("modeldiffer")
@@ -10,6 +11,11 @@ main_logger = logging.getLogger("modeldiffer")
 
 schedule = lib.schedule
 defer = lib.defer
+
+
+def avalon_id_pretty_time(id):
+    timestamp = reveries_lib.avalon_id_timestamp(id)
+    return delegates.pretty_timestamp(timestamp)
 
 
 def icon(name, color=None):

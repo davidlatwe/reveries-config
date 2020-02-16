@@ -495,7 +495,11 @@ class FocusModel(models.TreeModel):
         if role == QtCore.Qt.DisplayRole:
             if self.Columns[index.column()] == "value":
                 item = index.internalPointer()
-                return item.get(self._feature, "")
+                value = item.get(self._feature, "")
+                if value and self._feature == "avalonId":
+                    time = lib.avalon_id_pretty_time(value)
+                    value = "%s [%s]" % (time, value)
+                return value
             else:
                 return ""
 
