@@ -217,14 +217,14 @@ class ComparerModel(models.TreeModel):
 
         # Remove previous data of this side
 
-        remove = list()
+        to_remove = list()
         for item in items:
             if item.has_other(side):
                 item.pop_this(side)
             else:
-                remove.append(item)
+                to_remove.append(item)
 
-        for item in remove:
+        for item in to_remove:
             row = item.row()
             self.beginRemoveRows(root_index, row, row)
             items.remove(item)
