@@ -65,16 +65,16 @@ def install():
         cmds.menuItem("Snap Shot", parent="Menu_Utilities",
                       command=interactive.active_view_snapshot)
 
-        cmds.menuItem("Model Differ", parent="Menu_Utilities", command="""
-import reveries.maya.tools
-reveries.maya.tools.show('modeldiffer')
-""")
         cmds.menuItem("Set Avalon Id", parent="Menu_Utilities",
                       command=interactive.apply_avalon_uuid)
 
         cmds.menuItem("Avalon Id Editor", parent="Menu_Utilities", command="""
 import reveries.maya.tools
 reveries.maya.tools.show('avalonideditor')
+""")
+        cmds.menuItem("Model Differ", parent="Menu_Utilities", command="""
+import reveries.maya.tools
+reveries.maya.tools.show('modeldiffer')
 """)
 
         # Rendering tools
