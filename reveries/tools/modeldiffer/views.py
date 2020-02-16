@@ -175,8 +175,7 @@ class HostSelectorWidget(QtWidgets.QWidget):
 
     def on_container_picked(self):
         container = self.widget["containerBox"].currentData()
-        if container is not None:
-            self.container_picked.emit(container)
+        self.container_picked.emit(container)
 
     def on_selection_pressed(self):
         self.host_selected.emit()
@@ -328,8 +327,7 @@ class DatabaseSelectorWidget(QtWidgets.QWidget):
     def on_version_changed(self):
         combobox = self.widget["version"]
         data = combobox.currentData()
-        if data:
-            self.version_changed.emit(data)
+        self.version_changed.emit(data)
 
     def on_container_picked(self, container):
         if container is None:
@@ -439,12 +437,18 @@ class ComparingTable(QtWidgets.QWidget):
             return
 
     def on_version_changed(self, side, version_id):
-        profile = lib.profile_from_database(version_id)
+        if version_id is not None:
+            profile = lib.profile_from_database(version_id)
+        else:
+            profile = None
         self.data["model"].refresh_side(side, profile)
         self.update()
 
     def on_container_picked(self, side, container):
-        profile = lib.profile_from_host(container)
+        if container is not None:
+            profile = lib.profile_from_host(container)
+        else:
+            profile = None
         self.data["model"].refresh_side(side, profile, host=True)
         self.update()
 
