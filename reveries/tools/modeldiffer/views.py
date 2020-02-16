@@ -49,6 +49,7 @@ class SelectorWidget(QtWidgets.QWidget):
 
         # Connect
 
+        body["tab"].currentChanged.connect(self.on_tab_changed)
         selector["host"].container_picked.connect(self.on_container_picked)
         selector["host"].host_selected.connect(self.on_host_selected)
         selector["databse"].version_changed.connect(self.on_version_changed)
@@ -57,6 +58,7 @@ class SelectorWidget(QtWidgets.QWidget):
 
         self.selector = selector
         self.side = side
+        self._host_tab_enabled = False
 
         if not has_host() or side == SIDE_B:
             body["tab"].setCurrentIndex(0)
@@ -68,14 +70,20 @@ class SelectorWidget(QtWidgets.QWidget):
         self.host_selected.connect(comparer.on_host_selected)
         self.version_changed.connect(comparer.on_version_changed)
 
+    def on_tab_changed(self, index):
+        self._host_tab_enabled = index
+
     def on_container_picked(self, container):
-        self.container_picked.emit(self.side, container)
+        if self._host_tab_enabled:
+            self.container_picked.emit(self.side, container)
 
     def on_host_selected(self):
-        self.host_selected.emit(self.side)
+        if self._host_tab_enabled:
+            self.host_selected.emit(self.side)
 
     def on_version_changed(self, version_id):
-        self.version_changed.emit(self.side, version_id)
+        if not self._host_tab_enabled:
+            self.version_changed.emit(self.side, version_id)
 
 
 class HostSelectorWidget(QtWidgets.QWidget):
