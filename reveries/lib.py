@@ -28,7 +28,7 @@ DEFAULT_MATRIX = [1.0, 0.0, 0.0, 0.0,
 
 
 class LocalTZ(datetime.tzinfo):
-    """Local time zone info, I guess. ¯\_(ツ)_/¯ """
+    """Local time zone info, I guess."""
     delta = datetime.datetime.now() - datetime.datetime.utcnow()
     utcoffset = dst = lambda self, dt: self.delta
 
