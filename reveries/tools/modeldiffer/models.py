@@ -145,7 +145,7 @@ class ComparerItem(models.Item):
         super(ComparerItem, self).__init__(data)
 
     def __eq__(self, other):
-        return self.name == other
+        return self.id == other
 
     def get_this(self, side):
         return side + "Data"
@@ -196,19 +196,6 @@ class ComparerModel(models.TreeModel):
             lib.icon("bullseye", color=SIDE_COLOR[SIDE_B]),
         ]
 
-    def extract_shared_root(self, nodes):
-        shared_root = ""
-        for path in next(iter(nodes))[1:].split("|"):
-            path = "|" + path
-
-            for name in nodes:
-                if not name.startswith(shared_root + path + "|"):
-                    return shared_root
-            else:
-                shared_root += path
-
-        return shared_root
-
     def refresh_side(self, side, profile, host=False):
         profile = profile or dict()
 
@@ -232,38 +219,57 @@ class ComparerModel(models.TreeModel):
 
         # Place new data
 
-        shared_root = self.extract_shared_root(profile) if profile else ""
-        # (TODO) Decopule name comparing into two parts, short(leaf) name and
-        #        hierarchy path. Short name must be the same, hierarchy path
-        #        should be the same or as other's child hierarchy.
+        not_matched_items = list(items)
+        not_matched_data = list()
+
+        def short(name):  # No namespace
+            return name.rsplit("|", 1)[-1].rsplit(":", 1)[-1]
+
+        def long(name):  # No namespace
+            return "|".join(n.rsplit(":", 1)[-1] for n in name.split("|"))
 
         for name, data in profile.items():
 
-            data["longName"] = data.get("fullPath", name)
-            data["shortName"] = name.rsplit("|", 1)[-1].rsplit(":", 1)[-1]
-            data["fromHost"] = host
-            id = data["avalonId"]
+            data = {
+                "fullPath": name,
+                "fromHost": host,
+                "shortName": short(name),
+                "longName": long(name),
+                "avalonId": data["avalonId"],
+                "protected": data.get("protected"),
+                "points": data["points"],
+                "uvmap": data["uvmap"],
+            }
 
-            name = name  # (TODO) Root removed, namespace removed
-
+            # Matching avalonId & longName
             state = 0
-            matched = None
+            for item in not_matched_items:
+                if item.id == data["avalonId"]:
+                    state |= 1
 
-            if name in items:
-                matched = items[items.index(name)]
-                state |= 1
-
-            for item in items:
-                if item.id == id:
-                    matched = item
+                if item.name == data["longName"]:
                     state |= 2
-                    break
 
-            if matched:
-                matched.add_this(side, data, matched=state)
-                matched.compare()
+                if state:
+                    not_matched_items.remove(item)
+                    item.add_this(side, data, matched=state)
+                    item.compare()
+                    break
             else:
-                item = ComparerItem(name, id)
+                not_matched_data.append(data)
+
+        for data in not_matched_data:
+            # Try matching shortName
+            for item in not_matched_items:
+                other_side = item[item.get_other(side)]
+
+                if other_side["shortName"] == data["shortName"]:
+                    not_matched_items.remove(item)
+                    item.add_this(side, data, matched=state)
+                    item.compare()
+                    break
+            else:
+                item = ComparerItem(data["longName"], data["avalonId"])
                 item.add_this(side, data)
                 last = self.rowCount(root_index)
                 self.beginInsertRows(root_index, last, last)
@@ -357,7 +363,7 @@ class ComparerModel(models.TreeModel):
                 if not item.get(SIDE_A_DATA):
                     return
                 if item[SIDE_A_DATA]["fromHost"]:
-                    return item[SIDE_A_DATA]["longName"]
+                    return item[SIDE_A_DATA]["fullPath"]
                 else:
                     return
 
@@ -366,7 +372,7 @@ class ComparerModel(models.TreeModel):
                 if not item.get(SIDE_B_DATA):
                     return
                 if item[SIDE_B_DATA]["fromHost"]:
-                    return item[SIDE_B_DATA]["longName"]
+                    return item[SIDE_B_DATA]["fullPath"]
                 else:
                     return
 

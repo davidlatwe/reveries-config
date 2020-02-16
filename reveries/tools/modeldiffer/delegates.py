@@ -83,8 +83,8 @@ class DiffDelegate(QtWidgets.QStyledItemDelegate):
 
         pixmaps = [
             self.lock_icon[protected_A + 1],
-            self.id_pixmap[bool(name_state & 2)],
-            self.name_pixmap[bool(name_state & 1)],
+            self.id_pixmap[bool(name_state & 1)],
+            self.name_pixmap[bool(name_state & 2)],
             self.points_pixmap[points_state],
             self.uvmap_pixmap[uvmap_state],
             self.lock_icon[protected_B + 1],
