@@ -362,7 +362,7 @@ class ComparingTable(QtWidgets.QWidget):
         data["view"].setIndentation(2)
         data["view"].setStyleSheet("""
             QTreeView::item{
-                padding: 6px 1px;
+                padding: 4px 1px;
                 border: 0px;
             }
         """)
@@ -565,8 +565,8 @@ class FocusComparing(QtWidgets.QWidget):
                     feature["icon"].setPixmap(pixmap)
 
                 layout.addWidget(feature["main"])
-                layout.addSpacing(-12)
-            layout.addSpacing(12)
+                layout.addSpacing(-16)
+            layout.addSpacing(16)
             layout.setContentsMargins(0, 0, 0, 0)
 
         with widget.pin("featureMenu") as menu:
@@ -578,6 +578,7 @@ class FocusComparing(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
         layout.addSpacing(-16)
         layout.addWidget(widget["overallDiff"]["main"])
+        layout.addSpacing(-8)
         layout.addWidget(widget["featureMenu"]["main"])
         layout.addSpacing(-8)
         layout.addWidget(widget["focus"]["view"])
@@ -594,10 +595,11 @@ class FocusComparing(QtWidgets.QWidget):
             focus["view"].setItemDelegateForColumn(1, focus["pathDelegate"])
             focus["view"].setHeaderHidden(True)
             focus["view"].setUniformRowHeights(True)
+            focus["view"].setAlternatingRowColors(False)
             focus["view"].setIndentation(6)
             focus["view"].setStyleSheet("""
                 QTreeView::item{
-                    padding: 6px 1px;
+                    padding: 2px 1px;
                     border: 0px;
                 }
             """)
