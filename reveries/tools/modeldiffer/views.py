@@ -453,10 +453,6 @@ class ComparingTable(QtWidgets.QWidget):
         self.data["model"].refresh_side(side, profile, host=True)
         self.update()
 
-    def on_name_mode_changed(self, state):
-        self.data["model"].set_use_long_name(state)
-        self.update()
-
     def act_select_nodes(self):
         selection_model = self.data["view"].selectionModel()
         selection = selection_model.selection()

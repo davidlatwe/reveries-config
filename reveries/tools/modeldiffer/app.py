@@ -61,7 +61,6 @@ class Window(QtWidgets.QWidget):
                 "main": QtWidgets.QWidget(),
                 "label": QtWidgets.QLabel("Table Name:"),
                 "line": QtWidgets.QLineEdit(),
-                "nameChk": QtWidgets.QCheckBox("Show Namespace"),
             },
 
             "ctrl": {
@@ -90,7 +89,6 @@ class Window(QtWidgets.QWidget):
             layout = QtWidgets.QHBoxLayout(top["main"])
             layout.addWidget(top["label"])
             layout.addWidget(top["line"])
-            layout.addWidget(top["nameChk"])
 
         with widget.pin("ctrl.tabs.select") as selectors:
             layout = QtWidgets.QHBoxLayout(selectors["main"])
@@ -140,8 +138,6 @@ class Window(QtWidgets.QWidget):
                     table["comparer"].focus_enabled)
 
             with widget.pin("top") as top:
-                top["nameChk"].stateChanged.connect(
-                    table["comparer"].on_name_mode_changed)
                 top["line"].textChanged.connect(
                     lambda text: tab.setTabText(index, text))
 

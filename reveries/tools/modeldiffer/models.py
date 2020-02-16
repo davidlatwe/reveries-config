@@ -190,10 +190,6 @@ class ComparerModel(models.TreeModel):
     def __init__(self, parent=None):
         super(ComparerModel, self).__init__(parent=parent)
 
-        self._use_long_name = False
-        self._origin_shared_root = ""
-        self._contrast_shared_root = ""
-
         self._focused_indexes = {SIDE_A: None, SIDE_B: None}
         self._focused_icons = [
             lib.icon("bullseye", color=SIDE_COLOR[SIDE_A]),
@@ -212,9 +208,6 @@ class ComparerModel(models.TreeModel):
                 shared_root += path
 
         return shared_root
-
-    def set_use_long_name(self, value):
-        self._use_long_name = value
 
     def refresh_side(self, side, profile, host=False):
         profile = profile or dict()
@@ -240,14 +233,18 @@ class ComparerModel(models.TreeModel):
         # Place new data
 
         shared_root = self.extract_shared_root(profile) if profile else ""
-        self._origin_shared_root = shared_root
+        # (TODO) Decopule name comparing into two parts, short(leaf) name and
+        #        hierarchy path. Short name must be the same, hierarchy path
+        #        should be the same or as other's child hierarchy.
 
         for name, data in profile.items():
 
             data["longName"] = data.get("fullPath", name)
-            data["shortName"] = name.rsplit("|", 1)[-1]
+            data["shortName"] = name.rsplit("|", 1)[-1].rsplit(":", 1)[-1]
             data["fromHost"] = host
             id = data["avalonId"]
+
+            name = name  # (TODO) Root removed, namespace removed
 
             state = 0
             matched = None
@@ -287,20 +284,14 @@ class ComparerModel(models.TreeModel):
             if self.Columns[column] == SIDE_A:
                 item = index.internalPointer()
                 if not item.get(SIDE_A_DATA):
-                    return
-                if self._use_long_name:
-                    return item[SIDE_A_DATA]["longName"]
-                else:
-                    return item[SIDE_A_DATA]["shortName"]
+                    return ""
+                return item[SIDE_A_DATA]["shortName"]
 
             if self.Columns[column] == SIDE_B:
                 item = index.internalPointer()
                 if not item.get(SIDE_B_DATA):
-                    return
-                if self._use_long_name:
-                    return item[SIDE_B_DATA]["longName"]
-                else:
-                    return item[SIDE_B_DATA]["shortName"]
+                    return ""
+                return item[SIDE_B_DATA]["shortName"]
 
         if role == QtCore.Qt.DecorationRole:
             column = index.column()
