@@ -653,20 +653,26 @@ class FocusComparing(QtWidgets.QWidget):
             node_A = focus["model"].nodes[SIDE_A]
             node_B = focus["model"].nodes[SIDE_B]
 
+        def related(this, that):
+            return this == that or this.endswith(that) or that.endswith(this)
+
+        def equal(this, that):
+            return this == that
+
         features = [
-            ("name", "longName"),
-            ("id", "avalonId"),
-            ("mesh", "points"),
-            ("uv", "uvmap"),
+            ("name", "longName", related),
+            ("id", "avalonId", equal),
+            ("mesh", "points", equal),
+            ("uv", "uvmap", equal),
         ]
 
-        for feature, key in features:
+        for feature, key, compare in features:
             with self.widget.pin("overallDiff." + feature) as widget:
-                name_A = node_A.get(key)
-                name_B = node_B.get(key)
+                fet_A = node_A.get(key)
+                fet_B = node_B.get(key)
 
-                if name_A and name_B:
-                    if name_A == name_B:
+                if fet_A and fet_B:
+                    if compare(fet_A, fet_B):
                         status = "Match"
                         color = models.COLOR_BRIGHT
                     else:

@@ -228,8 +228,10 @@ class ComparerModel(models.TreeModel):
         def long(name):  # No namespace
             return "|".join(n.rsplit(":", 1)[-1] for n in name.split("|"))
 
-        for name, data in profile.items():
+        def related(this, that):
+            return this == that or this.endswith(that) or that.endswith(this)
 
+        for name, data in profile.items():
             data = {
                 "fullPath": name,
                 "fromHost": host,
@@ -240,32 +242,48 @@ class ComparerModel(models.TreeModel):
                 "points": data["points"],
                 "uvmap": data["uvmap"],
             }
+            not_matched_data.append(data)
 
+        not_matched_data.sort(key=lambda d: d["longName"] + d["fullPath"])
+
+        for data in list(not_matched_data):
             # Matching avalonId & longName
             state = 0
             for item in not_matched_items:
                 if item.id == data["avalonId"]:
                     state |= 1
 
-                if item.name == data["longName"]:
-                    state |= 2
+                    if related(item.name, data["longName"]):
+                        state |= 2
 
                 if state:
                     not_matched_items.remove(item)
+                    not_matched_data.remove(data)
                     item.add_this(side, data, matched=state)
                     item.compare()
                     break
-            else:
-                not_matched_data.append(data)
+
+        for data in list(not_matched_data):
+            # Try matching only by longName
+            state = 0
+            for item in not_matched_items:
+
+                if related(item.name, data["longName"]):
+                    state |= 2
+                    not_matched_items.remove(item)
+                    not_matched_data.remove(data)
+                    item.add_this(side, data, matched=state)
+                    item.compare()
+                    break
 
         for data in not_matched_data:
-            # Try matching shortName
+            # Finally, try matching by shortName
             for item in not_matched_items:
                 other_side = item[item.get_other(side)]
 
                 if other_side["shortName"] == data["shortName"]:
                     not_matched_items.remove(item)
-                    item.add_this(side, data, matched=state)
+                    item.add_this(side, data, matched=0)
                     item.compare()
                     break
             else:
