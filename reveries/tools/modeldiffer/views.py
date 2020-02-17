@@ -373,7 +373,7 @@ class ComparingTable(QtWidgets.QWidget):
             }
         """)
         data["view"].setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        data["view"].setAllColumnsShowFocus(True)
+        data["view"].setAllColumnsShowFocus(False)
         data["view"].setAlternatingRowColors(False)
         data["view"].setSortingEnabled(True)
         data["view"].setSelectionBehavior(

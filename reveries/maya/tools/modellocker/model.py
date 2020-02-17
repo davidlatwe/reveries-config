@@ -13,10 +13,10 @@ class SelectionModel(models.TreeModel):
     Columns = ["namespace", "name"]
 
     STATUS_ICONS = [
-        ("unlock", "#A0BBA7"),
-        ("lock", "#C1B891"),
-        ("unlock", "#43E267"),  # modified
-        ("lock", "#F0BA21"),  # modified
+        ("unlock", "#404040"),
+        ("lock", "#A6ACAF"),
+        ("unlock", "#17A589"),  # modified
+        ("lock", "#B9770E"),  # modified
     ]
 
     def __init__(self, parent=None):
