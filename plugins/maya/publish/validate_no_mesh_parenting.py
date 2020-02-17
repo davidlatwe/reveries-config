@@ -24,7 +24,7 @@ class ValidateNoMeshParenting(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder - 0.05
     hosts = ['maya']
     label = "No Mesh Parenting"
 

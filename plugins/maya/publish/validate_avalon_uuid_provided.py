@@ -23,7 +23,7 @@ class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder - 0.11
     hosts = ["maya"]
     label = "上游物件有編號"
     families = [

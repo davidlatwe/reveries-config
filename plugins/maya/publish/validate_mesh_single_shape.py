@@ -11,7 +11,7 @@ class ValidateMeshSingleShape(pyblish.api.InstancePlugin):
     """
 
     families = ["reveries.model"]
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder - 0.05
     hosts = ["maya"]
     label = "Mesh Single Shape"
     actions = [
