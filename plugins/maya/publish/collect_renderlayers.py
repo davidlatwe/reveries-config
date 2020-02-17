@@ -109,6 +109,8 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
             data.update(base)
 
             members = self.colllect_renderlayer_members(layer)
+            if not members:
+                self.log.warning("%s has no member." % layer)
 
             layername = lib.pretty_layer_name(layer)
 
