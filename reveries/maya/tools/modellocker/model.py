@@ -79,7 +79,10 @@ class SelectionModel(models.TreeModel):
             })
 
             members = cmds.sets(container["objectName"], query=True)
-            for node in cmds.ls(members, type="transform", long=True):
+            for node in cmds.ls(members,
+                                type="transform",
+                                referencedNodes=True,
+                                long=True):
                 meshes = cmds.listRelatives(node,
                                             shapes=True,
                                             noIntermediate=True,
