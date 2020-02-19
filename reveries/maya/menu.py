@@ -153,6 +153,17 @@ reveries.maya.tools.show('modellocker')
 
         cmds.menuItem(divider=True, dividerLabel="XGen Interactive Groom")
 
+        cmds.menuItem("Menu_Sim",
+                      label="Simulation",
+                      tearOff=True,
+                      subMenu=True,
+                      parent=self._menu)
+
+        cmds.menuItem("Pinner", parent="Menu_Sim", command="""
+import reveries.maya.tools
+reveries.maya.tools.show('pinner')
+""")
+
         # System
         cmds.menuItem("Load PyMel", parent="System", command="""
 import sys, os
