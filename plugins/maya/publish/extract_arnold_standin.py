@@ -126,12 +126,8 @@ class ExtractArnoldStandIn(PackageExtractor):
                                          #      Override Nodes,
                                          #      Operators,
                                          #
-                                         # (NOTE): If Color Manager included,
-                                         #         may raise error if rendering
-                                         #         in Houdini or other DCC.
-                                         # mask=6200,  # With Color Manager
-                                         #
-                                         mask=4152)  # No Color Manager
+                                         # mask=4152,  # No Color Manager
+                                         mask=6200)  # With Color Manager
 
             # Change to environment var embedded path
             root = avalon.api.registered_root().replace("\\", "/")
@@ -148,6 +144,21 @@ class ExtractArnoldStandIn(PackageExtractor):
                             has_change = True
                         lines.append(line)
 
+                # Remove color manager
+                # (NOTE): If Color Manager included,
+                #         may raise error if rendering
+                #         in Houdini or other DCC.
+                try:
+                    s = lines.index("color_manager_syncolor\n")
+                except ValueError:
+                    # No color manager found
+                    pass
+                else:
+                    e = lines.index("}\n", s) + 1
+                    lines = lines[:s] + lines[e:]
+                    has_change = True
+
+                # Re-write
                 if has_change:
                     with open(ass, "w") as assf:
                         assf.write("".join(lines))
