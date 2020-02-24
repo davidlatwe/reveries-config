@@ -49,13 +49,19 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
 
             for node in out_sets:
                 name = node.rsplit(":", 1)[-1][:-len(ANIM_SET)] or "Default"
-                self.log.info(name)
                 namespace = lib.get_ns(node)
                 animatables = cmds.ls(cmds.sets(node, query=True),
                                       type="transform",
                                       long=True)
 
-                out_cache[namespace] = (name, animatables)
+                key = (namespace, name)
+                self.log.info("%s, %s" % key)
+                if not animatables:
+                    self.log.warning("No animatable (e.g. controllers) been "
+                                     "found in '%s', skipping.." % node)
+                    continue
+
+                out_cache[key] = animatables
 
         else:
             # Collect animatable nodes from instance member
@@ -67,11 +73,14 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
                 except RuntimeError:
                     continue
 
-                if namespace not in out_cache:
-                    out_cache[namespace] = (variant, list())
-                out_cache[namespace][1].append(node)
+                key = (namespace, variant)
+                self.log.info("%s, %s" % key)
 
-        for namespace, (name, animatables) in out_cache.items():
+                if key not in out_cache:
+                    out_cache[key] = list()
+                out_cache[key].append(node)
+
+        for (namespace, name), animatables in out_cache.items():
             container = pipeline.get_container_from_namespace(namespace)
             asset_id = cmds.getAttr(container + ".assetId")
 
@@ -79,11 +88,13 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
             # For filesystem, remove other ":" if the namespace is nested
             fixed_namespace = fixed_namespace.replace(":", "._.")
 
-            instance = context.create_instance(fixed_namespace or name)
+            subset = ".".join(["animation",
+                               fixed_namespace,
+                               name])
+
+            instance = context.create_instance(subset)
             instance.data.update(source_data)
-            instance.data["subset"] = ".".join(["animation",
-                                                fixed_namespace,
-                                                name])
+            instance.data["subset"] = subset
             instance[:] = animatables
             instance.data["outAnim"] = animatables
             instance.data["animatedNamespace"] = namespace
