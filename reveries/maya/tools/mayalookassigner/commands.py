@@ -243,7 +243,9 @@ def list_looks(asset_id):
     """
     look_subsets = list(io.find({"parent": asset_id,
                                  "type": "subset",
-                                 "name": {"$regex": "look*"}}))
+                                 "name": {"$regex": "look*"},
+                                 # Ignore looks that have been dump to trash
+                                 "data.subsetGroup": {"$ne": "Trash Bin"}}))
     for look in look_subsets:
         # Get the latest version of this look subset
         version = io.find_one({"type": "version",
