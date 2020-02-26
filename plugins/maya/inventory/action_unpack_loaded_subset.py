@@ -51,7 +51,7 @@ class UnpackLoadedSubset(avalon.api.InventoryAction):
         from maya import cmds
         from avalon.maya.pipeline import AVALON_CONTAINERS
         from avalon.tools import sceneinventory
-        from reveries.maya import hierarchy, pipeline, lib
+        from reveries.maya import hierarchy, pipeline, lib, capsule
         from reveries.maya.vendor import sticker
         from reveries import REVERIES_ICONS
 
@@ -60,6 +60,17 @@ class UnpackLoadedSubset(avalon.api.InventoryAction):
 
         dimmed_icon = REVERIES_ICONS + "/package-01-dimmed.png"
 
+        # Copy Look's textures first
+        try:
+            with capsule.undo_chunk(undo_on_exit=False):
+                for container in containers:
+                    if container["loader"] == "LookLoader":
+                        self.unpack_textures(container)
+        except Exception as e:
+            cmds.undo()
+            raise e
+
+        # Unpack
         for container in containers:
             if not self.is_compatible(container):
                 continue
@@ -99,3 +110,81 @@ class UnpackLoadedSubset(avalon.api.InventoryAction):
 
         # Update Icon
         sticker.reveal()
+
+    def unpack_textures(self, container):
+        import os
+        import shutil
+        from maya import cmds, mel
+        from avalon import api, io
+
+        project = io.find_one({"type": "project"},
+                              projection={"name": True,
+                                          "config.template.publish": True})
+        asset = io.find_one({"_id": io.ObjectId(container["assetId"])},
+                            projection={"name": True, "silo": True})
+        subset = io.find_one({"_id": io.ObjectId(container["subsetId"])},
+                             projection={"name": True})
+        version = io.find_one({"_id": io.ObjectId(container["versionId"])},
+                              projection={"name": True,
+                                          "data.dependencies": True})
+        # Find TexturePack
+        id = next(iter(version["data"]["dependencies"]))
+        dep_version = io.find_one({"_id": io.ObjectId(id)})
+        dep_subset = io.find_one({"_id": dep_version["parent"]})
+        dep_representation = io.find_one({"parent": dep_version["_id"],
+                                          "name": "TexturePack"})
+        # List texture versions
+        published = dict()
+        template_publish = project["config"]["template"]["publish"]
+        for data in dep_representation["data"]["fileInventory"]:
+            path = template_publish.format(
+                root=api.registered_root(),
+                project=project["name"],
+                silo=asset["silo"],
+                asset=asset["name"],
+                subset=dep_subset["name"],
+                version=data["version"],
+                representation="TexturePack",
+            )
+            published[data["version"]] = path
+
+        # Collect path,
+        # filter out textures that is being used in this look
+        file_nodes = cmds.ls(cmds.sets(container["objectName"], query=True),
+                             type="file")
+        files = dict()
+        for node in file_nodes:
+            path = cmds.getAttr(node + ".fileTextureName",
+                                expandEnvironmentVariables=True)
+            if not os.path.isfile(path):
+                continue
+
+            for v, p in published.items():
+                if path.startswith(p):
+                    key = (v, p)
+                    if key not in files:
+                        files[key] = list()
+                    files[key].append(node)
+                    break
+
+        # Copy textures and change path
+        root = cmds.workspace(query=True, rootDirectory=True)
+        root += mel.eval('workspace -query -fileRuleEntry "sourceImages"')
+        root += "/_unpacked"
+
+        pattern = "/{asset}/{subset}.v{version:0>3}/TexturePack.v{texture:0>3}"
+        for (texture_version, src), nodes in files.items():
+            dst = root + pattern.format(asset=asset["name"],
+                                        subset=subset["name"],
+                                        version=version["name"],
+                                        texture=texture_version)
+            for node in nodes:
+                attr = node + ".fileTextureName"
+                path = cmds.getAttr(attr, expandEnvironmentVariables=True)
+                tail = path.split("TexturePack")[-1]
+                cmds.setAttr(attr, dst + tail, type="string")
+
+            if os.path.isdir(dst):
+                continue
+
+            shutil.copytree(src, dst)
