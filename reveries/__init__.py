@@ -32,6 +32,9 @@ REVERIES_ICONS = os.path.join("$REVERIES_PATH", "res", "icons")
 
 os.environ["REVERIES_PATH"] = os.path.dirname(PACKAGE_DIR)
 
+# Show project only if user has registered as member
+os.environ["AVALON_LAUNCHER_USE_PROJECT_MEMBER"] = "true"
+
 # Deadline command application path
 avalon.Session["AVALON_DEADLINE_APP"] = os.getenv("AVALON_DEADLINE_APP", "")
 

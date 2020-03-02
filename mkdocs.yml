@@ -5,6 +5,7 @@ nav:
   - Release Notes: release_notes.md
   - Avalon:
     - Overview: avalon_overview.md
+    - Launcher: avalon_launcher.md
     - Tools:
       - Project Manager: avalon_tool_project_mgr.md
       - Context Manager: avalon_tool_context_mgr.md
@@ -41,3 +42,4 @@ markdown_extensions:
 
 extra_css:
   - stylesheets/doc.css
+  - https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css
