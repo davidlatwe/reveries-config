@@ -19,14 +19,12 @@ class CollectShadingNetwork(pyblish.api.InstancePlugin):
 
         surfaces = cmds.ls(instance,
                            noIntermediate=True,
-                           long=True,
                            type="surfaceShape")
 
         # Collect geometry from Maya instancers
         for hierarchy in instance.data["instancedHierarchies"].values():
             surfaces += cmds.ls(hierarchy,
                                 noIntermediate=True,
-                                long=True,
                                 type="surfaceShape")
 
         surfaces = list(set(surfaces))
@@ -66,7 +64,7 @@ class CollectShadingNetwork(pyblish.api.InstancePlugin):
         shading_nodes = cmds.ls(_history, long=True)
 
         # Remove unwanted types
-        unwanted_types = ("groupId", "groupParts")
+        unwanted_types = ("groupId", "groupParts", "surfaceShape")
         unwanted = set(cmds.ls(shading_nodes, type=unwanted_types, long=True))
         shading_nodes = shaders + list(set(shading_nodes) - unwanted)
 
