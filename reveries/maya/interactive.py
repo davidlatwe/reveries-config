@@ -2,7 +2,7 @@
 import os
 import json
 import logging
-from maya import cmds
+from maya import cmds, mel
 
 from avalon import api, io
 
@@ -454,3 +454,72 @@ def update_uv(*args):
     cmds.delete(target, constructionHistory=True)
 
     cmds.setAttr(target + ".intermediateObject", True)
+
+
+def fix_renderGlobalsEncoding_not_found(*args):
+    """Fix renderGlobalsEncoding not found error while switching renderlayers
+
+    For unknown reason, sometimes (rare) switching renderlayer or renderer when
+    using Arnold in Maya 2018 may raise "renderGlobalsEncoding not found" error
+    and causing render settings GUI not able to show the image format properly.
+
+    The simplest way to reproduce this bug, is to `source` the mel script
+    `createMayaSoftwareCommonGlobalsTab.mel` again, then switching renderers.
+
+    Might be something to do with defaultRenderGlobals' "Custom Image Format",
+    or scriptJob that related to it. Not sure.
+
+    I remember we had the same issue when using VRay a while back, but can't
+    remember whether we were using Maya 2018 or 2016, but based on the script
+    of proc `updateMayaSoftwareImageFormatControl` in Maya 2018, VRay has been
+    take cared so I think it was Maya 2016.
+
+    """
+    if cmds.about(version=True) != "2018":
+        cmds.warning("This fix is only for Maya 2018.")
+        return
+
+    def parse_proc(path, name, new_name=None):
+        proc = []
+        with open(path, "r") as script:
+            for line in script.readlines():
+                if "proc %s(" % name in line:
+                    if new_name:
+                        line = line.replace(name, new_name)
+                    proc.append(line)
+                    continue
+                if proc:
+                    proc.append(line)
+                    if line.startswith("}"):
+                        break
+        return "".join(proc)
+
+    mel.eval("source createMayaSoftwareCommonGlobalsTab.mel;")
+    result = mel.eval("whatIs createMayaSoftwareCommonGlobalsTab;")
+    path = result[len("Mel procedure found in: "):]
+
+    proc_name = "updateMayaSoftwareImageFormatControl"
+    new_proc_name = "_the_buggy_one"
+
+    new_proc = parse_proc(path, proc_name, new_proc_name)
+    sub = parse_proc(path, "enableCompressorbutton")
+
+    # Re-define procs
+    mel.eval("""
+    {{
+        {sub}
+
+        {bug}
+    }}
+    """.format(sub=sub, bug=new_proc))
+
+    # Wrap fix
+    mel.eval("""
+    global proc {fix}()
+    {{
+        if (`currentRenderer` == "arnold")
+            return;
+
+        {bug}();
+    }}
+    """.format(fix=proc_name, bug=new_proc_name))

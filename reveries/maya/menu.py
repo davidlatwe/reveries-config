@@ -92,6 +92,11 @@ reveries.maya.tools.show('modeldiffer')
                       image="playbackLoopingContinuous.png",
                       command=_arnold_update_full_scene)
 
+        cmds.menuItem("FixRenderGlobalsEncoding",
+                      label="Fix renderGlobalsEncoding",
+                      parent="Menu_Render",
+                      command=interactive.fix_renderGlobalsEncoding_not_found)
+
         # LookDev tools
         cmds.menuItem("Menu_LookDev",
                       label="LookDev",
