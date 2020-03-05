@@ -555,6 +555,22 @@ class AssetGraber(object):
 
         self._copy_dir(src_package, dst_package)
 
+        if this_representation["name"] == "TexturePack":
+            previous_version = this.find_one({
+                "type": "version",
+                "name": this_version["name"] - 1,
+                "parent": this_subset["_id"],
+            })
+            if previous_version:
+                previous_representation = this.find_one({
+                    "type": "representation",
+                    "name": "TexturePack",
+                    "parent": previous_version["_id"],
+                }, projection={"_id": True})
+
+                self._copy_representations(previous_representation["_id"],
+                                           overwrite)
+
     def _copy_dir(self, src, dst):
         """ Copy given source to destination"""
         src = os.path.normpath(src)
