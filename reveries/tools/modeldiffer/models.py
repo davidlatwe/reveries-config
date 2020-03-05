@@ -196,6 +196,18 @@ class ComparerModel(models.TreeModel):
             lib.icon("bullseye", color=SIDE_COLOR[SIDE_B]),
         ]
 
+    def to_dict(self):
+        result = dict()
+        items = self._root_item.children()
+        for item in items:
+            if item[SIDE_A_DATA] and item[SIDE_B_DATA]:
+                path_a = item[SIDE_A_DATA]["fullPath"]
+                path_b = item[SIDE_B_DATA]["fullPath"]
+
+                result[path_a] = path_b
+
+        return result
+
     def refresh_side(self, side, profile, host=False):
         profile = profile or dict()
 

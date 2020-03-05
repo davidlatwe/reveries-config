@@ -33,6 +33,7 @@ class Window(QtWidgets.QWidget):
 
         page = {
             "tab": QtWidgets.QTabWidget(),
+            "tables": list(),
         }
 
         page["tab"].addTab(QtWidgets.QWidget(), "+")
@@ -124,6 +125,8 @@ class Window(QtWidgets.QWidget):
         tab.setCurrentIndex(index)
         widget["top"]["line"].setText(name)
 
+        self.page["tables"].append(widget)
+
         # Connect
         with widget.pin("table.tabs") as table:
             with widget.pin("ctrl.tabs.select") as selectors:
@@ -140,6 +143,20 @@ class Window(QtWidgets.QWidget):
             with widget.pin("top") as top:
                 top["line"].textChanged.connect(
                     lambda text: tab.setTabText(index, text))
+
+    def table_to_dict(self):
+        """Return matched result as dict
+
+        The key of dict will be original(left) side item's `fullPath`, and the
+        value will be contrast(right) side item's `fullPath`.
+
+        """
+        tab = self.page["tab"]
+        index = tab.currentIndex()
+        widget = self.page["tables"][index - 1]
+
+        with widget.pin("table.tabs.comparer") as comparer:
+            return comparer.table_to_dict()
 
 
 def register_host_profiler(method):

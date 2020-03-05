@@ -505,6 +505,9 @@ class ComparingTable(QtWidgets.QWidget):
         self.picked.emit(side, data)
         self.update()
 
+    def table_to_dict(self):
+        return self.data["model"].to_dict()
+
 
 class FocusComparing(QtWidgets.QWidget):
 
