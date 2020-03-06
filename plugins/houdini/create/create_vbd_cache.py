@@ -17,6 +17,11 @@ class CreateVDBCache(houdini.Creator):
         # Set node type to create for output
         self.data["node_type"] = "geometry"
 
+        # For user to confirm that this asset name is on demand, and
+        # able to publish even current Avalon session is not in this
+        # asset.
+        self.data["assetConfirmed"] = False
+
     def process(self):
         instance = super(CreateVDBCache, self).process()
 

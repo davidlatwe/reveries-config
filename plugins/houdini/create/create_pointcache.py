@@ -17,6 +17,11 @@ class CreatePointCache(houdini.Creator):
 
         self.data.update({"node_type": "alembic"})
 
+        # For user to confirm that this asset name is on demand, and
+        # able to publish even current Avalon session is not in this
+        # asset.
+        self.data["assetConfirmed"] = False
+
     def process(self):
         instance = super(CreatePointCache, self).process()
 

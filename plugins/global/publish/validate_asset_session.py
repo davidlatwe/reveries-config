@@ -29,16 +29,29 @@ class ValidateAssetSession(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder - 0.45
 
     def process(self, instance):
+        from avalon import io
+
         asset = instance.data["asset"]
         task_asset = avalon.api.Session["AVALON_ASSET"]
 
         if not asset == task_asset:
-            msg = ("Instance {name!r} has been set to be as part of "
-                   "Asset: {asset!r}, but the current publish session "
-                   "is Asset: {task_asset!r}. "
-                   "Please check Context Manager."
-                   "".format(name=str(instance.data["name"]),
-                             asset=str(asset),
-                             task_asset=str(task_asset)))
-            self.log.error(msg)
-            raise AssertionError(msg)
+
+            if instance.data.get("assetConfirmed"):
+                self.log.warning("Publishing asset that is not in current "
+                                 "session.")
+
+                if not io.find_one({"type": "asset", "name": asset}):
+                    msg = "Asset name not exists in database."
+                    self.log.error(msg)
+                    raise AssertionError(msg)
+
+            else:
+                msg = ("Instance {name!r} has been set to be as part of "
+                       "Asset: {asset!r}, but the current publish session "
+                       "is Asset: {task_asset!r}. "
+                       "Please check Context Manager."
+                       "".format(name=str(instance.data["name"]),
+                                 asset=str(asset),
+                                 task_asset=str(task_asset)))
+                self.log.error(msg)
+                raise AssertionError(msg)
