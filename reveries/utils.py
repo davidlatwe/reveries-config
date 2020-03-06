@@ -427,13 +427,16 @@ class AssetGraber(object):
 
     def __init__(self, project):
         self.project = project
-        self._project = None
+
+        self.this_project = io.find_one({"type": "project"})
+        self.that_project = None
+
         self._mongo_client = None
         self._database = None
         self._collection = None
         self._connected = False
 
-    def grab(self, representation_id):
+    def grab(self, representation_id, overwrite=False):
         """Copy representation to project
 
         Args:
@@ -444,7 +447,7 @@ class AssetGraber(object):
             self._connect()
         if isinstance(representation_id, str):
             representation_id = io.ObjectId(representation_id)
-        self._copy_representations(representation_id)
+        self._copy_representations(representation_id, overwrite)
 
     def _connect(self):
         timeout = int(Session["AVALON_TIMEOUT"])
@@ -454,7 +457,7 @@ class AssetGraber(object):
         self._collection = self._database[self.project]
         self._connected = True
 
-        self._project = self._find_one({"type": "project"})
+        self.that_project = self._find_one({"type": "project"})
 
     def _insert_one(self, item):
         assert isinstance(item, dict), "item must be of type <dict>"
@@ -468,52 +471,105 @@ class AssetGraber(object):
             sort=sort
         )
 
-    def _copy_representations(self, representation_id):
+    def _update_one(self, filter, item):
+        return self._collection.update_one(filter, item)
+
+    def _copy_representations(self, representation_id, overwrite):
         """Copy all documents and files of representation and dependencies"""
+        this = io
+        that = self
+        this_project = self.this_project
+        that_project = self.that_project
+
         # Representation
-        representation = self._find_one({"_id": representation_id})
-        if not representation:
-            representation = io.find_one({"_id": representation_id})
-            self._insert_one(representation)
+        this_representation = this.find_one({"_id": representation_id})
+        that_representation = that._find_one({"_id": representation_id})
+        if not that_representation:
+            that._insert_one(this_representation)
+            that_representation = this_representation
 
-            # Version
-            version = io.find_one({"_id": representation["parent"]})
-            if not self._find_one({"_id": version["_id"]}):
-                self._insert_one(version)
+        elif not overwrite:
+            return
 
-                # Subset
-                subset = io.find_one({"_id": version["parent"]})
-                if not self._find_one({"_id": subset["_id"]}):
-                    self._insert_one(subset)
+        # Version
+        this_version = this.find_one({"_id": this_representation["parent"]})
+        that_version = that._find_one({"_id": that_representation["parent"]})
+        if not that_version:
+            that._insert_one(this_version)
+            that_version = this_version
 
-                    # Asset
-                    asset = io.find_one({"_id": subset["parent"]})
-                    if not self._find_one({"_id": asset["_id"]}):
-                        asset["parent"] = self._project["_id"]
-                        self._insert_one(asset)
+        # Subset
+        this_subset = this.find_one({"_id": this_version["parent"]})
+        that_subset = that._find_one({"_id": that_version["parent"]})
+        if not that_subset:
+            that._insert_one(this_subset)
+            that_subset = this_subset
 
-                        # Asset Visual Parent
-                        parent_id = asset["data"]["visualParent"]
-                        if parent_id:
-                            parent_id = io.ObjectId(parent_id)
-                            if not self._find_one({"_id": parent_id}):
-                                parent_asset = io.find_one({"_id": parent_id})
-                                parent_asset["parent"] = self._project["_id"]
-                                self._insert_one(parent_asset)
+        # Asset
+        this_asset = this.find_one({"_id": this_subset["parent"]})
+        that_asset = that._find_one({"_id": that_subset["parent"]})
+        if not that_asset:
 
-                # Dependencies
-                for dependency_id in version["data"]["dependencies"]:
-                    dependency_id = io.ObjectId(dependency_id)
-                    for representation_ in io.find({"parent": dependency_id}):
-                        self._copy_representations(representation_["_id"])
+            name_exists = that._find_one({"type": "asset",
+                                          "name": this_asset["name"]})
+            if name_exists:
+                that_asset = name_exists
+                # Update subset's parent
+                that._update_one(
+                    {"_id": that_subset["_id"]},
+                    {"$set": {"parent": that_asset["_id"]}}
+                )
+            else:
+                that_asset = this_asset.copy()
+                that_asset["parent"] = that_project["_id"]
+                that._insert_one(that_asset)
+
+                # Asset Visual Parent
+                parent = this_asset["data"]["visualParent"]
+                if parent:
+                    parent = io.ObjectId(parent)
+                    if not that._find_one({"_id": parent}):
+                        parent_ast = this.find_one({"_id": parent})
+                        parent_ast["parent"] = that_project["_id"]
+                        that._insert_one(parent_ast)
+
+        # Dependencies
+        for dependency in this_version["data"]["dependencies"]:
+            dependency = io.ObjectId(dependency)
+            for representation_ in this.find({"parent": dependency}):
+                self._copy_representations(representation_["_id"], overwrite)
 
         # Copy package
-        parents = io.parenthood(representation)
-        src_package = get_representation_path_(representation, parents)
-        parents = parents[:-1] + [self._project]
-        representation["data"]["reprRoot"] = self._project["data"].get("root")
-        dst_package = get_representation_path_(representation, parents)
+        src_package = get_representation_path_(
+            this_representation,
+            parents=[this_version, this_subset, this_asset, this_project]
+        )
+
+        that_root = that_project["data"].get("root")
+        if that_root:
+            that_representation["data"]["reprRoot"] = that_root
+        dst_package = get_representation_path_(
+            that_representation,
+            parents=[that_version, that_subset, that_asset, that_project]
+        )
+
         self._copy_dir(src_package, dst_package)
+
+        if this_representation["name"] == "TexturePack":
+            previous_version = this.find_one({
+                "type": "version",
+                "name": this_version["name"] - 1,
+                "parent": this_subset["_id"],
+            })
+            if previous_version:
+                previous_representation = this.find_one({
+                    "type": "representation",
+                    "name": "TexturePack",
+                    "parent": previous_version["_id"],
+                }, projection={"_id": True})
+
+                self._copy_representations(previous_representation["_id"],
+                                           overwrite)
 
     def _copy_dir(self, src, dst):
         """ Copy given source to destination"""
