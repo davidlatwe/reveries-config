@@ -71,7 +71,7 @@ class ExtractModel(PackageExtractor):
                 entry_path,
                 force=True,
                 typ="mayaBinary",
-                exportSelected=True,
+                exportSelectedStrict=True,
                 preserveReferences=False,
                 # Shader assignment is the responsibility of
                 # riggers, for animators, and lookdev, for

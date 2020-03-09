@@ -27,10 +27,29 @@ class ValidateModelAssembly(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        root = cmds.ls(instance, assemblies=True, long=True)
+        root = list(self.get_roots(instance))
 
-        if not (len(root) == 1 and root[0] == "|ROOT"):
+        if not (len(root) == 1 and root[0].endswith("|ROOT")):
             self.log.error(
                 "'%s' Must have a single root called 'ROOT'." % (instance)
             )
             raise Exception("%s <Model Assembly> Failed." % instance)
+
+    def get_roots(self, nodes):
+        nodes = sorted(cmds.ls(nodes, long=True), reverse=True)
+        roots = set()
+
+        head = None
+        while nodes:
+            this = head or nodes.pop()
+            that = nodes.pop()
+
+            if that.startswith(this):
+                head = this
+            else:
+                roots.add(this)
+                head = that
+
+            roots.add(head)
+
+        return roots
