@@ -42,12 +42,12 @@ class ValidateOutSetExcluded(pyblish.api.InstancePlugin):
             for node in cmds.sets(out_set, query=True) or []:
                 shapes = cmds.listRelatives(node,
                                             shapes=True,
-                                            noIntermediate=True)
-                included.update(cmds.ls(shapes, type="mesh", long=True))
+                                            noIntermediate=True,
+                                            path=True)
+                included.update(cmds.ls(shapes, type="mesh"))
 
         all_meshes = set(cmds.ls(instance,
                                  type="mesh",
-                                 long=True,
                                  noIntermediate=True))
         excluded = all_meshes - included
 
@@ -64,7 +64,7 @@ class ValidateOutSetExcluded(pyblish.api.InstancePlugin):
             raise Exception("Depended plugin failed. See error log.")
 
         for mesh in cls.get_excluded_meshes(instance):
-            node = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
+            node = cmds.listRelatives(mesh, parent=True, path=True)[0]
 
             if lib.is_visible(node,
                               displayLayer=False,
