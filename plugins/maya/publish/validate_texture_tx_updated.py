@@ -56,12 +56,10 @@ class ValidateTextureTxMapUpdated(pyblish.api.InstancePlugin):
 
                 tx_path = os.path.splitext(file_path)[0] + ".tx"
                 if not os.path.isfile(tx_path):
-                    cls.log.error(file_path)
                     invalid.append(node)
                     break
 
                 if not tx_updated(file_path, tx_path):
-                    cls.log.error(file_path)
                     invalid.append(node)
                     break
 
