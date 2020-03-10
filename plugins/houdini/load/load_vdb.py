@@ -11,7 +11,7 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
 
     families = ["reveries.vdbcache"]
     label = "Load VDB"
-    representations = ["vdb"]
+    representations = ["VDB"]
     order = -10
     icon = "code-fork"
     color = "orange"
@@ -22,6 +22,10 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
 
         representation = context["representation"]
         file_path = self.file_path(representation)
+
+        start = representation["data"]["startFrame"]
+        end = representation["data"]["endFrame"]
+        is_sequence = start != end
 
         # Get the root node
         obj = hou.node("/obj")
@@ -41,7 +45,7 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
 
         # Explicitly create a file node
         file_node = container.createNode("file", node_name=node_name)
-        file_node.setParms({"file": self.format_path(file_path)})
+        file_node.setParms({"file": self.format_path(file_path, is_sequence)})
 
         # Set display on last node
         file_node.setDisplayFlag(True)
@@ -56,29 +60,23 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
                                      self.__class__.__name__,
                                      suffix="")
 
-    def format_path(self, path):
+    def format_path(self, path, is_sequence):
         """Format file path correctly for single vdb or vdb sequence"""
 
-        if not os.path.exists(path):
-            raise RuntimeError("Path does not exist: %s" % path)
+        expanded = os.path.expandvars(path)
+        if not os.path.exists(expanded):
+            raise RuntimeError("Path does not exist: %s" % expanded)
 
         # The path is either a single file or sequence in a folder.
-        is_single_file = os.path.isfile(path)
-        if is_single_file:
-            filename = path
+        if is_sequence:
+            head, tail = os.path.split(path)
+            # Set <frame>.vdb to $F4.vdb
+            # (TODO) The padding `$F4` is hardcoded, should be improved
+            first = re.sub(r"\.(\d+)\.vdb$", ".$F4.vdb", tail)
+
+            filename = os.path.join(head, first)
         else:
-            # The path points to the publish .vdb sequence folder so we
-            # find the first file in there that ends with .vdb
-            files = sorted(os.listdir(path))
-            first = next((x for x in files if x.endswith(".vdb")), None)
-            if first is None:
-                raise RuntimeError("Couldn't find first .vdb file of "
-                                   "sequence in: %s" % path)
-
-            # Set <frame>.vdb to $F.vdb
-            first = re.sub(r"\.(\d+)\.vdb$", ".$F.vdb", first)
-
-            filename = os.path.join(path, first)
+            filename = path
 
         filename = os.path.normpath(filename)
         filename = filename.replace("\\", "/")
@@ -86,6 +84,10 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
         return filename
 
     def update(self, container, representation):
+
+        start = representation["data"]["startFrame"]
+        end = representation["data"]["endFrame"]
+        is_sequence = start != end
 
         node = container["node"]
         try:
@@ -97,7 +99,7 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
 
         # Update the file path
         file_path = api.get_representation_path(representation)
-        file_path = self.format_path(file_path)
+        file_path = self.format_path(file_path, is_sequence)
 
         file_node.setParms({"fileName": file_path})
 
