@@ -80,6 +80,19 @@ from avalon.houdini import pipeline
 pipeline.reload_pipeline()]]></scriptCode>
                 </scriptItem>
             </subMenu>
+
+            <separatorItem/>
+
+            <scriptItem id="publish_deadline">
+                <label>Deadline Publish ..</label>
+                <scriptCode><![CDATA[
+import hou
+import pyblish_qml.api
+from avalon.houdini import pipeline
+pyblish_qml.api.show(parent=pipeline.get_main_window(), targets=["default", "deadline"])
+                ]]></scriptCode>
+            </scriptItem>
+
         </subMenu>
     </menuBar>
 </mainMenu>
