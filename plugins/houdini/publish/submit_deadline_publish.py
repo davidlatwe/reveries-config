@@ -66,7 +66,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             subset = instance.data["subset"]
             version = instance.data["versionNext"]
 
-            deadline_pool = instance.data["deadlinePool"]  # Camera does not have this
+            deadline_pool = instance.data["deadlinePool"]
             deadline_prio = instance.data["deadlinePriority"]
             deadline_group = instance.data.get("deadlineGroup")
 
