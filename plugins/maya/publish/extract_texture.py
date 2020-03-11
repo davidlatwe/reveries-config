@@ -177,6 +177,7 @@ class ExtractTexture(PackageExtractor):
         packager.add_data({"fileInventory": file_inventory})
 
     def update_file_node_attrs(self, file_nodes, path, color_space):
+        # (NOTE) All input `file_nodes` will be set to same `color_space`
         from reveries.maya import lib
 
         for node in file_nodes:
