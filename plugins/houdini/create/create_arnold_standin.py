@@ -1,4 +1,5 @@
 from avalon import houdini
+from reveries import lib
 
 
 class CreateArnoldStandIn(houdini.Creator):
@@ -15,6 +16,11 @@ class CreateArnoldStandIn(houdini.Creator):
         self.data.pop("active", None)
 
         self.data.update({"node_type": "arnold"})
+
+        self.data["deadlinePriority"] = 80
+        self.data["deadlinePool"] = lib.get_deadline_pools()
+        self.data["deadlineFramesPerTask"] = 1
+        self.data["deadlineSuspendJob"] = False
 
     def process(self):
         instance = super(CreateArnoldStandIn, self).process()
