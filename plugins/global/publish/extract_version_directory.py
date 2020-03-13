@@ -12,7 +12,7 @@ class ExtractVersionDirectory(pyblish.api.InstancePlugin):
     def process(self, instance):
         """Get a version dir which binded to current workfile
         """
-        versioner = instance.data["versioner"]
+        packager = instance.data["packager"]
 
-        instance.data["versionDir"] = versioner.version_dir()
-        instance.data["versionNext"] = versioner.version_num()
+        instance.data["versionDir"] = packager.version_dir()
+        instance.data["versionNext"] = packager.version_num()

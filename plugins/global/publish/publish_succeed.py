@@ -16,5 +16,9 @@ class PublishSucceed(pyblish.api.ContextPlugin):
             if not instance.data.get("publish", True):
                 continue
 
-            versioner = instance.data["versioner"]
-            versioner.set_succeeded()
+            packager = instance.data["packager"]
+            packager.unlock()
+            # (TODO) If publish process stopped by user, version dir will
+            #        remain locked since this plugin may not be executed.
+            #        To solve this, may require pyblish/pyblish-base#352
+            #        be implemented.
