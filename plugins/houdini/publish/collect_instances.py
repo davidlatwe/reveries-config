@@ -30,6 +30,8 @@ class CollectInstances(pyblish.api.ContextPlugin):
 
     def process(self, context):
 
+        targeted_families = context.data["targetFamilies"]
+
         nodes = hou.node("/out").children()
         for node in nodes:
 
@@ -50,6 +52,13 @@ class CollectInstances(pyblish.api.ContextPlugin):
             # been resolved, https://github.com/pyblish/pyblish-base/issues/307
             if "active" in data:
                 data["publish"] = data["active"]
+
+            family = data["family"]
+
+            # Ignore instance by targeted families
+            families = set([family] + data.get("families", []))
+            if not families.issubset(targeted_families):
+                continue
 
             data.update(self.get_frame_data(node))
 
