@@ -19,22 +19,23 @@ class ExtractAlembic(PackageExtractor):
         "AlembicSeq",
     ]
 
-    def extract(self):
-        if len(self.data.get("frameOutputs", [])) <= 1:
-            self.data["extractType"] = "Alembic"
+    def extract(self, instance):
+        if len(instance.data.get("frameOutputs", [])) <= 1:
+            instance.data["extractType"] = "Alembic"
         else:
-            self.data["extractType"] = "AlembicSeq"
+            instance.data["extractType"] = "AlembicSeq"
 
-        super(ExtractAlembic, self).extract()
+        super(ExtractAlembic, self).extract(instance)
 
-    def extract_Alembic(self, packager):
-        ropnode = self.member[0]
+    def extract_Alembic(self, instance):
+        packager = instance.data["packager"]
+        ropnode = instance[0]
 
         # Get the filename from the filename parameter
         output = ropnode.evalParm("filename")
         # Set custom staging dir
         staging_dir = os.path.dirname(output)
-        self.data["stagingDir"] = staging_dir
+        instance.data["stagingDir"] = staging_dir
         pkg_dir = packager.create_package(with_representation=False)
 
         file_name = os.path.basename(output)
@@ -45,16 +46,17 @@ class ExtractAlembic(PackageExtractor):
         packager.add_data({
             "entryFileName": file_name,
         })
-        self.inject_cache_root(packager)
+        self.inject_cache_root(instance, packager)
 
-    def extract_AlembicSeq(self, packager):
-        ropnode = self.member[0]
+    def extract_AlembicSeq(self, instance):
+        packager = instance.data["packager"]
+        ropnode = instance[0]
 
         # Get the first frame filename from pre-collected data
-        output = self.data["frameOutputs"][0]
+        output = instance.data["frameOutputs"][0]
         # Set custom staging dir
         staging_dir = os.path.dirname(output)
-        self.data["stagingDir"] = staging_dir
+        instance.data["stagingDir"] = staging_dir
         pkg_dir = packager.create_package(with_representation=False)
 
         file_name = os.path.basename(output)
@@ -64,16 +66,16 @@ class ExtractAlembic(PackageExtractor):
 
         packager.add_data({
             "entryFileName": file_name,
-            "startFrame": self.data["startFrame"],
-            "endFrame": self.data["endFrame"],
-            "step": self.data["step"],
+            "startFrame": instance.data["startFrame"],
+            "endFrame": instance.data["endFrame"],
+            "step": instance.data["step"],
         })
-        self.inject_cache_root(packager)
+        self.inject_cache_root(instance, packager)
 
-    def inject_cache_root(self, packager):
-        if self.data["family"] == "reveries.pointcache":
+    def inject_cache_root(self, instance, packager):
+        if instance.data["family"] == "reveries.pointcache":
             packager.add_data({
-                "reprRoot": self.data["reprRoot"],
+                "reprRoot": instance.data["reprRoot"],
             })
 
     def render(self, ropnode, output_dir):
