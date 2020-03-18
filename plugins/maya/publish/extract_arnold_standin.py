@@ -1,18 +1,16 @@
 
 import os
-import json
 import contextlib
 
 import pyblish.api
 import avalon.api
-from reveries.plugins import PackageExtractor
+from reveries import plugins
 from reveries.maya import capsule
-from reveries import lib
 
 from maya import cmds, mel
 
 
-class ExtractArnoldStandIn(PackageExtractor):
+class ExtractArnoldStandIn(plugins.PackageExtractor):
     """
     """
 
@@ -28,10 +26,6 @@ class ExtractArnoldStandIn(PackageExtractor):
     ]
 
     def extract_Ass(self, packager):
-        from reveries.maya import arnold
-
-        # Ensure option created
-        arnold.utils.create_options()
 
         packager.skip_stage()
         package_path = packager.create_package()
@@ -39,7 +33,21 @@ class ExtractArnoldStandIn(PackageExtractor):
         cache_file = packager.file_name("ass")
         cache_path = os.path.join(package_path, cache_file)
 
+        start = self.data["startFrame"]
+        end = self.data["endFrame"]
+
+        entry_file = packager.file_name(suffix=".%04d" % start,
+                                        extension="ass")
+
+        use_sequence = start != end
+        if use_sequence:
+            packager.add_data({"startFrame": start, "endFrame": end})
+        packager.add_data({"entryFileName": entry_file,
+                           "useSequence": use_sequence})
+
         self.log.info("Extracting standin..")
+
+        nodes = self.member
 
         try:
             texture = next(chd for chd in self.data.get("childInstances", [])
@@ -49,42 +57,26 @@ class ExtractArnoldStandIn(PackageExtractor):
         else:
             file_node_attrs = texture.data.get("fileNodeAttrs", dict())
 
-        data = {
-            "fileNodeAttrs": file_node_attrs,
-            "member": self.member,
-            "cachePath": cache_path,
-            "hasYeti": self.data.get("hasYeti", False)
-        }
-        data_path = os.path.join(package_path, ".remoteData.json")
+        self.export_ass(file_node_attrs,
+                        nodes,
+                        cache_path,
+                        has_yeti=self.data.get("hasYeti", False),
+                        start=self.data["startFrame"],
+                        end=self.data["endFrame"],
+                        step=self.data["byFrameStep"])
 
-        if lib.to_remote():
-            self.data["remoteDataPath"] = data_path
-            with open(data_path, "w") as fp:
-                json.dump(data, fp, indent=4)
+    def export_ass(self,
+                   file_node_attrs,
+                   nodes,
+                   cache_path,
+                   has_yeti,
+                   start,
+                   end,
+                   step):
+        from reveries.maya import arnold
 
-            return
-
-        elif lib.in_remote():
-            self.log.info("Stand-In exported via per-frame script.")
-
-        else:
-            self.export_ass(data,
-                            self.data["startFrame"],
-                            self.data["endFrame"],
-                            self.data["byFrameStep"])
-
-        entry_file = next(f for f in os.listdir(package_path)
-                          if f.endswith(".ass"))
-
-        use_sequence = self.data["startFrame"] != self.data["endFrame"]
-        packager.add_data({"entryFileName": entry_file,
-                           "useSequence": use_sequence})
-        if use_sequence:
-            packager.add_data({"startFrame": self.data["startFrame"],
-                               "endFrame": self.data["endFrame"]})
-
-    @staticmethod
-    def export_ass(data, start, end, step):
+        # Ensure option created
+        arnold.utils.create_options()
 
         arnold_tx_settings = {
             "defaultArnoldRenderOptions.autotx": False,
@@ -92,7 +84,7 @@ class ExtractArnoldStandIn(PackageExtractor):
         }
 
         # Yeti
-        if data["hasYeti"]:
+        if has_yeti:
             # In Deadline, this is a script job instead of rendering job, so
             # the `pgYetiPreRender` Pre-Render MEL will not be triggered.
             # We need to call it by ourselve, or Yeti will complain about
@@ -106,14 +98,14 @@ class ExtractArnoldStandIn(PackageExtractor):
             capsule.maintained_selection(),
             capsule.ref_edit_unlock(),
             # (NOTE) Ensure attribute unlock
-            capsule.attribute_states(data["fileNodeAttrs"].keys(), lock=False),
+            capsule.attribute_states(file_node_attrs.keys(), lock=False),
             # Change to published path
-            capsule.attribute_values(data["fileNodeAttrs"]),
+            capsule.attribute_values(file_node_attrs),
             # Disable Auto TX update and enable to use existing TX
             capsule.attribute_values(arnold_tx_settings),
         ):
-            cmds.select(data["member"], replace=True)
-            asses = cmds.arnoldExportAss(filename=data["cachePath"],
+            cmds.select(nodes, replace=True)
+            asses = cmds.arnoldExportAss(filename=cache_path,
                                          selected=True,
                                          startFrame=start,
                                          endFrame=end,
