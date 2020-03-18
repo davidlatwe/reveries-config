@@ -3,7 +3,6 @@ import os
 import contextlib
 
 import pyblish.api
-# from reveries.plugins import DelegatablePackageExtractor
 from reveries.plugins import PackageExtractor
 
 
@@ -26,15 +25,15 @@ class ExtractPointCache(PackageExtractor):
 
     targets = ["localhost"]
 
-    def extract(self):
+    def extract(self, instance):
         from reveries.maya import capsule
         from maya import cmds
 
-        if self.data.get("staticCache"):
+        if instance.data.get("staticCache"):
             self.start_frame = cmds.currentTime(query=True)
             self.end_frame = cmds.currentTime(query=True)
         else:
-            context_data = self.context.data
+            context_data = instance.context.data
             self.start_frame = context_data.get("startFrame")
             self.end_frame = context_data.get("endFrame")
 
@@ -44,26 +43,27 @@ class ExtractPointCache(PackageExtractor):
             capsule.evaluation("off"),
             capsule.maintained_selection(),
         ):
-            super(ExtractPointCache, self).extract()
+            super(ExtractPointCache, self).extract(instance)
 
-    def add_range_data(self):
-        if not self.data.get("staticCache"):
-            self.data["startFrame"] = self.start_frame
-            self.data["endFrame"] = self.end_frame
+    def add_range_data(self, instance):
+        if not instance.data.get("staticCache"):
+            instance.data["startFrame"] = self.start_frame
+            instance.data["endFrame"] = self.end_frame
 
-    def extract_Alembic(self, packager):
+    def extract_Alembic(self, instance):
         from reveries.maya import io, lib, capsule
         from maya import cmds
 
+        packager = instance.data["packager"]
         packager.skip_stage()
+        package_path = packager.create_package()
 
         entry_file = packager.file_name("abc")
-        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
 
-        euler_filter = self.data.get("eulerFilter", False)
+        euler_filter = instance.data.get("eulerFilter", False)
 
-        root = self.data["outCache"]
+        root = instance.data["outCache"]
 
         with capsule.maintained_selection():
             # Selection may change if there are duplicate named nodes and
@@ -122,27 +122,28 @@ class ExtractPointCache(PackageExtractor):
         # io.wrap_abc(entry_path, [(cache_file, "ROOT")])
 
         packager.add_data({"entryFileName": entry_file})
-        self.add_range_data()
+        self.add_range_data(instance)
 
-    def extract_FBXCache(self, packager):
+    def extract_FBXCache(self, instance):
         from reveries.maya import io, capsule
         from maya import cmds
 
+        packager = instance.data["packager"]
         packager.skip_stage()
+        package_path = packager.create_package()
 
         entry_file = packager.file_name("ma")
         cache_file = packager.file_name("fbx")
-        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
         cache_path = os.path.join(package_path, cache_file)
 
-        cmds.select(self.data["outCache"], replace=True)
+        cmds.select(instance.data["outCache"], replace=True)
 
         # (TODO) Make namespace preserving optional on GUI
-        if self.data.get("keepNamespace", False):
+        if instance.data.get("keepNamespace", False):
             nodes = list()
         else:
-            nodes = self.data["outCache"]
+            nodes = instance.data["outCache"]
 
         with capsule.StripNamespace(nodes):
             with io.export_fbx_set_pointcache("FBXCacheSET"):
@@ -151,24 +152,31 @@ class ExtractPointCache(PackageExtractor):
             io.wrap_fbx(entry_path, [(cache_file, "ROOT")])
 
         packager.add_data({"entryFileName": entry_file})
-        self.add_range_data()
+        self.add_range_data(instance)
 
-    def extract_GPUCache(self, packager):
+    def extract_GPUCache(self, instance):
         from reveries import lib
         from reveries.maya import io, capsule
         from maya import cmds
 
+        packager = instance.data["packager"]
         packager.skip_stage()
+        package_path = packager.create_package()
+
+        entry_file = packager.file_name("ma")
+        cache_file = packager.file_name("abc")
+        entry_path = os.path.join(package_path, entry_file)
+        cache_path = os.path.join(package_path, cache_file)
 
         # Collect root nodes
         assemblies = set()
-        for node in self.data["outCache"]:
+        for node in instance.data["outCache"]:
             assemblies.add("|" + node[1:].split("|", 1)[0])
         assemblies = list(assemblies)
 
         # Collect all parent nodes
         out_hierarchy = set()
-        for node in self.data["outCache"]:
+        for node in instance.data["outCache"]:
             out_hierarchy.add(node)
             out_hierarchy.update(lib.iter_uri(node, "|"))
 
@@ -193,12 +201,6 @@ class ExtractPointCache(PackageExtractor):
         # Export
         cmds.select(assemblies, replace=True, noExpand=True)
 
-        entry_file = packager.file_name("ma")
-        cache_file = packager.file_name("abc")
-        package_path = packager.create_package()
-        entry_path = os.path.join(package_path, entry_file)
-        cache_path = os.path.join(package_path, cache_file)
-
         with contextlib.nested(
             capsule.attribute_values(attr_values),
             # Mute animated visibility channels
@@ -208,4 +210,4 @@ class ExtractPointCache(PackageExtractor):
             io.wrap_gpu(entry_path, [(cache_file, "ROOT")])
 
         packager.add_data({"entryFileName": entry_file})
-        self.add_range_data()
+        self.add_range_data(instance)
