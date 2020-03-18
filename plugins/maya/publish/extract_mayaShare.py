@@ -20,10 +20,12 @@ class ExtractMayaShare(PackageExtractor):
         "mayaAscii",
     ]
 
-    def extract_mayaAscii(self, packager):
+    def extract_mayaAscii(self, instance):
         # Define extract output file path
-        entry_file = packager.file_name("ma")
+        packager = instance.data["packager"]
         package_path = packager.create_package()
+
+        entry_file = packager.file_name("ma")
         entry_path = os.path.join(package_path, entry_file)
 
         # Perform extraction
@@ -32,7 +34,7 @@ class ExtractMayaShare(PackageExtractor):
             # Set flag `noExpand` to True for sharing containers,
             # which will be ignored if the selection expanded since
             # they are objectSets.
-            cmds.select(self.member, noExpand=True)
+            cmds.select(instance, noExpand=True)
             cmds.file(entry_path,
                       force=True,
                       typ="mayaAscii",
@@ -49,6 +51,6 @@ class ExtractMayaShare(PackageExtractor):
         })
 
         self.log.info("Extracted {name} to {path}".format(
-            name=self.data["subset"],
+            name=instance.data["subset"],
             path=entry_path)
         )
