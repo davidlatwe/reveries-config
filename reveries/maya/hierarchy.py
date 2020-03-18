@@ -131,6 +131,37 @@ def container_to_id_path(container):
     return "|".join(walk_container_id(container["objectName"]))
 
 
+_cached_container_by_id = {"_": None}
+
+
+def cache_container_by_id(add=None):
+    if add:
+        container = add
+        container_by_id = _cached_container_by_id["_"]
+
+        id = container["containerId"]
+        if id not in container_by_id:
+            container_by_id[id] = set()
+
+        node = ":" + container["objectName"]
+        container_by_id[id].add(node)
+
+        return
+
+    # New cache
+    container_by_id = dict()
+
+    for attr in lib.lsAttr("containerId"):
+        id = cmds.getAttr(attr)
+        if id not in container_by_id:
+            container_by_id[id] = set()
+
+        node = ":" + attr.rsplit(".", 1)[0]
+        container_by_id[id].add(node)
+
+    _cached_container_by_id["_"] = container_by_id
+
+
 def container_from_id_path(container_id_path,
                            parent_namespace,
                            cached_containers=None):
@@ -157,6 +188,22 @@ def container_from_id_path(container_id_path,
             if node.startswith(parent_namespace + ":")
         ]
 
+    if not leaf_containers:
+        message = ("No leaf containers with Id %s under namespace %s, "
+                   "this is a bug.")
+
+        if cached_containers:
+            message += " (Using cache)"
+            # Listing cache for debug
+            print("\nCached containers:\n")
+            for id, nodes in cached_containers.items():
+                print("  " + id)
+                for node in nodes:
+                    print("    " + node)
+            print("---------------------")
+
+        raise RuntimeError(message % (container_id_path, parent_namespace))
+
     walkers = {leaf: climb_container_id(leaf) for leaf in leaf_containers}
 
     while container_ids:
@@ -174,9 +221,13 @@ def container_from_id_path(container_id_path,
             break
 
     if len(walkers) > 1:
-        raise RuntimeError("Container not unique, this is a bug.")
+        raise RuntimeError("Container Id %s not unique under namespace %s, "
+                           "this is a bug."
+                           % (container_id_path, parent_namespace))
     if not len(walkers):
-        raise RuntimeError("Container not found, this is a bug.")
+        raise RuntimeError("Container Id %s not found under namespace %s, "
+                           "this is a bug."
+                           % (container_id_path, parent_namespace))
 
     container = next(iter(walkers.keys()))
 
