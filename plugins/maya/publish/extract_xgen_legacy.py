@@ -22,15 +22,16 @@ class ExtractXGenLegacy(PackageExtractor):
         "XGenLegacy",
     ]
 
-    def extract_XGenLegacy(self, packager):
+    def extract_XGenLegacy(self, instance):
 
+        packager = instance.data["packager"]
         packager.skip_stage()
         package_dir = packager.create_package()
 
         xgen_files = list()
         descriptions_data = dict()
 
-        for desc in self.data["xgenDescriptions"]:
+        for desc in instance.data["xgenDescriptions"]:
             palette = xgen.get_palette_by_description(desc)
 
             # Save UUID and bounding
@@ -82,7 +83,7 @@ class ExtractXGenLegacy(PackageExtractor):
                 xgen.export_grooming(desc, groom, groom_dir)
 
         # Extract palette
-        for palette in self.data["xgenPalettes"]:
+        for palette in instance.data["xgenPalettes"]:
             xgen_file = palette + ".xgen"
             xgen_path = os.path.join(package_dir, xgen_file)
             io.export_xgen_LGC_palette(palette, xgen_path)
@@ -98,5 +99,5 @@ class ExtractXGenLegacy(PackageExtractor):
             "entryFileName": None,  # Yes, no entry file for XGen Legacy.
             "descriptionsData": descriptions_data,
             "palettes": xgen_files,
-            "step": self.data["step"],
+            "step": instance.data["step"],
         })
