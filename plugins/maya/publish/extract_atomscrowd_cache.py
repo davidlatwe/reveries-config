@@ -16,15 +16,16 @@ class ExtractAtomsCrowdCache(PackageExtractor):
         "atoms",
     ]
 
-    def extract_atoms(self, packager):
+    def extract_atoms(self, instance):
         from AtomsMaya.hostbridge.commands import MayaCommandsHostBridge
 
+        packager = instance.data["packager"]
         packager.skip_stage()
-
-        start_frame = int(self.context.data.get("startFrame"))
-        end_frame = int(self.context.data.get("endFrame"))
-
         package_path = packager.create_package()
+
+        context = instance.context
+        start_frame = int(context.data.get("startFrame"))
+        end_frame = int(context.data.get("endFrame"))
 
         entry_file = packager.file_name("atoms")
         entry_path = os.path.join(package_path, entry_file)
@@ -32,7 +33,7 @@ class ExtractAtomsCrowdCache(PackageExtractor):
         cache_dir = str(os.path.dirname(entry_path))
         cache_name = str(os.path.basename(entry_path).replace(".atoms", ""))
 
-        agent_groups = self.data["AtomsAgentGroups"]
+        agent_groups = instance.data["AtomsAgentGroups"]
         MayaCommandsHostBridge.export_atoms_cache(cache_dir,
                                                   cache_name,
                                                   start_frame,
@@ -43,7 +44,7 @@ class ExtractAtomsCrowdCache(PackageExtractor):
         variation_path = os.path.join(package_path, variation_file)
 
         with open(variation_path, "w") as variation:
-            variation.write(self.data["variationStr"])
+            variation.write(instance.data["variationStr"])
 
         packager.add_data({
             "entryFileName": entry_file,
