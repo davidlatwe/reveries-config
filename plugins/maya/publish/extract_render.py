@@ -27,9 +27,10 @@ class ExtractRender(PackageExtractor):
         "renderLayer",
     ]
 
-    def extract_renderLayer(self, packager):
+    def extract_renderLayer(self, instance):
         """Extract per renderlayer that has AOVs (Arbitrary Output Variable)
         """
+        packager = instance.data["packager"]
         packager.skip_stage()
         package_path = packager.create_package()
         data_path = os.path.join(package_path, ".remoteData.json")
@@ -45,26 +46,26 @@ class ExtractRender(PackageExtractor):
             # Assume the rendering has been completed at this time being,
             # start to check and extract the rendering outputs
             for aov_name, aov_path in output_paths.items():
-                self.add_sequence(packager, aov_path, aov_name, package_path)
+                self.add_sequence(instance, aov_path, aov_name, package_path)
 
         else:
             # About to submit render job
             self.log.info("Computing render output path and save to disk..")
 
             # Computing output path may take a while
-            output_dir = self.context.data["outputDir"]
+            output_dir = instance.context.data["outputDir"]
             output_paths = utils.get_output_paths(output_dir,
-                                                  self.data["renderer"],
-                                                  self.data["renderlayer"],
-                                                  self.data["camera"])
-            self.data["outputPaths"] = output_paths
+                                                  instance.data["renderer"],
+                                                  instance.data["renderlayer"],
+                                                  instance.data["camera"])
+            instance.data["outputPaths"] = output_paths
             # Save to disk for later use
             with open(data_path, "w") as fp:
                 json.dump(output_paths, fp, indent=4)
 
             self.log.info("Ready to submit render job..")
 
-    def add_sequence(self, packager, aov_path, aov_name, package_path):
+    def add_sequence(self, instance, aov_path, aov_name, package_path):
         """
         """
         from maya import cmds
@@ -75,8 +76,8 @@ class ExtractRender(PackageExtractor):
         assert os.path.isdir(seq_dir), "Sequence dir not exists."
 
         # (NOTE) Did not consider frame step (byFrame)
-        start_frame = self.data["startFrame"]
-        end_frame = self.data["endFrame"]
+        start_frame = instance.data["startFrame"]
+        end_frame = instance.data["endFrame"]
 
         patterns = [
             clique.PATTERNS["frames"],
@@ -101,28 +102,29 @@ class ExtractRender(PackageExtractor):
                        "%%0%dd" % sequence.padding +
                        sequence.tail)
 
-        project = self.context.data["projectDoc"]
+        project = instance.context.data["projectDoc"]
         e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
-        camera = self.data["camera"]
+        camera = instance.data["camera"]
 
+        packager = instance.data["packager"]
         packager.add_data({"sequence": {
             aov_name: {
-                "imageFormat": self.data["fileExt"],
+                "imageFormat": instance.data["fileExt"],
                 "fname": entry_fname,
                 "seqSrcDir": seq_dir,
                 "seqStart": list(sequence.indexes)[0],
                 "seqEnd": list(sequence.indexes)[-1],
                 "startFrame": start_frame,
                 "endFrame": end_frame,
-                "byFrameStep": self.data["byFrameStep"],
+                "byFrameStep": instance.data["byFrameStep"],
                 "edit_in": e_in,
                 "edit_out": e_out,
                 "handles": handles,
                 "focalLength": cmds.getAttr(camera + ".focalLength"),
-                "resolution": self.data["resolution"],
-                "fps": self.context.data["fps"],
+                "resolution": instance.data["resolution"],
+                "fps": instance.context.data["fps"],
                 "cameraUUID": utils.get_id(camera),
-                "renderlayer": self.data["renderlayer"],
+                "renderlayer": instance.data["renderlayer"],
             }
         }})
 
