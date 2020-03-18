@@ -132,7 +132,7 @@ class PublishPackager(object):
             self._version_num = version_number
             self._version_dir = version_dir
 
-            if self._is_locked():
+            if self.is_locked():
                 # Bump version
                 version_number += 1
                 continue
