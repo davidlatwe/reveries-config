@@ -36,19 +36,20 @@ class ExtractLook(PackageExtractor):
         "LookDev"
     ]
 
-    def extract_LookDev(self, packager):
-
+    def extract_LookDev(self, instance):
         from avalon import maya
         from reveries.maya import lib, capsule
 
-        entry_file = packager.file_name("ma")
+        packager = instance.data["packager"]
         package_path = packager.create_package()
+
+        entry_file = packager.file_name("ma")
 
         # Serialise shaders relationships
         #
         self.log.info("Serialising shaders..")
 
-        shader_by_id = lib.serialise_shaders(self.data["dagMembers"])
+        shader_by_id = lib.serialise_shaders(instance.data["dagMembers"])
         assert shader_by_id, "The map of shader relationship is empty."
 
         # Extract shaders
@@ -57,8 +58,9 @@ class ExtractLook(PackageExtractor):
 
         self.log.info("Extracting shaders..")
 
+        child_instances = instance.data.get("childInstances", [])
         try:
-            texture = next(chd for chd in self.data.get("childInstances", [])
+            texture = next(chd for chd in child_instances
                            if chd.data["family"] == "reveries.texture")
         except StopIteration:
             file_node_attrs = dict()
@@ -79,7 +81,7 @@ class ExtractLook(PackageExtractor):
             # connected to Dag node (i.e. drivenKey), then the command
             # will not only export selected shadingGroups' shading network,
             # but also export other related DAG nodes (i.e. full hierarchy)
-            cmds.select(self.member,
+            cmds.select(instance,
                         replace=True,
                         noExpand=True)
 
@@ -99,7 +101,7 @@ class ExtractLook(PackageExtractor):
         # Custom attributes in assembly node which require to be animated.
         self.log.info("Serialising animatable attributes..")
         animatable = dict()
-        root = cmds.ls(self.data["dagMembers"], assemblies=True)
+        root = cmds.ls(instance.data["dagMembers"], assemblies=True)
         if root:
             root = root[0]
             for attr in cmds.listAttr(root, userDefined=True) or list():
@@ -108,7 +110,7 @@ class ExtractLook(PackageExtractor):
                                                         source=False,
                                                         plugs=True)
 
-        surfaces = cmds.ls(self.data["dagMembers"],
+        surfaces = cmds.ls(instance.data["dagMembers"],
                            noIntermediate=True,
                            type="surfaceShape")
 
@@ -129,7 +131,7 @@ class ExtractLook(PackageExtractor):
 
             for member in cmds.ls(cmds.sets(cres, query=True), long=True):
                 node, edges = member.split(".")
-                if node not in self.data["dagMembers"]:
+                if node not in instance.data["dagMembers"]:
                     continue
                 # We have validated Avalon UUID, so there must be a valid ID.
                 id = utils.get_id(node)
@@ -240,6 +242,6 @@ class ExtractLook(PackageExtractor):
         })
 
         self.log.info("Extracted {name} to {path}".format(
-            name=self.data["subset"],
+            name=instance.data["subset"],
             path=package_path)
         )
