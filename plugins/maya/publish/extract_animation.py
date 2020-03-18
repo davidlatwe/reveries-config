@@ -22,9 +22,10 @@ class ExtractAnimation(PackageExtractor):
         "anim",
     ]
 
-    def extract_anim(self, packager):
+    def extract_anim(self, instance):
         cmds.loadPlugin("animImportExport", quiet=True)
 
+        packager = instance.data["packager"]
         package_path = packager.create_package()
 
         entry_file = packager.file_name("anim")
@@ -35,10 +36,11 @@ class ExtractAnimation(PackageExtractor):
 
         # Save animated nodes with order
         with capsule.maintained_selection():
-            cmds.select(self.data["outAnim"], replace=True)
+            cmds.select(instance.data["outAnim"], replace=True)
 
             with contextlib.nested(
-                capsule.namespaced(self.data["animatedNamespace"], new=False),
+                capsule.namespaced(instance.data["animatedNamespace"],
+                                   new=False),
                 capsule.relative_namespaced()
             ):
                 # Save with basename
@@ -47,7 +49,7 @@ class ExtractAnimation(PackageExtractor):
                              "\n".join(cmds.ls(sl=True)) +
                              ";")
 
-        context_data = self.context.data
+        context_data = instance.context.data
         start = context_data.get("startFrame")
         end = context_data.get("endFrame")
 
@@ -56,11 +58,11 @@ class ExtractAnimation(PackageExtractor):
             capsule.maintained_selection(),
             capsule.undo_chunk(),
         ):
-            lib.bake(self.data["outAnim"],
+            lib.bake(instance.data["outAnim"],
                      frame_range=(start, end),
                      shape=False)
 
-            cmds.select(self.data["outAnim"], replace=True, noExpand=True)
+            cmds.select(instance.data["outAnim"], replace=True, noExpand=True)
             cmds.file(entry_path,
                       force=True,
                       typ="animExport",
@@ -85,5 +87,7 @@ class ExtractAnimation(PackageExtractor):
                                "-shape 0")
                       )
 
-        packager.add_data({"entryFileName": entry_file,
-                           "animatedAssetId": self.data["animatedAssetId"]})
+        packager.add_data({
+            "entryFileName": entry_file,
+            "animatedAssetId": instance.data["animatedAssetId"]
+        })
