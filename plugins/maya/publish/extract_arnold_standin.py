@@ -25,16 +25,20 @@ class ExtractArnoldStandIn(plugins.PackageExtractor):
         "Ass",
     ]
 
-    def extract_Ass(self, packager):
+    def extract_Ass(self, instance):
 
+        packager = instance.data["packager"]
         packager.skip_stage()
         package_path = packager.create_package()
 
         cache_file = packager.file_name("ass")
         cache_path = os.path.join(package_path, cache_file)
 
-        start = self.data["startFrame"]
-        end = self.data["endFrame"]
+        start = instance.data["startFrame"]
+        end = instance.data["endFrame"]
+        step = instance.data["byFrameStep"]
+        has_yeti = instance.data.get("hasYeti", False)
+        nodes = instance[:]
 
         entry_file = packager.file_name(suffix=".%04d" % start,
                                         extension="ass")
@@ -47,28 +51,27 @@ class ExtractArnoldStandIn(plugins.PackageExtractor):
 
         self.log.info("Extracting standin..")
 
-        nodes = self.member
-
+        child_instances = instance.data.get("childInstances", [])
         try:
-            texture = next(chd for chd in self.data.get("childInstances", [])
+            texture = next(chd for chd in child_instances
                            if chd.data["family"] == "reveries.texture")
         except StopIteration:
             file_node_attrs = dict()
         else:
             file_node_attrs = texture.data.get("fileNodeAttrs", dict())
 
-        self.export_ass(file_node_attrs,
-                        nodes,
+        self.export_ass(nodes,
                         cache_path,
-                        has_yeti=self.data.get("hasYeti", False),
-                        start=self.data["startFrame"],
-                        end=self.data["endFrame"],
-                        step=self.data["byFrameStep"])
+                        file_node_attrs,
+                        has_yeti=has_yeti,
+                        start=start,
+                        end=end,
+                        step=step)
 
     def export_ass(self,
-                   file_node_attrs,
                    nodes,
                    cache_path,
+                   file_node_attrs,
                    has_yeti,
                    start,
                    end,
