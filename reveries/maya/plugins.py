@@ -11,6 +11,8 @@ from . import lib
 from .utils import (
     update_id_verifiers,
     generate_container_id,
+    get_id_status,
+    Identifier,
 )
 
 from ..utils import get_representation_path_
@@ -233,6 +235,16 @@ class ReferenceLoader(MayaBaseLoader):
         nodes = self._get_containerizable_nodes(nodes)
         if nodes:
             cmds.sets(nodes, forceElement=node)
+
+            # For new nodes in subset like `pointcache` which may only have
+            # `AvalonID` attribute but does not have `verifier`.
+            no_verifier = list()
+            for nd in nodes:
+                if get_id_status(nd) == Identifier.Untracked:
+                    no_verifier.append(nd)
+            if no_verifier:
+                self.log.info("Updating AvalonID verifiers..")
+                update_id_verifiers(no_verifier)
 
         # Remove any placeHolderList attribute entries from the set that
         # are remaining from nodes being removed from the referenced file.
