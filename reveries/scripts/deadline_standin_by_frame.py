@@ -1,3 +1,7 @@
+"""
+Maya script job for rendering Arnold standin by frame in Deadline
+
+"""
 
 import os
 import json
@@ -5,7 +9,7 @@ import pyblish.api
 
 
 if __name__ == "__main__":
-    # Maya script job per frame
+
     from maya import mel
 
     # Find extractor plugin
