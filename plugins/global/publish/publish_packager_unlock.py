@@ -2,15 +2,14 @@
 import pyblish.api
 
 
-class PublishSucceed(pyblish.api.ContextPlugin):
+class PackagerUnlockVersion(pyblish.api.ContextPlugin):
+    """Unlock version directory after subsets have been integrated
+    """
 
-    label = "Publish Succeed"
-    order = pyblish.api.IntegratorOrder + 0.499999
+    label = "Packager Unlock"
+    order = pyblish.api.IntegratorOrder + 0.1
 
     def process(self, context):
-        if not all(result["success"] for result in context.data["results"]):
-            self.log.warning("Atomicity not held, aborting.")
-            return
 
         for instance in context:
             if not instance.data.get("publish", True):
