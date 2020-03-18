@@ -29,9 +29,10 @@ class ExtractNodeGraph(PackageExtractor):
 
     targets = ["localhost"]
 
-    def extract_nkscript(self, packager):
-        node = self.member[0]
+    def extract_nkscript(self, instance):
+        node = instance[0]
 
+        packager = instance.data["packager"]
         package_path = packager.create_package()
 
         ext = "nknc" if nuke.env["nc"] else "nk"
@@ -47,7 +48,7 @@ class ExtractNodeGraph(PackageExtractor):
             if node.Class() == "Write":
                 # Swap image file path to published path bedore copy
                 output = node["file"].value()
-                node["file"].setValue(self.data["publishedSeqPatternPath"])
+                node["file"].setValue(instance.data["publishedSeqPatternPath"])
                 nuke.nodeCopy(fpath)
                 node["file"].setValue(output)
 
