@@ -28,40 +28,42 @@ class ExtractModel(PackageExtractor):
         "Alembic",
     ]
 
-    def extract(self):
+    def extract(self, instance):
 
         with contextlib.nested(
             capsule.no_undo(),
-            capsule.no_display_layers(self.member),
+            capsule.no_display_layers(instance[:]),
             capsule.no_smooth_preview(),
             capsule.maintained_selection(),
             capsule.without_extension(),
         ):
-            super(ExtractModel, self).extract()
+            super(ExtractModel, self).extract(instance)
 
-    def extract_mayaBinary(self, packager):
-        entry_file = packager.file_name("mb")
+    def extract_mayaBinary(self, instance):
+        packager = instance.data["packager"]
         package_path = packager.create_package()
+
+        entry_file = packager.file_name("mb")
         entry_path = os.path.join(package_path, entry_file)
 
-        mesh_nodes = cmds.ls(self.member,
+        mesh_nodes = cmds.ls(instance,
                              type="mesh",
                              noIntermediate=True,
                              long=True)
         clay_shader = "initialShadingGroup"
 
         # Perform extraction
-        cmds.select(self.member, noExpand=True)
+        cmds.select(instance, noExpand=True)
 
         with contextlib.nested(
             capsule.assign_shader(mesh_nodes, shadingEngine=clay_shader),
             capsule.undo_chunk_when_no_undo(),
         ):
             # Remove mesh history, for removing all intermediate nodes
-            transforms = cmds.ls(self.member, type="transform")
+            transforms = cmds.ls(instance, type="transform")
             cmds.delete(transforms, constructionHistory=True)
             # Remove all stray shapes, ensure no intermediate nodes
-            all_meshes = set(cmds.ls(self.member, type="mesh", long=True))
+            all_meshes = set(cmds.ls(instance, type="mesh", long=True))
             cmds.delete(list(all_meshes - set(mesh_nodes)))
 
             geo_id_and_hash = self.hash(set(mesh_nodes))
@@ -91,16 +93,18 @@ class ExtractModel(PackageExtractor):
         })
 
         self.log.info("Extracted {name} to {path}".format(
-            name=self.data["subset"],
+            name=instance.data["subset"],
             path=entry_path)
         )
 
-    def extract_Alembic(self, packager):
-        entry_file = packager.file_name("abc")
+    def extract_Alembic(self, instance):
+        packager = instance.data["packager"]
         package_path = packager.create_package()
+
+        entry_file = packager.file_name("abc")
         entry_path = os.path.join(package_path, entry_file)
 
-        cmds.select(self.member, noExpand=True)
+        cmds.select(instance, noExpand=True)
 
         frame = cmds.currentTime(query=True)
         io.export_alembic(
