@@ -22,17 +22,19 @@ class ExtractRig(PackageExtractor):
         "mayaBinary",
     ]
 
-    def extract_mayaBinary(self, packager):
+    def extract_mayaBinary(self, instance):
         # Define extract output file path
-        entry_file = packager.file_name("mb")
+        packager = instance.data["packager"]
         package_path = packager.create_package()
+
+        entry_file = packager.file_name("mb")
         entry_path = os.path.join(package_path, entry_file)
 
         # Perform extraction
         self.log.info("Performing extraction..")
         with contextlib.nested(
             capsule.no_undo(),
-            capsule.no_display_layers(self.member),
+            capsule.no_display_layers(instance[:]),
             maya.maintained_selection(),
         ):
             with capsule.undo_chunk_when_no_undo():
@@ -69,17 +71,17 @@ class ExtractRig(PackageExtractor):
                 #   are dag connections that would make the model container be
                 #   exported as well, and we don't want that happens.
                 #   So we just remove them all for good.
-                for container in self.context.data["RootContainers"]:
+                for container in instance.context.data["RootContainers"]:
                     cmds.delete(container)
 
-                mesh_nodes = cmds.ls(self.member,
+                mesh_nodes = cmds.ls(instance,
                                      type="mesh",
                                      noIntermediate=True,
                                      long=True)
                 geo_id_and_hash = self.hash(set(mesh_nodes))
                 packager.add_data({"modelProfile": geo_id_and_hash})
 
-                cmds.select(cmds.ls(self.member), noExpand=True)
+                cmds.select(cmds.ls(instance), noExpand=True)
 
                 cmds.file(entry_path,
                           force=True,
@@ -97,7 +99,7 @@ class ExtractRig(PackageExtractor):
         })
 
         self.log.info("Extracted {name} to {path}".format(
-            name=self.data["subset"],
+            name=instance.data["subset"],
             path=entry_path)
         )
 
