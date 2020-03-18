@@ -224,21 +224,21 @@ class PackageExtractor(pyblish.api.InstancePlugin):
                 "Alembic",
             ]
 
-            def extract_mayaAscii(self):
-                entry_file = self.file_name("ma")
-                package_path = self.create_package()
-                entry_path = os.path.join(package_path, entry_file)
-                self.add_data({"some": "data"})
+            def extract_mayaAscii(self, instance):
+                packager = instance.data["packager"]
+                package_path = packager.create_package()
 
-            def extract_Alembic(self):
+                entry_file = packager.file_name("ma")
+                entry_path = os.path.join(package_path, entry_file)
+
+                packager.add_data({"some": "data"})
+
+            def extract_Alembic(self, instance):
                 ...
 
         ```
 
     Attributes:
-        context (pyblish.api.Context): Current pyblish context object
-        data (dict): Current pyblish instance data
-        member (list): Current pyblish instance members
         representations (list): Names of representations that can be extracted
 
     """
@@ -246,7 +246,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
     families = []
     representations = []
 
-    def extract(self):
+    def extract(self, instance):
         """Multi-representation extraction process
 
         Override this method if any pre-extraction job or context is needed.
@@ -264,14 +264,14 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             ```
 
         """
-        packager = self.data["packager"]
-        extract_type = self.data.get("extractType")
+        packager = instance.data["packager"]
+        extract_type = instance.data.get("extractType")  # (TODO) multi-types
 
         actived = [extract_type] if extract_type else self.representations
         for representation in actived:
             packager.set_representation(representation)
             extract = getattr(self, "extract_" + representation)
-            extract(packager)
+            extract(instance)
 
     def process(self, instance):
         """Extractor's main process
@@ -285,11 +285,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             self.log.warning("Atomicity not held, aborting.")
             return
 
-        self.context = context
-        self.data = instance.data
-        self.member = instance[:]
-
-        self.extract()
+        self.extract(instance)
 
 
 def get_errored_instances_from_context(context, include_warning=False):
