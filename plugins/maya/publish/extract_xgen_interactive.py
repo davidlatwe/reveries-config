@@ -22,14 +22,15 @@ class ExtractXGenInteractive(PackageExtractor):
         "XGenInteractive",
     ]
 
-    def extract_XGenInteractive(self, packager):
+    def extract_XGenInteractive(self, instance):
         from maya import cmds
 
+        packager = instance.data["packager"]
         package_dir = packager.create_package()
 
         bound_map = dict()
         clay_shader = "initialShadingGroup"
-        descriptions = self.data["igsDescriptions"]
+        descriptions = instance.data["igsDescriptions"]
         with capsule.assign_shader(descriptions, shadingEngine=clay_shader):
 
             for description in descriptions:
@@ -61,7 +62,7 @@ class ExtractXGenInteractive(PackageExtractor):
             # io.export_xgen_IGS_presets(descriptions, entry_path)
 
             with contextlib.nested(
-                capsule.no_display_layers(self.member),
+                capsule.no_display_layers(instance[:]),
                 capsule.maintained_selection(),
             ):
                 cmds.select(descriptions)
