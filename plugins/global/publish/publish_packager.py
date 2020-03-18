@@ -192,16 +192,20 @@ class PublishPackager(object):
 
         repr_dir = self.representation_dir(self._representation)
 
-        self.add_data({
-            "packageDir": pkg_dir,
-            "representationDir": repr_dir,
-        })
-
         if not os.path.isdir(pkg_dir):
             os.makedirs(pkg_dir)
 
         # Reset
         self._skip_stage = False
+
+        # Init representation entries
+        if self._representation not in self._data["packages"]:
+            self._data["packages"][self._representation] = dict()
+
+        self.add_data({
+            "packageDir": pkg_dir,
+            "representationDir": repr_dir,
+        })
 
         return pkg_dir
 
@@ -230,15 +234,12 @@ class PublishPackager(object):
                                               ext=extension)
 
     def add_data(self, data):
-        """Add(Update) data to representation
+        """Add/Update data to representation
 
         Arguments:
             data (dict): Additional representation data
 
         """
-        if self._representation not in self._data["packages"]:
-            self._data["packages"][self._representation] = dict()
-
         package_data = self._data["packages"][self._representation]
         utils.deep_update(package_data, data)
 
