@@ -29,23 +29,23 @@ class ExtractTexture(PackageExtractor):
         "TexturePack"
     ]
 
-    def extract_TexturePack(self, packager):
+    def extract_TexturePack(self, instance):
 
+        packager = instance.data["packager"]
         packager.skip_stage()
-
         package_path = packager.create_package()
         package_path = env_embedded_path(package_path)
 
         # For storing calculated published file path for look or lightSet
         # extractors to update file path.
-        if "fileNodeAttrs" not in self.data:
-            self.data["fileNodeAttrs"] = OrderedDict()
+        if "fileNodeAttrs" not in instance.data:
+            instance.data["fileNodeAttrs"] = OrderedDict()
 
         # Extract textures
         #
         self.log.info("Extracting textures..")
 
-        self.use_tx = self.data.get("useTxMaps", False)
+        self.use_tx = instance.data.get("useTxMaps", False)
 
         file_inventory = list()
         previous_by_fpattern = dict()
@@ -55,7 +55,7 @@ class ExtractTexture(PackageExtractor):
         path = [
             avalon.api.Session["AVALON_PROJECT"],
             avalon.api.Session["AVALON_ASSET"],
-            self.data["subset"],
+            instance.data["subset"],
             -1,  # latest version
             "TexturePack"
         ]
@@ -68,9 +68,9 @@ class ExtractTexture(PackageExtractor):
             previous_by_fpattern = _
 
         # Get current files
-        for data in self.data["fileData"]:
+        for data in instance.data["fileData"]:
             file_node = data["node"]
-            if file_node in self.data["fileNodesToIgnore"]:
+            if file_node in instance.data["fileNodesToIgnore"]:
                 continue
 
             dir_name = data["dir"]
@@ -86,13 +86,13 @@ class ExtractTexture(PackageExtractor):
 
         # To transfer
         #
-        new_version = self.data["versionNext"]
+        new_version = instance.data["versionNext"]
 
         for fpattern, data in current_by_fpattern.items():
             if not data["fnames"]:
                 raise RuntimeError("Empty file list, this is a bug.")
 
-            file_nodes = [dat["node"] for dat in self.data["fileData"]
+            file_nodes = [dat["node"] for dat in instance.data["fileData"]
                           if dat["fpattern"] == fpattern]
 
             versioned_data = previous_by_fpattern.get(fpattern, list())
@@ -130,7 +130,8 @@ class ExtractTexture(PackageExtractor):
                     head_file = sorted(all_files)[0]
                     resolved_path = abs_previous[:-len(file)] + head_file
                     resolved_path = env_embedded_path(resolved_path)
-                    self.update_file_node_attrs(file_nodes,
+                    self.update_file_node_attrs(instance,
+                                                file_nodes,
                                                 resolved_path,
                                                 current_color_space)
                     # Update color space
@@ -170,27 +171,28 @@ class ExtractTexture(PackageExtractor):
 
                 head_file = sorted(all_files)[0]
                 resolved_path = package_path + "/" + head_file
-                self.update_file_node_attrs(file_nodes,
+                self.update_file_node_attrs(instance,
+                                            file_nodes,
                                             resolved_path,
                                             current_color_space)
 
         packager.add_data({"fileInventory": file_inventory})
 
-    def update_file_node_attrs(self, file_nodes, path, color_space):
+    def update_file_node_attrs(self, instance, file_nodes, path, color_space):
         # (NOTE) All input `file_nodes` will be set to same `color_space`
         from reveries.maya import lib
 
         for node in file_nodes:
             attr = node + ".fileTextureName"
-            self.data["fileNodeAttrs"][attr] = path
+            instance.data["fileNodeAttrs"][attr] = path
             # Preserve color space values (force value after filepath change)
             # This will also trigger in the same order at end of context to
             # ensure after context it's still the original value.
             attr = node + ".colorSpace"
-            self.data["fileNodeAttrs"][attr] = color_space
+            instance.data["fileNodeAttrs"][attr] = color_space
 
             attr = node + ".ignoreColorSpaceFileRules"
-            self.data["fileNodeAttrs"][attr] = True
+            instance.data["fileNodeAttrs"][attr] = True
 
             if lib.hasAttr(node, "aiAutoTx"):
                 # Although we ensured the tx update, but the file modification
@@ -198,4 +200,4 @@ class ExtractTexture(PackageExtractor):
                 # tx update later on. So we force disable it on each published
                 # file node.
                 attr = node + ".aiAutoTx"
-                self.data["fileNodeAttrs"][attr] = False
+                instance.data["fileNodeAttrs"][attr] = False
