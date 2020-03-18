@@ -26,26 +26,24 @@ class ExtractWrite(PackageExtractor):
         "imageSeq",
     ]
 
-    def extract_imageSeq(self, packager):
+    def extract_imageSeq(self, instance):
         """Extract per renderlayer that has AOVs (Arbitrary Output Variable)
         """
+        packager = instance.data["packager"]
         packager.skip_stage()
         package_path = packager.create_package()
 
         self.log.info("Extracting render output..")
-        self.add_sequence(packager, self.data["outputPath"], package_path)
 
-    def add_sequence(self, packager, seq_path, package_path):
-        """
-        """
+        seq_path = instance.data["outputPath"]
         seq_dir, pattern = os.path.split(seq_path)
 
         self.log.info("Collecting sequence from: %s" % seq_dir)
         assert os.path.isdir(seq_dir), "Sequence dir not exists."
 
         # (NOTE) Did not consider frame step (byFrame)
-        start_frame = self.data["startFrame"]
-        end_frame = self.data["endFrame"]
+        start_frame = instance.data["startFrame"]
+        end_frame = instance.data["endFrame"]
 
         patterns = [
             clique.PATTERNS["frames"],
@@ -70,24 +68,24 @@ class ExtractWrite(PackageExtractor):
                        "%%0%dd" % sequence.padding +
                        sequence.tail)
 
-        project = self.context.data["projectDoc"]
+        project = instance.context.data["projectDoc"]
         e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
 
         packager.add_data({"sequence": {
             "_": {
-                "imageFormat": self.data["fileExt"],
+                "imageFormat": instance.data["fileExt"],
                 "fname": entry_fname,
                 "seqSrcDir": seq_dir,
                 "seqStart": list(sequence.indexes)[0],
                 "seqEnd": list(sequence.indexes)[-1],
                 "startFrame": start_frame,
                 "endFrame": end_frame,
-                "byFrameStep": self.data["byFrameStep"],
+                "byFrameStep": instance.data["byFrameStep"],
                 "edit_in": e_in,
                 "edit_out": e_out,
                 "handles": handles,
-                "resolution": self.context.data["resolution"],
-                "fps": self.context.data["fps"],
+                "resolution": instance.context.data["resolution"],
+                "fps": instance.context.data["fps"],
             }
         }})
 
@@ -98,4 +96,4 @@ class ExtractWrite(PackageExtractor):
 
         seq_pattern = os.path.join(package_path,
                                    entry_fname).replace("\\", "/")
-        self.data["publishedSeqPatternPath"] = seq_pattern
+        instance.data["publishedSeqPatternPath"] = seq_pattern
