@@ -19,14 +19,15 @@ class ExtractLightSet(PackageExtractor):
         "LightSet"
     ]
 
-    def extract_LightSet(self, packager):
-
+    def extract_LightSet(self, instance):
         from maya import cmds
         from avalon import maya
         from reveries.maya import capsule
 
-        entry_file = packager.file_name("ma")
+        packager = instance.data["packager"]
         package_path = packager.create_package()
+
+        entry_file = packager.file_name("ma")
 
         # Extract lights
         #
@@ -35,8 +36,9 @@ class ExtractLightSet(PackageExtractor):
         self.log.info("Extracting lights..")
 
         # From texture extractor
+        child_instances = instance.data.get("childInstances", [])
         try:
-            texture = next(chd for chd in self.data.get("childInstances", [])
+            texture = next(chd for chd in child_instances
                            if chd.data["family"] == "reveries.texture")
         except StopIteration:
             file_node_attrs = dict()
@@ -48,7 +50,7 @@ class ExtractLightSet(PackageExtractor):
             capsule.attribute_values(file_node_attrs),
             capsule.no_refresh(),
         ):
-            cmds.select(self.member,
+            cmds.select(instance,
                         replace=True,
                         noExpand=True)
 
