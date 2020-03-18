@@ -17,19 +17,19 @@ class ExtractVDBCache(PackageExtractor):
         "VDB",
     ]
 
-    def extract_VDB(self, packager):
-
+    def extract_VDB(self, instance):
         import hou
 
-        ropnode = self.member[0]
+        packager = instance.data["packager"]
+        ropnode = instance[0]
 
-        if "frameOutputs" in self.data:
-            output = self.data["frameOutputs"][0]
+        if "frameOutputs" in instance.data:
+            output = instance.data["frameOutputs"][0]
         else:
             output = ropnode.evalParm("sopoutput")
 
         staging_dir = os.path.dirname(output)
-        self.data["stagingDir"] = staging_dir
+        instance.data["stagingDir"] = staging_dir
         pkg_dir = packager.create_package(with_representation=False)
 
         file_name = os.path.basename(output)
@@ -47,12 +47,12 @@ class ExtractVDBCache(PackageExtractor):
 
         packager.add_data({
             "entryFileName": file_name,
-            "reprRoot": self.data["reprRoot"],
+            "reprRoot": instance.data["reprRoot"],
         })
 
-        if self.data.get("startFrame"):
+        if instance.data.get("startFrame"):
             packager.add_data({
-                "startFrame": self.data["startFrame"],
-                "endFrame": self.data["endFrame"],
-                "step": self.data["step"],
+                "startFrame": instance.data["startFrame"],
+                "endFrame": instance.data["endFrame"],
+                "step": instance.data["step"],
             })
