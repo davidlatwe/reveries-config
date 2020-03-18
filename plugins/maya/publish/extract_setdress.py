@@ -69,8 +69,8 @@ class ExtractSetDress(PackageExtractor):
         name = subset_group.rsplit(":", 1)[-1]
         data["subMatrix"][id_path]["GROUP"] = {name: matrix}
 
-    def parse_matrix(self):
-        for data in self.data["subsetData"]:
+    def parse_matrix(self, instance):
+        for data in instance.data["subsetData"]:
             container = data.pop("_container")
             subset_group = container["subsetGroup"]
 
@@ -93,22 +93,24 @@ class ExtractSetDress(PackageExtractor):
                     continue
                 self._collect_components_matrix(data, sub_container)
 
-    def extract_setPackage(self, packager):
+    def extract_setPackage(self, instance):
+        packager = instance.data["packager"]
+        package_path = packager.create_package()
+
         entry_file = packager.file_name("abc")
         instances_file = packager.file_name("json")
-        package_path = packager.create_package()
         entry_path = os.path.join(package_path, entry_file)
         instances_path = os.path.join(package_path, instances_file)
 
-        self.parse_matrix()
+        self.parse_matrix(instance)
 
         self.log.info("Dumping setdress members data ..")
         with open(instances_path, "w") as fp:
-            json.dump(self.data["subsetData"], fp, ensure_ascii=False)
+            json.dump(instance.data["subsetData"], fp, ensure_ascii=False)
             self.log.debug("Dumped: {}".format(instances_path))
 
         self.log.info("Extracting hierarchy ..")
-        cmds.select(self.data["subsetSlots"])
+        cmds.select(instance.data["subsetSlots"])
         io.export_alembic(file=entry_path,
                           startFrame=1.0,
                           endFrame=1.0,
