@@ -20,6 +20,8 @@ class CollectPublishPackager(pyblish.api.InstancePlugin):
 
 
 class PublishPackager(object):
+    """Handling representations' extraction ground works
+    """
 
     LOCK = "/.publish.lock"
 
