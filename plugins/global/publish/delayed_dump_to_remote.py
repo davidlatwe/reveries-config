@@ -121,6 +121,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             func = extractor["func"]
             args = extractor["args"]
             kwargs = extractor["kwargs"]
+            each_frame = extractor["eachFrame"]
 
             dump = {
                 "representation": repr,
@@ -129,6 +130,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
                 "func": func.__name__,
                 "args": args,
                 "kwargs": kwargs,
+                "eachFrame": each_frame,
             }
 
             pkg_dir = packages[repr]["packageDir"]

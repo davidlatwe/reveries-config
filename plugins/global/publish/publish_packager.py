@@ -267,7 +267,7 @@ class PublishPackager(object):
         """
         self._data["hardlinks"].append((src, dst))
 
-    def _extractor_delayer(self, object, function, args, kwargs):
+    def _extractor_delayer(self, object, function, args, kwargs, each_frame):
         """Append extractor and input args into delay queue"""
         extractor = {
             "representation": self._representation,
@@ -275,6 +275,7 @@ class PublishPackager(object):
             "func": function,
             "args": args,
             "kwargs": kwargs,
+            "eachFrame": each_frame,
             "_done": False,
         }
         self._data["extractors"].append(extractor)

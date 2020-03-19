@@ -66,7 +66,9 @@ class ExtractArnoldStandIn(plugins.PackageExtractor):
                         has_yeti=has_yeti,
                         start=start,
                         end=end,
-                        step=step)
+                        step=step,
+                        # Keyword for delay extract in remote
+                        eachFrame=True)
 
     @plugins.delay_extract
     def export_ass(self,
