@@ -160,3 +160,54 @@ class DeadlineSubmitter(object):
             jobid = parts[parts.index("JobID") + 1]
             self.log.info("Success. JobID: %s" % jobid)
             return jobid
+
+    def append_filesys_publish(self, dep_payload, dep_index, dump_path):
+        import reveries
+
+        reveries_path = reveries.__file__
+        script_file = os.path.join(os.path.dirname(reveries_path),
+                                   "scripts",
+                                   "filesys_publish.py")
+
+        job_info = dep_payload["JobInfo"]
+
+        payload = {
+            "JobInfo": {
+                "Plugin": "Python",
+                "BatchName": job_info["BatchName"],  # Top-level group name
+                "Name": "|| Publish: " + job_info["Name"],
+
+                "UserName": job_info["BatchName"],
+                "MachineName": job_info["BatchName"],
+
+                "Pool": job_info["Pool"],
+                "Group": job_info["Group"],
+                "Priority": job_info["Priority"],
+
+                "ExtraInfo0": job_info["ExtraInfo0"],
+
+                "JobDependencies": dep_index,
+                "InitialStatus": "Active",
+            },
+
+            "PluginInfo": {
+                "Version": "3.6",
+                "ScriptFile": script_file,
+                "Arguments": dump_path,
+            },
+
+            # Mandatory for Deadline, may be empty
+            "AuxFiles": [],
+            "IdOnly": True
+        }
+
+        environment = self.environment()
+        parsed_environment = {
+            "EnvironmentKeyValue%d" % index: u"{key}={value}".format(
+                key=key,
+                value=environment[key]
+            ) for index, key in enumerate(environment)
+        }
+        payload["JobInfo"].update(parsed_environment)
+
+        self.add_job(payload)

@@ -1,9 +1,9 @@
 
 import os
-import copy
 import json
 import platform
 import pyblish.api
+import reveries
 
 
 class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
@@ -24,13 +24,9 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
     ]
 
     def process(self, context):
-        import reveries
-
         if not all(result["success"] for result in context.data["results"]):
             self.log.warning("Atomicity not held, aborting.")
             return
-
-        reveries_path = reveries.__file__
 
         # Context data
 
@@ -155,6 +151,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                 },
             else:
                 # Script Job
+                reveries_path = reveries.__file__
                 script_file = os.path.join(os.path.dirname(reveries_path),
                                            "scripts",
                                            "deadline_extract.py")
@@ -207,28 +204,8 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             submitter = context.data["deadlineSubmitter"]
             index = submitter.add_job(payload)
 
-            # Filesys publish script
-
-            payload = copy.deepcopy(payload)
-
-            script_file = os.path.join(os.path.dirname(reveries_path),
-                                       "scripts",
-                                       "filesys_publish.py")
-            # Clean up
-            payload["JobInfo"].pop("Frames")
-            payload["JobInfo"].pop("ChunkSize")
-            # Update
-            payload["JobInfo"].update({
-                "Name": "|| Publish: " + payload["JobInfo"]["Name"],
-                "JobDependencies": index,
-                "InitialStatus": "Active",
-            })
-            payload["PluginInfo"].update({
-                "ScriptJob": True,
-                "ScriptFilename": script_file,
-            })
-
-            submitter.add_job(payload)
+            dump_path = instance.data["dumpPath"]
+            submitter.append_filesys_publish(payload, index, dump_path)
 
     def assemble_environment(self, instance):
         """Compose submission required environment variables for instance

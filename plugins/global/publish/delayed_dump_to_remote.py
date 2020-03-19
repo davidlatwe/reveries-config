@@ -58,6 +58,8 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             dump_path, dump = self.instance_dump(instance, extractors)
             dumps[instance.name] = (dump_path, dump)
 
+            instance.data["dumpPath"] = dump_path
+
         if not dumps:
             self.log.info("Nothing to dump.")
             return
