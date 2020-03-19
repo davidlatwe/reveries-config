@@ -52,8 +52,6 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
         # Dump instances
         dumps = dict()
         for instance in instances:
-            if not instance.data.get("publish", True):
-                continue
             dump_path, dump = self.instance_dump(instance)
             dumps[instance.name] = (dump_path, dump)
 
