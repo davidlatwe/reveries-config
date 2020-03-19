@@ -52,7 +52,10 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
         # Dump instances
         dumps = dict()
         for instance in instances:
-            dump_path, dump = self.instance_dump(instance)
+            extractors = list(instance.data["packager"].delayed_extractors())
+            if not extractors:
+                continue
+            dump_path, dump = self.instance_dump(instance, extractors)
             dumps[instance.name] = (dump_path, dump)
 
         if not dumps:
@@ -102,13 +105,14 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
         with open(outpath, "w") as file:
             toml.dump(dump, file)
 
-    def instance_dump(self, instance):
+    def instance_dump(self, instance, extractors):
         self.log.info("Dumping instance %s .." % instance)
 
-        # Dump extractors if any
-        packager = instance.data["packager"]
         packages = instance.data["packages"]
-        for extractor in packager.delayed_extractors():
+        instance.data["dumpedExtractors"] = list()
+
+        # Dump extractors
+        for extractor in extractors:
 
             repr = extractor["representation"]
             obj = extractor["obj"]
@@ -130,6 +134,8 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
 
             with open(outpath, "w") as file:
                 json.dump(dump, file, indent=4)
+
+            instance.data["dumpedExtractors"].append(outpath)
 
         # Dump instance
         dirpaths = list()

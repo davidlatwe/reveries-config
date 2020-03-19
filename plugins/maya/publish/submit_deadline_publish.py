@@ -59,7 +59,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             if not instance.data.get("publish", True):
                 continue
 
-            if instance.data.get("isDependency", False):
+            if not instance.data.get("dumpedExtractors"):
                 continue
 
             subset = instance.data["subset"]
@@ -248,5 +248,8 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             "ARNOLD_PLUGIN_PATH",
         ]:
             environment[var] = os.getenv(var, "")
+
+        dumped = ";".join(instance.data["dumpedExtractors"])
+        environment["PYBLISH_EXTRACTOR_DUMPS"] = dumped
 
         return environment
