@@ -245,6 +245,7 @@ class PackageExtractor(pyblish.api.InstancePlugin):
 
     families = []
     representations = []
+    _delayer = None
 
     def extract(self, instance):
         """Multi-representation extraction process
@@ -285,7 +286,23 @@ class PackageExtractor(pyblish.api.InstancePlugin):
             self.log.warning("Atomicity not held, aborting.")
             return
 
+        self._connect_delayer(instance)
         self.extract(instance)
+
+    def _connect_delayer(self, instance):
+        self._delayer = instance.data["packager"]._extractor_delayer
+
+
+def delay_extract(extract):
+    """Decorator, delay extractor function and decide to run or dump it later
+    """
+    def switch(self, *args, **kwargs):
+        if self._delayer:  # Only `process`ed PackageExtractor has `_delayer`
+            self._delayer(self, extract, args, kwargs)
+        else:
+            extract(self, *args, **kwargs)
+
+    return switch
 
 
 def get_errored_instances_from_context(context, include_warning=False):

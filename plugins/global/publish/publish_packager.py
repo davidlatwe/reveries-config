@@ -53,6 +53,8 @@ class PublishPackager(object):
 
         if "packages" not in instance.data:
             instance.data["packages"] = dict()  # representations' data
+        if "extractors" not in instance.data:
+            instance.data["extractors"] = list()  # delayed extractors
         if "files" not in instance.data:
             instance.data["files"] = list()
         if "hardlinks" not in instance.data:
@@ -264,3 +266,22 @@ class PublishPackager(object):
 
         """
         self._data["hardlinks"].append((src, dst))
+
+    def _extractor_delayer(self, object, function, args, kwargs):
+        """Append extractor and input args into delay queue"""
+        extractor = {
+            "representation": self._representation,
+            "obj": object,
+            "func": function,
+            "args": args,
+            "kwargs": kwargs,
+            "_done": False,
+        }
+        self._data["extractors"].append(extractor)
+
+    def delayed_extractors(self):
+        """Yield delayed and unprocess extractors"""
+        for extractor in self._data["extractors"]:
+            if extractor["_done"]:
+                continue
+            yield extractor
