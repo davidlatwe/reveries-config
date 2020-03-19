@@ -299,6 +299,7 @@ def delay_extract(extract):
     def switch(self, *args, **kwargs):
         if self._delayer:  # Only `process`ed PackageExtractor has `_delayer`
             self._delayer(self, extract, args, kwargs)
+            self.log.info("Extraction delayed..")
         else:
             extract(self, *args, **kwargs)
 
