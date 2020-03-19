@@ -3,10 +3,10 @@ import os
 import contextlib
 
 import pyblish.api
-from reveries.plugins import PackageExtractor
+from reveries import plugins
 
 
-class ExtractPointCache(PackageExtractor):
+class ExtractPointCache(plugins.PackageExtractor):
     """
     """
 
@@ -22,8 +22,6 @@ class ExtractPointCache(PackageExtractor):
         "FBXCache",
         "GPUCache",
     ]
-
-    targets = ["localhost"]
 
     def extract(self, instance):
         from reveries.maya import capsule
@@ -51,8 +49,6 @@ class ExtractPointCache(PackageExtractor):
             instance.data["endFrame"] = self.end_frame
 
     def extract_Alembic(self, instance):
-        from reveries.maya import io, lib, capsule
-        from maya import cmds
 
         packager = instance.data["packager"]
         packager.skip_stage()
@@ -61,9 +57,19 @@ class ExtractPointCache(PackageExtractor):
         entry_file = packager.file_name("abc")
         entry_path = os.path.join(package_path, entry_file)
 
+        packager.add_data({"entryFileName": entry_file})
+        self.add_range_data(instance)
+
         euler_filter = instance.data.get("eulerFilter", False)
 
         root = instance.data["outCache"]
+
+        self.export_alembic(root, entry_path, euler_filter)
+
+    @plugins.delay_extract
+    def export_alembic(self, root, entry_path, start, end, euler_filter):
+        from reveries.maya import io, lib, capsule
+        from maya import cmds
 
         with capsule.maintained_selection():
             # Selection may change if there are duplicate named nodes and
@@ -102,8 +108,8 @@ class ExtractPointCache(PackageExtractor):
 
                 io.export_alembic(
                     entry_path,
-                    self.start_frame,
-                    self.end_frame,
+                    start,
+                    end,
                     selection=True,
                     renderableOnly=True,
                     writeVisibility=True,
@@ -118,16 +124,7 @@ class ExtractPointCache(PackageExtractor):
                     ],
                 )
 
-        # (NOTE) Deprecated
-        # io.wrap_abc(entry_path, [(cache_file, "ROOT")])
-
-        packager.add_data({"entryFileName": entry_file})
-        self.add_range_data(instance)
-
     def extract_FBXCache(self, instance):
-        from reveries.maya import io, capsule
-        from maya import cmds
-
         packager = instance.data["packager"]
         packager.skip_stage()
         package_path = packager.create_package()
@@ -137,26 +134,39 @@ class ExtractPointCache(PackageExtractor):
         entry_path = os.path.join(package_path, entry_file)
         cache_path = os.path.join(package_path, cache_file)
 
-        cmds.select(instance.data["outCache"], replace=True)
+        packager.add_data({"entryFileName": entry_file})
+        self.add_range_data(instance)
 
         # (TODO) Make namespace preserving optional on GUI
-        if instance.data.get("keepNamespace", False):
-            nodes = list()
-        else:
-            nodes = instance.data["outCache"]
+        keep_namespace = instance.data.get("keepNamespace", False)
+        out_cache = instance.data["outCache"]
 
-        with capsule.StripNamespace(nodes):
+        self.export_fbx(entry_path,
+                        cache_path,
+                        cache_file,
+                        out_cache,
+                        keep_namespace)
+
+    @plugins.delay_extract
+    def export_fbx(self,
+                   entry_path,
+                   cache_path,
+                   cache_file,
+                   out_cache,
+                   keep_namespace):
+        from reveries.maya import io, capsule
+        from maya import cmds
+
+        cmds.select(out_cache, replace=True)
+
+        with capsule.StripNamespace([] if keep_namespace else out_cache):
             with io.export_fbx_set_pointcache("FBXCacheSET"):
                 io.export_fbx(cache_path)
 
             io.wrap_fbx(entry_path, [(cache_file, "ROOT")])
 
-        packager.add_data({"entryFileName": entry_file})
-        self.add_range_data(instance)
-
     def extract_GPUCache(self, instance):
         from reveries import lib
-        from reveries.maya import io, capsule
         from maya import cmds
 
         packager = instance.data["packager"]
@@ -167,6 +177,9 @@ class ExtractPointCache(PackageExtractor):
         cache_file = packager.file_name("abc")
         entry_path = os.path.join(package_path, entry_file)
         cache_path = os.path.join(package_path, cache_file)
+
+        packager.add_data({"entryFileName": entry_file})
+        self.add_range_data(instance)
 
         # Collect root nodes
         assemblies = set()
@@ -198,6 +211,25 @@ class ExtractPointCache(PackageExtractor):
 
                 attr_values[attr] = False
 
+        self.export_gpu(entry_path,
+                        cache_path,
+                        cache_file,
+                        self.start_frame,
+                        self.end_frame,
+                        assemblies,
+                        attr_values)
+
+    @plugins.delay_extract
+    def export_gpu(self,
+                   entry_path,
+                   cache_path,
+                   cache_file,
+                   start,
+                   end,
+                   assemblies,
+                   attr_values):
+        from reveries.maya import io, capsule
+        from maya import cmds
         # Export
         cmds.select(assemblies, replace=True, noExpand=True)
 
@@ -206,8 +238,5 @@ class ExtractPointCache(PackageExtractor):
             # Mute animated visibility channels
             capsule.attribute_mute(list(attr_values.keys())),
         ):
-            io.export_gpu(cache_path, self.start_frame, self.end_frame)
+            io.export_gpu(cache_path, start, end)
             io.wrap_gpu(entry_path, [(cache_file, "ROOT")])
-
-        packager.add_data({"entryFileName": entry_file})
-        self.add_range_data(instance)

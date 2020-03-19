@@ -68,6 +68,7 @@ class ExtractArnoldStandIn(plugins.PackageExtractor):
                         end=end,
                         step=step)
 
+    @plugins.delay_extract
     def export_ass(self,
                    nodes,
                    cache_path,
