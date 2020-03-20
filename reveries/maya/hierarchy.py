@@ -172,7 +172,7 @@ def container_from_id_path(container_id_path,
         parent_namespace (str): Namespace
 
     Returns:
-        str: container node name
+        (str, None): container node name, return None if not found
 
     """
     container_ids = container_id_path.split("|")
@@ -190,7 +190,7 @@ def container_from_id_path(container_id_path,
 
     if not leaf_containers:
         message = ("No leaf containers with Id %s under namespace %s, "
-                   "this is a bug.")
+                   "possibly been removed in parent asset.")
 
         if cached_containers:
             message += " (Using cache)"
@@ -202,7 +202,9 @@ def container_from_id_path(container_id_path,
                     print("    " + node)
             print("---------------------")
 
-        raise RuntimeError(message % (container_id_path, parent_namespace))
+        _log.warning(message % (container_id_path, parent_namespace))
+
+        return None
 
     walkers = {leaf: climb_container_id(leaf) for leaf in leaf_containers}
 
