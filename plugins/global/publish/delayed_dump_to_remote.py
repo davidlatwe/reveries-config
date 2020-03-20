@@ -4,7 +4,7 @@ import pyblish.api
 import avalon.api
 from avalon import io
 from avalon.vendor import toml
-from reveries import lib
+from reveries import lib, filesys
 
 
 class DelayedDumpToRemote(pyblish.api.ContextPlugin):
@@ -164,21 +164,8 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
         return outpath, dump
 
     def get_filesys_dir(self, context):
-        APP = "filesys"
+        session = avalon.Session.copy()
+        app = filesys.Filesys()
+        env = app.environ(session)
 
-        project = context.data["projectDoc"]
-        root = avalon.api.registered_root()
-
-        template_work = project["config"]["template"]["work"]
-        template_data = {
-            "root": root,
-            "project": avalon.Session["AVALON_PROJECT"],
-            "silo": avalon.Session["AVALON_SILO"],
-            "asset": avalon.Session["AVALON_ASSET"],
-            "task": avalon.Session["AVALON_TASK"],
-            "app": APP,
-        }
-
-        # (TODO) Run by action ?
-
-        return template_work.format(**template_data)
+        return env["AVALON_WORKDIR"]
