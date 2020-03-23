@@ -4,7 +4,7 @@ import json
 import pyblish.api
 
 
-def get_extractor(classname, function):
+def get_plugin(classname):
     # Find extractor plugin
     Plugin = None
     for P in pyblish.api.discover():
@@ -14,7 +14,7 @@ def get_extractor(classname, function):
 
     assert Plugin, "Pyblish plugin not found."
 
-    return getattr(Plugin(), function)
+    return Plugin
 
 
 if __name__ == "__main__":
@@ -29,14 +29,18 @@ if __name__ == "__main__":
         classname = data["class"]
         function = data["func"]
 
-        if data["eachFrame"]:
-            # Frame range (Maya Only)
+        # Export
+        Plugin = get_plugin(classname)
+        plugin = Plugin()
+
+        if (classname == "ExtractArnoldStandIn"
+                and "maya" in Plugin.hosts):
+            # Set frame range from Deadline task (Maya Only)
             from maya import mel
             start = int(mel.eval("DeadlineValue(\"StartFrame\")"))
             end = int(mel.eval("DeadlineValue(\"EndFrame\")"))
             kwargs["start"] = start
             kwargs["end"] = end
 
-        # Export
-        extractor = get_extractor(classname, function)
+        extractor = getattr(plugin, function)
         extractor(*args, **kwargs)

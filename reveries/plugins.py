@@ -297,10 +297,8 @@ def delay_extract(extract):
     """Decorator, delay extractor function and decide to run or dump it later
     """
     def switch(self, *args, **kwargs):
-        each_frame = kwargs.pop("eachFrame", False)
-
         if self._delayer:  # Only `process`ed PackageExtractor has `_delayer`
-            self._delayer(self, extract, args, kwargs, each_frame)
+            self._delayer(self, extract, args, kwargs)
             self.log.info("Extraction delayed..")
         else:
             extract(self, *args, **kwargs)
