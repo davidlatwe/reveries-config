@@ -91,7 +91,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
                     "family": instance.data["family"],
                     "families": instance.data.get("families", []),
                     "version": instance.data["versionNext"],
-                    "instance": dumps[instance.name][0],
+                    "dump": dumps[instance.name][0],
                     "childInstances": [
                         c.id for c in instance.data.get("childInstances", [])
                     ],
@@ -149,7 +149,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
         filepaths += instance.data["hardlinks"]
 
         dump = {
-            "context": None,  # Wait for context dump
+            "contextDump": None,  # Wait for context dump
             "data": instance.data,
             "dirpaths": dirpaths,
             "filepaths": filepaths,
