@@ -150,6 +150,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
 
         dump = {
             "contextDump": None,  # Wait for context dump
+            "id": instance.id,
             "data": instance.data,
             "dirpaths": dirpaths,
             "filepaths": filepaths,
