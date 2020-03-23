@@ -3,22 +3,32 @@ import json
 import pyblish.api
 import avalon.api
 from avalon import io
-from avalon.vendor import toml
 from reveries import lib, filesys
+
+
+class PyblishEncoder(json.JSONEncoder):
+
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        try:
+            return json.JSONEncoder.default(self, obj)
+        except TypeError:
+            return str(obj)
 
 
 class DelayedDumpToRemote(pyblish.api.ContextPlugin):
     """Dump context with instances and delayed extractors to remote publish
 
     This plugin will dump context and instances that have unprocessed delayed
-    extractors into TOML and JSON files for continuing the publish process in
-    remote side.
+    extractors into JSON files for continuing the publish process in remote
+    side.
 
     At the remote side, it should pick up the extractor dump file (JSON) and
     start extraction from there without re-run the publish from beginning.
 
     After the remote extraction complete, *filesys* publish should pick the
-    context dump file (TOML) and start validating extracted files and publish
+    context dump file (JSON) and start validating extracted files and publish
     them.
 
     """
@@ -27,8 +37,8 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
     label = "Delayed Dump To Remote"
 
     EXTRACTOR_DUMP = "{package}/.extractor.json"
-    INSTANCE_DUMP = "{version}/.instance.toml"
-    CONTEXT_DUMP = "{filesys}/dumps/.context.{user}.{oid}.toml"
+    INSTANCE_DUMP = "{version}/.instance.json"
+    CONTEXT_DUMP = "{filesys}/dumps/.context.{user}.{oid}.json"
 
     def process(self, context):
         # Skip if any error occurred
@@ -55,6 +65,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             extractors = list(instance.data["packager"].delayed_extractors())
             if not extractors:
                 continue
+            self.log.info("Dumping instance %s .." % instance)
             dump_path, dump = self.instance_dump(instance, extractors)
             dumps[instance.name] = (dump_path, dump)
 
@@ -70,11 +81,12 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
                                            user=dump_user,
                                            oid=dump_id)
 
-        for dump_path, dump in dumps.values():
-            dump["context"] = outpath
+        for name, (dump_path, dump) in dumps.items():
+            dump["contextDump"] = outpath
 
             with open(dump_path, "w") as file:
-                toml.dump(dump, file)
+                json.dump(dump, file, indent=4, cls=PyblishEncoder)
+            self.log.debug("Instance %s dumped to '%s'" % (name, dump_path))
 
         # Dump context
         self.log.info("Dumping context ..")
@@ -105,10 +117,10 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             os.makedirs(outdir)
 
         with open(outpath, "w") as file:
-            toml.dump(dump, file)
+            json.dump(dump, file, indent=4, cls=PyblishEncoder)
+        self.log.debug("Context dumped to '%s'" % outpath)
 
     def instance_dump(self, instance, extractors):
-        self.log.info("Dumping instance %s .." % instance)
 
         packages = instance.data["packages"]
         instance.data["dumpedExtractors"] = list()
@@ -135,7 +147,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             outpath = self.EXTRACTOR_DUMP.format(package=pkg_dir)
 
             with open(outpath, "w") as file:
-                json.dump(dump, file, indent=4)
+                json.dump(dump, file, indent=4, cls=PyblishEncoder)
 
             instance.data["dumpedExtractors"].append(outpath)
 
@@ -167,4 +179,4 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
         app = filesys.Filesys()
         env = app.environ(session)
 
-        return env["AVALON_WORKDIR"]
+        return env["AVALON_WORKDIR"].replace("\\", "/")
