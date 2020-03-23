@@ -1,0 +1,90 @@
+
+import os
+import sys
+import json
+import pyblish.api
+
+
+class CollectInstancesFromDump(pyblish.api.ContextPlugin):
+    """Create instances from context/instance dump file
+
+    Update context and create instances from a JSON format dump file which
+    acquired from `sys.argv[1]`.
+
+    """
+
+    label = "Collect Instances From Dump"
+    order = pyblish.api.CollectorOrder - 0.2
+
+    def process(self, context):
+        dump_path = sys.argv[1]
+        dump_file = os.path.basename(dump_path)
+
+        if not dump_file.endswith(".json"):
+            raise Exception("Invalid file extension: %s" % dump_path)
+
+        if dump_file.startswith(".instance."):
+            self.parse_instance(context, dump_path)
+
+        elif dump_file.startswith(".context."):
+            self.parse_context(context, dump_path)
+
+        else:
+            raise Exception("Unknown type of file: %s" % dump_path)
+
+    def parse_instance(self, context, dump_path):
+
+        with open(dump_path, "r") as file:
+            dump = json.load(file)
+        context = self.parse_context(context, dump["contextDump"])
+
+        instance = next(i for i in context if i.data["dumpId"] == dump["id"])
+        children = instance.data["childInstances"]
+        instance_to_keep = [instance] + children[:]
+
+        for instance in list(context):
+            if instance not in instance_to_keep:
+                context.remove(instance)
+
+    def parse_context(self, context, dump_path):
+
+        with open(dump_path, "r") as file:
+            context_dump = json.load(file)
+
+            context.data.update({
+                "by": context_dump["by"],
+                "from": context_dump["from"],
+                "date": context_dump["date"],
+            })
+
+        instance_by_id = dict()
+
+        for dump in context_dump["instances"]:
+            with open(dump["dump"], "r") as file:
+                dump.update(json.load(file))
+
+                instance = context.create_instance(dump["name"])
+                instance_by_id[dump["id"]] = instance
+
+                instance.data.update({
+                    "asset": dump["asset"],
+                    "family": dump["family"],
+                    "families": dump["families"],
+                    "version": dump["version"],
+
+                    "dirpaths": dump["dirpaths"],
+                    "filepaths": dump["filepaths"],
+
+                    "dumpId": dump["id"],
+                    "childIds": dump["childInstances"],
+                    "childInstances": list(),
+                })
+
+                instance.data.update(dump["data"])
+
+        for instance in context:
+            children = instance.data["childInstances"]
+            for child_id in instance.data["childIds"]:
+                children.append(instance_by_id[child_id])
+
+        return context
