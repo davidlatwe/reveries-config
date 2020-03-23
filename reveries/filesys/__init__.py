@@ -4,7 +4,7 @@ import sys
 import logging
 import avalon.api
 import avalon.io
-from pyblish import api as pyblish
+import pyblish.api
 
 from .. import PLUGINS_DIR
 
@@ -17,7 +17,7 @@ log = logging.getLogger("reveries.filesys")
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "filesys", "publish")
 
 
-class Filesys(avalon.api.Action):
+class Filesys(avalon.api.Application):
 
     name = "filesys"
     label = "File System"
@@ -37,16 +37,16 @@ class Filesys(avalon.api.Action):
 
 
 def install():
+    avalon.io.install()
+
     app = Filesys()
     app.process(avalon.api.Session.copy(), launch=False)
-
-    avalon.io.install()
 
     pyblish.api.register_host("python")
     pyblish.api.register_host("filesys")
 
     # install pipeline plugins
-    pyblish.register_plugin_path(PUBLISH_PATH)
+    pyblish.api.register_plugin_path(PUBLISH_PATH)
 
     self.installed = True
 
@@ -58,6 +58,6 @@ def uninstall():
     pyblish.api.deregister_host("filesys")
 
     # uninstall pipeline plugins
-    pyblish.deregister_plugin_path(PUBLISH_PATH)
+    pyblish.api.deregister_plugin_path(PUBLISH_PATH)
 
     self.installed = False
