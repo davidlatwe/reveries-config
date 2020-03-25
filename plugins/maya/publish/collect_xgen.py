@@ -19,13 +19,11 @@ def create_model_subset_from_xgen(instance):
 
     member += lib.list_all_parents(member)
     if member:
-        model = plugins.create_dependency_instance(instance,
-                                                   subset,
-                                                   family,
-                                                   member,
-                                                   category="XGen Bound Mesh")
-        # Only need to extract model `mayaBinary` representation
-        model.data["extractType"] = "mayaBinary"
+        plugins.create_dependency_instance(instance,
+                                           subset,
+                                           family,
+                                           member,
+                                           category="XGen Bound Mesh")
         return True
 
     return False
