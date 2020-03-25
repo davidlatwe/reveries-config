@@ -3,7 +3,6 @@ import os
 import tempfile
 import hashlib
 import codecs
-import shutil
 import weakref
 import getpass
 import pymongo
@@ -19,7 +18,7 @@ from pyblish_qml.ipc import formatting
 from .plugins import message_box_error
 
 
-def temp_dir(prefix="pyblish_tmp_"):
+def stage_dir(prefix=None, dir=None):
     """Provide a temporary directory for staging
 
     This temporary directory is generated through `tempfile.mkdtemp()`
@@ -28,34 +27,8 @@ def temp_dir(prefix="pyblish_tmp_"):
         prefix (str, optional): Prefix name of the temporary directory
 
     """
-    return tempfile.mkdtemp(prefix=prefix)
-
-
-def clear_stage(prefix="pyblish_tmp_"):
-    """Remove temporary staging directory with prefix
-
-    Remove temporary directory which named with prefix in
-    `tempfile.gettempdir()`
-
-    Arguments:
-        prefix (str, optional): Prefix name of the temporary directory
-
-    """
-    tempdir = tempfile.gettempdir()
-    cwd_backup = os.getcwd()
-
-    os.chdir(tempdir)
-    for item in os.listdir(tempdir):
-        if not (os.path.isdir(item) and item.startswith(prefix)):
-            continue
-
-        # Remove
-        full_path = os.path.join(tempdir, item)
-        print("Removing {!r}".format(full_path))
-        shutil.rmtree(full_path)
-        print("Removed.")
-
-    os.chdir(cwd_backup)
+    prefix = prefix or "pyblish_tmp_"
+    return tempfile.mkdtemp(prefix=prefix, dir=dir)
 
 
 def get_timeline_data(project=None, asset_name=None, current_fps=None):
