@@ -140,7 +140,7 @@ class DeadlineSubmitter(object):
         job_info = payload["JobInfo"]
         plugin_info = payload["PluginInfo"]
 
-        info_dir = utils.temp_dir(prefix="deadline_")
+        info_dir = utils.stage_dir(prefix="deadline_")
         job_info_file = os.path.join(info_dir, "job_info.job")
         plugin_info_file = os.path.join(info_dir, "plugin_info.job")
 
