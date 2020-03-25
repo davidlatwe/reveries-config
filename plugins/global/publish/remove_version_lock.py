@@ -1,12 +1,13 @@
 
+import os
 import pyblish.api
 
 
-class PackagerUnlockVersion(pyblish.api.ContextPlugin):
+class RemoveVersionLock(pyblish.api.ContextPlugin):
     """Unlock version directory after subsets have been integrated
     """
 
-    label = "Packager Unlock"
+    label = "Remove Lock"
     order = pyblish.api.IntegratorOrder + 0.1
 
     def process(self, context):
@@ -15,8 +16,8 @@ class PackagerUnlockVersion(pyblish.api.ContextPlugin):
             if not instance.data.get("publish", True):
                 continue
 
-            packager = instance.data["packager"]
-            packager.unlock()
+            lockfile = instance.data["_versionlock"]
+            os.remove(lockfile)
             # (TODO) If publish process stopped by user, version dir will
             #        remain locked since this plugin may not be executed.
             #        To solve this, may require pyblish/pyblish-base#352
