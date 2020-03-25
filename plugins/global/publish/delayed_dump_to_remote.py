@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import pyblish.api
 import avalon.api
@@ -36,7 +37,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
     order = pyblish.api.ExtractorOrder + 0.491
     label = "Delayed Dump To Remote"
 
-    EXTRACTOR_DUMP = "{package}/.extractor.json"
+    EXTRACTOR_DUMP = "{stage}/.extractor.json"
     INSTANCE_DUMP = "{version}/.instance.json"
     CONTEXT_DUMP = "{filesys}/dumps/.context.{user}.{oid}.json"
 
@@ -62,7 +63,12 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
         # Dump instances
         dumps = dict()
         for instance in instances:
-            extractors = list(instance.data["packager"].delayed_extractors())
+
+            extractors = [(key.split(".")[1], value)
+                          for key, value in instance.data.items()
+                          if re.match(r"repr\.[a-zA-Z]*\._delayRun", key)
+                          and not value.get("done")]
+
             if not extractors:
                 continue
             self.log.info("Dumping instance %s .." % instance)
@@ -122,29 +128,26 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
 
     def instance_dump(self, instance, extractors):
 
-        packages = instance.data["packages"]
         instance.data["dumpedExtractors"] = list()
 
         # Dump extractors
-        for extractor in extractors:
+        for repr_name, extractor in extractors:
 
-            repr = extractor["representation"]
-            obj = extractor["obj"]
             func = extractor["func"]
-            args = extractor["args"]
-            kwargs = extractor["kwargs"]
+            args = extractor.get("args", list())
+            kwargs = extractor.get("kwargs", dict())
 
             dump = {
-                "representation": repr,
-                "module": obj.__module__,
-                "class": obj.__class__.__name__,
+                "representation": repr_name,
+                "module": func.im_class.__module__,
+                "class": func.im_class.__name__,
                 "func": func.__name__,
                 "args": args,
                 "kwargs": kwargs,
             }
 
-            pkg_dir = packages[repr]["packageDir"]
-            outpath = self.EXTRACTOR_DUMP.format(package=pkg_dir)
+            stage_dir = instance.data["repr.%s._stage" % repr_name]
+            outpath = self.EXTRACTOR_DUMP.format(stage=stage_dir)
 
             with open(outpath, "w") as file:
                 json.dump(dump, file, indent=4, cls=PyblishEncoder)
@@ -152,9 +155,6 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             instance.data["dumpedExtractors"].append(outpath)
 
         # Dump instance
-        dirpaths = list()
-        for repr, repr_data in packages.items():
-            dirpaths.append(repr_data["packageDir"])
 
         filepaths = list()
         filepaths += instance.data["files"]
@@ -164,7 +164,6 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             "contextDump": None,  # Wait for context dump
             "id": instance.id,
             "data": instance.data,
-            "dirpaths": dirpaths,
             "filepaths": filepaths,
         }
 
