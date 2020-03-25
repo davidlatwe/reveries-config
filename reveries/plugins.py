@@ -165,6 +165,7 @@ def message_box_warning(title, message, optional=False):
         return respond == QtWidgets.QMessageBox.Ok
 
 
+# Decorator
 def context_process(process):
     """Decorator, an workaround for pyblish/pyblish-base#250
 
