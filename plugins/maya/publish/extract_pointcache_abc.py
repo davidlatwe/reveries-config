@@ -16,7 +16,7 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
         "reveries.pointcache.abc",
     ]
 
-    def extract(self, instance):
+    def process(self, instance):
         from maya import cmds
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
