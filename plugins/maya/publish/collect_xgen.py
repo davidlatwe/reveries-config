@@ -55,6 +55,8 @@ class CollectXGen(pyblish.api.InstancePlugin):
     def get_interactive(self, instance):
         """Interactive Groom Spline"""
 
+        instance.data["families"] = ["reveries.xgen.interactive"]
+
         descriptions = xgen.interactive.list_lead_descriptions(instance[:])
         instance.data["igsDescriptions"] = descriptions
 
@@ -75,6 +77,8 @@ class CollectXGen(pyblish.api.InstancePlugin):
 
     def get_legacy(self, instance):
         """Legacy XGen"""
+
+        instance.data["families"] = ["reveries.xgen.legacy"]
 
         palettes = []
         palette_nodes = cmds.ls(instance, type="xgmPalette", long=True)
