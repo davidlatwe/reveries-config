@@ -28,6 +28,7 @@ class CleanupStage(pyblish.api.ContextPlugin):
                           if re.match(r"repr\.[a-zA-Z_]*\._stage", key)
                           and os.path.isdir(value)]
 
+            stage_dirs = set([os.path.normpath(path) for path in stage_dirs])
             for path in stage_dirs:
                 try:
                     shutil.rmtree(path)
