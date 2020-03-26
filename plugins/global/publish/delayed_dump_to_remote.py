@@ -138,8 +138,6 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             kwargs = extractor.get("kwargs", dict())
 
             dump = {
-                "representation": repr_name,
-                "module": func.im_class.__module__,
                 "class": func.im_class.__name__,
                 "func": func.__name__,
                 "args": args,
