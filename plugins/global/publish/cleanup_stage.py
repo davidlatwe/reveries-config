@@ -25,7 +25,7 @@ class CleanupStage(pyblish.api.ContextPlugin):
                 continue
 
             stage_dirs = [value for key, value in instance.data.items()
-                          if re.match(r"repr\.[a-zA-Z]*\._stage", key)
+                          if re.match(r"repr\.[a-zA-Z_]*\._stage", key)
                           and os.path.isdir(value)]
 
             for path in stage_dirs:

@@ -66,7 +66,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
 
             extractors = [(key.split(".")[1], value)
                           for key, value in instance.data.items()
-                          if re.match(r"repr\.[a-zA-Z]*\._delayRun", key)
+                          if re.match(r"repr\.[a-zA-Z_]*\._delayRun", key)
                           and not value.get("done")]
 
             if not extractors:

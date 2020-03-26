@@ -113,6 +113,9 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
             _, repr_name, entry = key.split(".", 2)
 
+            if repr_name.startswith("_"):
+                continue
+
             if repr_name not in representations:
 
                 repr_data = dict()
