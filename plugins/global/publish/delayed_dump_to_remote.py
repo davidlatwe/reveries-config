@@ -157,17 +157,18 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             instance.data["dumpedExtractors"].append(outpath)
 
         # Dump instance
-
-        filepaths = list()
-        filepaths += instance.data["files"]
-        filepaths += instance.data["hardlinks"]
-
         dump = {
             "contextDump": None,  # Wait for context dump
             "id": instance.id,
-            "data": instance.data,
-            "filepaths": filepaths,
         }
+        for key in instance.data:
+            if not key.startswith("repr."):
+                continue
+
+            if key.endswith("._delayRun"):
+                continue
+
+            dump[key] = instance.data[key]
 
         version_dir = instance.data["versionDir"]
         outpath = self.INSTANCE_DUMP.format(version=version_dir)

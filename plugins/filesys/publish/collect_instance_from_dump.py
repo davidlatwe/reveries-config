@@ -63,24 +63,17 @@ class CollectInstancesFromDump(pyblish.api.ContextPlugin):
             with open(dump["dump"], "r") as file:
                 dump.update(json.load(file))
 
+                previous_id = dump.pop("id")
+                child_ids = dump.pop("childInstances")
+
                 instance = context.create_instance(dump["name"])
-                instance_by_id[dump["id"]] = instance
+                instance_by_id[previous_id] = instance
 
-                instance.data.update({
-                    "asset": dump["asset"],
-                    "family": dump["family"],
-                    "families": dump["families"],
-                    "version": dump["version"],
+                instance.data.update(dump)
 
-                    "dirpaths": dump["dirpaths"],
-                    "filepaths": dump["filepaths"],
-
-                    "dumpId": dump["id"],
-                    "childIds": dump["childInstances"],
-                    "childInstances": list(),
-                })
-
-                instance.data.update(dump["data"])
+                instance.data["dumpId"] = previous_id
+                instance.data["childIds"] = child_ids
+                instance.data["childInstances"] = list()
 
         for instance in context:
             children = instance.data["childInstances"]
