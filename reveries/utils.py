@@ -28,7 +28,7 @@ def stage_dir(prefix=None, dir=None):
 
     """
     prefix = prefix or "pyblish_tmp_"
-    return tempfile.mkdtemp(prefix=prefix, dir=dir)
+    return tempfile.mkdtemp(prefix=prefix, dir=dir).replace("\\", "/")
 
 
 def get_timeline_data(project=None, asset_name=None, current_fps=None):
