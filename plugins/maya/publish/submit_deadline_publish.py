@@ -123,7 +123,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
 
             if instance.data["family"] in self.RENDER_TYPES:
                 # Render Job
-                output_dir = context.data["outputDir"].replace("\\", "/")
+                output_dir = context.data["outputDir"]
                 has_renderlayer = context.data["hasRenderLayers"]
                 use_rendersetup = context.data["usingRenderSetup"]
 
