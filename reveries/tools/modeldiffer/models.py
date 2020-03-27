@@ -252,7 +252,7 @@ class ComparerModel(models.TreeModel):
                 "avalonId": data["avalonId"],
                 "protected": data.get("protected"),
                 "points": data["points"],
-                "uvmap": data["uvmap"],
+                "uvmap": data.get("uvmap", ""),
             }
             not_matched_data.append(data)
 
