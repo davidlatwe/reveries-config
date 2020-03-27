@@ -1,10 +1,9 @@
 
-import os
 import json
 import pyblish.api
 from maya import cmds
-from reveries.plugins import PackageExtractor
-from reveries.maya import io, lib, utils
+from reveries import utils
+from reveries.maya import io, lib, utils as maya_utils
 from reveries.maya.hierarchy import (
     walk_containers,
     container_to_id_path,
@@ -12,7 +11,7 @@ from reveries.maya.hierarchy import (
 from reveries.lib import DEFAULT_MATRIX, matrix_equals
 
 
-class ExtractSetDress(PackageExtractor):
+class ExtractSetDress(pyblish.api.InstancePlugin):
     """Extract hierarchical subsets' matrix data
     """
 
@@ -21,9 +20,39 @@ class ExtractSetDress(PackageExtractor):
     hosts = ["maya"]
     families = ["reveries.setdress"]
 
-    representations = [
-        "setPackage",
-    ]
+    def process(self, instance):
+        staging_dir = utils.stage_dir()
+        filename = "%s.abc" % instance.data["subset"]
+        members = "%s.json" % instance.data["subset"]
+
+        outpath = "%s/%s" % (staging_dir, filename)
+        memberpath = "%s/%s" % (staging_dir, members)
+
+        instance.data["repr.setPackage._stage"] = staging_dir
+        instance.data["repr.setPackage._files"] = [filename, members]
+        instance.data["repr.setPackage.entryFileName"] = filename
+
+        self.parse_matrix(instance)
+
+        self.log.info("Dumping setdress members data ..")
+        with open(memberpath, "w") as fp:
+            json.dump(instance.data["subsetData"], fp, ensure_ascii=False)
+            self.log.debug("Dumped: {}".format(memberpath))
+
+        self.log.info("Extracting hierarchy ..")
+        cmds.select(instance.data["subsetSlots"])
+        io.export_alembic(file=outpath,
+                          startFrame=1.0,
+                          endFrame=1.0,
+                          selection=True,
+                          uvWrite=True,
+                          writeVisibility=True,
+                          writeCreases=True,
+                          attr=[lib.AVALON_ID_ATTR_LONG])
+
+        self.log.debug("Exported: {}".format(outpath))
+
+        cmds.select(clear=True)
 
     def _collect_components_matrix(self, data, container):
 
@@ -46,7 +75,7 @@ class ExtractSetDress(PackageExtractor):
             if matrix_equals(matrix, DEFAULT_MATRIX):
                 matrix = "<default>"
 
-            address = utils.get_id(transform)
+            address = maya_utils.get_id(transform)
             data["subMatrix"][id_path][address] = matrix
 
             # Collect visbility with matrix
@@ -92,38 +121,3 @@ class ExtractSetDress(PackageExtractor):
                     # Skip hidden child subset
                     continue
                 self._collect_components_matrix(data, sub_container)
-
-    def extract_setPackage(self, instance):
-        packager = instance.data["packager"]
-        package_path = packager.create_package()
-
-        entry_file = packager.file_name("abc")
-        instances_file = packager.file_name("json")
-        entry_path = os.path.join(package_path, entry_file)
-        instances_path = os.path.join(package_path, instances_file)
-
-        self.parse_matrix(instance)
-
-        self.log.info("Dumping setdress members data ..")
-        with open(instances_path, "w") as fp:
-            json.dump(instance.data["subsetData"], fp, ensure_ascii=False)
-            self.log.debug("Dumped: {}".format(instances_path))
-
-        self.log.info("Extracting hierarchy ..")
-        cmds.select(instance.data["subsetSlots"])
-        io.export_alembic(file=entry_path,
-                          startFrame=1.0,
-                          endFrame=1.0,
-                          selection=True,
-                          uvWrite=True,
-                          writeVisibility=True,
-                          writeCreases=True,
-                          attr=[lib.AVALON_ID_ATTR_LONG])
-
-        packager.add_data({
-            "entryFileName": entry_file,
-        })
-
-        self.log.debug("Exported: {}".format(entry_path))
-
-        cmds.select(clear=True)

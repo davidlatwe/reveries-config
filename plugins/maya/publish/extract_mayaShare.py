@@ -1,32 +1,27 @@
 
-import os
 import pyblish.api
-
 from maya import cmds
 from avalon import maya
+from reveries import utils
 
-from reveries.plugins import PackageExtractor
 
-
-class ExtractMayaShare(PackageExtractor):
+class ExtractMayaShare(pyblish.api.InstancePlugin):
     """Extract as Maya Ascii"""
 
-    label = "Extract MayaShare (mayaAscii)"
+    label = "Extract MayaShare (ma)"
     order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
     families = ["reveries.mayashare"]
 
-    representations = [
-        "mayaAscii",
-    ]
+    def process(self, instance):
 
-    def extract_mayaAscii(self, instance):
-        # Define extract output file path
-        packager = instance.data["packager"]
-        package_path = packager.create_package()
+        staging_dir = utils.stage_dir()
+        filename = "%s.ma" % instance.data["subset"]
+        outpath = "%s/%s" % (staging_dir, filename)
 
-        entry_file = packager.file_name("ma")
-        entry_path = os.path.join(package_path, entry_file)
+        instance.data["repr.mayaAscii._stage"] = staging_dir
+        instance.data["repr.mayaAscii._files"] = [filename]
+        instance.data["repr.mayaAscii.entryFileName"] = filename
 
         # Perform extraction
         self.log.info("Performing extraction..")
@@ -35,7 +30,7 @@ class ExtractMayaShare(PackageExtractor):
             # which will be ignored if the selection expanded since
             # they are objectSets.
             cmds.select(instance, noExpand=True)
-            cmds.file(entry_path,
+            cmds.file(outpath,
                       force=True,
                       typ="mayaAscii",
                       exportSelected=True,
@@ -45,12 +40,3 @@ class ExtractMayaShare(PackageExtractor):
                       expressions=True,
                       shader=True,
                       constructionHistory=True)
-
-        packager.add_data({
-            "entryFileName": entry_file,
-        })
-
-        self.log.info("Extracted {name} to {path}".format(
-            name=instance.data["subset"],
-            path=entry_path)
-        )

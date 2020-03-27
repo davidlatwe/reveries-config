@@ -1,14 +1,10 @@
 
-import os
 import json
 import contextlib
-
 import pyblish.api
-
+from reveries import utils
+from reveries.maya import utils as maya_utils
 from maya import cmds
-
-from reveries.plugins import PackageExtractor
-from reveries.maya import utils
 
 
 def read(attr_path):
@@ -18,7 +14,7 @@ def read(attr_path):
         pass
 
 
-class ExtractLook(PackageExtractor):
+class ExtractLook(pyblish.api.InstancePlugin):
     """Export shaders for rendering
 
     Shaders are associated with an "mdID" attribute on each *transform* node.
@@ -32,18 +28,22 @@ class ExtractLook(PackageExtractor):
     hosts = ["maya"]
     families = ["reveries.look"]
 
-    representations = [
-        "LookDev"
-    ]
-
-    def extract_LookDev(self, instance):
+    def process(self, instance):
         from avalon import maya
         from reveries.maya import lib, capsule
 
-        packager = instance.data["packager"]
-        package_path = packager.create_package()
+        staging_dir = utils.stage_dir()
 
-        entry_file = packager.file_name("ma")
+        filename = "%s.ma" % instance.data["subset"]
+        outpath = "%s/%s" % (staging_dir, filename)
+
+        linkfile = "%s.json" % instance.data["subset"]
+        linkpath = "%s/%s" % (staging_dir, linkfile)
+
+        instance.data["repr.LookDev._stage"] = staging_dir
+        instance.data["repr.LookDev._files"] = [filename, linkfile]
+        instance.data["repr.LookDev.entryFileName"] = filename
+        instance.data["repr.LookDev.linkFname"] = linkfile
 
         # Serialise shaders relationships
         #
@@ -54,8 +54,6 @@ class ExtractLook(PackageExtractor):
 
         # Extract shaders
         #
-        entry_path = os.path.join(package_path, entry_file)
-
         self.log.info("Extracting shaders..")
 
         child_instances = instance.data.get("childInstances", [])
@@ -85,7 +83,7 @@ class ExtractLook(PackageExtractor):
                         replace=True,
                         noExpand=True)
 
-            cmds.file(entry_path,
+            cmds.file(outpath,
                       options="v=0;",
                       type="mayaAscii",
                       force=True,
@@ -134,7 +132,7 @@ class ExtractLook(PackageExtractor):
                 if node not in instance.data["dagMembers"]:
                     continue
                 # We have validated Avalon UUID, so there must be a valid ID.
-                id = utils.get_id(node)
+                id = maya_utils.get_id(node)
                 crease_sets[level].append(id + "." + edges)
 
         # Arnold attributes
@@ -165,7 +163,7 @@ class ExtractLook(PackageExtractor):
                                  long=True)
             for node in transforms:
                 # There must be a valid ID
-                id = utils.get_id(node)
+                id = maya_utils.get_id(node)
 
                 attrs = dict()
 
@@ -230,18 +228,5 @@ class ExtractLook(PackageExtractor):
 
         self.log.info("Extracting serialisation..")
 
-        link_file = packager.file_name("json")
-        link_path = os.path.join(package_path, link_file)
-
-        with open(link_path, "w") as f:
+        with open(linkpath, "w") as f:
             json.dump(relationships, f)
-
-        packager.add_data({
-            "linkFname": link_file,
-            "entryFileName": entry_file,
-        })
-
-        self.log.info("Extracted {name} to {path}".format(
-            name=instance.data["subset"],
-            path=package_path)
-        )
