@@ -18,6 +18,10 @@ class PyblishEncoder(json.JSONEncoder):
             return str(obj)
 
 
+def json_dump(dump, file):
+    json.dump(dump, file, indent=4, sort_keys=True, cls=PyblishEncoder)
+
+
 class DelayedDumpToRemote(pyblish.api.ContextPlugin):
     """Dump context with instances and delayed extractors to remote publish
 
@@ -91,7 +95,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             dump["contextDump"] = outpath
 
             with open(dump_path, "w") as file:
-                json.dump(dump, file, indent=4, cls=PyblishEncoder)
+                json_dump(dump, file)
             self.log.debug("Instance %s dumped to '%s'" % (name, dump_path))
 
         # Dump context
@@ -123,7 +127,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             os.makedirs(outdir)
 
         with open(outpath, "w") as file:
-            json.dump(dump, file, indent=4, cls=PyblishEncoder)
+            json_dump(dump, file)
         self.log.debug("Context dumped to '%s'" % outpath)
 
     def instance_dump(self, instance, extractors):
@@ -148,7 +152,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             outpath = self.EXTRACTOR_DUMP.format(stage=stage_dir)
 
             with open(outpath, "w") as file:
-                json.dump(dump, file, indent=4, cls=PyblishEncoder)
+                json_dump(dump, file)
 
             instance.data["dumpedExtractors"].append(outpath)
 
