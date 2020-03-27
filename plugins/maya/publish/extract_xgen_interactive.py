@@ -35,6 +35,15 @@ class ExtractXGenInteractive(pyblish.api.InstancePlugin):
         instance.data["repr.XGenInteractive.entryFileName"] = filename
         instance.data["repr.XGenInteractive.linkFname"] = linkfile
 
+        child_instances = instance.data.get("childInstances", [])
+        try:
+            texture = next(chd for chd in child_instances
+                           if chd.data["family"] == "reveries.texture")
+        except StopIteration:
+            file_node_attrs = dict()
+        else:
+            file_node_attrs = texture.data.get("fileNodeAttrs", dict())
+
         bound_map = dict()
         clay_shader = "initialShadingGroup"
         descriptions = instance.data["igsDescriptions"]
@@ -62,6 +71,8 @@ class ExtractXGenInteractive(pyblish.api.InstancePlugin):
 
             with contextlib.nested(
                 capsule.no_display_layers(instance[:]),
+                # Change to published path
+                capsule.attribute_values(file_node_attrs),
                 capsule.maintained_selection(),
             ):
                 cmds.select(descriptions)
