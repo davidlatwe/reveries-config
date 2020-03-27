@@ -64,7 +64,8 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
 
         # Context data
         workspace = context.data["workspaceDir"]
-        context.data["outputDir"] = os.path.join(workspace, "renders")
+        outputdir = os.path.join(workspace, "renders").replace("\\", "/")
+        context.data["outputDir"] = outputdir
         # Are there other renderlayer than defaultRenderLayer ?
         context.data["hasRenderLayers"] = len(valid_layers) > 1
         # Using Render Setup system ?

@@ -1,13 +1,13 @@
 
 import os
+import shutil
 from collections import OrderedDict
 
 import pyblish.api
 import avalon.api
 import avalon.io
 
-from reveries import lib
-from reveries.plugins import PackageExtractor
+from reveries import lib, utils
 from reveries.maya.plugins import env_embedded_path
 from reveries.maya import lib as maya_lib
 
@@ -16,7 +16,7 @@ def to_tx(path):
     return os.path.splitext(path)[0] + ".tx"
 
 
-class ExtractTexture(PackageExtractor):
+class ExtractTexture(pyblish.api.InstancePlugin):
     """Export texture files
     """
 
@@ -25,31 +25,18 @@ class ExtractTexture(PackageExtractor):
     hosts = ["maya"]
     families = ["reveries.texture"]
 
-    representations = [
-        "TexturePack"
-    ]
+    def process(self, instance):
 
-    def extract_TexturePack(self, instance):
-
-        packager = instance.data["packager"]
-        packager.skip_stage()
-        package_path = packager.create_package()
-        package_path = env_embedded_path(package_path)
-
-        # For storing calculated published file path for look or lightSet
-        # extractors to update file path.
-        if "fileNodeAttrs" not in instance.data:
-            instance.data["fileNodeAttrs"] = OrderedDict()
-
-        # Extract textures
-        #
-        self.log.info("Extracting textures..")
-
-        self.use_tx = instance.data.get("useTxMaps", False)
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
+        published_dir = self.published_dir(instance)
 
         file_inventory = list()
-        previous_by_fpattern = dict()
-        current_by_fpattern = dict()
+        NEW_OR_CHANGED = list()
+
+        PREVIOUS = dict()
+        CURRENT = dict()
+
+        files_to_copy = dict()
 
         # Get previous files
         path = [
@@ -64,8 +51,7 @@ class ExtractTexture(PackageExtractor):
             repr = avalon.io.find_one({"_id": representation_id})
 
             file_inventory = repr["data"].get("fileInventory", [])
-            _ = maya_lib.resolve_file_profile(repr, file_inventory)
-            previous_by_fpattern = _
+            PREVIOUS = maya_lib.resolve_file_profile(repr, file_inventory)
 
         # Get current files
         for data in instance.data["fileData"]:
@@ -77,25 +63,35 @@ class ExtractTexture(PackageExtractor):
             fnames = data["fnames"]
             fpattern = data["fpattern"]
 
-            current_by_fpattern[fpattern] = {
+            CURRENT[fpattern] = {
                 "node": data["node"],
                 "colorSpace": data["colorSpace"],
                 "fnames": fnames,
                 "pathMap": {fn: dir_name + "/" + fn for fn in fnames},
             }
 
+        # Extract textures
+        #
+        self.log.info("Extracting textures..")
+
+        # For storing calculated published file path for look or lightSet
+        # extractors to update file path.
+        if "fileNodeAttrs" not in instance.data:
+            instance.data["fileNodeAttrs"] = OrderedDict()
+
         # To transfer
         #
+        USE_TX = instance.data.get("useTxMaps", False)
         new_version = instance.data["versionNext"]
 
-        for fpattern, data in current_by_fpattern.items():
+        for fpattern, data in CURRENT.items():
             if not data["fnames"]:
                 raise RuntimeError("Empty file list, this is a bug.")
 
             file_nodes = [dat["node"] for dat in instance.data["fileData"]
                           if dat["fpattern"] == fpattern]
 
-            versioned_data = previous_by_fpattern.get(fpattern, list())
+            versioned_data = PREVIOUS.get(fpattern, list())
             versioned_data.sort(key=lambda elem: elem[0]["version"],
                                 reverse=True)  # elem: (data, tmp_data)
 
@@ -149,7 +145,7 @@ class ExtractTexture(PackageExtractor):
                 self.log.info("New texture collected from '%s': %s"
                               "" % (data["node"], fpattern))
 
-                file_inventory.append({
+                NEW_OR_CHANGED.append({
                     "fpattern": fpattern,
                     "version": new_version,
                     "colorSpace": current_color_space,
@@ -158,25 +154,35 @@ class ExtractTexture(PackageExtractor):
 
                 all_files = list()
                 for file, abs_path in data["pathMap"].items():
-                    final_path = package_path + "/" + file
-                    packager.add_file(abs_path, final_path)
 
-                    if self.use_tx:
+                    files_to_copy[file] = abs_path
+
+                    if USE_TX:
                         # Upload .tx file as well
                         tx_abs_path = to_tx(abs_path)
-                        tx_final_path = to_tx(final_path)
-                        packager.add_file(tx_abs_path, tx_final_path)
+                        tx_stage_file = to_tx(file)
+
+                        files_to_copy[tx_stage_file] = tx_abs_path
 
                     all_files.append(file)
 
                 head_file = sorted(all_files)[0]
-                resolved_path = package_path + "/" + head_file
+                resolved_path = published_dir + "/" + head_file
                 self.update_file_node_attrs(instance,
                                             file_nodes,
                                             resolved_path,
                                             current_color_space)
 
-        packager.add_data({"fileInventory": file_inventory})
+        file_inventory += NEW_OR_CHANGED
+
+        instance.data["repr.TexturePack._stage"] = staging_dir
+        instance.data["repr.TexturePack._hardlinks"] = list(files_to_copy)
+        instance.data["repr.TexturePack.fileInventory"] = file_inventory
+
+        instance.data["repr.TexturePack._delayRun"] = {
+            "func": self.stage_textures,
+            "args": [staging_dir, files_to_copy],
+        }
 
     def update_file_node_attrs(self, instance, file_nodes, path, color_space):
         # (NOTE) All input `file_nodes` will be set to same `color_space`
@@ -201,3 +207,26 @@ class ExtractTexture(PackageExtractor):
                 # file node.
                 attr = node + ".aiAutoTx"
                 instance.data["fileNodeAttrs"][attr] = False
+
+    def published_dir(self, instance):
+        template_publish = instance.data["publishPathTemplate"]
+        template_data = instance.data["publishPathTemplateData"]
+        published_dir = template_publish.format(representation="TexturePack",
+                                                **template_data)
+        return env_embedded_path(published_dir)
+
+    def stage_textures(self, staging_dir, files_to_copy):
+        for file, src in files_to_copy.items():
+
+            dst = staging_dir + "/" + file
+
+            dst_dir = os.path.dirname(dst)
+            if not os.path.isdir(dst_dir):
+                os.makedirs(dst_dir)
+
+            try:
+                shutil.copy2(src, dst)
+            except OSError:
+                msg = "An unexpected error occurred."
+                self.log.critical(msg)
+                raise OSError(msg)

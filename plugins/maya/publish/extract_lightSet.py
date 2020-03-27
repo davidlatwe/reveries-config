@@ -1,13 +1,10 @@
 
-import os
 import contextlib
-
 import pyblish.api
+from reveries import utils
 
-from reveries.plugins import PackageExtractor
 
-
-class ExtractLightSet(PackageExtractor):
+class ExtractLightSet(pyblish.api.InstancePlugin):
     """Export lights for rendering"""
 
     label = "Extract LightSet"
@@ -15,24 +12,21 @@ class ExtractLightSet(PackageExtractor):
     hosts = ["maya"]
     families = ["reveries.lightset"]
 
-    representations = [
-        "LightSet"
-    ]
-
-    def extract_LightSet(self, instance):
+    def process(self, instance):
         from maya import cmds
         from avalon import maya
         from reveries.maya import capsule
 
-        packager = instance.data["packager"]
-        package_path = packager.create_package()
+        staging_dir = utils.stage_dir()
+        filename = "%s.ma" % instance.data["subset"]
+        outpath = "%s/%s" % (staging_dir, filename)
 
-        entry_file = packager.file_name("ma")
+        instance.data["repr.LightSet._stage"] = staging_dir
+        instance.data["repr.LightSet._files"] = [filename]
+        instance.data["repr.LightSet.entryFileName"] = filename
 
         # Extract lights
         #
-        entry_path = os.path.join(package_path, entry_file)
-
         self.log.info("Extracting lights..")
 
         # From texture extractor
@@ -54,7 +48,7 @@ class ExtractLightSet(PackageExtractor):
                         replace=True,
                         noExpand=True)
 
-            cmds.file(entry_path,
+            cmds.file(outpath,
                       options="v=0;",
                       type="mayaAscii",
                       force=True,
@@ -65,7 +59,3 @@ class ExtractLightSet(PackageExtractor):
                       constraints=False,
                       shader=False,
                       expressions=True)
-
-        packager.add_data({
-            "entryFileName": entry_file,
-        })

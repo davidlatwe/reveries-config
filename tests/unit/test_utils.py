@@ -11,9 +11,9 @@ import reveries
 import reveries.utils
 
 
-def test_temp_dir():
+def test_stage_dir():
     prefix = "test_temp"
-    dir_path = reveries.utils.temp_dir(prefix=prefix)
+    dir_path = reveries.utils.stage_dir(prefix=prefix)
 
     # It's a dir
     assert os.path.isdir(dir_path)
@@ -23,18 +23,6 @@ def test_temp_dir():
     assert os.path.basename(dir_path).startswith(prefix)
 
     os.rmdir(dir_path)  # clean up
-
-
-def test_clear_stage():
-    prefix = "test_clear"
-    tmp_1 = tempfile.mkdtemp(prefix=prefix)
-    tmp_2 = tempfile.mkdtemp(prefix=prefix)
-
-    reveries.utils.clear_stage(prefix=prefix)
-
-    # They should be all removed
-    assert os.path.isdir(tmp_1) is False
-    assert os.path.isdir(tmp_2) is False
 
 
 @mock.patch.dict('avalon.Session', {"AVALON_ASSET": "TestShot"})

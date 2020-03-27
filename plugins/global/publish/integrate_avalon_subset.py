@@ -50,8 +50,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             self.log.warning("Atomicity not held, aborting.")
             return
 
-        self.transfers = dict(packages=list(),
-                              files=list(),
+        self.transfers = dict(files=list(),
                               hardlinks=list())
 
         # Assemble data and create version, representations
@@ -66,18 +65,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     def register(self, instance):
 
         context = instance.context
-
-        # Check packages
-        #
-        packages = instance.data.get("packages")
-
-        if not packages:
-            raise RuntimeError("No representation to publish.")
-
-        stagingdir = instance.data.get("stagingDir")
-
-        assert stagingdir, ("Incomplete instance \"%s\": "
-                            "Missing reference to staging dir." % instance)
 
         # Assemble
         #
@@ -109,34 +96,58 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                                       locations=locations,
                                       data=version_data)
 
-        # Find the representations to transfer amongst the files
-        # Each should be a single representation (as such, a single extension)
+        # Find the representations to transfer
         #
-        representations = []
+        representations = dict()
+        _repr_data = dict()
 
         # Should not have any kind of check on files here, that should be done
         # by extractors, here only need to publish representation dirs.
 
-        for package, repr_data in packages.items():
+        template_publish = instance.data["publishPathTemplate"]
+        template_data = instance.data["publishPathTemplateData"]
 
-            representation = {
-                "schema": "avalon-core:representation-2.0",
-                "type": "representation",
-                "parent": None,  # write this later
-                "name": package,
-                "data": repr_data,
-            }
-            representations.append(representation)
+        for key in sorted(instance.data.keys()):
+            if not key.startswith("repr."):
+                continue
 
-            src = repr_data.pop("packageDir")
-            dst = repr_data.pop("representationDir")
+            _, repr_name, entry = key.split(".", 2)
 
-            self.transfers["packages"].append([src, dst])
+            if repr_name.startswith("_"):
+                continue
 
-        self.transfers["files"] += instance.data["files"]
-        self.transfers["hardlinks"] += instance.data["hardlinks"]
+            if repr_name not in representations:
 
-        return subset, version, representations
+                repr_data = dict()
+
+                representation = {
+                    "schema": "avalon-core:representation-2.0",
+                    "type": "representation",
+                    "parent": None,  # write this later
+                    "name": repr_name,
+                    "data": repr_data,
+                }
+                representations[repr_name] = representation
+                _repr_data[repr_name] = repr_data
+
+                src = instance.data["repr.%s._stage" % repr_name]
+                dst = template_publish.format(representation=repr_name,
+                                              **template_data)
+
+                self.transfers["files"] += [
+                    ("%s/%s" % (src, tail), "%s/%s" % (dst, tail)) for tail in
+                    instance.data.get("repr.%s._files" % repr_name, [])
+                ]
+                self.transfers["hardlinks"] += [
+                    ("%s/%s" % (src, tail), "%s/%s" % (dst, tail)) for tail in
+                    instance.data.get("repr.%s._hardlinks" % repr_name, [])
+                ]
+
+            # Filtering representation data
+            if not entry.startswith("_"):
+                _repr_data[repr_name][entry] = instance.data[key]
+
+        return subset, version, list(representations.values())
 
     def integrate(self):
         """Move the files
@@ -185,35 +196,12 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                     self.log.warning("File transfered: %s" % dst)
                     continue
 
-                if job == "packages":
-                    self.copy_dir(src, dst)
                 if job == "files":
                     self.copy_file(src, dst)
                 if job == "hardlinks":
                     self.hardlink_file(src, dst)
 
                 transfered.append(dst)
-
-    def copy_dir(self, src, dst):
-        """ Copy given source to destination
-
-        Arguments:
-            src (str): the source dir which needs to be copied
-            dst (str): the destination of the sourc dir
-        Returns:
-            None
-        """
-        try:
-            shutil.copytree(src, dst)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                msg = ("Representation dir existed, this should "
-                       "not happen. Copy aborted.")
-            else:
-                msg = "An unexpected error occurred."
-
-            self.log.critical(msg)
-            raise OSError(msg)
 
     def copy_file(self, src, dst):
         file_dir = os.path.dirname(dst)

@@ -1,16 +1,13 @@
 
-import os
 import contextlib
-
 import pyblish.api
 import avalon.api
-from reveries import plugins
+from reveries import utils
 from reveries.maya import capsule
-
 from maya import cmds, mel
 
 
-class ExtractArnoldStandIn(plugins.PackageExtractor):
+class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
     """
     """
 
@@ -21,18 +18,9 @@ class ExtractArnoldStandIn(plugins.PackageExtractor):
         "reveries.standin"
     ]
 
-    representations = [
-        "Ass",
-    ]
+    def process(self, instance):
 
-    def extract_Ass(self, instance):
-
-        packager = instance.data["packager"]
-        packager.skip_stage()
-        package_path = packager.create_package()
-
-        cache_file = packager.file_name("ass")
-        cache_path = os.path.join(package_path, cache_file)
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
 
         start = instance.data["startFrame"]
         end = instance.data["endFrame"]
@@ -40,14 +28,24 @@ class ExtractArnoldStandIn(plugins.PackageExtractor):
         has_yeti = instance.data.get("hasYeti", False)
         nodes = instance[:]
 
-        entry_file = packager.file_name(suffix=".%04d" % start,
-                                        extension="ass")
+        pattern = "%s.%%04d.ass" % instance.data["subset"]
+        cachename = "%s.ass" % instance.data["subset"]
+
+        firstfile = pattern % start
+        outpath = "%s/%s" % (staging_dir, cachename)
 
         use_sequence = start != end
         if use_sequence:
-            packager.add_data({"startFrame": start, "endFrame": end})
-        packager.add_data({"entryFileName": entry_file,
-                           "useSequence": use_sequence})
+            instance.data["repr.Ass.startFrame"] = start
+            instance.data["repr.Ass.endFrame"] = end
+            instance.data["repr.Ass._hardlinks"] = [
+                pattern % i for i in range(start, end, step)]
+        else:
+            instance.data["repr.Ass._hardlinks"] = [firstfile]
+
+        instance.data["repr.Ass._stage"] = staging_dir
+        instance.data["repr.Ass.entryFileName"] = firstfile
+        instance.data["repr.Ass.useSequence"] = use_sequence
 
         self.log.info("Extracting standin..")
 
@@ -60,18 +58,22 @@ class ExtractArnoldStandIn(plugins.PackageExtractor):
         else:
             file_node_attrs = texture.data.get("fileNodeAttrs", dict())
 
-        self.export_ass(nodes,
-                        cache_path,
-                        file_node_attrs,
-                        has_yeti=has_yeti,
-                        start=start,
-                        end=end,
-                        step=step)
+        instance.data["repr.Ass._delayRun"] = {
+            "func": self.export_ass,
+            "args": [
+                nodes,
+                outpath,
+                file_node_attrs,
+                has_yeti,
+                start,
+                end,
+                step
+            ],
+        }
 
-    @plugins.delay_extract
     def export_ass(self,
                    nodes,
-                   cache_path,
+                   outpath,
                    file_node_attrs,
                    has_yeti,
                    start,
@@ -109,7 +111,7 @@ class ExtractArnoldStandIn(plugins.PackageExtractor):
             capsule.attribute_values(arnold_tx_settings),
         ):
             cmds.select(nodes, replace=True)
-            asses = cmds.arnoldExportAss(filename=cache_path,
+            asses = cmds.arnoldExportAss(filename=outpath,
                                          selected=True,
                                          startFrame=start,
                                          endFrame=end,
