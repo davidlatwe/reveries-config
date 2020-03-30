@@ -57,7 +57,9 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
             self.set_path(read, aov_name=name, path=path)
             self.set_format(read, data["resolution"])
-            self.set_range(read, start=data["seqStart"], end=data["seqEnd"])
+            self.set_range(read,
+                           start=data["startFrame"],
+                           end=data["endFrame"])
 
             # Mark aov name
             lib.set_avalon_knob_data(read, {("aov", "AOV"): name})
@@ -95,8 +97,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 self.set_path(read, aov_name=name, file_name=data["fname"])
                 self.set_format(read, data["resolution"])
                 self.set_range(read,
-                               start=data["seqStart"],
-                               end=data["seqEnd"])
+                               start=data["startFrame"],
+                               end=data["endFrame"])
 
         node = container["_node"]
         with lib.sync_copies([node], force=True):
