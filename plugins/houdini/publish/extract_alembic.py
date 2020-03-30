@@ -1,10 +1,8 @@
 import os
-
 import pyblish.api
-from reveries.plugins import PackageExtractor
 
 
-class ExtractAlembic(PackageExtractor):
+class ExtractAlembic(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ExtractorOrder
     label = "Extract Alembic"
@@ -14,71 +12,66 @@ class ExtractAlembic(PackageExtractor):
         "reveries.camera",
     ]
 
-    representations = [
-        "Alembic",
-        "AlembicSeq",
-    ]
-
-    def extract(self, instance):
+    def process(self, instance):
         if len(instance.data.get("frameOutputs", [])) <= 1:
-            instance.data["extractType"] = "Alembic"
+            self.export_abc(instance)
         else:
-            instance.data["extractType"] = "AlembicSeq"
+            self.export_abc_seq(instance)
 
-        super(ExtractAlembic, self).extract(instance)
-
-    def extract_Alembic(self, instance):
-        packager = instance.data["packager"]
+    def export_abc(self, instance):
         ropnode = instance[0]
 
         # Get the filename from the filename parameter
         output = ropnode.evalParm("filename")
         # Set custom staging dir
-        staging_dir = os.path.dirname(output)
-        instance.data["stagingDir"] = staging_dir
-        pkg_dir = packager.create_package(with_representation=False)
+        staging_dir, filename = os.path.split(output)
+        repr_root = instance.data["reprRoot"]
 
-        file_name = os.path.basename(output)
-        self.log.info("Writing alembic '%s' to '%s'" % (file_name,
-                                                        pkg_dir))
-        self.render(ropnode, pkg_dir)
+        instance.data["repr.Alembic._stage"] = staging_dir
+        instance.data["repr.Alembic._hardlinks"] = [filename]
+        instance.data["repr.Alembic.entryFileName"] = filename
 
-        packager.add_data({
-            "entryFileName": file_name,
-        })
-        self.inject_cache_root(instance, packager)
+        if instance.data["family"] == "reveries.pointcache":
+            instance.data["repr.Alembic.reprRoot"] = repr_root
 
-    def extract_AlembicSeq(self, instance):
-        packager = instance.data["packager"]
+        instance.data["repr.Alembic._delayRun"] = {
+            "func": self.render,
+            "args": [ropnode],
+        }
+
+    def export_abc_seq(self, instance):
         ropnode = instance[0]
 
         # Get the first frame filename from pre-collected data
         output = instance.data["frameOutputs"][0]
         # Set custom staging dir
-        staging_dir = os.path.dirname(output)
-        instance.data["stagingDir"] = staging_dir
-        pkg_dir = packager.create_package(with_representation=False)
+        staging_dir, filename = os.path.split(output)
+        repr_root = instance.data["reprRoot"]
 
-        file_name = os.path.basename(output)
-        self.log.info("Writing alembic '%s' to '%s'" % (file_name,
-                                                        pkg_dir))
-        self.render(ropnode, pkg_dir)
+        start = instance.data["startFrame"]
+        end = instance.data["endFrame"]
+        step = instance.data["step"]
 
-        packager.add_data({
-            "entryFileName": file_name,
-            "startFrame": instance.data["startFrame"],
-            "endFrame": instance.data["endFrame"],
-            "step": instance.data["step"],
-        })
-        self.inject_cache_root(instance, packager)
+        files = list()
+        for path in instance.data["frameOutputs"]:
+            files.append(os.path.basename(path))
 
-    def inject_cache_root(self, instance, packager):
+        instance.data["repr.AlembicSeq._stage"] = staging_dir
+        instance.data["repr.AlembicSeq._hardlinks"] = files
+        instance.data["repr.AlembicSeq.entryFileName"] = filename
+        instance.data["repr.AlembicSeq.startFrame"] = start
+        instance.data["repr.AlembicSeq.endFrame"] = end
+        instance.data["repr.AlembicSeq.step"] = step
+
         if instance.data["family"] == "reveries.pointcache":
-            packager.add_data({
-                "reprRoot": instance.data["reprRoot"],
-            })
+            instance.data["repr.AlembicSeq.reprRoot"] = repr_root
 
-    def render(self, ropnode, output_dir):
+        instance.data["repr.AlembicSeq._delayRun"] = {
+            "func": self.render,
+            "args": [ropnode],
+        }
+
+    def render(self, ropnode):
         import hou
 
         try:

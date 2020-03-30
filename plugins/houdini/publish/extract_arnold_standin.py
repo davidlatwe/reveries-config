@@ -1,10 +1,9 @@
 import os
 
 import pyblish.api
-from reveries.plugins import PackageExtractor
 
 
-class ExtractArnoldStandIn(PackageExtractor):
+class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ExtractorOrder + 0.1
     label = "Extract Arnold Stand-In"
@@ -13,27 +12,43 @@ class ExtractArnoldStandIn(PackageExtractor):
         "reveries.standin",
     ]
 
-    representations = [
-        "Ass",
-    ]
-
-    def extract_Ass(self, instance):
-        import hou
-
-        packager = instance.data["packager"]
+    def process(self, instance):
         ropnode = instance[0]
+
+        files = list()
 
         if "frameOutputs" in instance.data:
             output = instance.data["frameOutputs"][0]
+
+            start = instance.data["startFrame"]
+            end = instance.data["endFrame"]
+            step = instance.data["step"]
+
+            instance.data["repr.Ass.startFrame"] = start
+            instance.data["repr.Ass.endFrame"] = end
+            instance.data["repr.Ass.step"] = step
+
+            for path in instance.data["frameOutputs"]:
+                files.append(os.path.basename(path))
+
         else:
             output = ropnode.evalParm("ar_ass_file")
 
-        staging_dir = os.path.dirname(output)
-        instance.data["stagingDir"] = staging_dir
-        pkg_dir = packager.create_package(with_representation=False)
+        staging_dir, filename = os.path.split(output)
+        repr_root = instance.data["reprRoot"]
 
-        file_name = os.path.basename(output)
-        self.log.info("Writing Ass '%s' to '%s'" % (file_name, pkg_dir))
+        instance.data["repr.Ass._stage"] = staging_dir
+        instance.data["repr.Ass._hardlinks"] = files or [filename]
+        instance.data["repr.Ass.entryFileName"] = filename
+        instance.data["repr.Ass.reprRoot"] = repr_root
+
+        instance.data["repr.Ass._delayRun"] = {
+            "func": self.render,
+            "args": [ropnode],
+        }
+
+    def render(self, ropnode):
+        import hou
 
         try:
             ropnode.render()
@@ -44,15 +59,3 @@ class ExtractArnoldStandIn(PackageExtractor):
             import traceback
             traceback.print_exc()
             raise RuntimeError("Render failed: {0}".format(exc))
-
-        packager.add_data({
-            "entryFileName": file_name,
-            "reprRoot": instance.data["reprRoot"],
-        })
-
-        if instance.data.get("startFrame"):
-            packager.add_data({
-                "startFrame": instance.data["startFrame"],
-                "endFrame": instance.data["endFrame"],
-                "step": instance.data["step"],
-            })

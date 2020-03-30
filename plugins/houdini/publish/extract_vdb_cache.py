@@ -1,10 +1,9 @@
 import os
 
 import pyblish.api
-from reveries.plugins import PackageExtractor
 
 
-class ExtractVDBCache(PackageExtractor):
+class ExtractVDBCache(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ExtractorOrder + 0.1
     label = "Extract VDB Cache"
@@ -13,27 +12,43 @@ class ExtractVDBCache(PackageExtractor):
         "reveries.vdbcache",
     ]
 
-    representations = [
-        "VDB",
-    ]
-
-    def extract_VDB(self, instance):
-        import hou
-
-        packager = instance.data["packager"]
+    def process(self, instance):
         ropnode = instance[0]
+
+        files = list()
 
         if "frameOutputs" in instance.data:
             output = instance.data["frameOutputs"][0]
+
+            start = instance.data["startFrame"]
+            end = instance.data["endFrame"]
+            step = instance.data["step"]
+
+            instance.data["repr.VDB.startFrame"] = start
+            instance.data["repr.VDB.endFrame"] = end
+            instance.data["repr.VDB.step"] = step
+
+            for path in instance.data["frameOutputs"]:
+                files.append(os.path.basename(path))
+
         else:
             output = ropnode.evalParm("sopoutput")
 
-        staging_dir = os.path.dirname(output)
-        instance.data["stagingDir"] = staging_dir
-        pkg_dir = packager.create_package(with_representation=False)
+        staging_dir, filename = os.path.split(output)
+        repr_root = instance.data["reprRoot"]
 
-        file_name = os.path.basename(output)
-        self.log.info("Writing VDB '%s' to '%s'" % (file_name, pkg_dir))
+        instance.data["repr.VDB._stage"] = staging_dir
+        instance.data["repr.VDB._hardlinks"] = files or [filename]
+        instance.data["repr.VDB.entryFileName"] = filename
+        instance.data["repr.VDB.reprRoot"] = repr_root
+
+        instance.data["repr.VDB._delayRun"] = {
+            "func": self.render,
+            "args": [ropnode],
+        }
+
+    def render(self, ropnode):
+        import hou
 
         try:
             ropnode.render()
@@ -44,15 +59,3 @@ class ExtractVDBCache(PackageExtractor):
             import traceback
             traceback.print_exc()
             raise RuntimeError("Render failed: {0}".format(exc))
-
-        packager.add_data({
-            "entryFileName": file_name,
-            "reprRoot": instance.data["reprRoot"],
-        })
-
-        if instance.data.get("startFrame"):
-            packager.add_data({
-                "startFrame": instance.data["startFrame"],
-                "endFrame": instance.data["endFrame"],
-                "step": instance.data["step"],
-            })
