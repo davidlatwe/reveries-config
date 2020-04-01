@@ -27,8 +27,6 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        instance.data["submitted"] = True
-
         context = instance.context
 
         if not all(result["success"] for result in context.data["results"]):
