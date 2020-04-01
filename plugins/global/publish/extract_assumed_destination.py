@@ -106,8 +106,13 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
 
         self.log.info("Cleaning version dir.")
 
+        keep = [
+            self.LOCK,
+            ".instance.json",  # Instance dump file
+        ]
+
         for item in os.listdir(path):
-            if item == self.LOCK:
+            if item in keep:
                 continue
 
             item_path = os.path.join(path, item)
