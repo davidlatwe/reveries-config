@@ -32,7 +32,8 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                 files.append(os.path.basename(path))
 
         else:
-            output = ropnode.evalParm("ar_ass_file")
+            output_parm = lib.get_output_parameter(ropnode)
+            output = output_parm.eval()
 
         staging_dir, filename = os.path.split(output)
         repr_root = instance.data["reprRoot"]

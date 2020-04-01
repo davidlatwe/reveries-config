@@ -1,5 +1,5 @@
 from avalon import houdini
-from reveries.lib import AVALON_ID
+from reveries import lib
 
 
 class CreatePointCache(houdini.Creator):
@@ -22,6 +22,11 @@ class CreatePointCache(houdini.Creator):
         # asset.
         self.data["assetConfirmed"] = False
 
+        self.data["deadlinePriority"] = 80
+        self.data["deadlinePool"] = lib.get_deadline_pools()
+        self.data["deadlineFramesPerTask"] = 1
+        self.data["deadlineSuspendJob"] = False
+
     def process(self):
         instance = super(CreatePointCache, self).process()
 
@@ -31,7 +36,7 @@ class CreatePointCache(houdini.Creator):
             "use_sop_path": True,  # Export single node from SOP Path
             "build_from_path": False,  # Direct path of primitive in output
             "path_attrib": "path",  # Pass path attribute for output
-            "prim_to_detail_pattern": AVALON_ID,
+            "prim_to_detail_pattern": lib.AVALON_ID,
             "format": 2,  # Set format to Ogawa
             "filename": file_path,
         }

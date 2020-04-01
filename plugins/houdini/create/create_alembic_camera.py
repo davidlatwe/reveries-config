@@ -1,4 +1,5 @@
 from avalon import houdini
+from reveries import lib
 
 
 class CreateAlembicCamera(houdini.Creator):
@@ -16,6 +17,9 @@ class CreateAlembicCamera(houdini.Creator):
 
         # Set node type to create for output
         self.data.update({"node_type": "alembic"})
+
+        self.data["deadlinePriority"] = 80
+        self.data["deadlinePool"] = lib.get_deadline_pools()
 
     def process(self):
         instance = super(CreateAlembicCamera, self).process()

@@ -4,7 +4,7 @@ import pyblish.api
 
 class ExtractAlembic(pyblish.api.InstancePlugin):
 
-    order = pyblish.api.ExtractorOrder
+    order = pyblish.api.ExtractorOrder + 0.1
     label = "Extract Alembic"
     hosts = ["houdini"]
     families = [
