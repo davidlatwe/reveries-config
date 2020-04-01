@@ -3,7 +3,6 @@ import os
 import sys
 import logging
 import avalon.api
-import avalon.io
 import pyblish.api
 
 from .. import PLUGINS_DIR
@@ -37,9 +36,8 @@ class Filesys(avalon.api.Application):
 
 
 def install():
-    avalon.io.install()
 
-    app = Filesys()
+    app = Filesys()  # Init workdir
     app.process(avalon.api.Session.copy(), launch=False)
 
     pyblish.api.register_host("python")
@@ -52,7 +50,6 @@ def install():
 
 
 def uninstall():
-    avalon.io.uninstall()
 
     pyblish.api.deregister_host("python")
     pyblish.api.deregister_host("filesys")
@@ -61,3 +58,7 @@ def uninstall():
     pyblish.api.deregister_plugin_path(PUBLISH_PATH)
 
     self.installed = False
+
+
+def ls():
+    return []
