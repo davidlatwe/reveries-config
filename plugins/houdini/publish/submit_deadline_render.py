@@ -1,7 +1,6 @@
 
 import os
 import json
-import copy
 import platform
 import pyblish.api
 
