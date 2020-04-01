@@ -1,6 +1,6 @@
 import os
-
 import pyblish.api
+from reveries.houdini import lib
 
 
 class ExtractVDBCache(pyblish.api.InstancePlugin):

@@ -1,6 +1,6 @@
 import os
-
 import pyblish.api
+from reveries.houdini import lib
 
 
 class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
