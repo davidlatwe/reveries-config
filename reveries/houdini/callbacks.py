@@ -25,3 +25,4 @@ def before_save(*args):
 
 def on_open(*args):
     print("Running callback on open..")
+    # (TODO) Pop scene inventory if any outdated
