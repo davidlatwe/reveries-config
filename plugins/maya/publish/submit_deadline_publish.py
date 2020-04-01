@@ -202,10 +202,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             # Submit
 
             submitter = context.data["deadlineSubmitter"]
-            index = submitter.add_job(payload)
-
-            dump_path = instance.data["dumpPath"]
-            submitter.append_filesys_publish(payload, index, dump_path)
+            submitter.add_job(payload)
 
     def assemble_environment(self, instance):
         """Compose submission required environment variables for instance
@@ -228,5 +225,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
 
         dumped = ";".join(instance.data["dumpedExtractors"])
         environment["PYBLISH_EXTRACTOR_DUMPS"] = dumped
+
+        environment["PYBLISH_DUMP_FILE"] = instance.data["dumpPath"]
 
         return environment
