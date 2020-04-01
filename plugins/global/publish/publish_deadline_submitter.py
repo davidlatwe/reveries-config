@@ -121,9 +121,7 @@ class DeadlineSubmitter(object):
                                  auth=tuple(self._auth))
 
         if not response.ok:
-            msg = response.text
-            self.log.error(msg)
-            raise Exception("Submission failed...")
+            raise Exception(response.text)
         else:
             jobid = eval(response.text)["_id"]
             self.log.info("Success. JobID: %s" % jobid)
