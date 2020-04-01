@@ -105,14 +105,17 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             "by": dump_user,
             "from": context.data["currentMaking"],
             "date": lib.avalon_id_timestamp(dump_id),
+            "comment": context.data["comment"],
             "instances": [
                 {
                     "id": instance.id,
                     "name": instance.name,
                     "asset": instance.data["asset"],
+                    "subset": instance.data["subset"],
                     "family": instance.data["family"],
                     "families": instance.data.get("families", []),
                     "version": instance.data["versionNext"],
+                    "dependencies": instance.data.get("dependencies", dict()),
                     "dump": dumps[instance.name][0],
                     "childInstances": [
                         c.id for c in instance.data.get("childInstances", [])

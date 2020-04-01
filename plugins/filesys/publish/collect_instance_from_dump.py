@@ -52,9 +52,10 @@ class CollectInstancesFromDump(pyblish.api.ContextPlugin):
             context_dump = json.load(file)
 
             context.data.update({
-                "by": context_dump["by"],
-                "from": context_dump["from"],
+                "user": context_dump["by"],
                 "date": context_dump["date"],
+                "currentMaking": context_dump["from"],
+                "comment": context_dump["comment"],
             })
 
         instance_by_id = dict()
