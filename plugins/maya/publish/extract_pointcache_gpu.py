@@ -12,7 +12,6 @@ class ExtractPointCacheGPU(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Extract PointCache (gpu)"
     families = [
-        "reveries.pointcache",
         "reveries.pointcache.gpu",
     ]
 

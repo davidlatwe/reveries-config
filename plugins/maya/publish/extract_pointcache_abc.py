@@ -12,7 +12,6 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Extract PointCache (abc)"
     families = [
-        "reveries.pointcache",
         "reveries.pointcache.abc",
     ]
 

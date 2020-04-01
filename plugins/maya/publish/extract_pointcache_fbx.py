@@ -12,7 +12,6 @@ class ExtractPointCacheFBX(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     label = "Extract PointCache (fbx)"
     families = [
-        "reveries.pointcache",
         "reveries.pointcache.fbx",
     ]
 
