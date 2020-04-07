@@ -174,18 +174,33 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
 
         return overrides
 
-    def colllect_renderlayer_members(self, layer):
-        # (NOTE) Using `listConnections` over `editRenderLayerMembers` was
-        #        because `editRenderLayerMembers` can only return either
-        #        full path or just node name.
-        #        Not tested but I guess `listConnections` will be faster.
-        #
-        #        Nodes that has it's attribute `renderLayerInfo` connected
-        #        to renderLayer node's `renderInfo` is that renderLayer's
-        #        member.
-        #
-        members = cmds.listConnections(layer + ".renderInfo",
-                                       destination=True,
-                                       source=False,
-                                       shapes=False) or []
-        return list(set(members))
+    def colllect_renderlayer_members(self, name):
+        """Return renerlayer members in short name
+
+        This method is implemented with Maya API 1.0.
+
+        (NOTE)
+        `editRenderLayerMembers` can only return either full path or just
+        node name. And using `listConnections` to list out the connection
+        between renerlayer's `renderInfo` and node's `renderLayerInfo` to
+        find members, doesn't work with defaultRenderLayer.
+
+        """
+        import maya.OpenMaya as om_v1
+        import maya.OpenMayaRender as omrender_v1
+
+        members = set()
+
+        mobj = omrender_v1.MFnRenderLayer.findLayerByName(name)
+        layer = omrender_v1.MFnRenderLayer(mobj)
+
+        marray = om_v1.MObjectArray()
+        layer.listMembers(marray)
+
+        for index in range(marray.length()):
+            mobj = marray[index]
+            # Assume all member `hasFn(om_v1.MFn.kDagNode)`
+            node = om_v1.MFnDagNode(mobj)
+            members.add(node.partialPathName())
+
+        return list(members)

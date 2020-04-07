@@ -11,6 +11,8 @@ from . import lib
 from .utils import (
     update_id_verifiers,
     generate_container_id,
+    get_id_status,
+    Identifier,
 )
 
 from ..utils import get_representation_path_
@@ -37,6 +39,7 @@ from .hierarchy import (
     add_subset,
     change_subset,
     get_updatable_containers,
+    cache_container_by_id,
 )
 
 
@@ -234,6 +237,16 @@ class ReferenceLoader(MayaBaseLoader):
         if nodes:
             cmds.sets(nodes, forceElement=node)
 
+            # For new nodes in subset like `pointcache` which may only have
+            # `AvalonID` attribute but does not have `verifier`.
+            no_verifier = list()
+            for nd in nodes:
+                if get_id_status(nd) == Identifier.Untracked:
+                    no_verifier.append(nd)
+            if no_verifier:
+                self.log.info("Updating AvalonID verifiers..")
+                update_id_verifiers(no_verifier)
+
         # Remove any placeHolderList attribute entries from the set that
         # are remaining from nodes being removed from the referenced file.
         # (NOTE) This ensures the reference update correctly when node name
@@ -407,28 +420,6 @@ def _parse_members_data(entry_path):
 class HierarchicalLoader(MayaBaseLoader):
     """Hierarchical referencing based asset loader
     """
-    cached_container_by_id = None
-
-    def _cache_current_container_ids(self):
-        from maya import cmds
-
-        container_by_id = dict()
-
-        for attr in lib.lsAttr("containerId"):
-            id = cmds.getAttr(attr)
-            if id not in container_by_id:
-                container_by_id[id] = set()
-            node = ":" + attr.rsplit(".", 1)[0]
-            container_by_id[id].add(node)
-
-        self.cached_container_by_id = container_by_id
-
-    def _cache_container_id(self, container):
-        id = container["containerId"]
-        if id not in self.cached_container_by_id:
-            self.cached_container_by_id[id] = set()
-        node = ":" + container["objectName"]
-        self.cached_container_by_id[id].add(node)
 
     def _members_data_from_container(self, container):
         current_repr = avalon.io.find_one({
@@ -515,7 +506,7 @@ class HierarchicalLoader(MayaBaseLoader):
         update_id_verifiers(hierarchy)
 
         # Load sub-subsets
-        self._cache_current_container_ids()
+        cache_container_by_id()
         sub_containers = []
         for data in members:
 
@@ -526,7 +517,7 @@ class HierarchicalLoader(MayaBaseLoader):
             root = group_name
             with add_subset(data, namespace, root) as sub_container:
 
-                self._cache_container_id(sub_container)
+                cache_container_by_id(add=sub_container)
                 self.apply_variation(data=data,
                                      container=sub_container)
 
@@ -605,7 +596,7 @@ class HierarchicalLoader(MayaBaseLoader):
                 current_members[namespace_old] = data_old
 
         # Update sub-subsets
-        self._cache_current_container_ids()
+        cache_container_by_id()
         namespace = container["namespace"]
         group_name = self.group_name(namespace, container["name"])
 
@@ -651,7 +642,7 @@ class HierarchicalLoader(MayaBaseLoader):
             on_update = container
             with add_subset(data, namespace, root, on_update) as sub_container:
 
-                self._cache_container_id(sub_container)
+                cache_container_by_id(add=sub_container)
                 self.apply_variation(data=data,
                                      container=sub_container)
 

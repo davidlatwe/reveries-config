@@ -56,10 +56,14 @@ class ValidateTextureTxMapUpdated(pyblish.api.InstancePlugin):
 
                 tx_path = os.path.splitext(file_path)[0] + ".tx"
                 if not os.path.isfile(tx_path):
+                    cls.log.error("<%s> has no existing TX map: %s"
+                                  % (node, tx_path))
                     invalid.append(node)
                     break
 
                 if not tx_updated(file_path, tx_path):
+                    cls.log.error("<%s> has no modification time matched "
+                                  "TX map: %s" % (node, tx_path))
                     invalid.append(node)
                     break
 

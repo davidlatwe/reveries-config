@@ -253,6 +253,11 @@ class ValidateTextureFilesUniqueNamed(pyblish.api.InstancePlugin):
 
                 for fname in data["fnames"]:
                     file_path = dir_name + "/" + fname
+
+                    if not os.path.isfile(file_path):
+                        # This plugin does not respond to missing files.
+                        continue
+
                     fsize = os.path.getsize(file_path)
                     fmtime = lib.soft_mtime(file_path)
 

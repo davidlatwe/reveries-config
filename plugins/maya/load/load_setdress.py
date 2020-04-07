@@ -172,9 +172,10 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                                         absoluteName=True)
         for container_id, sub_matrix in data["subMatrix"].items():
 
-            container = container_from_id_path(container_id,
-                                               current_NS,
-                                               self.cached_container_by_id)
+            container = container_from_id_path(container_id, current_NS)
+            if not container:
+                # Possibly been removed in parent asset
+                continue
 
             full_NS = cmds.getAttr(container + ".namespace")
             nodes = cmds.namespaceInfo(full_NS, listOnlyDependencyNodes=True)

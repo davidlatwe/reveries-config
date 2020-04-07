@@ -15,9 +15,13 @@ class ExtractAtomsCrowdCache(pyblish.api.InstancePlugin):
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
 
-        context = instance.context
-        start = int(context.data.get("startFrame"))
-        end = int(context.data.get("endFrame"))
+        if instance.data.get("useCustomRange"):
+            start = int(instance.data["startFrame"])
+            end = int(instance.data["endFrame"])
+        else:
+            context = instance.context
+            start = int(context.data.get("startFrame"))
+            end = int(context.data.get("endFrame"))
 
         # Get agentTypes
         agent_types = set()

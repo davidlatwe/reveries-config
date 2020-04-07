@@ -11,4 +11,13 @@ class AtomsCrowdCreator(avalon.maya.Creator):
     icon = "building"
 
     def process(self):
+        import maya.cmds as cmds
+
+        scene_start = cmds.playbackOptions(query=True, minTime=True)
+        scene_end = cmds.playbackOptions(query=True, maxTime=True)
+
+        self.data["useCustomRange"] = False
+        self.data["startFrame"] = scene_start
+        self.data["endFrame"] = scene_end
+
         return put_instance_icon(super(AtomsCrowdCreator, self).process())
