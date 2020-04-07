@@ -21,8 +21,12 @@ class ExtractAtomsCrowdCache(PackageExtractor):
 
         packager.skip_stage()
 
-        start_frame = int(self.context.data.get("startFrame"))
-        end_frame = int(self.context.data.get("endFrame"))
+        if self.data.get("useCustomRange"):
+            start_frame = int(self.data["startFrame"])
+            end_frame = int(self.data["endFrame"])
+        else:
+            start_frame = int(self.context.data.get("startFrame"))
+            end_frame = int(self.context.data.get("endFrame"))
 
         package_path = packager.create_package()
 
