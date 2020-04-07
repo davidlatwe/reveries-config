@@ -67,7 +67,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         try:
             frame_start = int(instance.data["startFrame"])
             frame_end = int(instance.data["endFrame"])
-            frame_step = int(instance.data["byFrameStep"])
+            frame_step = int(instance.data["step"])
 
         except KeyError:
             frames = None
