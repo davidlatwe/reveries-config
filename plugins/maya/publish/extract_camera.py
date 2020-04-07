@@ -1,18 +1,14 @@
 
-import os
 import contextlib
-
 import pyblish.api
 import avalon
-
-from reveries.maya import io, lib, capsule, utils
-from reveries.plugins import PackageExtractor
-
+from reveries import utils
+from reveries.maya import io, lib, capsule, utils as maya_utils
 from maya import cmds
 
 
-class ExtractCamera(PackageExtractor):
-    """
+class ExtractCamera(pyblish.api.InstancePlugin):
+    """Bake and export camera into mayaAscii, Alembic and FBX format
     """
 
     order = pyblish.api.ExtractorOrder
@@ -22,13 +18,23 @@ class ExtractCamera(PackageExtractor):
         "reveries.camera",
     ]
 
-    representations = [
-        "mayaAscii",
-        "Alembic",
-        "FBX",
-    ]
+    def process(self, instance):
 
-    def extract(self):
+        staging_dir = utils.stage_dir()
+
+        context_data = instance.context.data
+        start = context_data.get("startFrame")
+        end = context_data.get("endFrame")
+        step = instance.data.get("bakeStep", 1.0)
+
+        ma_filename = "%s.ma" % instance.data["subset"]
+        ma_outpath = "%s/%s" % (staging_dir, ma_filename)
+
+        abc_filename = "%s.abc" % instance.data["subset"]
+        abc_outpath = "%s/%s" % (staging_dir, abc_filename)
+
+        fbx_filename = "%s.fbx" % instance.data["subset"]
+        fbx_outpath = "%s/%s" % (staging_dir, fbx_filename)
 
         DO_NOT_BAKE_THESE = [
             "motionBlurOverride",
@@ -47,14 +53,9 @@ class ExtractCamera(PackageExtractor):
         ]
         DO_BAKE_THESE += lib.TRANSFORM_ATTRS
 
-        context_data = self.context.data
-        self.start = context_data.get("startFrame")
-        self.end = context_data.get("endFrame")
-        self.step = self.data.get("bakeStep", 1.0)
-        camera = cmds.ls(self.member, type="camera", long=True)[0]
+        camera = cmds.ls(instance, type="camera", long=True)[0]
 
-        self.camera_uuid = utils.get_id(camera)
-
+        cam_uuid = maya_utils.get_id(camera)
         cam_transform = cmds.listRelatives(camera,
                                            parent=True,
                                            fullPath=True)[0]
@@ -62,8 +63,65 @@ class ExtractCamera(PackageExtractor):
         donot_bake = [cam_transform + "." + attr for attr in DO_NOT_BAKE_THESE]
         do_bake = [cam_transform + "." + attr for attr in DO_BAKE_THESE]
 
+        euler_filter = instance.data.get("eulerFilter", False)
+
+        instance.data["repr.mayaAscii._stage"] = staging_dir
+        instance.data["repr.mayaAscii._files"] = [ma_filename]
+        instance.data["repr.mayaAscii.entryFileName"] = ma_filename
+        instance.data["repr.mayaAscii.cameraUUID"] = cam_uuid
+        instance.data["repr.mayaAscii.startFrame"] = start
+        instance.data["repr.mayaAscii.endFrame"] = end
+        instance.data["repr.mayaAscii.byFrameStep"] = step
+
+        instance.data["repr.Alembic._stage"] = staging_dir
+        instance.data["repr.Alembic._files"] = [abc_filename]
+        instance.data["repr.Alembic.entryFileName"] = abc_filename
+        instance.data["repr.Alembic.cameraUUID"] = cam_uuid
+        instance.data["repr.Alembic.startFrame"] = start
+        instance.data["repr.Alembic.endFrame"] = end
+        instance.data["repr.Alembic.byFrameStep"] = step
+
+        instance.data["repr.FBX._stage"] = staging_dir
+        instance.data["repr.FBX._files"] = [fbx_filename]
+        instance.data["repr.FBX.entryFileName"] = fbx_filename
+        instance.data["repr.FBX.cameraUUID"] = cam_uuid
+        instance.data["repr.FBX.startFrame"] = start
+        instance.data["repr.FBX.endFrame"] = end
+        instance.data["repr.FBX.byFrameStep"] = step
+
+        # Delay one for all
+        instance.data["repr._all_repr_._stage"] = staging_dir
+        instance.data["repr._all_repr_._delayRun"] = {
+            "func": self.extract_all,
+            "args": [
+                cam_transform,
+                ma_outpath,
+                abc_outpath,
+                fbx_outpath,
+                start,
+                end,
+                step,
+                euler_filter,
+                do_bake,
+                donot_bake
+            ],
+        }
+
+    def extract_all(self,
+                    cam_transform,
+                    ma_outpath,
+                    abc_outpath,
+                    fbx_outpath,
+                    start,
+                    end,
+                    step,
+                    euler_filter,
+                    do_bake,
+                    donot_bake):
+
         with contextlib.nested(
             capsule.no_refresh(),
+            capsule.no_undo(),
             capsule.attribute_states(donot_bake, lock=False, keyable=False),
             capsule.attribute_states(do_bake, lock=False, keyable=True),
             capsule.evaluation("off"),
@@ -71,10 +129,10 @@ class ExtractCamera(PackageExtractor):
             with capsule.delete_after() as delete_bin:
 
                 # bake to worldspace
-                frame_range = (self.start, self.end)
+                frame_range = (start, end)
                 baked_camera = lib.bake_to_world_space(cam_transform,
                                                        frame_range,
-                                                       step=self.step)[0]
+                                                       step=step)[0]
                 delete_bin.append(baked_camera)
 
                 cmds.select(baked_camera,
@@ -82,76 +140,28 @@ class ExtractCamera(PackageExtractor):
                             replace=True,
                             noExpand=True)
 
-                super(ExtractCamera, self).extract()
+                with avalon.maya.maintained_selection():
+                    io.export_alembic(abc_outpath,
+                                      start,
+                                      end,
+                                      eulerFilter=euler_filter)
 
-    def extract_mayaAscii(self, packager):
+                with capsule.undo_chunk_when_no_undo():
+                    if euler_filter:
+                        cmds.filterCurve(cmds.ls(sl=True))
 
-        entry_file = packager.file_name("ma")
-        package_path = packager.create_package()
-        entry_path = os.path.join(package_path, entry_file)
+                    with avalon.maya.maintained_selection():
+                        cmds.file(ma_outpath,
+                                  force=True,
+                                  typ="mayaAscii",
+                                  exportSelected=True,
+                                  preserveReferences=False,
+                                  constructionHistory=False,
+                                  channels=True,  # allow animation
+                                  constraints=False,
+                                  shader=False,
+                                  expressions=False)
 
-        if self.data.get("eulerFilter", False):
-            cmds.filterCurve(cmds.ls(sl=True))
-
-        with avalon.maya.maintained_selection():
-            cmds.file(entry_path,
-                      force=True,
-                      typ="mayaAscii",
-                      exportSelected=True,
-                      preserveReferences=False,
-                      constructionHistory=False,
-                      channels=True,  # allow animation
-                      constraints=False,
-                      shader=False,
-                      expressions=False)
-
-        packager.add_data({
-            "entryFileName": entry_file,
-            "cameraUUID": self.camera_uuid,
-            "startFrame": self.start,
-            "endFrame": self.end,
-            "byFrameStep": self.step,
-        })
-
-    def extract_Alembic(self, packager):
-
-        entry_file = packager.file_name("abc")
-        package_path = packager.create_package()
-        entry_path = os.path.join(package_path, entry_file)
-
-        euler_filter = self.data.get("eulerFilter", False)
-
-        with avalon.maya.maintained_selection():
-            io.export_alembic(entry_path,
-                              self.start,
-                              self.end,
-                              eulerFilter=euler_filter)
-
-        packager.add_data({
-            "entryFileName": entry_file,
-            "cameraUUID": self.camera_uuid,
-            "startFrame": self.start,
-            "endFrame": self.end,
-            "byFrameStep": self.step,
-        })
-
-    def extract_FBX(self, packager):
-
-        entry_file = packager.file_name("fbx")
-        package_path = packager.create_package()
-        entry_path = os.path.join(package_path, entry_file)
-
-        if self.data.get("eulerFilter", False):
-            cmds.filterCurve(cmds.ls(sl=True))
-
-        with avalon.maya.maintained_selection():
-            io.export_fbx_set_camera()
-            io.export_fbx(entry_path)
-
-        packager.add_data({
-            "entryFileName": entry_file,
-            "cameraUUID": self.camera_uuid,
-            "startFrame": self.start,
-            "endFrame": self.end,
-            "byFrameStep": self.step,
-        })
+                    with avalon.maya.maintained_selection():
+                        io.export_fbx_set_camera()
+                        io.export_fbx(fbx_outpath)

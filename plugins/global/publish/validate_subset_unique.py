@@ -2,7 +2,7 @@
 import pyblish.api
 
 
-class ValidateSubsetUnique(pyblish.api.ContextPlugin):
+class ValidateSubsetUnique(pyblish.api.InstancePlugin):
     """確認正在發佈的所有物件 (Subset Instance) 沒有重複名稱
 
     同時間不能發佈相同 Subset 名稱的內容。
@@ -18,11 +18,11 @@ class ValidateSubsetUnique(pyblish.api.ContextPlugin):
     label = "無重複 Subset"
     order = pyblish.api.ValidatorOrder - 0.44
 
-    def process(self, context):
-        invalid = self.get_invalid(context)
+    def process(self, instance):
+        invalid = self.get_invalid(instance)
 
         if not len(invalid) == 0:
-            msg = ("Instances has duplicated subset:\n    " +
+            msg = ("Subset name is duplicated with:\n    " +
                    "\n    ".join(invalid) +
                    "\n")
 
@@ -30,22 +30,18 @@ class ValidateSubsetUnique(pyblish.api.ContextPlugin):
             raise AssertionError(msg)
 
     @classmethod
-    def get_invalid(cls, context):
+    def get_invalid(cls, instance):
         invalid = list()
-        subsets = dict()
 
-        for instance in context:
-            # Same subset but different 'extractType' (representation)
-            # will be processed as different thing.
-            asset = instance.data["asset"]
-            extract_type = "@" + instance.data.get("extractType", "*")
-            subset = instance.data["subset"] + extract_type
-            if asset in subsets:
-                if subset in subsets[asset]:
-                    invalid.append(instance.data["objectName"])
-                else:
-                    subsets[asset].append(subset)
-            else:
-                subsets[asset] = [subset]
+        this_asset = instance.data["asset"]
+        this_subset = instance.data["subset"]
+
+        others = [i for i in instance.context if i is not instance]
+
+        for other in others:
+            if not this_asset == other.data["asset"]:
+                continue
+            if this_subset == other.data["subset"]:
+                invalid.append(other.data["objectName"])
 
         return invalid

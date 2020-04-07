@@ -1,5 +1,6 @@
-
+import os
 import pyblish.api
+from reveries.houdini import lib
 
 
 class ValidateCacheRoot(pyblish.api.InstancePlugin):
@@ -19,3 +20,12 @@ class ValidateCacheRoot(pyblish.api.InstancePlugin):
         cache_root = instance.data["reprRoot"]
         assert cache_root is not None, ("Cache root not collected, "
                                         "this is a bug.")
+
+        ropnode = instance[0]
+        output = lib.get_output_parameter(ropnode).eval()
+
+        try:
+            os.path.relpath(output, cache_root)
+        except ValueError as e:
+            self.log.error(e)
+            raise Exception("Please write output under %s" % cache_root)

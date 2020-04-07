@@ -1,14 +1,10 @@
 
 import os
 from .pipeline import env_embedded_path
-from ..plugins import (
-    PackageLoader,
-    SelectInvalidInstanceAction,
-    SelectInvalidContextAction,
-)
+from .. import plugins
 
 
-class HoudiniBaseLoader(PackageLoader):
+class HoudiniBaseLoader(plugins.PackageLoader):
 
     def file_path(self, representation):
         file_name = representation["data"]["entryFileName"]
@@ -20,7 +16,7 @@ class HoudiniBaseLoader(PackageLoader):
         return env_embedded_path(entry_path)
 
 
-class HoudiniSelectInvalidInstanceAction(SelectInvalidInstanceAction):
+class HoudiniSelectInvalidInstanceAction(plugins.SelectInvalidInstanceAction):
 
     def select(self, invalid):
         self.deselect()
@@ -32,7 +28,7 @@ class HoudiniSelectInvalidInstanceAction(SelectInvalidInstanceAction):
         hou.clearAllSelected()
 
 
-class HoudiniSelectInvalidContextAction(SelectInvalidContextAction):
+class HoudiniSelectInvalidContextAction(plugins.SelectInvalidContextAction):
     """ Select invalid nodes in context"""
 
     def select(self, invalid):

@@ -1,14 +1,10 @@
 
-import os
 import json
 import contextlib
-
 import pyblish.api
-
+from reveries import utils
+from reveries.maya import utils as maya_utils
 from maya import cmds
-
-from reveries.plugins import PackageExtractor
-from reveries.maya import utils
 
 
 def read(attr_path):
@@ -18,7 +14,7 @@ def read(attr_path):
         pass
 
 
-class ExtractLook(PackageExtractor):
+class ExtractLook(pyblish.api.InstancePlugin):
     """Export shaders for rendering
 
     Shaders are associated with an "mdID" attribute on each *transform* node.
@@ -32,33 +28,37 @@ class ExtractLook(PackageExtractor):
     hosts = ["maya"]
     families = ["reveries.look"]
 
-    representations = [
-        "LookDev"
-    ]
-
-    def extract_LookDev(self, packager):
-
+    def process(self, instance):
         from avalon import maya
         from reveries.maya import lib, capsule
 
-        entry_file = packager.file_name("ma")
-        package_path = packager.create_package()
+        staging_dir = utils.stage_dir()
+
+        filename = "%s.ma" % instance.data["subset"]
+        outpath = "%s/%s" % (staging_dir, filename)
+
+        linkfile = "%s.json" % instance.data["subset"]
+        linkpath = "%s/%s" % (staging_dir, linkfile)
+
+        instance.data["repr.LookDev._stage"] = staging_dir
+        instance.data["repr.LookDev._files"] = [filename, linkfile]
+        instance.data["repr.LookDev.entryFileName"] = filename
+        instance.data["repr.LookDev.linkFname"] = linkfile
 
         # Serialise shaders relationships
         #
         self.log.info("Serialising shaders..")
 
-        shader_by_id = lib.serialise_shaders(self.data["dagMembers"])
+        shader_by_id = lib.serialise_shaders(instance.data["dagMembers"])
         assert shader_by_id, "The map of shader relationship is empty."
 
         # Extract shaders
         #
-        entry_path = os.path.join(package_path, entry_file)
-
         self.log.info("Extracting shaders..")
 
+        child_instances = instance.data.get("childInstances", [])
         try:
-            texture = next(chd for chd in self.data.get("childInstances", [])
+            texture = next(chd for chd in child_instances
                            if chd.data["family"] == "reveries.texture")
         except StopIteration:
             file_node_attrs = dict()
@@ -79,11 +79,11 @@ class ExtractLook(PackageExtractor):
             # connected to Dag node (i.e. drivenKey), then the command
             # will not only export selected shadingGroups' shading network,
             # but also export other related DAG nodes (i.e. full hierarchy)
-            cmds.select(self.member,
+            cmds.select(instance,
                         replace=True,
                         noExpand=True)
 
-            cmds.file(entry_path,
+            cmds.file(outpath,
                       options="v=0;",
                       type="mayaAscii",
                       force=True,
@@ -99,7 +99,7 @@ class ExtractLook(PackageExtractor):
         # Custom attributes in assembly node which require to be animated.
         self.log.info("Serialising animatable attributes..")
         animatable = dict()
-        root = cmds.ls(self.data["dagMembers"], assemblies=True)
+        root = cmds.ls(instance.data["dagMembers"], assemblies=True)
         if root:
             root = root[0]
             for attr in cmds.listAttr(root, userDefined=True) or list():
@@ -108,7 +108,7 @@ class ExtractLook(PackageExtractor):
                                                         source=False,
                                                         plugs=True)
 
-        surfaces = cmds.ls(self.data["dagMembers"],
+        surfaces = cmds.ls(instance.data["dagMembers"],
                            noIntermediate=True,
                            type="surfaceShape")
 
@@ -129,10 +129,10 @@ class ExtractLook(PackageExtractor):
 
             for member in cmds.ls(cmds.sets(cres, query=True), long=True):
                 node, edges = member.split(".")
-                if node not in self.data["dagMembers"]:
+                if node not in instance.data["dagMembers"]:
                     continue
                 # We have validated Avalon UUID, so there must be a valid ID.
-                id = utils.get_id(node)
+                id = maya_utils.get_id(node)
                 crease_sets[level].append(id + "." + edges)
 
         # Arnold attributes
@@ -163,7 +163,7 @@ class ExtractLook(PackageExtractor):
                                  long=True)
             for node in transforms:
                 # There must be a valid ID
-                id = utils.get_id(node)
+                id = maya_utils.get_id(node)
 
                 attrs = dict()
 
@@ -228,18 +228,5 @@ class ExtractLook(PackageExtractor):
 
         self.log.info("Extracting serialisation..")
 
-        link_file = packager.file_name("json")
-        link_path = os.path.join(package_path, link_file)
-
-        with open(link_path, "w") as f:
+        with open(linkpath, "w") as f:
             json.dump(relationships, f)
-
-        packager.add_data({
-            "linkFname": link_file,
-            "entryFileName": entry_file,
-        })
-
-        self.log.info("Extracted {name} to {path}".format(
-            name=self.data["subset"],
-            path=package_path)
-        )

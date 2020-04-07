@@ -19,13 +19,11 @@ def create_model_subset_from_xgen(instance):
 
     member += lib.list_all_parents(member)
     if member:
-        model = plugins.create_dependency_instance(instance,
-                                                   subset,
-                                                   family,
-                                                   member,
-                                                   category="XGen Bound Mesh")
-        # Only need to extract model `mayaBinary` representation
-        model.data["extractType"] = "mayaBinary"
+        plugins.create_dependency_instance(instance,
+                                           subset,
+                                           family,
+                                           member,
+                                           category="XGen Bound Mesh")
         return True
 
     return False
@@ -57,6 +55,8 @@ class CollectXGen(pyblish.api.InstancePlugin):
     def get_interactive(self, instance):
         """Interactive Groom Spline"""
 
+        instance.data["families"] = ["reveries.xgen.interactive"]
+
         descriptions = xgen.interactive.list_lead_descriptions(instance[:])
         instance.data["igsDescriptions"] = descriptions
 
@@ -77,6 +77,8 @@ class CollectXGen(pyblish.api.InstancePlugin):
 
     def get_legacy(self, instance):
         """Legacy XGen"""
+
+        instance.data["families"] = ["reveries.xgen.legacy"]
 
         palettes = []
         palette_nodes = cmds.ls(instance, type="xgmPalette", long=True)

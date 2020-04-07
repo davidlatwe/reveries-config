@@ -73,47 +73,10 @@ class DeadlineSubmitter(object):
             "AVALON_TOOLS": os.getenv("AVALON_TOOLS", ""),
         }, **avalon.api.Session)
 
-        # Save Context data from source
-        #
-        context_data_entry = [
-            "comment",
-            "user",
-        ]
-        for index, entry in enumerate(context_data_entry):
-            key = "AVALON_CONTEXT_DATA_NAME%d" % index
-            environment[key] = entry
-
-            key = "AVALON_CONTEXT_DATA_VALUE%d" % index
-            environment[key] = context.data[entry]
-
         self._environment = environment
 
-    def instance_env(self, instance, environment=None):
-        """
-        """
-        environment = environment or self._environment.copy()
-
-        # Save Instances' name and version
-        # This should prevent version bump when re-running publish with
-        # same params.
-
-        def save(instance):
-            subset = instance.data["subset"]
-            version = str(instance.data["versionNext"])
-
-            key = "AVALON_DELEGATED_SUBSETS"
-            value = subset + ":" + version
-
-            if key in environment:
-                environment[key] += ";" + value
-            else:
-                environment[key] = value
-
-        save(instance)
-        for child in instance.data.get("childInstances", []):
-            save(child)
-
-        return environment
+    def environment(self):
+        return self._environment.copy()
 
     def add_job(self, payload):
         """Add job to queue and returns an index"""
@@ -158,9 +121,7 @@ class DeadlineSubmitter(object):
                                  auth=tuple(self._auth))
 
         if not response.ok:
-            msg = response.text
-            self.log.error(msg)
-            raise Exception("Submission failed...")
+            raise Exception(response.text)
         else:
             jobid = eval(response.text)["_id"]
             self.log.info("Success. JobID: %s" % jobid)
@@ -177,7 +138,7 @@ class DeadlineSubmitter(object):
         job_info = payload["JobInfo"]
         plugin_info = payload["PluginInfo"]
 
-        info_dir = utils.temp_dir(prefix="deadline_")
+        info_dir = utils.stage_dir(prefix="deadline_")
         job_info_file = os.path.join(info_dir, "job_info.job")
         plugin_info_file = os.path.join(info_dir, "plugin_info.job")
 

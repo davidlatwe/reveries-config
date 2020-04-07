@@ -4,7 +4,6 @@ from maya import cmds
 
 import pyblish.api
 import avalon.api
-import reveries.lib
 from reveries.maya import lib, utils
 
 
@@ -27,12 +26,9 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
     hosts = ["maya"]
     label = "Render Layers"
 
-    def process(self, context):
+    targets = ["deadline"]
 
-        if not (reveries.lib.to_remote() or reveries.lib.in_remote()):
-            self.log.info("Not in Deadline publish session. "
-                          "Skipping renderlayer collection.")
-            return
+    def process(self, context):
 
         asset = avalon.api.Session["AVALON_ASSET"]
         filepath = context.data["currentMaking"].replace("\\", "/")
@@ -68,7 +64,8 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
 
         # Context data
         workspace = context.data["workspaceDir"]
-        context.data["outputDir"] = os.path.join(workspace, "renders")
+        outputdir = os.path.join(workspace, "renders").replace("\\", "/")
+        context.data["outputDir"] = outputdir
         # Are there other renderlayer than defaultRenderLayer ?
         context.data["hasRenderLayers"] = len(valid_layers) > 1
         # Using Render Setup system ?

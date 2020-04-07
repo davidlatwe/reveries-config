@@ -24,10 +24,6 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
     hosts = ["maya"]
     label = "Avalon Instances"
 
-    branched = {
-        "reveries.xgen": "XGenType",
-    }
-
     def process(self, context):
         from maya import cmds
 
@@ -71,13 +67,6 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
             data["setMembers"] = members
 
             family = data["family"]
-
-            # Inject shadow family
-            if family in self.branched:
-                entry = self.branched[family]
-                shadow_family = family + "." + data[entry]
-                self.log.info("Injecting shadow family: %s" % shadow_family)
-                data["families"] = [shadow_family]
 
             # Ignore instance by targeted families
             families = set([family] + data.get("families", []))

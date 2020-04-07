@@ -21,14 +21,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         "renderLayer",
     ]
 
-    def set_path(self, read, aov_name, file_name):
-        read["file"].setValue(
-            os.path.join(
-                self.package_path,
-                aov_name,  # AOV name
-                file_name,
-            ).replace("\\", "/")
-        )
+    def set_path(self, read, aov_name, path):
+        read["file"].setValue(path)
         read["label"].setValue(aov_name)
 
     def set_range(self, read, start, end):
@@ -58,9 +52,14 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             read = nuke.Node("Read")
             nodes.append(read)
 
-            self.set_path(read, aov_name=name, file_name=data["fname"])
+            tail = data.get("fpattern", "%s/%s" % (name, data["fname"]))
+            path = os.path.join(self.package_path, tail).replace("\\", "/")
+
+            self.set_path(read, aov_name=name, path=path)
             self.set_format(read, data["resolution"])
-            self.set_range(read, start=data["seqStart"], end=data["seqEnd"])
+            self.set_range(read,
+                           start=data["startFrame"],
+                           end=data["endFrame"])
 
             # Mark aov name
             lib.set_avalon_knob_data(read, {("aov", "AOV"): name})
@@ -98,8 +97,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 self.set_path(read, aov_name=name, file_name=data["fname"])
                 self.set_format(read, data["resolution"])
                 self.set_range(read,
-                               start=data["seqStart"],
-                               end=data["seqEnd"])
+                               start=data["startFrame"],
+                               end=data["endFrame"])
 
         node = container["_node"]
         with lib.sync_copies([node], force=True):

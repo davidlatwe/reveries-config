@@ -155,6 +155,8 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance.data["startFrame"] = start_frame
                 instance.data["endFrame"] = end_frame
 
+                self.add_families(instance, source_data)
+
         if not members:
             # Nothing left, all in/has OutSet
 
@@ -182,7 +184,30 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             instance.data["startFrame"] = start_frame
             instance.data["endFrame"] = end_frame
 
+            self.add_families(instance, instance.data)
+
     def pick_locators(self, members):
         return cmds.listRelatives(cmds.ls(members, type="locator"),
                                   parent=True,
                                   fullPath=True) or []
+
+    def add_families(self, instance, source):
+
+        families = list()
+
+        if "extractType" in source:  # For backward compat
+            families.append({
+                "Alembic": "reveries.pointcache.abc",
+                "GPUCache": "reveries.pointcache.gpu",
+                "FBXCache": "reveries.pointcache.fbx",
+            }[source.pop("extractType")])
+
+        else:
+            if source.pop("exportAlembic"):
+                families.append("reveries.pointcache.abc")
+            if source.pop("exportGPUCache"):
+                families.append("reveries.pointcache.gpu")
+            if source.pop("exportFBXCache"):
+                families.append("reveries.pointcache.fbx")
+
+        instance.data["families"] = families

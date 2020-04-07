@@ -2,7 +2,7 @@
 import pyblish.api
 from avalon import io
 from reveries.maya import pipeline
-from reveries import utils, lib
+from reveries import utils
 
 
 class ValidateRenderResolution(pyblish.api.InstancePlugin):
@@ -74,9 +74,6 @@ class ValidateRenderResolution(pyblish.api.InstancePlugin):
         return invalid
 
     def process(self, instance):
-        if lib.in_remote():
-            return
-
         self.log.info("Validating image resolution..")
         if self.get_invalid(instance):
             raise Exception("Rendering resolution is not correct.")

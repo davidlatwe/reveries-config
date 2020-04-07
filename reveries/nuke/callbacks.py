@@ -13,7 +13,8 @@ def on_save():
 
 
 def on_load():
-    pass
+    print("Running callback on load..")
+    # (TODO) Pop scene inventory if any outdated
 
 
 def before_render():

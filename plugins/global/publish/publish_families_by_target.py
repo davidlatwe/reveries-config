@@ -47,6 +47,7 @@ class PublishFamiliesByTarget(pyblish.api.ContextPlugin):
             "reveries.standin",
             "reveries.camera",
             "reveries.renderlayer",
+            "reveries.vdbcache",
         ],
 
     }

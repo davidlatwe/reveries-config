@@ -1,18 +1,13 @@
 
-import os
-import json
 import contextlib
-
 import pyblish.api
 import avalon.api
-from reveries.plugins import PackageExtractor
+from reveries import utils
 from reveries.maya import capsule
-from reveries import lib
-
 from maya import cmds, mel
 
 
-class ExtractArnoldStandIn(PackageExtractor):
+class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
     """
     """
 
@@ -23,68 +18,71 @@ class ExtractArnoldStandIn(PackageExtractor):
         "reveries.standin"
     ]
 
-    representations = [
-        "Ass",
-    ]
+    def process(self, instance):
 
-    def extract_Ass(self, packager):
-        from reveries.maya import arnold
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
 
-        # Ensure option created
-        arnold.utils.create_options()
+        start = instance.data["startFrame"]
+        end = instance.data["endFrame"]
+        step = instance.data["byFrameStep"]
+        has_yeti = instance.data.get("hasYeti", False)
+        nodes = instance[:]
 
-        packager.skip_stage()
-        package_path = packager.create_package()
+        pattern = "%s.%%04d.ass" % instance.data["subset"]
+        cachename = "%s.ass" % instance.data["subset"]
 
-        cache_file = packager.file_name("ass")
-        cache_path = os.path.join(package_path, cache_file)
+        firstfile = pattern % start
+        outpath = "%s/%s" % (staging_dir, cachename)
+
+        use_sequence = start != end
+        if use_sequence:
+            instance.data["repr.Ass.startFrame"] = start
+            instance.data["repr.Ass.endFrame"] = end
+            instance.data["repr.Ass._hardlinks"] = [
+                pattern % i for i in range(start, end, step)]
+        else:
+            instance.data["repr.Ass._hardlinks"] = [firstfile]
+
+        instance.data["repr.Ass._stage"] = staging_dir
+        instance.data["repr.Ass.entryFileName"] = firstfile
+        instance.data["repr.Ass.useSequence"] = use_sequence
 
         self.log.info("Extracting standin..")
 
+        child_instances = instance.data.get("childInstances", [])
         try:
-            texture = next(chd for chd in self.data.get("childInstances", [])
+            texture = next(chd for chd in child_instances
                            if chd.data["family"] == "reveries.texture")
         except StopIteration:
             file_node_attrs = dict()
         else:
             file_node_attrs = texture.data.get("fileNodeAttrs", dict())
 
-        data = {
-            "fileNodeAttrs": file_node_attrs,
-            "member": self.member,
-            "cachePath": cache_path,
-            "hasYeti": self.data.get("hasYeti", False)
+        instance.data["repr.Ass._delayRun"] = {
+            "func": self.export_ass,
+            "args": [
+                nodes,
+                outpath,
+                file_node_attrs,
+                has_yeti,
+                start,
+                end,
+                step
+            ],
         }
-        data_path = os.path.join(package_path, ".remoteData.json")
 
-        if lib.to_remote():
-            self.data["remoteDataPath"] = data_path
-            with open(data_path, "w") as fp:
-                json.dump(data, fp, indent=4)
+    def export_ass(self,
+                   nodes,
+                   outpath,
+                   file_node_attrs,
+                   has_yeti,
+                   start,
+                   end,
+                   step):
+        from reveries.maya import arnold
 
-            return
-
-        elif lib.in_remote():
-            self.log.info("Stand-In exported via per-frame script.")
-
-        else:
-            self.export_ass(data,
-                            self.data["startFrame"],
-                            self.data["endFrame"],
-                            self.data["byFrameStep"])
-
-        entry_file = next(f for f in os.listdir(package_path)
-                          if f.endswith(".ass"))
-
-        use_sequence = self.data["startFrame"] != self.data["endFrame"]
-        packager.add_data({"entryFileName": entry_file,
-                           "useSequence": use_sequence})
-        if use_sequence:
-            packager.add_data({"startFrame": self.data["startFrame"],
-                               "endFrame": self.data["endFrame"]})
-
-    @staticmethod
-    def export_ass(data, start, end, step):
+        # Ensure option created
+        arnold.utils.create_options()
 
         arnold_tx_settings = {
             "defaultArnoldRenderOptions.autotx": False,
@@ -92,7 +90,7 @@ class ExtractArnoldStandIn(PackageExtractor):
         }
 
         # Yeti
-        if data["hasYeti"]:
+        if has_yeti:
             # In Deadline, this is a script job instead of rendering job, so
             # the `pgYetiPreRender` Pre-Render MEL will not be triggered.
             # We need to call it by ourselve, or Yeti will complain about
@@ -106,14 +104,14 @@ class ExtractArnoldStandIn(PackageExtractor):
             capsule.maintained_selection(),
             capsule.ref_edit_unlock(),
             # (NOTE) Ensure attribute unlock
-            capsule.attribute_states(data["fileNodeAttrs"].keys(), lock=False),
+            capsule.attribute_states(file_node_attrs.keys(), lock=False),
             # Change to published path
-            capsule.attribute_values(data["fileNodeAttrs"]),
+            capsule.attribute_values(file_node_attrs),
             # Disable Auto TX update and enable to use existing TX
             capsule.attribute_values(arnold_tx_settings),
         ):
-            cmds.select(data["member"], replace=True)
-            asses = cmds.arnoldExportAss(filename=data["cachePath"],
+            cmds.select(nodes, replace=True)
+            asses = cmds.arnoldExportAss(filename=outpath,
                                          selected=True,
                                          startFrame=start,
                                          endFrame=end,
