@@ -10,7 +10,7 @@ class ValidateDeadlineConnection(pyblish.api.ContextPlugin):
     """Validate Deadline Web Service is running"""
 
     label = "Deadline Connection"
-    order = pyblish.api.ValidatorOrder + 0.1
+    order = pyblish.api.ValidatorOrder + 0.2
 
     targets = ["deadline"]
 
