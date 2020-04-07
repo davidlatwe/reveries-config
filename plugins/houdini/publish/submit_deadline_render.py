@@ -12,7 +12,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ExtractorOrder + 0.3
+    order = pyblish.api.ExtractorOrder + 0.492
     hosts = ["houdini"]
     label = "Deadline Render"
 
@@ -40,7 +40,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         project = context.data["projectDoc"]
         asset = context.data["assetDoc"]["name"]
 
-        fpath = context.data["deadlineScene"]
+        fpath = context.data["currentMaking"]
         houdini_version = context.data["houdiniVersion"]
 
         project_id = str(project["_id"])[-4:].upper()
@@ -62,26 +62,33 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         deadline_prio = instance.data["deadlinePriority"]
         deadline_group = instance.data.get("deadlineGroup")
 
-        if instance.data.get("deadlineSuspendJob", False):
-            init_state = "Suspended"
-        else:
-            init_state = "Active"
-
-        frame_start = int(instance.data["startFrame"])
-        frame_end = int(instance.data["endFrame"])
-        frame_step = int(instance.data["byFrameStep"])
         frame_per_task = instance.data.get("deadlineFramesPerTask", 1)
 
-        frames = "{start}-{end}x{step}".format(
-            start=frame_start,
-            end=frame_end,
-            step=frame_step,
-        )
+        try:
+            frame_start = int(instance.data["startFrame"])
+            frame_end = int(instance.data["endFrame"])
+            frame_step = int(instance.data["byFrameStep"])
+
+        except KeyError:
+            frames = None
+        else:
+            frames = "{start}-{end}x{step}".format(
+                start=frame_start,
+                end=frame_end,
+                step=frame_step,
+            )
 
         job_name = "{subset} v{version:0>3}".format(
             subset=subset,
             version=version,
         )
+
+        if instance.data.get("deadlineSuspendJob", False):
+            init_state = "Suspended"
+        else:
+            init_state = "Active"
+
+        ropnode = instance[0]
 
         # Assemble payload
 
@@ -110,9 +117,9 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
                 "Version": houdini_version,
 
                 # Renderer Node
-                "OutputDriver": "",
+                "OutputDriver": ropnode.path(),
                 # Output Filename
-                "Output": "",
+                # "Output": "",
 
                 "IgnoreInputs": False,
                 "GPUsPerTask": 0,
@@ -155,7 +162,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
 
         """
         submitter = instance.context.data["deadlineSubmitter"]
-        environment = submitter.instance_env(instance)
+        environment = submitter.environment()
 
         dumped = ";".join(instance.data["dumpedExtractors"])
         environment["PYBLISH_EXTRACTOR_DUMPS"] = dumped
