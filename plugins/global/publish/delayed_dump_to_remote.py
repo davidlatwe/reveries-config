@@ -154,6 +154,9 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             stage_dir = instance.data["repr.%s._stage" % repr_name]
             outpath = self.EXTRACTOR_DUMP.format(stage=stage_dir)
 
+            if not os.path.isdir(stage_dir):
+                os.makedirs(stage_dir)
+
             with open(outpath, "w") as file:
                 json_dump(dump, file)
 
