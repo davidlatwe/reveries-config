@@ -13,7 +13,7 @@ class ExtractAlembic(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        if len(instance.data.get("frameOutputs", [])) <= 1:
+        if instance.data["singleOutput"]:
             self.export_abc(instance)
         else:
             self.export_abc_seq(instance)

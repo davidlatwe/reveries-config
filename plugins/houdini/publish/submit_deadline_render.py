@@ -77,6 +77,8 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
                 end=frame_end,
                 step=frame_step,
             )
+            if instance.data["singleOutput"]:
+                frame_per_task = len(range(frame_start, frame_end + 1))
 
         job_name = "{subset} v{version:0>3}".format(
             subset=subset,
