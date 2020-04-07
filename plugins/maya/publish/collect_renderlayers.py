@@ -95,7 +95,7 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
                 "renderlayer": layer,
                 "startFrame": get_render_attr("startFrame", layer),
                 "endFrame": get_render_attr("endFrame", layer),
-                "byFrameStep": get_render_attr("byFrameStep", layer),
+                "step": get_render_attr("byFrameStep", layer),
                 "renderer": renderer,
                 "resolution": utils.get_render_resolution(layer),
                 "fileNamePrefix": utils.get_render_filename_prefix(layer),

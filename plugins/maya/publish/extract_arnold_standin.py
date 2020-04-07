@@ -24,7 +24,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
 
         start = instance.data["startFrame"]
         end = instance.data["endFrame"]
-        step = instance.data["byFrameStep"]
+        step = instance.data["step"]
         has_yeti = instance.data.get("hasYeti", False)
         nodes = instance[:]
 

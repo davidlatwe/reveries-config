@@ -48,7 +48,7 @@ class ExtractRender(pyblish.api.InstancePlugin):
 
             start = instance.data["startFrame"]
             end = instance.data["endFrame"]
-            step = instance.data["byFrameStep"]
+            step = instance.data["step"]
 
             project = instance.context.data["projectDoc"]
             e_in, e_out, handles, _ = utils.get_timeline_data(project)
@@ -58,7 +58,7 @@ class ExtractRender(pyblish.api.InstancePlugin):
                 "fpattern": pattern,
                 "startFrame": start,
                 "endFrame": end,
-                "byFrameStep": step,
+                "step": step,
                 "edit_in": e_in,
                 "edit_out": e_out,
                 "handles": handles,

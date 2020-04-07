@@ -31,7 +31,7 @@ class ExtractWrite(pyblish.api.InstancePlugin):
 
         start = instance.data["startFrame"]
         end = instance.data["endFrame"]
-        step = instance.data["byFrameStep"]
+        step = instance.data["step"]
 
         sequence = dict()
         files = list()
@@ -44,7 +44,7 @@ class ExtractWrite(pyblish.api.InstancePlugin):
             "fpattern": pattern,
             "startFrame": start,
             "endFrame": end,
-            "byFrameStep": step,
+            "step": step,
             "edit_in": e_in,
             "edit_out": e_out,
             "handles": handles,

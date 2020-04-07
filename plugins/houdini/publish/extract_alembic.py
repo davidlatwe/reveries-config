@@ -27,9 +27,16 @@ class ExtractAlembic(pyblish.api.InstancePlugin):
         staging_dir, filename = os.path.split(output)
         repr_root = instance.data["reprRoot"]
 
+        start = instance.data["startFrame"]
+        end = instance.data["endFrame"]
+        step = instance.data["step"]
+
         instance.data["repr.Alembic._stage"] = staging_dir
         instance.data["repr.Alembic._hardlinks"] = [filename]
         instance.data["repr.Alembic.entryFileName"] = filename
+        instance.data["repr.Alembic.startFrame"] = start
+        instance.data["repr.Alembic.endFrame"] = end
+        instance.data["repr.Alembic.step"] = step
 
         if instance.data["family"] == "reveries.pointcache":
             instance.data["repr.Alembic.reprRoot"] = repr_root
