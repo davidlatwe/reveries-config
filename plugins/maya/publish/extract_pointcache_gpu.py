@@ -36,8 +36,8 @@ class ExtractPointCacheGPU(pyblish.api.InstancePlugin):
             start = context_data["startFrame"]
             end = context_data["endFrame"]
 
-            instance.data["startFrame"] = start
-            instance.data["endFrame"] = end
+        instance.data["startFrame"] = start
+        instance.data["endFrame"] = end
 
         # Collect root nodes
         assemblies = set()

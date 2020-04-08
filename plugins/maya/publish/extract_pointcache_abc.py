@@ -34,8 +34,8 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
             start = context_data["startFrame"]
             end = context_data["endFrame"]
 
-            instance.data["startFrame"] = start
-            instance.data["endFrame"] = end
+        instance.data["startFrame"] = start
+        instance.data["endFrame"] = end
 
         euler_filter = instance.data.get("eulerFilter", False)
         root = instance.data["outCache"]

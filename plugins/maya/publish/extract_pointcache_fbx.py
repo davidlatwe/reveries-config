@@ -36,8 +36,8 @@ class ExtractPointCacheFBX(pyblish.api.InstancePlugin):
             start = context_data["startFrame"]
             end = context_data["endFrame"]
 
-            instance.data["startFrame"] = start
-            instance.data["endFrame"] = end
+        instance.data["startFrame"] = start
+        instance.data["endFrame"] = end
 
         # (TODO) Make namespace preserving optional on GUI
         keep_namespace = instance.data.get("keepNamespace", False)
