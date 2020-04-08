@@ -31,6 +31,7 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
 
         version = None
         version_num = 1  # assume there is no version yet, start at 1
+        version_pinned = "versionPin" in instance.data
 
         subset = avalon.io.find_one({
             "type": "subset",
@@ -38,13 +39,16 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
             "name": instance.data["subset"],
         })
 
-        if subset is not None:
+        if subset is not None and not version_pinned:
             filter = {"type": "version", "parent": subset["_id"]}
             version = avalon.io.find_one(filter,
                                          projection={"name": True},
                                          sort=[("name", -1)])
         if version is not None:
             version_num += version["name"]
+
+        if version_pinned:
+            version_num = instance.data["versionPin"]
 
         version_template = os.path.dirname(template_publish)
 
@@ -69,7 +73,7 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
 
             lockfile = version_dir + "/" + self.LOCK
 
-            if is_version_locked(lockfile):
+            if not version_pinned and is_version_locked(lockfile):
                 # Bump version
                 version_num += 1
                 continue
@@ -82,8 +86,13 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
 
                 success = self.clean_dir(version_dir)
                 if not success:
-                    self.log.warning("Version dir cleanup failed, try next..")
-                    continue
+                    if version_pinned:
+                        raise Exception("Version dir cleanup failed: %s"
+                                        % version_dir)
+                    else:
+                        self.log.warning("Version dir cleanup failed, "
+                                         "try next..")
+                        continue
 
                 break
 
