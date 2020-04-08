@@ -20,14 +20,6 @@ class ExtractVDBCache(pyblish.api.InstancePlugin):
         if "frameOutputs" in instance.data:
             output = instance.data["frameOutputs"][0]
 
-            start = instance.data["startFrame"]
-            end = instance.data["endFrame"]
-            step = instance.data["step"]
-
-            instance.data["repr.VDB.startFrame"] = start
-            instance.data["repr.VDB.endFrame"] = end
-            instance.data["repr.VDB.step"] = step
-
             for path in instance.data["frameOutputs"]:
                 files.append(os.path.basename(path))
 

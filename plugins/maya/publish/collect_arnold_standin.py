@@ -47,7 +47,7 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
             instance.data["startFrame"] = get({"minTime": True})
             instance.data["endFrame"] = get({"maxTime": True})
 
-        instance.data["byFrameStep"] = 1
+        instance.data["step"] = 1
 
         stray = pipeline.find_stray_textures(file_nodes)
         if stray:

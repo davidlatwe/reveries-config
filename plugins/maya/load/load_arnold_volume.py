@@ -1,4 +1,4 @@
-
+import os
 import avalon.api
 from reveries.maya.plugins import ImportLoader
 
@@ -25,8 +25,8 @@ class ArnoldVolumeLoader(ImportLoader, avalon.api.Loader):
         from reveries.maya import capsule, arnold
 
         representation = context["representation"]
-        use_sequence = "startFrame" in representation["data"]
         entry_path = self.file_path(representation)
+        use_sequence = self.is_sequence(entry_path)
 
         with capsule.namespaced(namespace):
             volume = arnold.create_volume(entry_path)
@@ -37,6 +37,12 @@ class ArnoldVolumeLoader(ImportLoader, avalon.api.Loader):
             cmds.setAttr(volume + ".useFrameExtension", True)
 
         self[:] = [volume, transform, group]
+
+    def is_sequence(self, path):
+        """single vdb or vdb sequence"""
+        expanded_dir = os.path.dirname(os.path.expandvars(path))
+        vdbs = [f for f in os.listdir(expanded_dir) if f.endswith(".vdb")]
+        return len(vdbs) > 1
 
     def update(self, container, representation):
         import maya.cmds as cmds
@@ -52,8 +58,8 @@ class ArnoldVolumeLoader(ImportLoader, avalon.api.Loader):
         parents = avalon.io.parenthood(representation)
         self.package_path = get_representation_path_(representation, parents)
 
-        use_sequence = "startFrame" in representation["data"]
         entry_path = self.file_path(representation)
+        use_sequence = self.is_sequence(entry_path)
 
         if not entry_path.endswith(".vdb"):
             raise Exception("Not a VDB file, this is a bug: "

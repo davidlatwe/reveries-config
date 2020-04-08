@@ -24,7 +24,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
 
         start = instance.data["startFrame"]
         end = instance.data["endFrame"]
-        step = instance.data["byFrameStep"]
+        step = instance.data["step"]
         has_yeti = instance.data.get("hasYeti", False)
         nodes = instance[:]
 
@@ -36,8 +36,6 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
 
         use_sequence = start != end
         if use_sequence:
-            instance.data["repr.Ass.startFrame"] = start
-            instance.data["repr.Ass.endFrame"] = end
             instance.data["repr.Ass._hardlinks"] = [
                 pattern % i for i in range(start, end, step)]
         else:

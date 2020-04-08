@@ -68,7 +68,7 @@ class SubmitDeadlineWrite(pyblish.api.InstancePlugin):
 
         frame_start = int(instance.data["startFrame"])
         frame_end = int(instance.data["endFrame"])
-        frame_step = int(instance.data["byFrameStep"])
+        frame_step = int(instance.data["step"])
         frame_per_task = instance.data["deadlineFramesPerTask"]
 
         frames = "{start}-{end}x{step}".format(

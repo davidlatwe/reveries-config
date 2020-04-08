@@ -20,8 +20,11 @@ class ExtractAtomsCrowdCache(pyblish.api.InstancePlugin):
             end = int(instance.data["endFrame"])
         else:
             context = instance.context
-            start = int(context.data.get("startFrame"))
-            end = int(context.data.get("endFrame"))
+            start = int(context.data["startFrame"])
+            end = int(context.data["endFrame"])
+
+            instance.data["startFrame"] = start
+            instance.data["endFrame"] = end
 
         # Get agentTypes
         agent_types = set()
@@ -46,8 +49,6 @@ class ExtractAtomsCrowdCache(pyblish.api.InstancePlugin):
         instance.data["repr.atoms._hardlinks"] = files
         instance.data["repr.atoms.entryFileName"] = filename
         instance.data["repr.atoms.variationFile"] = variation
-        instance.data["repr.atoms.startFrame"] = start
-        instance.data["repr.atoms.endFrame"] = end
 
         cache_dir = staging_dir
         cache_name = instance.data["subset"]

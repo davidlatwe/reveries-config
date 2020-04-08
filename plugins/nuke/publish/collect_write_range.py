@@ -25,7 +25,7 @@ class CollectWriteRange(pyblish.api.InstancePlugin):
 
         instance.data["startFrame"] = first
         instance.data["endFrame"] = last
-        instance.data["byFrameStep"] = 1
+        instance.data["step"] = 1
 
         instance.data["label"] += " [%d-%d]" % (first, last)
 
