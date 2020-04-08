@@ -23,8 +23,8 @@ class ExtractCamera(pyblish.api.InstancePlugin):
         staging_dir = utils.stage_dir()
 
         context_data = instance.context.data
-        start = context_data.get("startFrame")
-        end = context_data.get("endFrame")
+        start = context_data["startFrame"]
+        end = context_data["endFrame"]
         step = instance.data.get("bakeStep", 1.0)
 
         ma_filename = "%s.ma" % instance.data["subset"]
