@@ -111,21 +111,39 @@ def ls_renderable_layers():
         list: A list of renderable renderlayer node names
 
     """
-    is_render_setup = is_using_renderSetup()
+    if is_using_renderSetup():
+        renderables = list()
+        # (NOTE)
+        #   * If `renderSetup` node not exists, calling `cmds.renderSetup` will
+        #     create one for you.
+        #   * Functional rendersetup layers are chained with each other from
+        #     `renderSetup.firstRenderLayer` to the last via attribute `next`
+        #     and `previous`, not layers that were simply connected to
+        #     `renderSetup.listItems`.
+        #   * All rendersetup layer must connected to a legacy renderlayer, if
+        #     not, master layer will be rendered.
 
-    def is_correct_layer_type(layer):
-        if layer == "defaultRenderLayer":
-            return True
-        layer_type = bool(cmds.listConnections(layer,
-                                               destination=True,
-                                               source=False,
-                                               type="renderSetupLayer"))
-        return is_render_setup == layer_type
+        render_setup_layers = cmds.renderSetup(query=True, renderLayers=True)
+        for layer in render_setup_layers:
+            legacy_layer = cmds.listConnections(layer + ".legacyRenderLayer",
+                                                destination=False,
+                                                source=True,
+                                                type="renderLayer")
+            if not legacy_layer:
+                raise RuntimeError("RenderSetup layer %s is not connected to "
+                                   "any legacy renderLayer, scene maybe "
+                                   "corrupted.")
+            legacy_layer = legacy_layer[0]
 
-    return [i for i in cmds.ls(type="renderLayer") if
-            cmds.getAttr("{}.renderable".format(i)) and not
-            cmds.referenceQuery(i, isNodeReferenced=True) and
-            is_correct_layer_type(i)]
+            if cmds.getAttr(legacy_layer + ".renderable"):
+                renderables.append(legacy_layer)
+
+        return renderables
+
+    else:
+        return [i for i in cmds.ls(type="renderLayer") if
+                cmds.getAttr("{}.renderable".format(i)) and not
+                cmds.referenceQuery(i, isNodeReferenced=True)]
 
 
 def query_by_renderlayer(node, attr, layer):
