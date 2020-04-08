@@ -52,6 +52,9 @@ class ExtractAnimation(pyblish.api.InstancePlugin):
         start = context_data["startFrame"]
         end = context_data["endFrame"]
 
+        instance.data["startFrame"] = start
+        instance.data["endFrame"] = end
+
         with contextlib.nested(
             capsule.no_refresh(),
             capsule.maintained_selection(),

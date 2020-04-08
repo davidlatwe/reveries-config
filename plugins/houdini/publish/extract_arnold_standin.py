@@ -20,14 +20,6 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
         if "frameOutputs" in instance.data:
             output = instance.data["frameOutputs"][0]
 
-            start = instance.data["startFrame"]
-            end = instance.data["endFrame"]
-            step = instance.data["step"]
-
-            instance.data["repr.Ass.startFrame"] = start
-            instance.data["repr.Ass.endFrame"] = end
-            instance.data["repr.Ass.step"] = step
-
             for path in instance.data["frameOutputs"]:
                 files.append(os.path.basename(path))
 

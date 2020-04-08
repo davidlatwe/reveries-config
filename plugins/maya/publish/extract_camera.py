@@ -27,6 +27,10 @@ class ExtractCamera(pyblish.api.InstancePlugin):
         end = context_data["endFrame"]
         step = instance.data.get("bakeStep", 1.0)
 
+        instance.data["startFrame"] = start
+        instance.data["endFrame"] = end
+        instance.data["step"] = step
+
         ma_filename = "%s.ma" % instance.data["subset"]
         ma_outpath = "%s/%s" % (staging_dir, ma_filename)
 
@@ -69,25 +73,16 @@ class ExtractCamera(pyblish.api.InstancePlugin):
         instance.data["repr.mayaAscii._files"] = [ma_filename]
         instance.data["repr.mayaAscii.entryFileName"] = ma_filename
         instance.data["repr.mayaAscii.cameraUUID"] = cam_uuid
-        instance.data["repr.mayaAscii.startFrame"] = start
-        instance.data["repr.mayaAscii.endFrame"] = end
-        instance.data["repr.mayaAscii.step"] = step
 
         instance.data["repr.Alembic._stage"] = staging_dir
         instance.data["repr.Alembic._files"] = [abc_filename]
         instance.data["repr.Alembic.entryFileName"] = abc_filename
         instance.data["repr.Alembic.cameraUUID"] = cam_uuid
-        instance.data["repr.Alembic.startFrame"] = start
-        instance.data["repr.Alembic.endFrame"] = end
-        instance.data["repr.Alembic.step"] = step
 
         instance.data["repr.FBX._stage"] = staging_dir
         instance.data["repr.FBX._files"] = [fbx_filename]
         instance.data["repr.FBX.entryFileName"] = fbx_filename
         instance.data["repr.FBX.cameraUUID"] = cam_uuid
-        instance.data["repr.FBX.startFrame"] = start
-        instance.data["repr.FBX.endFrame"] = end
-        instance.data["repr.FBX.step"] = step
 
         # Delay one for all
         instance.data["repr._all_repr_._stage"] = staging_dir
