@@ -1,7 +1,6 @@
 
 import os
 import pyblish.api
-from reveries import utils
 from reveries.maya import utils as maya_utils
 
 
@@ -46,28 +45,18 @@ class ExtractRender(pyblish.api.InstancePlugin):
 
             pattern = os.path.relpath(aov_path, staging_dir)
 
-            start = instance.data["startFrame"]
-            end = instance.data["endFrame"]
-            step = instance.data["step"]
-
-            project = instance.context.data["projectDoc"]
-            e_in, e_out, handles, _ = utils.get_timeline_data(project)
-
             sequence[aov_name] = {
                 "imageFormat": instance.data["fileExt"],
                 "fpattern": pattern,
-                "startFrame": start,
-                "endFrame": end,
-                "step": step,
-                "edit_in": e_in,
-                "edit_out": e_out,
-                "handles": handles,
                 "focalLength": cmds.getAttr(camera + ".focalLength"),
                 "resolution": instance.data["resolution"],
-                "fps": instance.context.data["fps"],
                 "cameraUUID": maya_utils.get_id(camera),
                 "renderlayer": renderlayer,
             }
+
+            start = instance.data["startFrame"]
+            end = instance.data["endFrame"]
+            step = instance.data["step"]
 
             fname = pattern.replace(padding_str, frame_str)
             for frame_num in range(start, end, step):

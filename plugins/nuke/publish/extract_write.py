@@ -1,7 +1,6 @@
 
 import os
 import pyblish.api
-import reveries.utils
 
 
 class ExtractWrite(pyblish.api.InstancePlugin):
@@ -29,28 +28,18 @@ class ExtractWrite(pyblish.api.InstancePlugin):
         if not os.path.isdir(staging_dir):
             os.makedirs(staging_dir)
 
-        start = instance.data["startFrame"]
-        end = instance.data["endFrame"]
-        step = instance.data["step"]
-
         sequence = dict()
         files = list()
-
-        project = instance.context.data["projectDoc"]
-        e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
 
         sequence["_"] = {
             "imageFormat": instance.data["fileExt"],
             "fpattern": pattern,
-            "startFrame": start,
-            "endFrame": end,
-            "step": step,
-            "edit_in": e_in,
-            "edit_out": e_out,
-            "handles": handles,
             "resolution": instance.context.data["resolution"],
-            "fps": instance.context.data["fps"],
         }
+
+        start = instance.data["startFrame"]
+        end = instance.data["endFrame"]
+        step = instance.data["step"]
 
         fname = nukescripts.frame.replaceHashes(pattern)
         for frame_num in range(start, end, step):

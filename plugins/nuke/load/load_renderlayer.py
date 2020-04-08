@@ -45,6 +45,10 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
     def load(self, context, name=None, namespace=None, options=None):
 
         representation = context["representation"]
+        version = context["version"]
+
+        start = version["data"]["startFrame"]
+        end = version["data"]["endFrame"]
 
         nodes = list()
 
@@ -57,9 +61,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
             self.set_path(read, aov_name=name, path=path)
             self.set_format(read, data["resolution"])
-            self.set_range(read,
-                           start=data["startFrame"],
-                           end=data["endFrame"])
+            self.set_range(read, start=start, end=end)
 
             # Mark aov name
             lib.set_avalon_knob_data(read, {("aov", "AOV"): name})
@@ -81,12 +83,17 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         read_nodes = dict()
 
         parents = avalon.io.parenthood(representation)
+        version, subset, asset, project = parents
+
         self.package_path = get_representation_path_(representation, parents)
 
         for node in container["_members"]:
             if node.Class() == "Read":
                 data = lib.get_avalon_knob_data(node)
                 read_nodes[data["aov"]] = node
+
+        start = version["data"]["startFrame"]
+        end = version["data"]["endFrame"]
 
         with lib.sync_copies(list(read_nodes.values())):
             for name, data in representation["data"]["sequence"].items():
@@ -96,14 +103,10 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
                 self.set_path(read, aov_name=name, file_name=data["fname"])
                 self.set_format(read, data["resolution"])
-                self.set_range(read,
-                               start=data["startFrame"],
-                               end=data["endFrame"])
+                self.set_range(read, start=start, end=end)
 
         node = container["_node"]
         with lib.sync_copies([node], force=True):
-            version, subset, asset, project = parents
-
             asset_name = asset["data"].get("shortName", asset["name"])
             families = subset["data"]["families"]  # avalon-core:subset-3.0
             family_name = families[0].split(".")[-1]
