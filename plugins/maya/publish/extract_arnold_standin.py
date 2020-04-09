@@ -10,6 +10,8 @@ from maya import cmds, mel
 class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
     """
     """
+    # Will child texture instance be published when standin instance
+    # is being delayed ?
 
     order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
@@ -63,10 +65,12 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                 outpath,
                 file_node_attrs,
                 has_yeti,
-                start,
-                end,
-                step
             ],
+            "kwargs": {
+                "start": start,
+                "end": end,
+                "step": step,
+            }
         }
 
     def export_ass(self,

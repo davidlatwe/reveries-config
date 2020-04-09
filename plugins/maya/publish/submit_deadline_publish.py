@@ -55,6 +55,9 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             if not instance.data.get("publish", True):
                 continue
 
+            if instance.data.get("isDependency"):
+                continue
+
             if not instance.data.get("dumpedExtractors"):
                 continue
 
@@ -223,9 +226,11 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
         ]:
             environment[var] = os.getenv(var, "")
 
-        dumped = ";".join(instance.data["dumpedExtractors"])
-        environment["PYBLISH_EXTRACTOR_DUMPS"] = dumped
+        dumped = instance.data["dumpedExtractors"]
+        for child in instance.data.get("childInstances", []):
+            dumped += child.data["dumpedExtractors"]
 
+        environment["PYBLISH_EXTRACTOR_DUMPS"] = ";".join(dumped)
         environment["PYBLISH_DUMP_FILE"] = instance.data["dumpPath"]
 
         return environment
