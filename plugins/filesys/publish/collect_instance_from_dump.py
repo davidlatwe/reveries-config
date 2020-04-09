@@ -66,12 +66,14 @@ class CollectInstancesFromDump(pyblish.api.ContextPlugin):
 
                 previous_id = dump.pop("id")
                 child_ids = dump.pop("childInstances")
+                version_num = dump.pop("version")
 
                 instance = context.create_instance(dump["name"])
                 instance_by_id[previous_id] = instance
 
                 instance.data.update(dump)
 
+                instance.data["versionPin"] = version_num
                 instance.data["dumpId"] = previous_id
                 instance.data["childIds"] = child_ids
                 instance.data["childInstances"] = list()
