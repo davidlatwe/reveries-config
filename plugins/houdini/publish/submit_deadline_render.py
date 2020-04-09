@@ -26,6 +26,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
     targets = ["deadline"]
 
     def process(self, instance):
+        from reveries.houdini import lib
 
         context = instance.context
 
@@ -92,6 +93,25 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
 
         ropnode = instance[0]
 
+        # Override output to use original $HIP
+        output = lib.get_output_parameter(ropnode).rawValue()
+        on_HIP = output.startswith("$HIP")
+        origin_HIP = os.path.dirname(context.data["originMaking"])
+        output = output.replace("$HIP", origin_HIP, 1) if on_HIP else None
+        # (NOTE) ^^^ For a fixed staging dir
+        #   We need this because the scene file we submit to Deadline is a
+        #   backup under `$HIP/_published` dir which copied via extractor
+        #   plugin `AvalonSaveScene`.
+        #
+        #   Note that the Deadline (10.0.27.2) Houdini plugin does not support
+        #   output filename override if the ROP node type is `alembic`. So to
+        #   make this work, I have modified the Deadline Houdini plugin script
+        #   `{DeadlineRepo}/plugins/Houdini/hrender_dl.py` at line 375:
+        #   ```diff
+        #   - elif ropType == "rop_alembic":
+        #   + elif ropType in ("rop_alembic", "alembic"):
+        #   ```
+
         # Assemble payload
 
         payload = {
@@ -121,7 +141,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
                 # Renderer Node
                 "OutputDriver": ropnode.path(),
                 # Output Filename
-                # "Output": "",
+                "Output": output,
 
                 "IgnoreInputs": False,
                 "GPUsPerTask": 0,
