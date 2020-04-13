@@ -28,6 +28,7 @@ class UnpackLoadedSubset(avalon.api.InventoryAction):
             "PointCacheReferenceLoader",
             "RigLoader",
             "SetDressLoader",
+            "XGenInteractiveLoader",
         ]:
             return False
 
