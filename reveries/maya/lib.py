@@ -112,7 +112,6 @@ def ls_renderable_layers():
 
     """
     if is_using_renderSetup():
-        renderables = list()
         # (NOTE)
         #   * If `renderSetup` node not exists, calling `cmds.renderSetup` will
         #     create one for you.
@@ -122,8 +121,9 @@ def ls_renderable_layers():
         #     `renderSetup.listItems`.
         #   * All rendersetup layer must connected to a legacy renderlayer, if
         #     not, master layer will be rendered.
-
-        render_setup_layers = cmds.renderSetup(query=True, renderLayers=True)
+        legacy_layers = ["defaultRenderLayer"]
+        render_setup_layers = cmds.renderSetup(query=True,
+                                               renderLayers=True) or []
         for layer in render_setup_layers:
             legacy_layer = cmds.listConnections(layer + ".legacyRenderLayer",
                                                 destination=False,
@@ -133,13 +133,10 @@ def ls_renderable_layers():
                 raise RuntimeError("RenderSetup layer %s is not connected to "
                                    "any legacy renderLayer, scene maybe "
                                    "corrupted.")
-            legacy_layer = legacy_layer[0]
+            legacy_layers.append(legacy_layer[0])
 
-            if cmds.getAttr(legacy_layer + ".renderable"):
-                renderables.append(legacy_layer)
-
-        return renderables
-
+        return [i for i in legacy_layers if
+                cmds.getAttr("{}.renderable".format(i))]
     else:
         return [i for i in cmds.ls(type="renderLayer") if
                 cmds.getAttr("{}.renderable".format(i)) and not
