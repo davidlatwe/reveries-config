@@ -27,8 +27,6 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
     def process(self, context):
         from maya import cmds
 
-        targeted_families = context.data["targetFamilies"]
-
         objset_data = list()
 
         for objset in cmds.ls("*.id",
@@ -65,13 +63,6 @@ class CollectAvalonInstances(pyblish.api.ContextPlugin):
             data = avalon.maya.lib.read(objset)
             data["objectName"] = objset
             data["setMembers"] = members
-
-            family = data["family"]
-
-            # Ignore instance by targeted families
-            families = set([family] + data.get("families", []))
-            if not families.issubset(targeted_families):
-                continue
 
             objset_data.append(data)
 
