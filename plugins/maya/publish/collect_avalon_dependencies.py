@@ -1,6 +1,5 @@
 
 import pyblish.api
-import avalon.io
 
 
 class CollectAvalonDependencies(pyblish.api.ContextPlugin):
@@ -13,6 +12,7 @@ class CollectAvalonDependencies(pyblish.api.ContextPlugin):
 
     def process(self, context):
         from maya import cmds
+        import avalon.io
 
         root_containers = context.data["RootContainers"]
         container_members = dict()

@@ -2,8 +2,6 @@
 import json
 import contextlib
 import pyblish.api
-from reveries import utils
-from reveries.maya import xgen, capsule, utils as maya_utils
 
 
 class ExtractXGenInteractive(pyblish.api.InstancePlugin):
@@ -17,6 +15,8 @@ class ExtractXGenInteractive(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         from maya import cmds
+        from reveries import utils
+        from reveries.maya import xgen, capsule, utils as maya_utils
 
         staging_dir = utils.stage_dir()
 

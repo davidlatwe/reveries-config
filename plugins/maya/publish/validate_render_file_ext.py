@@ -1,6 +1,5 @@
 
 import pyblish.api
-from reveries.maya import utils as maya_utils
 
 
 class ValidateRenderFileExtension(pyblish.api.InstancePlugin):
@@ -21,6 +20,8 @@ class ValidateRenderFileExtension(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        from reveries.maya import utils as maya_utils
+
         layer = instance.data["renderlayer"]
         filename = maya_utils.compose_render_filename(layer)
         cls.log.debug("Composed file name: %s" % filename)

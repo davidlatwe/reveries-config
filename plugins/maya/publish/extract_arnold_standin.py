@@ -2,9 +2,6 @@
 import contextlib
 import pyblish.api
 import avalon.api
-from reveries import utils
-from reveries.maya import capsule
-from maya import cmds, mel
 
 
 class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
@@ -21,6 +18,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from reveries import utils
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
 
@@ -81,7 +79,8 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                    start,
                    end,
                    step):
-        from reveries.maya import arnold
+        from maya import cmds, mel
+        from reveries.maya import arnold, capsule
 
         # Ensure option created
         arnold.utils.create_options()

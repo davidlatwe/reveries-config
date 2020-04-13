@@ -1,7 +1,6 @@
 
 import contextlib
 import pyblish.api
-from reveries import utils
 
 
 class ExtractPointCacheABC(pyblish.api.InstancePlugin):
@@ -17,6 +16,7 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         from maya import cmds
+        from reveries import utils
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
         filename = "%s.abc" % instance.data["subset"]

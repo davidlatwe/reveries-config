@@ -1,5 +1,5 @@
+
 import pyblish.api
-from maya import cmds
 
 
 class CollectAllHistory(pyblish.api.InstancePlugin):
@@ -11,6 +11,8 @@ class CollectAllHistory(pyblish.api.InstancePlugin):
     label = "Collect All History"
 
     def process(self, instance):
+        from maya import cmds
+
         shapes = cmds.ls(instance, type="shape", noIntermediate=True)
         history = cmds.listConnections(shapes, skipConversionNodes=True) or []
 

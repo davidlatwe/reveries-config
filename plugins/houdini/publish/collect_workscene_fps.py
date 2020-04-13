@@ -1,5 +1,4 @@
 import pyblish.api
-import hou
 
 
 class CollectWorksceneFPS(pyblish.api.ContextPlugin):
@@ -10,6 +9,8 @@ class CollectWorksceneFPS(pyblish.api.ContextPlugin):
     hosts = ["houdini"]
 
     def process(self, context):
+        import hou
+
         fps = hou.fps()
         self.log.info("Workscene FPS: %s" % fps)
         context.data.update({"fps": fps})

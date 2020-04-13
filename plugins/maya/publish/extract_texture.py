@@ -1,15 +1,8 @@
 
 import os
 import shutil
-from collections import OrderedDict
-
 import pyblish.api
-import avalon.api
-import avalon.io
-
-from reveries import lib, utils
-from reveries.maya.plugins import env_embedded_path
-from reveries.maya import lib as maya_lib
+from collections import OrderedDict
 
 
 def to_tx(path):
@@ -26,6 +19,10 @@ class ExtractTexture(pyblish.api.InstancePlugin):
     families = ["reveries.texture"]
 
     def process(self, instance):
+        import avalon.api
+        import avalon.io
+        from reveries import lib, utils
+        from reveries.maya import plugins, lib as maya_lib
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
         published_dir = self.published_dir(instance)
@@ -125,7 +122,7 @@ class ExtractTexture(pyblish.api.InstancePlugin):
                     # Version matched, consider as same file
                     head_file = sorted(all_files)[0]
                     resolved_path = abs_previous[:-len(file)] + head_file
-                    resolved_path = env_embedded_path(resolved_path)
+                    resolved_path = plugins.env_embedded_path(resolved_path)
                     self.update_file_node_attrs(instance,
                                                 file_nodes,
                                                 resolved_path,
@@ -209,11 +206,13 @@ class ExtractTexture(pyblish.api.InstancePlugin):
                 instance.data["fileNodeAttrs"][attr] = False
 
     def published_dir(self, instance):
+        from reveries.maya import plugins
+
         template_publish = instance.data["publishPathTemplate"]
         template_data = instance.data["publishPathTemplateData"]
         published_dir = template_publish.format(representation="TexturePack",
                                                 **template_data)
-        return env_embedded_path(published_dir)
+        return plugins.env_embedded_path(published_dir)
 
     def stage_textures(self, staging_dir, files_to_copy):
         for file, src in files_to_copy.items():

@@ -1,7 +1,6 @@
 
 import pyblish.api
 from avalon import io
-from reveries.maya import pipeline
 from reveries import utils
 
 
@@ -24,6 +23,8 @@ class ValidateRenderResolution(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
         """Rendering resolution should be the same as project settings"""
+        from reveries.maya import pipeline
+
         valid_resolutions = list()
 
         project = instance.context.data["projectDoc"]

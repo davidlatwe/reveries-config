@@ -1,6 +1,5 @@
 
 import pyblish.api
-from avalon import maya
 
 
 class ValidateSceneNotLocked(pyblish.api.ContextPlugin):
@@ -12,6 +11,7 @@ class ValidateSceneNotLocked(pyblish.api.ContextPlugin):
     hosts = ["maya"]
 
     def process(self, context):
+        from avalon import maya
 
         if maya.is_locked():
             raise Exception("Scene has been locked, please save the scene "

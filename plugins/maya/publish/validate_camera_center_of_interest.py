@@ -1,7 +1,6 @@
 
 import math
 import pyblish.api
-from maya import cmds
 
 
 class ValidateCameraCenterOfInterest(pyblish.api.InstancePlugin):
@@ -18,6 +17,8 @@ class ValidateCameraCenterOfInterest(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        from maya import cmds
+
         invalid = list()
 
         if instance.data["family"] == "reveries.renderlayer":

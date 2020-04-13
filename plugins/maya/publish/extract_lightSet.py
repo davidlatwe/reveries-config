@@ -1,7 +1,6 @@
 
 import contextlib
 import pyblish.api
-from reveries import utils
 
 
 class ExtractLightSet(pyblish.api.InstancePlugin):
@@ -15,6 +14,7 @@ class ExtractLightSet(pyblish.api.InstancePlugin):
     def process(self, instance):
         from maya import cmds
         from avalon import maya
+        from reveries import utils
         from reveries.maya import capsule
 
         staging_dir = utils.stage_dir()

@@ -1,6 +1,5 @@
 
 import pyblish.api
-import reveries.maya.xgen.legacy as xgen
 
 
 class ValidateXGenMapsInDESC(pyblish.api.InstancePlugin):
@@ -20,6 +19,7 @@ class ValidateXGenMapsInDESC(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        import reveries.maya.xgen.legacy as xgen
 
         invalid = list()
 

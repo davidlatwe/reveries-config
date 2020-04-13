@@ -1,6 +1,5 @@
 
 import pyblish.api
-from maya import cmds
 
 
 class CollectRig(pyblish.api.InstancePlugin):
@@ -11,10 +10,12 @@ class CollectRig(pyblish.api.InstancePlugin):
     families = ["reveries.rig"]
 
     def get_controlsets(self, instance):
+        from maya import cmds
         return [i for i in cmds.ls(instance, type="objectSet")
                 if i == "ControlSet"]
 
     def get_outsets(self, instance):
+        from maya import cmds
         return [i for i in cmds.ls(instance, type="objectSet")
                 if i.endswith("OutSet")]  # Include other OutSets
 

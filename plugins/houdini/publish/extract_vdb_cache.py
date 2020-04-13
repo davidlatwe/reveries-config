@@ -1,6 +1,5 @@
 import os
 import pyblish.api
-from reveries.houdini import lib
 
 
 class ExtractVDBCache(pyblish.api.InstancePlugin):
@@ -13,6 +12,8 @@ class ExtractVDBCache(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from reveries.houdini import lib
+
         ropnode = instance[0]
 
         files = list()

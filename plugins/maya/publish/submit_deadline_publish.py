@@ -3,7 +3,6 @@ import os
 import json
 import platform
 import pyblish.api
-import reveries
 
 
 class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
@@ -24,6 +23,8 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
     ]
 
     def process(self, context):
+        import reveries
+
         if not all(result["success"] for result in context.data["results"]):
             self.log.warning("Atomicity not held, aborting.")
             return

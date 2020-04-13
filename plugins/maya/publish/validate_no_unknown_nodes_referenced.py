@@ -1,10 +1,9 @@
 
 import pyblish.api
-from reveries.plugins import context_process
-from reveries.maya.plugins import MayaSelectInvalidContextAction
+from reveries import plugins
 
 
-class SelectUnknownNodes(MayaSelectInvalidContextAction):
+class SelectUnknownNodes(plugins.MayaSelectInvalidContextAction):
 
     label = "Select Unknown"
 
@@ -38,7 +37,7 @@ class ValidateNoUnknownNodesReferenced(pyblish.api.InstancePlugin):
         return [node for node in cmds.ls(type="unknown")
                 if cmds.referenceQuery(node, isNodeReferenced=True)]
 
-    @context_process
+    @plugins.context_process
     def process(self, context):
         unknown = self.get_invalid(context)
 

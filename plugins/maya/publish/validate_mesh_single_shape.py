@@ -1,6 +1,6 @@
-import pyblish.api
 
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+import pyblish.api
+from reveries import plugins
 
 
 class ValidateMeshSingleShape(pyblish.api.InstancePlugin):
@@ -16,7 +16,7 @@ class ValidateMeshSingleShape(pyblish.api.InstancePlugin):
     label = "Mesh Single Shape"
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
     ]
 
     @classmethod

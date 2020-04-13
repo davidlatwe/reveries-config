@@ -1,6 +1,5 @@
 
 import pyblish.api
-import reveries.maya.xgen.legacy as xgen
 
 
 class ValidateXGenIsBaked(pyblish.api.InstancePlugin):
@@ -16,6 +15,8 @@ class ValidateXGenIsBaked(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        import reveries.maya.xgen.legacy as xgen
+
         invalid = list()
 
         for palette in instance.data["xgenPalettes"]:
@@ -32,6 +33,7 @@ class ValidateXGenIsBaked(pyblish.api.InstancePlugin):
         return invalid
 
     def process(self, instance):
+        import reveries.maya.xgen.legacy as xgen
 
         if instance.data["step"] == xgen.SHAPING:
             # (TODO) Should we ensure no descriptions baked in shaping step ?

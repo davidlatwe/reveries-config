@@ -1,6 +1,5 @@
 
 import pyblish.api
-from reveries import utils
 
 
 class ExtractAtomsCrowdCache(pyblish.api.InstancePlugin):
@@ -11,6 +10,7 @@ class ExtractAtomsCrowdCache(pyblish.api.InstancePlugin):
     families = ["reveries.atomscrowd"]
 
     def process(self, instance):
+        from reveries import utils
         from AtomsMaya.hostbridge.commands import MayaCommandsHostBridge
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])

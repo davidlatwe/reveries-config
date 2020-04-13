@@ -1,8 +1,6 @@
-from maya import cmds
 
 import pyblish.api
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
-from reveries.maya import lib
+from reveries import plugins
 
 
 class ValidateMeshNonZeroEdgeLength(pyblish.api.InstancePlugin):
@@ -23,7 +21,7 @@ class ValidateMeshNonZeroEdgeLength(pyblish.api.InstancePlugin):
     ]
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
     ]
 
     optional = True
@@ -37,6 +35,8 @@ class ValidateMeshNonZeroEdgeLength(pyblish.api.InstancePlugin):
             http://help.autodesk.com/view/MAYAUL/2015/ENU/?guid=Mesh__Cleanup
 
         """
+        from maya import cmds
+        from reveries.maya import lib
 
         meshes = cmds.ls(instance, type="mesh", long=True, noIntermediate=True)
         if not meshes:

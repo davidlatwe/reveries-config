@@ -2,10 +2,6 @@
 import os
 import shutil
 import pyblish.api
-from reveries import utils
-from reveries.maya import io, utils as maya_utils
-from reveries.maya.xgen import legacy as xgen
-from maya import cmds
 
 
 class ExtractXGenLegacy(pyblish.api.InstancePlugin):
@@ -20,6 +16,10 @@ class ExtractXGenLegacy(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from maya import cmds
+        from reveries import utils
+        from reveries.maya import io, utils as maya_utils
+        from reveries.maya.xgen import legacy as xgen
 
         staging_dir = utils.stage_dir()
 

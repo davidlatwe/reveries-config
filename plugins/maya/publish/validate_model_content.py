@@ -1,7 +1,6 @@
 
 import pyblish.api
-
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
 class ValidateModelContent(pyblish.api.InstancePlugin):
@@ -21,7 +20,7 @@ class ValidateModelContent(pyblish.api.InstancePlugin):
     label = "Model Content"
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
     ]
 
     @classmethod

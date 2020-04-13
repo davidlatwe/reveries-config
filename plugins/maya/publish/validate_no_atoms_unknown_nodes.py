@@ -1,16 +1,14 @@
 
 import pyblish.api
-
-from reveries.plugins import RepairContextAction, context_process
-from reveries.maya.plugins import MayaSelectInvalidContextAction
+from reveries import plugins
 
 
-class SelectUnknownNodes(MayaSelectInvalidContextAction):
+class SelectUnknownNodes(plugins.MayaSelectInvalidContextAction):
 
     label = "Select Unknown"
 
 
-class DeleteUnknownNodes(RepairContextAction):
+class DeleteUnknownNodes(plugins.RepairContextAction):
 
     label = "Clean Up"
 
@@ -46,7 +44,7 @@ class ValidateNoAtomsUnknownNodes(pyblish.api.InstancePlugin):
 
         return invalid
 
-    @context_process
+    @plugins.context_process
     def process(self, context):
         unknown = self.get_invalid(context)
 

@@ -412,3 +412,51 @@ class SelectInvalidContextAction(OnSymptomAction):
 
     def deselect(self):
         raise NotImplementedError("Should be implemented in subclass.")
+
+
+class MayaSelectInvalidInstanceAction(SelectInvalidInstanceAction):
+
+    def select(self, invalid):
+        from maya import cmds
+        cmds.select(invalid, replace=True, noExpand=True)
+
+    def deselect(self):
+        from maya import cmds
+        cmds.select(deselect=True)
+
+
+class MayaSelectInvalidContextAction(SelectInvalidContextAction):
+    """ Select invalid nodes in context"""
+
+    def select(self, invalid):
+        from maya import cmds
+        cmds.select(invalid, replace=True, noExpand=True)
+
+    def deselect(self):
+        from maya import cmds
+        cmds.select(deselect=True)
+
+
+class HoudiniSelectInvalidInstanceAction(SelectInvalidInstanceAction):
+
+    def select(self, invalid):
+        self.deselect()
+        for node in invalid:
+            node.setSelected(True)
+
+    def deselect(self):
+        import hou
+        hou.clearAllSelected()
+
+
+class HoudiniSelectInvalidContextAction(SelectInvalidContextAction):
+    """ Select invalid nodes in context"""
+
+    def select(self, invalid):
+        self.deselect()
+        for node in invalid:
+            node.setSelected(True)
+
+    def deselect(self):
+        import hou
+        hou.clearAllSelected()

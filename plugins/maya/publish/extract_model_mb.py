@@ -2,10 +2,6 @@
 import contextlib
 import pyblish.api
 
-import maya.cmds as cmds
-from reveries import utils
-from reveries.maya import capsule, utils as maya_utils
-
 
 class ExtractModelAsMayaBinary(pyblish.api.InstancePlugin):
     """Produce a stripped down Maya file from instance
@@ -24,6 +20,7 @@ class ExtractModelAsMayaBinary(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from reveries import utils
 
         staging_dir = utils.stage_dir()
         filename = "%s.mb" % instance.data["subset"]
@@ -40,6 +37,8 @@ class ExtractModelAsMayaBinary(pyblish.api.InstancePlugin):
         instance.data["repr.mayaBinary.modelProfile"] = geo_id_and_hash
 
     def extract_mayabinary(self, nodes, outpath):
+        import maya.cmds as cmds
+        from reveries.maya import capsule
 
         with contextlib.nested(
             capsule.no_undo(),
@@ -93,6 +92,9 @@ class ExtractModelAsMayaBinary(pyblish.api.InstancePlugin):
         return geo_id_and_hash
 
     def hash(self, mesh_nodes):
+        import maya.cmds as cmds
+        from reveries.maya import utils as maya_utils
+
         # Hash model and collect Avalon UUID
         geo_id_and_hash = dict()
         hasher = maya_utils.MeshHasher()

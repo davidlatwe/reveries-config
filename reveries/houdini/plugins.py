@@ -14,28 +14,3 @@ class HoudiniBaseLoader(plugins.PackageLoader):
             raise IOError("File Not Found: {!r}".format(entry_path))
 
         return env_embedded_path(entry_path)
-
-
-class HoudiniSelectInvalidInstanceAction(plugins.SelectInvalidInstanceAction):
-
-    def select(self, invalid):
-        self.deselect()
-        for node in invalid:
-            node.setSelected(True)
-
-    def deselect(self):
-        import hou
-        hou.clearAllSelected()
-
-
-class HoudiniSelectInvalidContextAction(plugins.SelectInvalidContextAction):
-    """ Select invalid nodes in context"""
-
-    def select(self, invalid):
-        self.deselect()
-        for node in invalid:
-            node.setSelected(True)
-
-    def deselect(self):
-        import hou
-        hou.clearAllSelected()

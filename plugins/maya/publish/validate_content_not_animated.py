@@ -1,9 +1,9 @@
 
 import pyblish.api
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalid(MayaSelectInvalidInstanceAction):
+class SelectInvalid(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Select Animated"
 

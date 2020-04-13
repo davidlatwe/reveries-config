@@ -1,13 +1,12 @@
 
 import os
-from maya import cmds
-
 import pyblish.api
 import avalon.api
-from reveries.maya import lib, utils
 
 
 def get_render_attr(attr, layer):
+    from reveries.maya import lib
+
     return lib.query_by_renderlayer("defaultRenderGlobals",
                                     attr,
                                     layer)
@@ -29,6 +28,8 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
     targets = ["deadline"]
 
     def process(self, context):
+        from maya import cmds
+        from reveries.maya import lib, utils
 
         asset = avalon.api.Session["AVALON_ASSET"]
         filepath = context.data["currentMaking"].replace("\\", "/")
@@ -159,6 +160,8 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
                 instance[:] += members
 
     def parse_render_globals(self, layer, render_globals):
+        from reveries.maya import lib
+
         overrides = dict()
 
         attributes = [

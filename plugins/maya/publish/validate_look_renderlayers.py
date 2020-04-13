@@ -1,17 +1,16 @@
 
 import pyblish.api
 from collections import defaultdict
-from reveries.plugins import context_process
-from reveries.maya.plugins import MayaSelectInvalidContextAction
+from reveries import plugins
 
 
-class SelectMissing(MayaSelectInvalidContextAction):
+class SelectMissing(plugins.MayaSelectInvalidContextAction):
 
     label = "Renderlayer Missing"
     symptom = "missing"
 
 
-class SelectNotUnique(MayaSelectInvalidContextAction):
+class SelectNotUnique(plugins.MayaSelectInvalidContextAction):
 
     label = "Renderlayer Not Unique"
     symptom = "multiple"
@@ -69,7 +68,7 @@ class ValidateLookRenderlayers(pyblish.api.InstancePlugin):
 
         return multiple
 
-    @context_process
+    @plugins.context_process
     def process(self, context):
         is_invalid = False
 

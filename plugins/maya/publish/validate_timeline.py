@@ -1,15 +1,9 @@
 
 import pyblish.api
-
-from reveries import utils
-from reveries.plugins import RepairContextAction, context_process
-from reveries.maya.pipeline import (
-    set_scene_timeline,
-    has_turntable,
-)
+from reveries import plugins
 
 
-class RepairInvalid(RepairContextAction):
+class RepairInvalid(plugins.RepairContextAction):
 
     label = "Reset Timeline"
 
@@ -43,10 +37,12 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
         RepairInvalid,
     ]
 
-    @context_process
+    @plugins.context_process
     def process(self, context):
+        from reveries import utils
+        from reveries.maya import pipeline
 
-        asset_name = has_turntable()
+        asset_name = pipeline.has_turntable()
 
         if asset_name is None and not asset_has_frame_range(context):
             self.log.info("No range been set on this asset, skipping..")
@@ -94,6 +90,8 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid(cls, context):
-        asset_name = has_turntable()
+        from reveries.maya import pipeline
+
+        asset_name = pipeline.has_turntable()
         strict = False if asset_name is None else True
-        set_scene_timeline(asset_name=asset_name, strict=strict)
+        pipeline.set_scene_timeline(asset_name=asset_name, strict=strict)

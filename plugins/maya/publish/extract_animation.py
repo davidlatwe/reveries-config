@@ -1,9 +1,6 @@
 
 import contextlib
 import pyblish.api
-from reveries import utils
-from reveries.maya import lib, capsule
-from maya import cmds
 
 
 class ExtractAnimation(pyblish.api.InstancePlugin):
@@ -18,6 +15,10 @@ class ExtractAnimation(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from maya import cmds
+        from reveries import utils
+        from reveries.maya import lib, capsule
+
         cmds.loadPlugin("animImportExport", quiet=True)
 
         staging_dir = utils.stage_dir()

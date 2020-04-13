@@ -1,16 +1,14 @@
 
 import pyblish.api
-
-from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalidInMesh(MayaSelectInvalidInstanceAction):
+class SelectInvalidInMesh(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Invalid InMesh"
 
 
-class FixInputMesh(RepairInstanceAction):
+class FixInputMesh(plugins.RepairInstanceAction):
 
     label = "Fix InMesh"
 

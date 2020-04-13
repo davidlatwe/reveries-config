@@ -2,9 +2,6 @@
 import contextlib
 import pyblish.api
 import avalon
-from reveries import utils
-from reveries.maya import io, lib, capsule, utils as maya_utils
-from maya import cmds
 
 
 class ExtractCamera(pyblish.api.InstancePlugin):
@@ -19,6 +16,9 @@ class ExtractCamera(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from maya import cmds
+        from reveries import utils
+        from reveries.maya import lib, utils as maya_utils
 
         staging_dir = utils.stage_dir()
 
@@ -113,6 +113,8 @@ class ExtractCamera(pyblish.api.InstancePlugin):
                     euler_filter,
                     do_bake,
                     donot_bake):
+        from maya import cmds
+        from reveries.maya import io, lib, capsule
 
         with contextlib.nested(
             capsule.no_refresh(),

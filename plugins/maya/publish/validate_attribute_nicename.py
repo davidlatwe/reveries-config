@@ -1,16 +1,14 @@
 
 import pyblish.api
-
-from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalid(MayaSelectInvalidInstanceAction):
+class SelectInvalid(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Select Bad Named"
 
 
-class RepairInvalid(RepairInstanceAction):
+class RepairInvalid(plugins.RepairInstanceAction):
 
     label = "Delete All Bad Named"
 

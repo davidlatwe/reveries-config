@@ -2,11 +2,6 @@
 import contextlib
 import pyblish.api
 
-from maya import cmds
-from avalon import maya
-from reveries import utils
-from reveries.maya import capsule, utils as maya_utils
-
 
 class ExtractRig(pyblish.api.InstancePlugin):
     """Extract rig as mayaBinary"""
@@ -17,6 +12,10 @@ class ExtractRig(pyblish.api.InstancePlugin):
     families = ["reveries.rig"]
 
     def process(self, instance):
+        from maya import cmds
+        from avalon import maya
+        from reveries import utils
+        from reveries.maya import capsule
 
         staging_dir = utils.stage_dir()
         filename = "%s.mb" % instance.data["subset"]
@@ -91,6 +90,9 @@ class ExtractRig(pyblish.api.InstancePlugin):
         instance.data["repr.mayaBinary.modelProfile"] = geo_id_and_hash
 
     def hash(self, mesh_nodes):
+        from maya import cmds
+        from reveries.maya import utils as maya_utils
+
         # Hash model and collect Avalon UUID
         geo_id_and_hash = dict()
         hasher = maya_utils.MeshHasher()

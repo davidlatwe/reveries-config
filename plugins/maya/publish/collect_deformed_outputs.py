@@ -1,8 +1,5 @@
 
 import pyblish.api
-import maya.cmds as cmds
-
-from reveries.maya import lib, pipeline
 
 
 class CollectDeformedOutputs(pyblish.api.InstancePlugin):
@@ -55,6 +52,8 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        import maya.cmds as cmds
+        from reveries.maya import lib, pipeline
 
         # Frame range
         if instance.data["staticCache"]:
@@ -187,6 +186,8 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             self.add_families(instance, instance.data)
 
     def pick_locators(self, members):
+        import maya.cmds as cmds
+
         return cmds.listRelatives(cmds.ls(members, type="locator"),
                                   parent=True,
                                   fullPath=True) or []

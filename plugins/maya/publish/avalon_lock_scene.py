@@ -1,8 +1,6 @@
 
 import os
 import pyblish.api
-from maya import cmds
-from avalon import maya
 
 
 class AvalonLockScene(pyblish.api.ContextPlugin):
@@ -22,6 +20,8 @@ class AvalonLockScene(pyblish.api.ContextPlugin):
     hosts = ["maya"]
 
     def process(self, context):
+        from maya import cmds
+        from avalon import maya
 
         assert any(inst.data.get("publish", True) for inst in context), (
             "No instance been published, aborting.")

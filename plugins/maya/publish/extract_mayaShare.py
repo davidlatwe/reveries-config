@@ -1,8 +1,5 @@
 
 import pyblish.api
-from maya import cmds
-from avalon import maya
-from reveries import utils
 
 
 class ExtractMayaShare(pyblish.api.InstancePlugin):
@@ -14,6 +11,9 @@ class ExtractMayaShare(pyblish.api.InstancePlugin):
     families = ["reveries.mayashare"]
 
     def process(self, instance):
+        from maya import cmds
+        from avalon import maya
+        from reveries import utils
 
         staging_dir = utils.stage_dir()
         filename = "%s.ma" % instance.data["subset"]

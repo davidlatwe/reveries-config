@@ -1,6 +1,5 @@
 
 import pyblish.api
-from maya import cmds
 from reveries import plugins
 
 
@@ -32,6 +31,7 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from maya import cmds
         from reveries.maya import pipeline
 
         upstream_nodes = instance.data.get("shadingNetwork", [])

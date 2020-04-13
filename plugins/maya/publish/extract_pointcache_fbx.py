@@ -1,7 +1,6 @@
 
 import contextlib
 import pyblish.api
-from reveries import utils
 
 
 class ExtractPointCacheFBX(pyblish.api.InstancePlugin):
@@ -17,6 +16,7 @@ class ExtractPointCacheFBX(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         from maya import cmds
+        from reveries import utils
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
         cachename = "%s.fbx" % instance.data["subset"]

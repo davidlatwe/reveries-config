@@ -1,6 +1,5 @@
 
 import pyblish.api
-from maya import cmds
 
 
 class ValidateSetdressAssembly(pyblish.api.InstancePlugin):
@@ -20,6 +19,7 @@ class ValidateSetdressAssembly(pyblish.api.InstancePlugin):
     families = ["reveries.setdress"]
 
     def process(self, instance):
+        from maya import cmds
 
         root = cmds.ls(instance, assemblies=True, long=True)
 

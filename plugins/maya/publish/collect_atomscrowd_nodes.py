@@ -1,6 +1,5 @@
 
 import pyblish.api
-from maya import cmds
 
 
 class CollectAtomsCrowdNodes(pyblish.api.InstancePlugin):
@@ -16,6 +15,8 @@ class CollectAtomsCrowdNodes(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from maya import cmds
+
         atoms_nodes = cmds.ls(type="tcAtomsNode")
         instance.data["AtomsNodes"] = atoms_nodes
 

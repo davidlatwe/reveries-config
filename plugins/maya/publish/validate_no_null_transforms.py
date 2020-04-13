@@ -1,17 +1,16 @@
 
 import pyblish.api
-import maya.cmds as cmds
-
-from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class RepairInvalid(RepairInstanceAction):
+class RepairInvalid(plugins.RepairInstanceAction):
 
     label = "Delete Empty/Null Transforms"
 
 
 def has_shape_children(node):
+    import maya.cmds as cmds
+
     # Check if any descendants
     allDescendents = cmds.listRelatives(node,
                                         allDescendents=True,
@@ -49,7 +48,7 @@ class ValidateNoNullTransforms(pyblish.api.InstancePlugin):
     families = ['reveries.model']
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
         pyblish.api.Category("Fix It"),
         RepairInvalid,
     ]
@@ -57,6 +56,7 @@ class ValidateNoNullTransforms(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
         """Return invalid transforms in instance"""
+        import maya.cmds as cmds
 
         transforms = cmds.ls(instance, type='transform', long=True)
 
@@ -81,6 +81,8 @@ class ValidateNoNullTransforms(pyblish.api.InstancePlugin):
         in history) deletion might mess up things.
 
         """
+        import maya.cmds as cmds
+
         invalid = cls.get_invalid(instance)
         if invalid:
             cmds.delete(invalid)

@@ -1,19 +1,15 @@
 
 import os
 import pyblish.api
-from reveries.plugins import (
-    SelectInvalidInstanceAction,
-    get_errored_instances_from_context,
-)
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalidFileNodes(MayaSelectInvalidInstanceAction):
+class SelectInvalidFileNodes(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Select Invalid"
 
 
-class SelectInvalidOnFilePathEditor(SelectInvalidInstanceAction):
+class SelectInvalidOnFilePathEditor(plugins.SelectInvalidInstanceAction):
 
     label = "File Path Editor"
 
@@ -99,7 +95,7 @@ class GroupingInvalidWithBin(pyblish.api.Action):
     icon = "tags"
 
     def process(self, context, plugin):
-        errored_instances = get_errored_instances_from_context(context)
+        errored_instances = plugins.get_errored_instances_from_context(context)
 
         all_invalid = dict()
 

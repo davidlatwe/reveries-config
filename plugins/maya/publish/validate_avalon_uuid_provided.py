@@ -1,10 +1,9 @@
 
 import pyblish.api
-from reveries.maya.utils import Identifier, get_id_status
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectMissing(MayaSelectInvalidInstanceAction):
+class SelectMissing(plugins.MayaSelectInvalidInstanceAction):
 
     label = "選取沒有編號的物件"
 
@@ -39,6 +38,7 @@ class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
         from maya import cmds
+        from reveries.maya.utils import Identifier, get_id_status
 
         if instance.data.get("isDummy"):
             return []

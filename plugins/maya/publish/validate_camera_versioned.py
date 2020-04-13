@@ -1,10 +1,9 @@
 
 import pyblish.api
-from avalon.pipeline import AVALON_CONTAINER_ID
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalid(MayaSelectInvalidInstanceAction):
+class SelectInvalid(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Select Not Versioned"
 
@@ -29,8 +28,9 @@ class ValidateCameraVersioned(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
-        from reveries.maya import lib
         from maya import cmds
+        from avalon.pipeline import AVALON_CONTAINER_ID
+        from reveries.maya import lib
 
         invalid = list()
         camera = instance.data["camera"]

@@ -1,9 +1,6 @@
 
 import contextlib
 import pyblish.api
-import maya.cmds as cmds
-from reveries import utils
-from reveries.maya import capsule, io, lib
 
 
 class ExtractModelAsAlembic(pyblish.api.InstancePlugin):
@@ -23,6 +20,7 @@ class ExtractModelAsAlembic(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from reveries import utils
 
         staging_dir = utils.stage_dir()
         filename = "%s.abc" % instance.data["subset"]
@@ -37,6 +35,8 @@ class ExtractModelAsAlembic(pyblish.api.InstancePlugin):
         self.extract_alembic(nodes, outpath)
 
     def extract_alembic(self, nodes, outpath):
+        import maya.cmds as cmds
+        from reveries.maya import capsule, io, lib
 
         with contextlib.nested(
             capsule.no_undo(),

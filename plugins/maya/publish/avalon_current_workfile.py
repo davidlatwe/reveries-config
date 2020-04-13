@@ -1,7 +1,4 @@
 import os
-
-from maya import cmds
-
 import pyblish.api
 
 
@@ -16,5 +13,7 @@ class CurrentWorkfile(pyblish.api.ContextPlugin):
 
     def process(self, context):
         """Inject the current working file"""
+        from maya import cmds
+
         current_file = cmds.file(query=True, sceneName=True)
         context.data["currentMaking"] = os.path.normpath(current_file)

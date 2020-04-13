@@ -1,9 +1,6 @@
-from maya import cmds
 
 import pyblish.api
-
-from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import SelectInvalidInstanceAction
+from reveries import plugins
 
 
 def pairs(iterable):
@@ -23,6 +20,7 @@ def get_invalid_sets(shape):
     actually have the shape as member.
 
     """
+    from maya import cmds
 
     invalid = []
     sets = cmds.listSets(object=shape,
@@ -43,6 +41,7 @@ def get_invalid_sets(shape):
 
 def disconnect(node_a, node_b):
     """Remove all connections between node a and b."""
+    from maya import cmds
 
     # Disconnect outputs
     outputs = cmds.listConnections(node_a,
@@ -83,8 +82,8 @@ class ValidateMeshShaderConnections(pyblish.api.InstancePlugin):
         "reveries.look",
     ]
     actions = [
-        SelectInvalidInstanceAction,
-        RepairInstanceAction,
+        plugins.SelectInvalidInstanceAction,
+        plugins.RepairInstanceAction,
     ]
 
     def process(self, instance):
@@ -98,6 +97,7 @@ class ValidateMeshShaderConnections(pyblish.api.InstancePlugin):
 
     @staticmethod
     def get_invalid(instance):
+        from maya import cmds
 
         shapes = cmds.ls(instance,
                          noIntermediate=True,

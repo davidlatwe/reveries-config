@@ -1,10 +1,7 @@
+
 import re
-
-from maya import cmds
-
 import pyblish.api
-from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
 def len_flattened(components):
@@ -66,15 +63,17 @@ class ValidateMeshVerticesHaveEdges(pyblish.api.InstancePlugin):
     label = "Mesh Vertices Have Edges"
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
         pyblish.api.Category("Fix It"),
-        RepairInstanceAction,
+        plugins.RepairInstanceAction,
     ]
 
     optional = True
 
     @classmethod
     def get_invalid(cls, instance):
+        from maya import cmds
+
         invalid = []
 
         meshes = cmds.ls(instance, type="mesh", long=True, noIntermediate=True)
@@ -105,6 +104,7 @@ class ValidateMeshVerticesHaveEdges(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid(cls, instance):
+        from maya import cmds
 
         # This fix only works in Maya 2016 EXT2 and newer
         if float(cmds.about(version=True)) <= 2016.0:

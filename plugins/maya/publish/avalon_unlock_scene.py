@@ -1,9 +1,6 @@
 
 import os
 import pyblish.api
-from maya import cmds
-from avalon import maya
-from reveries.maya import capsule
 
 
 class AvalonUnlockScene(pyblish.api.ContextPlugin):
@@ -15,6 +12,9 @@ class AvalonUnlockScene(pyblish.api.ContextPlugin):
     hosts = ["maya"]
 
     def process(self, context):
+        from maya import cmds
+        from avalon import maya
+        from reveries.maya import capsule
 
         maya.unlock()
 

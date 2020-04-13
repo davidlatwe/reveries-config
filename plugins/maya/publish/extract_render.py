@@ -1,7 +1,6 @@
 
 import os
 import pyblish.api
-from reveries.maya import utils as maya_utils
 
 
 class ExtractRender(pyblish.api.InstancePlugin):
@@ -20,6 +19,7 @@ class ExtractRender(pyblish.api.InstancePlugin):
         """Extract per renderlayer that has AOVs (Arbitrary Output Variable)
         """
         from maya import cmds
+        from reveries.maya import utils as maya_utils
 
         self.log.info("Computing render output path..")
 

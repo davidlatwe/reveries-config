@@ -2,12 +2,10 @@
 import json
 import contextlib
 import pyblish.api
-from reveries import utils
-from reveries.maya import utils as maya_utils
-from maya import cmds
 
 
 def read(attr_path):
+    from maya import cmds
     try:
         return cmds.getAttr(attr_path)
     except (RuntimeError, ValueError):
@@ -29,8 +27,10 @@ class ExtractLook(pyblish.api.InstancePlugin):
     families = ["reveries.look"]
 
     def process(self, instance):
+        from maya import cmds
         from avalon import maya
-        from reveries.maya import lib, capsule
+        from reveries import utils
+        from reveries.maya import lib, capsule, utils as maya_utils
 
         staging_dir = utils.stage_dir()
 

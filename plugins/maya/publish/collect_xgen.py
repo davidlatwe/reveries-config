@@ -1,11 +1,12 @@
 
 import pyblish.api
-from maya import cmds
-from reveries import plugins
-from reveries.maya import lib, xgen, pipeline
 
 
 def create_model_subset_from_xgen(instance):
+    from maya import cmds
+    from reveries import plugins
+    from reveries.maya import lib
+
     family = "reveries.model"
     subset = instance.data["subset"]
     subset = "model" + subset[0].upper() + subset[1:]
@@ -30,6 +31,8 @@ def create_model_subset_from_xgen(instance):
 
 
 def create_texture_subset_from_xgen(instance, textures):
+    from reveries import plugins
+
     family = "reveries.texture"
     subset = instance.data["subset"]
     subset = "texture" + subset[0].upper() + subset[1:]
@@ -54,6 +57,8 @@ class CollectXGen(pyblish.api.InstancePlugin):
 
     def get_interactive(self, instance):
         """Interactive Groom Spline"""
+        from maya import cmds
+        from reveries.maya import xgen, pipeline
 
         instance.data["families"] = ["reveries.xgen.interactive"]
 
@@ -77,6 +82,8 @@ class CollectXGen(pyblish.api.InstancePlugin):
 
     def get_legacy(self, instance):
         """Legacy XGen"""
+        from maya import cmds
+        from reveries.maya import xgen
 
         instance.data["families"] = ["reveries.xgen.legacy"]
 

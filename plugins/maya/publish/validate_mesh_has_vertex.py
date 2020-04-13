@@ -1,11 +1,9 @@
 
 import pyblish.api
-
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
-from reveries.plugins import RepairInstanceAction
+from reveries import plugins
 
 
-class RepairInvalid(RepairInstanceAction):
+class RepairInvalid(plugins.RepairInstanceAction):
 
     label = "Delete No Vertex Meshes"
 
@@ -22,7 +20,7 @@ class ValidateMeshHasVertex(pyblish.api.InstancePlugin):
     ]
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
         pyblish.api.Category("Fix It"),
         RepairInvalid,
     ]

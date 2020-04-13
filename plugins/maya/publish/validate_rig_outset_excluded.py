@@ -1,7 +1,6 @@
 
 import pyblish.api
-from reveries.plugins import depended_plugins_succeed
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
 class ValidateOutSetExcluded(pyblish.api.InstancePlugin):
@@ -20,7 +19,7 @@ class ValidateOutSetExcluded(pyblish.api.InstancePlugin):
 
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
     ]
 
     dependencies = [
@@ -60,7 +59,7 @@ class ValidateOutSetExcluded(pyblish.api.InstancePlugin):
 
         invalid = list()
 
-        if not depended_plugins_succeed(cls, instance):
+        if not plugins.depended_plugins_succeed(cls, instance):
             raise Exception("Depended plugin failed. See error log.")
 
         for mesh in cls.get_excluded_meshes(instance):

@@ -1,14 +1,6 @@
 
 import json
 import pyblish.api
-from maya import cmds
-from reveries import utils
-from reveries.maya import io, lib, utils as maya_utils
-from reveries.maya.hierarchy import (
-    walk_containers,
-    container_to_id_path,
-)
-from reveries.lib import DEFAULT_MATRIX, matrix_equals
 
 
 class ExtractSetDress(pyblish.api.InstancePlugin):
@@ -21,6 +13,10 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
     families = ["reveries.setdress"]
 
     def process(self, instance):
+        from maya import cmds
+        from reveries import utils
+        from reveries.maya import io, lib
+
         staging_dir = utils.stage_dir()
         filename = "%s.abc" % instance.data["subset"]
         members = "%s.json" % instance.data["subset"]
@@ -55,8 +51,12 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
         cmds.select(clear=True)
 
     def _collect_components_matrix(self, data, container):
+        from maya import cmds
+        from reveries.lib import DEFAULT_MATRIX, matrix_equals
+        from reveries.maya import utils as maya_utils
+        from reveries.maya import hierarchy
 
-        id_path = container_to_id_path(container)
+        id_path = hierarchy.container_to_id_path(container)
 
         data["subMatrix"][id_path] = dict()
         data["hidden"][id_path] = list()
@@ -99,6 +99,9 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
         data["subMatrix"][id_path]["GROUP"] = {name: matrix}
 
     def parse_matrix(self, instance):
+        from maya import cmds
+        from reveries.maya import hierarchy
+
         for data in instance.data["subsetData"]:
             container = data.pop("_container")
             subset_group = container["subsetGroup"]
@@ -114,7 +117,7 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
 
             self._collect_components_matrix(data, container)
 
-            for sub_container in walk_containers(container):
+            for sub_container in hierarchy.walk_containers(container):
                 subset_group = sub_container.get("subsetGroup")
                 if (not subset_group or
                         not cmds.getAttr(subset_group + ".visibility")):

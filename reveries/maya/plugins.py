@@ -687,26 +687,3 @@ class HierarchicalLoader(MayaBaseLoader):
             cmds.delete([container["objectName"]] + members)
 
         return True
-
-
-class MayaSelectInvalidInstanceAction(SelectInvalidInstanceAction):
-
-    def select(self, invalid):
-        from maya import cmds
-        cmds.select(invalid, replace=True, noExpand=True)
-
-    def deselect(self):
-        from maya import cmds
-        cmds.select(deselect=True)
-
-
-class MayaSelectInvalidContextAction(SelectInvalidContextAction):
-    """ Select invalid nodes in context"""
-
-    def select(self, invalid):
-        from maya import cmds
-        cmds.select(invalid, replace=True, noExpand=True)
-
-    def deselect(self):
-        from maya import cmds
-        cmds.select(deselect=True)

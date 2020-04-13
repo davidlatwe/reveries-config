@@ -1,6 +1,5 @@
 
 import pyblish.api
-import avalon.maya
 
 
 class CollectAvalonContainers(pyblish.api.ContextPlugin):
@@ -10,6 +9,8 @@ class CollectAvalonContainers(pyblish.api.ContextPlugin):
     label = "Avalon Containers"
 
     def process(self, context):
+        import avalon.maya
+
         root_containers = dict()
         sub_containers = dict()
 

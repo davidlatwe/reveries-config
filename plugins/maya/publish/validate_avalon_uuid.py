@@ -1,48 +1,40 @@
 
-from collections import defaultdict
-from maya import cmds
-
 import pyblish.api
-
-from avalon.maya.pipeline import AVALON_CONTAINER_ID
-
-from reveries.maya import lib, pipeline
-from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
-from reveries.maya import utils
+from collections import defaultdict
+from reveries import plugins
 
 
-class SelectMissing(MayaSelectInvalidInstanceAction):
+class SelectMissing(plugins.MayaSelectInvalidInstanceAction):
 
     label = "沒有編號"
     symptom = "missing"
 
 
-class SelectDuplicated(MayaSelectInvalidInstanceAction):
+class SelectDuplicated(plugins.MayaSelectInvalidInstanceAction):
 
     label = "重複編號"
     symptom = "duplicated"
 
 
-class SelectMissMatchedAsset(MayaSelectInvalidInstanceAction):
+class SelectMissMatchedAsset(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Asset Id 錯誤"
     symptom = "asset_id"
 
 
-class RepairIDMissing(RepairInstanceAction):
+class RepairIDMissing(plugins.RepairInstanceAction):
 
     label = "沒有編號"
     symptom = "missing"
 
 
-class RepairIDDuplicated(RepairInstanceAction):
+class RepairIDDuplicated(plugins.RepairInstanceAction):
 
     label = "重複編號"
     symptom = "duplicated"
 
 
-class RepairMissMatchedAsset(RepairInstanceAction):
+class RepairMissMatchedAsset(plugins.RepairInstanceAction):
 
     label = "Asset Id 錯誤"
     symptom = "asset_id"
@@ -104,6 +96,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid_missing(cls, instance, uuids=None):
+        from reveries.maya import utils
 
         if uuids is None:
             uuids = cls._get_avalon_uuid(instance)
@@ -114,6 +107,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid_duplicated(cls, instance, uuids=None):
+        from reveries.maya import utils
 
         if uuids is None:
             uuids = cls._get_avalon_uuid(instance)
@@ -190,6 +184,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid_missing(cls, instance):
+        from reveries.maya import utils
+
         asset_id = str(instance.context.data["assetDoc"]["_id"])
         with utils.id_namespace(asset_id):
             for node in cls.get_invalid_missing(instance):
@@ -200,6 +196,9 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid_duplicated(cls, instance):
+        from maya import cmds
+        from reveries.maya import utils
+
         invalid = cls.get_invalid_duplicated(instance)
 
         if instance.data["family"] in cls.loose_uuid:
@@ -217,6 +216,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid_asset_id(cls, instance):
+        from reveries.maya import utils
 
         if instance.data["family"] in cls.loose_uuid:
             return
@@ -230,6 +230,9 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     @classmethod
     def _get_avalon_uuid(cls, instance):
+        from maya import cmds
+        from reveries.maya import utils, pipeline
+
         uuids = defaultdict(list)
         group_nodes = cls.ls_subset_groups()
 
@@ -271,6 +274,9 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
     @classmethod
     def ls_subset_groups(cls):
+        from avalon.maya.pipeline import AVALON_CONTAINER_ID
+        from reveries.maya import lib, pipeline
+
         groups = set()
 
         for node in lib.lsAttrs({"id": AVALON_CONTAINER_ID}):

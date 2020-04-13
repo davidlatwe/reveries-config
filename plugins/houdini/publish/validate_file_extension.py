@@ -1,8 +1,6 @@
 import os
 import pyblish.api
 
-from reveries.houdini import lib
-
 
 class ValidateFileExtension(pyblish.api.InstancePlugin):
     """Validate the output file extension fits the output family.
@@ -40,6 +38,8 @@ class ValidateFileExtension(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        from reveries.houdini import lib
+
         # Get ROP node from instance
         node = instance[0]
 
