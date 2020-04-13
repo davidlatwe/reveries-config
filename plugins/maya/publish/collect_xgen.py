@@ -23,7 +23,7 @@ def create_model_subset_from_xgen(instance):
                                            subset,
                                            family,
                                            member,
-                                           category="XGen Bound Mesh")
+                                           sublabel="bound mesh")
         return True
 
     return False
@@ -37,7 +37,7 @@ def create_texture_subset_from_xgen(instance, textures):
                                        subset,
                                        family,
                                        textures,
-                                       category="XGen Maps")
+                                       sublabel="attr map")
 
 
 class CollectXGen(pyblish.api.InstancePlugin):

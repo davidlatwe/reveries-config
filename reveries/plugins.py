@@ -44,7 +44,7 @@ def create_dependency_instance(dependent,
                                family,
                                members,
                                optional=False,
-                               category=None,
+                               sublabel=None,
                                data=None):
     """Create dependency instance from dependent instance
 
@@ -60,11 +60,13 @@ def create_dependency_instance(dependent,
         family (str): dependency instance's family
         members (list): dependency instance's member
         optional (bool, optional): can be opt-out or not, default False
-        category (str, optional): dependency instance's visual category
+        sublabel (str, optional): Additional description
 
     """
-    if category is None:
-        category = family + " (stray)"
+    category = dependent.data.get("category",
+                                  dependent.data["family"])
+    label = "%s (%s)" % (dependent.data["subset"],
+                         sublabel or family.split(".", 1)[-1])
 
     pregenerated_version_id = avalon.io.ObjectId()
     dependent.data["futureDependencies"][name] = pregenerated_version_id
@@ -81,6 +83,7 @@ def create_dependency_instance(dependent,
     instance.data["active"] = True
     instance.data["optional"] = optional
     instance.data["category"] = category
+    instance.data["label"] = label
     instance.data["pregeneratedVersionId"] = pregenerated_version_id
     # For dependency tracking
     instance.data["dependencies"] = dict()
@@ -99,7 +102,7 @@ def create_dependency_instance(dependent,
     # Move to front, because dependency instance should be integrated before
     # dependent instance
     context.pop()
-    context.insert(0, instance)
+    context.insert(context.index(dependent), instance)
 
     return instance
 

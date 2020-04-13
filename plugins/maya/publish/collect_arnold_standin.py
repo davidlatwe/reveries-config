@@ -51,8 +51,8 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
 
         stray = pipeline.find_stray_textures(file_nodes)
         if stray:
-            self.log.warning("Found not versioned textures, creating "
-                             "instance for publish.")
+            self.log.info("Found not versioned textures, creating "
+                          "instance for publish.")
             create_texture_subset_from_standin(instance, stray)
 
         # Yeti
