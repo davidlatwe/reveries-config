@@ -118,6 +118,10 @@ def assign_shader(meshes, shadingEngine, on_object=True):
 
         yield
 
+    except RuntimeError as e:
+        # (NOTE) Possible dirty history
+        raise e
+
     finally:
         for shader, shaded in meshes_by_shader.items():
             # The commands needs to be deferred when the assignment was
