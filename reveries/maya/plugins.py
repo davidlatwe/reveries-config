@@ -19,9 +19,7 @@ from ..utils import get_representation_path_
 
 from ..plugins import (
     PackageLoader,
-    message_box_error,
-    SelectInvalidInstanceAction,
-    SelectInvalidContextAction,
+    message_box_error
 )
 
 from .pipeline import (
