@@ -1,8 +1,6 @@
 
 import os
 import pyblish.api
-import nuke
-from reveries import lib
 
 
 class AvalonUnlockScript(pyblish.api.ContextPlugin):
@@ -14,9 +12,7 @@ class AvalonUnlockScript(pyblish.api.ContextPlugin):
     hosts = ["nuke"]
 
     def process(self, context):
-
-        if lib.in_remote():
-            return
+        import nuke
 
         fname = context.data["originMaking"]
 

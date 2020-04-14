@@ -1,7 +1,5 @@
 
 import pyblish.api
-from reveries import lib
-from reveries.nuke import pipeline
 
 
 class ValidateScriptNotLocked(pyblish.api.ContextPlugin):
@@ -13,9 +11,7 @@ class ValidateScriptNotLocked(pyblish.api.ContextPlugin):
     hosts = ["nuke"]
 
     def process(self, context):
-
-        if lib.in_remote():
-            return
+        from reveries.nuke import pipeline
 
         if pipeline.is_locked():
             raise Exception("Script has been locked, please save the script "
