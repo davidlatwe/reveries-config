@@ -29,17 +29,11 @@ def no_display_layers(nodes):
     ) or []
 
     try:
-        # connection list *conn_pair* must be pairable
-        # [destination, source, dst, src, ...]
-        assert len(conn_pair) % 2 == 0
         # remove connection
         for i in range(0, len(conn_pair), 2):
             cmds.disconnectAttr(conn_pair[i + 1], conn_pair[i])
 
         yield
-
-    except AssertionError:
-        cmds.warning("This is a bug. The connection list is not pairable.")
 
     finally:
         for i in range(0, len(conn_pair), 2):
