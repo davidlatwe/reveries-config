@@ -33,12 +33,15 @@ class ExtractModelAsMayaBinary(pyblish.api.InstancePlugin):
         instance.data["repr.mayaBinary.entryFileName"] = filename
 
         geo_id_and_hash = self.extract_mayabinary(nodes, outpath)
+        assert geo_id_and_hash is not None, ("Geometry hash not calculated.")
 
         instance.data["repr.mayaBinary.modelProfile"] = geo_id_and_hash
 
     def extract_mayabinary(self, nodes, outpath):
         import maya.cmds as cmds
         from reveries.maya import capsule
+
+        geo_id_and_hash = None
 
         with contextlib.nested(
             capsule.no_undo(),
@@ -57,10 +60,8 @@ class ExtractModelAsMayaBinary(pyblish.api.InstancePlugin):
             # Perform extraction
             cmds.select(nodes, noExpand=True)
 
-            with contextlib.nested(
-                capsule.assign_shader(mesh_nodes, shadingEngine=clay_shader),
-                capsule.undo_chunk_when_no_undo(),
-            ):
+            with capsule.undo_chunk_when_no_undo():
+
                 # Remove mesh history, for removing all intermediate nodes
                 transforms = cmds.ls(nodes, type="transform")
                 cmds.delete(transforms, constructionHistory=True)
@@ -70,24 +71,26 @@ class ExtractModelAsMayaBinary(pyblish.api.InstancePlugin):
 
                 geo_id_and_hash = self.hash(set(mesh_nodes))
 
-                cmds.file(
-                    outpath,
-                    force=True,
-                    typ="mayaBinary",
-                    exportSelectedStrict=True,
-                    preserveReferences=False,
-                    # Shader assignment is the responsibility of
-                    # riggers, for animators, and lookdev, for
-                    # rendering.
-                    shader=False,
-                    # Construction history inherited from collection
-                    # This enables a selective export of nodes
-                    # relevant to this particular plug-in.
-                    constructionHistory=False,
-                    channels=False,
-                    constraints=False,
-                    expressions=False,
-                )
+                with capsule.assign_shader(mesh_nodes,
+                                           shadingEngine=clay_shader):
+                    cmds.file(
+                        outpath,
+                        force=True,
+                        typ="mayaBinary",
+                        exportSelectedStrict=True,
+                        preserveReferences=False,
+                        # Shader assignment is the responsibility of
+                        # riggers, for animators, and lookdev, for
+                        # rendering.
+                        shader=False,
+                        # Construction history inherited from collection
+                        # This enables a selective export of nodes
+                        # relevant to this particular plug-in.
+                        constructionHistory=False,
+                        channels=False,
+                        constraints=False,
+                        expressions=False,
+                    )
 
         return geo_id_and_hash
 
@@ -102,8 +105,8 @@ class ExtractModelAsMayaBinary(pyblish.api.InstancePlugin):
             # Get ID
             transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
             id = maya_utils.get_id(transform)
-            assert id is not None, ("Some mesh has no Avalon UUID. "
-                                    "This should not happend.")
+            assert id is not None, ("Geometry %s has no Avalon UUID. "
+                                    "This should not happend." % transform)
             hasher.set_mesh(mesh)
             hasher.update_points()
             hasher.update_normals()
