@@ -589,7 +589,11 @@ class HierarchicalLoader(MayaBaseLoader):
 
             if namespace_old not in new_namespaces:
                 # Remove
-                avalon.api.remove(current_subcons.pop(namespace_old))
+                subcon = current_subcons.pop(namespace_old, None)
+                if subcon is None:
+                    continue  # Already been removed
+                else:
+                    avalon.api.remove(subcon)
             else:
                 current_members[namespace_old] = data_old
 
@@ -607,7 +611,7 @@ class HierarchicalLoader(MayaBaseLoader):
 
             sub_ns = data_new["namespace"]
 
-            if sub_ns in current_members:
+            if sub_ns in current_members and sub_ns in current_subcons:
                 sub_container = current_subcons[sub_ns]
                 data_old = current_members[sub_ns]
 
