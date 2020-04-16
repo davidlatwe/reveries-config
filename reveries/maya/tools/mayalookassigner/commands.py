@@ -397,6 +397,9 @@ def assign_look(nodes, look, via_uv):
         _apply_shaders(look,
                        relationships["shaderById"],
                        nodes)
+        _connect_uv_chooser(look,
+                            relationships.get("uvChooser"),
+                            nodes)
         _apply_crease_edges(look,
                             relationships["creaseSets"],
                             nodes)
@@ -414,6 +417,17 @@ def _apply_shaders(look, relationship, nodes):
     lib.apply_shaders(relationship,
                       namespace,
                       nodes=nodes)
+
+
+def _connect_uv_chooser(look, relationship, nodes):
+    if not relationship:
+        return
+
+    namespace = look["namespace"][1:]
+
+    lib.connect_uv_chooser(relationship,
+                           namespace,
+                           nodes=nodes)
 
 
 def _apply_crease_edges(look, relationship, nodes):
@@ -521,6 +535,27 @@ def _look_via_uv(look, relationships, nodes):
             crease_by_id[level] += [".".join([i, edges]) for i in same_uv_ids]
 
     _apply_crease_edges(look, crease_by_id, nodes)
+
+    # COnnect UV Choosers
+    #
+    uv_chooser = dict()
+    for chooser, members in relationships.get("uvChooser", {}).items():
+        uv_chooser[chooser] = list()
+
+        for member in members:
+            id, attr = member.split(".")
+
+            if id not in uv_via_id:
+                # The id from relationships does not exists in scene
+                continue
+
+            uv_hash = uv_via_id[id]
+            same_uv_ids = id_via_uv[uv_hash]
+            uv_chooser[chooser] += [".".join([i, attr]) for i in same_uv_ids]
+
+    _connect_uv_chooser(look,
+                        uv_chooser,
+                        nodes)
 
     # Apply Arnold attributes
     #

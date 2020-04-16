@@ -112,6 +112,24 @@ class ExtractLook(PackageExtractor):
                            noIntermediate=True,
                            type="surfaceShape")
 
+        # UV Chooser
+        uv_chooser = dict()
+        for chooser in cmds.ls(instance, type="uvChooser"):
+            chooser_id = maya_utils.get_id(chooser)
+
+            for src in cmds.listConnections(chooser + ".uvSets",
+                                            source=True,
+                                            destination=False,
+                                            plugs=True) or []:
+                geo, attr = src.split(".", 1)
+                geo = cmds.listRelatives(geo, parent=True, path=True)[0]
+                geo_attr = maya_utils.get_id(geo) + "." + attr
+
+                if chooser_id not in uv_chooser:
+                    uv_chooser[chooser_id] = list()
+                if geo_attr not in uv_chooser[chooser_id]:
+                    uv_chooser[chooser_id].append(geo_attr)
+
         # CreaseSet
         crease_sets = dict()
         creases = list()
@@ -221,6 +239,7 @@ class ExtractLook(PackageExtractor):
         relationships = {
             "shaderById": shader_by_id,
             "animatable": animatable,
+            "uvChooser": uv_chooser,
             "creaseSets": crease_sets,
             "arnoldAttrs": arnold_attrs,
             "vrayAttrs": vray_attrs,

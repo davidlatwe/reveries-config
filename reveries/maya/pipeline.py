@@ -451,6 +451,7 @@ _uuid_required_node_types = {
         "shadingEngine",
         # "shadingDependNode",
         # "THdependNode",
+        "uvChooser",
     },
     "reveries.setdress": {
         "transform",
