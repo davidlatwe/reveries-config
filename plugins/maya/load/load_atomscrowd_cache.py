@@ -25,10 +25,16 @@ class AtomsCrowdCacheLoader(ImportLoader, avalon.api.Loader):
     def process_import(self, context, name, namespace, group, options):
         import maya.cmds as cmds
 
-        cmds.loadPlugin("AtomsProxyMaya", quiet=True)
-        if not cmds.pluginInfo("AtomsProxyMaya", query=True, loaded=True):
-            self.log.warning("Could not load AtomsProxyMaya plugin")
-            return
+        try:
+            plugin = "AtomsProxyMaya"  # AtomsCrowd < 3.0
+            cmds.loadPlugin(plugin, quiet=True)
+        except RuntimeError:
+            plugin = "AtomsMaya"  # AtomsCrowd >= 3.0
+            cmds.loadPlugin(plugin, quiet=True)
+        finally:
+            if not cmds.pluginInfo(plugin, query=True, loaded=True):
+                self.log.warning("Could not load %s plugin" % plugin)
+                return
 
         representation = context["representation"]
 
