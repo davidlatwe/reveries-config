@@ -1095,7 +1095,7 @@ def serialise_shaders(nodes):
             shader_by_id[shader].append(surface.replace(name, id_))
 
         # Remove duplicates
-        shader_by_id[shader] = list(set(shader_by_id[shader]))
+        shader_by_id[shader] = list(set(shader_by_id.get(shader, [])))
 
     return shader_by_id
 
