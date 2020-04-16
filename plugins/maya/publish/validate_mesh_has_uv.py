@@ -33,6 +33,8 @@ class ValidateMeshHasUVs(pyblish.api.InstancePlugin):
         SelectNoUV,
     ]
 
+    optional = True  # (NOTE) Forced by artist complain
+
     @classmethod
     def get_invalid_no_uv(cls, instance):
         from maya import cmds
