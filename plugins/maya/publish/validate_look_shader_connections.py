@@ -82,7 +82,7 @@ class ValidateMeshShaderConnections(pyblish.api.InstancePlugin):
         "reveries.look",
     ]
     actions = [
-        plugins.SelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
         plugins.RepairInstanceAction,
     ]
 
