@@ -111,14 +111,16 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
                 namespace = lib.get_ns(out_set)
                 set_member = cmds.ls(cmds.sets(out_set, query=True), long=True)
-                cacheables = lib.pick_cacheable(set_member)
-                cacheables = lib.get_visible_in_frame_range(cacheables,
+                all_cacheables = lib.pick_cacheable(set_member)
+                cacheables = lib.get_visible_in_frame_range(all_cacheables,
                                                             int(start_frame),
                                                             int(end_frame))
+                has_hidden = len(all_cacheables) > len(cacheables)
+
                 # Plus locator
                 cacheables += self.pick_locators(set_member)
 
-                out_cache[(namespace, name)] = cacheables
+                out_cache[(namespace, name)] = (has_hidden, cacheables)
 
                 for n in cacheables:
                     if n in members:
@@ -128,12 +130,20 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             context = instance.context
             source_data = instance.data
 
-            for (namespace, name), cacheables in out_cache.items():
+            for k, (has_hidden, cacheables) in out_cache.items():
+                namespace, name = k
 
                 if not cacheables:
                     self.log.debug("Skip empty OutSet %s in %s"
                                    % (name, namespace))
+                    if has_hidden:
+                        self.log.warning("Geometry in OutSet %s is hidden, "
+                                         "possible wrong LOD ?" % namespace)
                     continue
+
+                if has_hidden:
+                    self.log.debug("Some geometry in OutSet %s is hidden."
+                                   % namespace)
 
                 namespace = namespace[1:]  # Remove root ":"
                 # For filesystem, remove other ":" if the namespace is nested
