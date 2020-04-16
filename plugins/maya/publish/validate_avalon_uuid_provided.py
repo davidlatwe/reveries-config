@@ -27,7 +27,7 @@ class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
     label = "上游物件有編號"
     families = [
         "reveries.look",
-        "reveries.animation",
+        # "reveries.animation",  (NOTE) Not needed ATM
         "reveries.pointcache",
     ]
     actions = [
