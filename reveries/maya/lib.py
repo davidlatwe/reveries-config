@@ -1195,6 +1195,49 @@ def apply_shaders(relationships,
                     pass
 
 
+def connect_uv_chooser(relationships,
+                       namespace=None,
+                       target_namespaces=None,
+                       nodes=None):
+    """Given a dictionary of `relationships`, connect mesh UV Set to UV Chooser
+    """
+    namespace = namespace or ""
+    target_namespaces = target_namespaces or [None]
+
+    choosers = ls_nodes_by_id(set(relationships.keys()),
+                              namespace + ":")
+
+    for chooser_id, members in relationships.items():
+
+        chooser = choosers.get(chooser_id, [None]).pop()
+        if not chooser:
+            log.warning("UV Chooser node not found in Id %s." % chooser_id)
+            continue
+
+        set_map = defaultdict(set)
+        for member in members:
+            id, uv_set = member.split(".", 1)
+            set_map[id].add(uv_set)
+
+        surface_cache = defaultdict(set)
+        for target_namespace in target_namespaces:
+
+            _map = ls_nodes_by_id(set(set_map.keys()),
+                                  target_namespace,
+                                  nodes)
+
+            for id, nodes_ in _map.items():
+                surface_cache[id].update(nodes_)
+
+        for id, uv_sets in set_map.items():
+            for node in surface_cache[id]:
+                for uv_set in uv_sets:
+                    geo_attr = node + "." + uv_set
+                    chooser_attr = chooser + ".uvSets"
+                    count = len(cmds.listAttr(chooser_attr, multi=True) or [])
+                    cmds.connectAttr(geo_attr, chooser_attr + "[%d]" % count)
+
+
 def apply_crease_edges(relationships,
                        namespace=None,
                        target_namespaces=None,
@@ -1347,6 +1390,7 @@ def ls_nodes_by_id(ids, namespace=None, nodes=None):
         # Object not exists
         pass
     else:
+        dep_fn = om.MFnDependencyNode()
         dag_fn = om.MFnDagNode()
         for i in range(selection_list.length()):
             node = selection_list.getDependNode(i)
@@ -1357,6 +1401,9 @@ def ls_nodes_by_id(ids, namespace=None, nodes=None):
                 # Include all instances
                 for path in fn_node.getAllPaths():
                     namespace_nodes.add(path.partialPathName())
+            else:
+                fn_node = dep_fn.setObject(node)
+                namespace_nodes.add(fn_node.name())
 
     if nodes:
         all_nodes = namespace_nodes.intersection(set(nodes))
