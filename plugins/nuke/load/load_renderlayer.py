@@ -26,6 +26,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         read["label"].setValue(aov_name)
 
     def set_range(self, read, start, end):
+        start, end = int(start), int(end)
         read["first"].setValue(start)
         read["last"].setValue(end)
         read["origfirst"].setValue(start)
@@ -56,7 +57,11 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             read = nuke.Node("Read")
             nodes.append(read)
 
-            tail = data.get("fpattern", "%s/%s" % (aov_name, data["fname"]))
+            if "fname" in data:
+                tail = "%s/%s" % (aov_name, data["fname"])
+            else:
+                tail = data["fpattern"]
+
             path = os.path.join(self.package_path, tail).replace("\\", "/")
 
             self.set_path(read, aov_name=aov_name, path=path)
