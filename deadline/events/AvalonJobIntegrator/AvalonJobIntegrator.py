@@ -74,5 +74,9 @@ class AvalonIntegrateOnJobFinish(Deadline.Events.DeadlineEventListener):
             str(key): str(job.GetJobEnvironmentKeyValue(key))
             for key in job_environ
         })
-        popen = subprocess.Popen(args, env=environ)
-        popen.communicate()
+        popen = subprocess.Popen(args,
+                                 env=environ,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+        output, _ = popen.communicate()
+        print(output)
