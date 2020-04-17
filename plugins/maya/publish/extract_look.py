@@ -114,8 +114,8 @@ class ExtractLook(PackageExtractor):
 
         # UV Chooser
         uv_chooser = dict()
-        for chooser in cmds.ls(instance, type="uvChooser"):
-            chooser_id = maya_utils.get_id(chooser)
+        for chooser in cmds.ls(self.member, type="uvChooser"):
+            chooser_id = utils.get_id(chooser)
 
             for src in cmds.listConnections(chooser + ".uvSets",
                                             source=True,
@@ -123,7 +123,7 @@ class ExtractLook(PackageExtractor):
                                             plugs=True) or []:
                 geo, attr = src.split(".", 1)
                 geo = cmds.listRelatives(geo, parent=True, path=True)[0]
-                geo_attr = maya_utils.get_id(geo) + "." + attr
+                geo_attr = utils.get_id(geo) + "." + attr
 
                 if chooser_id not in uv_chooser:
                     uv_chooser[chooser_id] = list()
