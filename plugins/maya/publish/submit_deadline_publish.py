@@ -152,7 +152,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                     "RenderLayer": renderlayer,
                     "Renderer": renderer,
                     "Camera": rendercam,
-                },
+                }
             else:
                 # Script Job
                 reveries_path = reveries.__file__
