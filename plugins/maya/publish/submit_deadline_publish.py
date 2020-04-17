@@ -109,8 +109,6 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                     "Group": deadline_group,
                     "Priority": deadline_prio,
 
-                    "Frames": frames,
-                    "ChunkSize": frame_per_task,
                     "InitialStatus": init_state,
 
                     "ExtraInfo0": project["name"],
@@ -135,6 +133,9 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                 renderlayer = instance.data["renderlayer"]
                 renderer = instance.data["renderer"]
                 rendercam = instance.data["camera"]
+
+                payload["JobInfo"]["Frames"] = frames
+                payload["JobInfo"]["ChunkSize"] = frame_per_task
 
                 payload["PluginInfo"] = {
                     # Input
