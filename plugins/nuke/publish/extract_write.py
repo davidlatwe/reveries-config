@@ -37,9 +37,9 @@ class ExtractWrite(pyblish.api.InstancePlugin):
             "resolution": instance.context.data["resolution"],
         }
 
-        start = instance.data["startFrame"]
-        end = instance.data["endFrame"]
-        step = instance.data["step"]
+        start = int(instance.data["startFrame"])
+        end = int(instance.data["endFrame"])
+        step = int(instance.data["step"])
 
         fname = nukescripts.frame.replaceHashes(pattern)
         for frame_num in range(start, end, step):
