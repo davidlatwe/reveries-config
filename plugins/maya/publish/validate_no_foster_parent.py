@@ -1,10 +1,9 @@
 
 import pyblish.api
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
-from reveries.plugins import context_process
+from reveries import plugins
 
 
-class SelectFosterParent(MayaSelectInvalidInstanceAction):
+class SelectFosterParent(plugins.MayaSelectInvalidInstanceAction):
 
     label = "選取 fosterParent"
 
@@ -46,7 +45,7 @@ class ValidateNoFosterParent(pyblish.api.InstancePlugin):
         from maya import cmds
         return cmds.ls(type="fosterParent")
 
-    @context_process
+    @plugins.context_process
     def process(self, context):
         from maya import cmds
         invalid = self.get_invalid(context)

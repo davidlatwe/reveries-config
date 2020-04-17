@@ -1,8 +1,7 @@
 
 import os
 import pyblish.api
-
-from reveries.maya import plugins
+from reveries import plugins
 
 
 class OpenFilePathEditor(pyblish.api.Action):

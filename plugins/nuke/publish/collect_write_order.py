@@ -1,6 +1,6 @@
 
 import pyblish.api
-from reveries.plugins import context_process
+from reveries import plugins
 
 
 class CollectWriteOrder(pyblish.api.InstancePlugin):
@@ -12,7 +12,7 @@ class CollectWriteOrder(pyblish.api.InstancePlugin):
         "reveries.write"
     ]
 
-    @context_process
+    @plugins.context_process
     def process(self, context):
 
         writes = list()

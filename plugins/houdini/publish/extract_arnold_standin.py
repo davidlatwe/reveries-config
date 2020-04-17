@@ -1,10 +1,8 @@
 import os
-
 import pyblish.api
-from reveries.plugins import PackageExtractor
 
 
-class ExtractArnoldStandIn(PackageExtractor):
+class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ExtractorOrder + 0.1
     label = "Extract Arnold Stand-In"
@@ -13,27 +11,38 @@ class ExtractArnoldStandIn(PackageExtractor):
         "reveries.standin",
     ]
 
-    representations = [
-        "Ass",
-    ]
+    def process(self, instance):
+        from reveries.houdini import lib
 
-    def extract_Ass(self, packager):
+        ropnode = instance[0]
 
-        import hou
+        files = list()
 
-        ropnode = self.member[0]
+        if "frameOutputs" in instance.data:
+            output = instance.data["frameOutputs"][0]
 
-        if "frameOutputs" in self.data:
-            output = self.data["frameOutputs"][0]
+            for path in instance.data["frameOutputs"]:
+                files.append(os.path.basename(path))
+
         else:
-            output = ropnode.evalParm("ar_ass_file")
+            output_parm = lib.get_output_parameter(ropnode)
+            output = output_parm.eval()
 
-        staging_dir = os.path.dirname(output)
-        self.data["stagingDir"] = staging_dir
-        pkg_dir = packager.create_package(with_representation=False)
+        staging_dir, filename = os.path.split(output)
+        repr_root = instance.data["reprRoot"]
 
-        file_name = os.path.basename(output)
-        self.log.info("Writing Ass '%s' to '%s'" % (file_name, pkg_dir))
+        instance.data["repr.Ass._stage"] = staging_dir
+        instance.data["repr.Ass._hardlinks"] = files or [filename]
+        instance.data["repr.Ass.entryFileName"] = filename
+        instance.data["repr.Ass.reprRoot"] = repr_root
+
+        instance.data["repr.Ass._delayRun"] = {
+            "func": self.render,
+            "args": [ropnode],
+        }
+
+    def render(self, ropnode):
+        import hou
 
         try:
             ropnode.render()
@@ -44,15 +53,3 @@ class ExtractArnoldStandIn(PackageExtractor):
             import traceback
             traceback.print_exc()
             raise RuntimeError("Render failed: {0}".format(exc))
-
-        packager.add_data({
-            "entryFileName": file_name,
-            "reprRoot": self.data["reprRoot"],
-        })
-
-        if self.data.get("startFrame"):
-            packager.add_data({
-                "startFrame": self.data["startFrame"],
-                "endFrame": self.data["endFrame"],
-                "step": self.data["step"],
-            })

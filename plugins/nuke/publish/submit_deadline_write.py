@@ -1,7 +1,6 @@
 
 import os
 import json
-import copy
 import platform
 import pyblish.api
 
@@ -24,11 +23,6 @@ class SubmitDeadlineWrite(pyblish.api.InstancePlugin):
     targets = ["deadline"]
 
     def process(self, instance):
-        import reveries
-
-        reveries_path = reveries.__file__
-
-        instance.data["submitted"] = True
 
         context = instance.context
 
@@ -74,7 +68,7 @@ class SubmitDeadlineWrite(pyblish.api.InstancePlugin):
 
         frame_start = int(instance.data["startFrame"])
         frame_end = int(instance.data["endFrame"])
-        frame_step = int(instance.data["byFrameStep"])
+        frame_step = int(instance.data["step"])
         frame_per_task = instance.data["deadlineFramesPerTask"]
 
         frames = "{start}-{end}x{step}".format(
@@ -164,29 +158,6 @@ class SubmitDeadlineWrite(pyblish.api.InstancePlugin):
         # Submit
 
         submitter = context.data["deadlineSubmitter"]
-        index = submitter.add_job(payload)
-
-        # Publish script
-
-        payload = copy.deepcopy(payload)
-
-        script_file = os.path.join(os.path.dirname(reveries_path),
-                                   "scripts",
-                                   "deadline_publish.py")
-        # Clean up
-        payload["JobInfo"].pop("Frames")
-        payload["JobInfo"].pop("ChunkSize")
-        # Update
-        payload["JobInfo"].update({
-            "Name": "|| Publish: " + payload["JobInfo"]["Name"],
-            "JobDependencies": index,
-            "InitialStatus": "Active",
-        })
-        payload["PluginInfo"].update({
-            "ScriptJob": True,
-            "ScriptFilename": script_file,
-        })
-
         submitter.add_job(payload)
 
     def assemble_environment(self, instance):
@@ -205,5 +176,10 @@ class SubmitDeadlineWrite(pyblish.api.InstancePlugin):
             # "ARNOLD_PLUGIN_PATH",
         ]:
             environment[var] = os.getenv(var, "")
+
+        dumped = ";".join(instance.data["dumpedExtractors"])
+        environment["PYBLISH_EXTRACTOR_DUMPS"] = dumped
+
+        environment["PYBLISH_DUMP_FILE"] = instance.data["dumpPath"]
 
         return environment

@@ -1,7 +1,5 @@
 import pyblish.api
 
-from reveries.houdini import lib
-
 
 class ValidateFrameToken(pyblish.api.InstancePlugin):
     """Validate if the unexpanded string contains the frame ('$F') token
@@ -34,6 +32,7 @@ class ValidateFrameToken(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        from reveries.houdini import lib
 
         node = instance[0]
 

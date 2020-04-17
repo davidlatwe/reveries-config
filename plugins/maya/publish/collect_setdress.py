@@ -1,6 +1,5 @@
 
 import pyblish.api
-import maya.cmds as cmds
 
 
 class CollectHierarchyData(pyblish.api.InstancePlugin):
@@ -15,6 +14,7 @@ class CollectHierarchyData(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        import maya.cmds as cmds
 
         subset_slots = list()  # subsets' reference group node's parent node
         subset_data = list()
@@ -63,6 +63,8 @@ class CollectHierarchyData(pyblish.api.InstancePlugin):
         instance.data["subsetData"] = subset_data
 
     def walk_hierarchy(self, container):
+        import maya.cmds as cmds
+
         child_rp = dict()
 
         for child in container["children"]:

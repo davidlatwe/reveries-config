@@ -44,7 +44,7 @@ def create_dependency_instance(dependent,
                                family,
                                members,
                                optional=False,
-                               category=None,
+                               sublabel=None,
                                data=None):
     """Create dependency instance from dependent instance
 
@@ -60,11 +60,13 @@ def create_dependency_instance(dependent,
         family (str): dependency instance's family
         members (list): dependency instance's member
         optional (bool, optional): can be opt-out or not, default False
-        category (str, optional): dependency instance's visual category
+        sublabel (str, optional): Additional description
 
     """
-    if category is None:
-        category = family + " (stray)"
+    category = dependent.data.get("category",
+                                  dependent.data["family"])
+    label = "%s (%s)" % (dependent.data["subset"],
+                         sublabel or family.split(".", 1)[-1])
 
     pregenerated_version_id = avalon.io.ObjectId()
     dependent.data["futureDependencies"][name] = pregenerated_version_id
@@ -81,6 +83,7 @@ def create_dependency_instance(dependent,
     instance.data["active"] = True
     instance.data["optional"] = optional
     instance.data["category"] = category
+    instance.data["label"] = label
     instance.data["pregeneratedVersionId"] = pregenerated_version_id
     # For dependency tracking
     instance.data["dependencies"] = dict()
@@ -99,7 +102,7 @@ def create_dependency_instance(dependent,
     # Move to front, because dependency instance should be integrated before
     # dependent instance
     context.pop()
-    context.insert(0, instance)
+    context.insert(context.index(dependent), instance)
 
     return instance
 
@@ -165,6 +168,7 @@ def message_box_warning(title, message, optional=False):
         return respond == QtWidgets.QMessageBox.Ok
 
 
+# Decorator
 def context_process(process):
     """Decorator, an workaround for pyblish/pyblish-base#250
 
@@ -191,105 +195,6 @@ def context_process(process):
         return result
 
     return _context_process
-
-
-class PackageExtractor(pyblish.api.InstancePlugin):
-    """Reveries' extractor base class
-
-    * This extractor extracts representation as one package(dir), not single
-      file.
-
-    * This extractor can extract multiple representations that defined in
-      attribute `representations`.
-
-        - If the instance data has `"extractType"` value, then only that type
-          of representation will be extracted, instead of extracting all
-          supported representations.
-
-        - You MUST implement representation extract method with this function
-          nameing: `extract_<representationName>`. For example, if you have
-          "mayaAscii" in representations list, then the subclass MUST have
-          a method called `extract_mayaAscii`.
-
-    Example usage:
-
-        ```python
-
-        class ExtractMyWork(PackageExtractor):
-            order = pyblish.api.ExtractorOrder
-            hosts = ["maya"]
-            families = ["reveries.work"]
-            representations = [
-                "mayaAscii",
-                "Alembic",
-            ]
-
-            def extract_mayaAscii(self):
-                entry_file = self.file_name("ma")
-                package_path = self.create_package()
-                entry_path = os.path.join(package_path, entry_file)
-                self.add_data({"some": "data"})
-
-            def extract_Alembic(self):
-                ...
-
-        ```
-
-    Attributes:
-        context (pyblish.api.Context): Current pyblish context object
-        data (dict): Current pyblish instance data
-        member (list): Current pyblish instance members
-        representations (list): Names of representations that can be extracted
-
-    """
-
-    families = []
-    representations = []
-
-    def extract(self):
-        """Multi-representation extraction process
-
-        Override this method if any pre-extraction job or context is needed.
-        For example:
-
-            ```python
-
-            def extract(self):
-                # Some pre-extraction job
-                self.extra_attr = somthing
-                # Pre-extraction context
-                with pre_extraction_context:
-                    super(MyExtractor, self).extract()
-
-            ```
-
-        """
-        packager = self.data["packager"]
-        extract_type = self.data.get("extractType")
-
-        actived = [extract_type] if extract_type else self.representations
-        for representation in actived:
-            packager.set_representation(representation)
-            extract = getattr(self, "extract_" + representation)
-            extract(packager)
-
-    def process(self, instance):
-        """Extractor's main process
-
-        This should NOT be re-implemented.
-
-        """
-        context = instance.context
-        # If any error occurred, skip extraction.
-        if not all(result["success"] for result in context.data["results"]):
-            self.log.warning("Atomicity not held, aborting.")
-            return
-
-        self.context = context
-        self.data = instance.data
-        self.member = instance[:]
-
-        self.extract()
 
 
 def get_errored_instances_from_context(context, include_warning=False):
@@ -507,3 +412,51 @@ class SelectInvalidContextAction(OnSymptomAction):
 
     def deselect(self):
         raise NotImplementedError("Should be implemented in subclass.")
+
+
+class MayaSelectInvalidInstanceAction(SelectInvalidInstanceAction):
+
+    def select(self, invalid):
+        from maya import cmds
+        cmds.select(invalid, replace=True, noExpand=True)
+
+    def deselect(self):
+        from maya import cmds
+        cmds.select(deselect=True)
+
+
+class MayaSelectInvalidContextAction(SelectInvalidContextAction):
+    """ Select invalid nodes in context"""
+
+    def select(self, invalid):
+        from maya import cmds
+        cmds.select(invalid, replace=True, noExpand=True)
+
+    def deselect(self):
+        from maya import cmds
+        cmds.select(deselect=True)
+
+
+class HoudiniSelectInvalidInstanceAction(SelectInvalidInstanceAction):
+
+    def select(self, invalid):
+        self.deselect()
+        for node in invalid:
+            node.setSelected(True)
+
+    def deselect(self):
+        import hou
+        hou.clearAllSelected()
+
+
+class HoudiniSelectInvalidContextAction(SelectInvalidContextAction):
+    """ Select invalid nodes in context"""
+
+    def select(self, invalid):
+        self.deselect()
+        for node in invalid:
+            node.setSelected(True)
+
+    def deselect(self):
+        import hou
+        hou.clearAllSelected()

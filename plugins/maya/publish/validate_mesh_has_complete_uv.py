@@ -1,12 +1,10 @@
 
 import re
-from maya import cmds
-
 import pyblish.api
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectIncompleteUV(MayaSelectInvalidInstanceAction):
+class SelectIncompleteUV(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Incomplete UV"
     on = "failed"
@@ -69,6 +67,8 @@ class ValidateMeshHasCompleteUVs(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid_incomplete_uv(cls, instance):
+        from maya import cmds
+
         invalid = []
 
         for node in cmds.ls(instance, type="mesh", noIntermediate=True):

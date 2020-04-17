@@ -1,42 +1,39 @@
 
 import pyblish.api
-from maya import cmds
-from reveries.plugins import RepairInstanceAction, depended_plugins_succeed
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
-from reveries.maya import capsule
+from reveries import plugins
 
 
-class FixInvalidNonDefaults(RepairInstanceAction):
+class FixInvalidNonDefaults(plugins.RepairInstanceAction):
 
     label = "Set Default Value"
     symptom = "non_default_values"
 
 
-class FixInvalidConnections(RepairInstanceAction):
+class FixInvalidConnections(plugins.RepairInstanceAction):
 
     label = "Remove Inputs"
     symptom = "connections"
 
 
-class FixInvalidVisibility(RepairInstanceAction):
+class FixInvalidVisibility(plugins.RepairInstanceAction):
 
     label = "Lock Visibility"
     symptom = "visibility"
 
 
-class GetInvalidNonDefaults(MayaSelectInvalidInstanceAction):
+class GetInvalidNonDefaults(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Non Defaults"
     symptom = "non_default_values"
 
 
-class GetInvalidConnections(MayaSelectInvalidInstanceAction):
+class GetInvalidConnections(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Invalid Inputs"
     symptom = "connections"
 
 
-class GetInvalidVisibility(MayaSelectInvalidInstanceAction):
+class GetInvalidVisibility(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Unlocked Visibility"
     symptom = "visibility"
@@ -68,13 +65,13 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
     ]
     actions = [
         pyblish.api.Category("Select All"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
         pyblish.api.Category("Select Each"),
         GetInvalidNonDefaults,
         GetInvalidConnections,
         GetInvalidVisibility,
         pyblish.api.Category("Fix All"),
-        RepairInstanceAction,
+        plugins.RepairInstanceAction,
         pyblish.api.Category("Fix Each"),
         FixInvalidNonDefaults,
         FixInvalidConnections,
@@ -106,6 +103,8 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_controls(cls, instance):
+        from maya import cmds
+
         control_sets = instance.data["controlSets"]
 
         controls = cmds.sets(control_sets, query=True) or []
@@ -116,7 +115,7 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
 
-        if not depended_plugins_succeed(cls, instance):
+        if not plugins.depended_plugins_succeed(cls, instance):
             raise Exception("Depended plugin failed. See error log.")
 
         # Validate all controls
@@ -151,6 +150,8 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid_visibility(cls, instance):
+        from maya import cmds
+
         controls = cls.get_controls(instance)
 
         has_unlocked_vis = list()
@@ -187,6 +188,8 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid(cls, instance):
+        from reveries.maya import capsule
+
         controls = cls.get_controls(instance)
         with capsule.undo_chunk(undo_on_exit=False):
             for control in controls:
@@ -196,6 +199,8 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid_visibility(cls, instance):
+        from reveries.maya import capsule
+
         controls = cls.get_controls(instance)
         with capsule.undo_chunk(undo_on_exit=False):
             for control in controls:
@@ -203,6 +208,8 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid_connections(cls, instance):
+        from reveries.maya import capsule
+
         controls = cls.get_controls(instance)
         with capsule.undo_chunk(undo_on_exit=False):
             for control in controls:
@@ -210,6 +217,8 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def fix_invalid_non_default_values(cls, instance):
+        from reveries.maya import capsule
+
         controls = cls.get_controls(instance)
         with capsule.undo_chunk(undo_on_exit=False):
             for control in controls:
@@ -228,6 +237,8 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
             list: The invalid plugs
 
         """
+        from maya import cmds
+
         attributes = cmds.listAttr(control, keyable=True, scalar=True) or []
         invalid = []
         for attr in attributes:
@@ -255,6 +266,7 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
             list: The invalid plugs
 
         """
+        from maya import cmds
 
         invalid = []
         for attr, default in cls.CONTROLLER_DEFAULTS.items():
@@ -276,6 +288,8 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def _fix_visibility(cls, control):
+        from maya import cmds
+
         # Lock visibility
         attr = "{}.visibility".format(control)
         locked = cmds.getAttr(attr, lock=True)
@@ -285,6 +299,8 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def _fix_connections(cls, control):
+        from maya import cmds
+
         # Remove incoming connections
         invalid_plugs = cls._get_connected_attributes(control)
         if invalid_plugs:
@@ -298,6 +314,8 @@ class ValidateRigControllers(pyblish.api.InstancePlugin):
 
     @classmethod
     def _fix_non_default_values(cls, control):
+        from maya import cmds
+
         # Reset non-default values
         invalid_plugs = cls._get_non_default_attrs(control)
         if invalid_plugs:

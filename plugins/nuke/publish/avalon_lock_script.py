@@ -1,9 +1,6 @@
 
 import os
 import pyblish.api
-import nuke
-from avalon.nuke import workio
-from reveries.nuke import pipeline
 
 
 class AvalonLockScript(pyblish.api.ContextPlugin):
@@ -19,6 +16,9 @@ class AvalonLockScript(pyblish.api.ContextPlugin):
     hosts = ["nuke"]
 
     def process(self, context):
+        import nuke
+        from avalon.nuke import workio
+        from reveries.nuke import pipeline
 
         assert any(inst.data.get("publish", True) for inst in context), (
             "No instance been published, aborting.")

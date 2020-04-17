@@ -1,8 +1,5 @@
-import hou
 
 import pyblish.api
-
-from avalon.houdini import lib
 
 
 class CollectInstances(pyblish.api.ContextPlugin):
@@ -29,6 +26,8 @@ class CollectInstances(pyblish.api.ContextPlugin):
     hosts = ["houdini"]
 
     def process(self, context):
+        import hou
+        from avalon.houdini import lib
 
         nodes = hou.node("/out").children()
         for node in nodes:

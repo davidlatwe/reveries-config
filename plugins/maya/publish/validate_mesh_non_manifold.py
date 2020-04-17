@@ -1,7 +1,6 @@
-from maya import cmds
 
 import pyblish.api
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
 class ValidateMeshNonManifold(pyblish.api.Validator):
@@ -20,13 +19,14 @@ class ValidateMeshNonManifold(pyblish.api.Validator):
     ]
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
     ]
 
     optional = True
 
     @staticmethod
     def get_invalid(instance):
+        from maya import cmds
 
         meshes = cmds.ls(instance, type="mesh", long=True, noIntermediate=True)
 

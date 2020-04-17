@@ -1,6 +1,5 @@
 
 import pyblish.api
-from maya import cmds
 from reveries import plugins
 
 
@@ -32,6 +31,7 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from maya import cmds
         from reveries.maya import pipeline
 
         upstream_nodes = instance.data.get("shadingNetwork", [])
@@ -47,12 +47,12 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
             instance.data["startFrame"] = get({"minTime": True})
             instance.data["endFrame"] = get({"maxTime": True})
 
-        instance.data["byFrameStep"] = 1
+        instance.data["step"] = 1
 
         stray = pipeline.find_stray_textures(file_nodes)
         if stray:
-            self.log.warning("Found not versioned textures, creating "
-                             "instance for publish.")
+            self.log.info("Found not versioned textures, creating "
+                          "instance for publish.")
             create_texture_subset_from_standin(instance, stray)
 
         # Yeti

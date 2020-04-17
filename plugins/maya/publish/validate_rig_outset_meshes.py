@@ -1,13 +1,9 @@
 
 import pyblish.api
-
-from maya import cmds
-
-from reveries.plugins import depended_plugins_succeed
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalidOutNodes(MayaSelectInvalidInstanceAction):
+class SelectInvalidOutNodes(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Invalid Out Nodes"
 
@@ -46,6 +42,8 @@ class ValidateRigOutSetMeshes(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_geometries(cls, instance):
+        from maya import cmds
+
         geometries = set()
 
         for out_set in instance.data["outSets"]:
@@ -60,8 +58,9 @@ class ValidateRigOutSetMeshes(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        from maya import cmds
 
-        if not depended_plugins_succeed(cls, instance):
+        if not plugins.depended_plugins_succeed(cls, instance):
             raise Exception("Depended plugin failed. See error log.")
 
         invalid = list()

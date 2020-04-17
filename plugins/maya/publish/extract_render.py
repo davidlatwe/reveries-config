@@ -1,17 +1,9 @@
 
 import os
-import json
 import pyblish.api
-import reveries.utils
-import reveries.lib
-
-from avalon.vendor import clique
-# from reveries.plugins import DelegatablePackageExtractor
-from reveries.plugins import PackageExtractor
-from reveries.maya import utils
 
 
-class ExtractRender(PackageExtractor):
+class ExtractRender(pyblish.api.InstancePlugin):
     """Start GUI rendering if not delegate to Deadline
     """
 
@@ -23,110 +15,106 @@ class ExtractRender(PackageExtractor):
         "reveries.renderlayer",
     ]
 
-    representations = [
-        "renderLayer",
-    ]
-
-    def extract_renderLayer(self, packager):
+    def process(self, instance):
         """Extract per renderlayer that has AOVs (Arbitrary Output Variable)
         """
-        packager.skip_stage()
-        package_path = packager.create_package()
-        data_path = os.path.join(package_path, ".remoteData.json")
-
-        if reveries.lib.in_remote():
-            # Render job completed, running publish job in Deadline
-            self.log.info("Reading render output path from disk..")
-
-            with open(data_path, "r") as fp:
-                output_paths = json.load(fp)
-
-            self.log.info("Extracting render output..")
-            # Assume the rendering has been completed at this time being,
-            # start to check and extract the rendering outputs
-            for aov_name, aov_path in output_paths.items():
-                self.add_sequence(packager, aov_path, aov_name, package_path)
-
-        else:
-            # About to submit render job
-            self.log.info("Computing render output path and save to disk..")
-
-            # Computing output path may take a while
-            output_dir = self.context.data["outputDir"]
-            output_paths = utils.get_output_paths(output_dir,
-                                                  self.data["renderer"],
-                                                  self.data["renderlayer"],
-                                                  self.data["camera"])
-            self.data["outputPaths"] = output_paths
-            # Save to disk for later use
-            with open(data_path, "w") as fp:
-                json.dump(output_paths, fp, indent=4)
-
-            self.log.info("Ready to submit render job..")
-
-    def add_sequence(self, packager, aov_path, aov_name, package_path):
-        """
-        """
         from maya import cmds
+        from reveries.maya import utils as maya_utils
 
-        seq_dir, pattern = os.path.split(aov_path)
+        self.log.info("Computing render output path..")
 
-        self.log.info("Collecting sequence from: %s" % seq_dir)
-        assert os.path.isdir(seq_dir), "Sequence dir not exists."
+        renderer = instance.data["renderer"]
+        renderlayer = instance.data["renderlayer"]
+        camera = instance.data["camera"]
 
-        # (NOTE) Did not consider frame step (byFrame)
-        start_frame = self.data["startFrame"]
-        end_frame = self.data["endFrame"]
+        # Computing output path may take a while
+        staging_dir = instance.context.data["outputDir"]
+        outputs = maya_utils.get_output_paths(staging_dir,
+                                              renderer,
+                                              renderlayer,
+                                              camera)
+        padding = maya_utils.get_render_padding(renderer)
+        padding_str = "#" * padding
+        frame_str = "%%0%dd" % padding
 
-        patterns = [
-            clique.PATTERNS["frames"],
-            clique.DIGITS_PATTERN,
-        ]
-        minimum_items = 1 if start_frame == end_frame else 2
-        collections, _ = clique.assemble(os.listdir(seq_dir),
-                                         patterns=patterns,
-                                         minimum_items=minimum_items)
+        if renderer == "arnold":
+            self.get_arnold_light_groups(staging_dir,
+                                         renderlayer,
+                                         camera,
+                                         outputs)
 
-        assert len(collections), "Extraction failed, no sequence found."
+        # Assume the rendering has been completed at this time being,
+        # start to check and extract the rendering outputs
+        sequence = dict()
+        files = list()
+        for aov_name, aov_path in outputs.items():
 
-        for sequence in collections:
-            if pattern == (sequence.head +
-                           "#" * sequence.padding +
-                           sequence.tail):
-                break
-        else:
-            raise Exception("No sequence match this pattern: %s" % pattern)
+            pattern = os.path.relpath(aov_path, staging_dir)
 
-        entry_fname = (sequence.head +
-                       "%%0%dd" % sequence.padding +
-                       sequence.tail)
-
-        project = self.context.data["projectDoc"]
-        e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
-        camera = self.data["camera"]
-
-        packager.add_data({"sequence": {
-            aov_name: {
-                "imageFormat": self.data["fileExt"],
-                "fname": entry_fname,
-                "seqSrcDir": seq_dir,
-                "seqStart": list(sequence.indexes)[0],
-                "seqEnd": list(sequence.indexes)[-1],
-                "startFrame": start_frame,
-                "endFrame": end_frame,
-                "byFrameStep": self.data["byFrameStep"],
-                "edit_in": e_in,
-                "edit_out": e_out,
-                "handles": handles,
+            sequence[aov_name] = {
+                "imageFormat": instance.data["fileExt"],
+                "fpattern": pattern,
                 "focalLength": cmds.getAttr(camera + ".focalLength"),
-                "resolution": self.data["resolution"],
-                "fps": self.context.data["fps"],
-                "cameraUUID": utils.get_id(camera),
-                "renderlayer": self.data["renderlayer"],
+                "resolution": instance.data["resolution"],
+                "cameraUUID": maya_utils.get_id(camera),
+                "renderlayer": renderlayer,
             }
-        }})
 
-        for file in [entry_fname % i for i in sequence.indexes]:
-            src = seq_dir + "/" + file
-            dst = os.path.join(package_path, aov_name, file)
-            packager.add_hardlink(src, dst)
+            start = int(instance.data["startFrame"])
+            end = int(instance.data["endFrame"])
+            step = int(instance.data["step"])
+
+            fname = pattern.replace(padding_str, frame_str)
+            for frame_num in range(start, end, step):
+                files.append(fname % frame_num)
+
+        instance.data["outputPaths"] = outputs
+
+        instance.data["repr.renderLayer._stage"] = staging_dir
+        instance.data["repr.renderLayer._hardlinks"] = files
+        instance.data["repr.renderLayer.sequence"] = sequence
+        instance.data["repr.renderLayer._delayRun"] = {
+            "func": self.render,
+        }
+
+    def get_arnold_light_groups(self,
+                                staging_dir,
+                                renderlayer,
+                                camera,
+                                outputs):
+        from maya import cmds
+        from mtoa import aovs
+        from reveries.maya import arnold, capsule, utils as maya_utils
+
+        all_groups = arnold.get_all_light_groups()
+        lighting_aovs = aovs.getLightingAOVs()
+
+        for aov_node in arnold.get_arnold_aov_nodes(renderlayer):
+            aov_name = cmds.getAttr(aov_node + ".name")
+            if aov_name not in lighting_aovs:
+                continue
+
+            if aov_name == "RGBA":
+                aov_name = "beauty"
+
+            if cmds.getAttr(aov_node + ".lightGroups"):
+                # All light groups
+                groups = all_groups[:]
+            else:
+                groups = cmds.getAttr(aov_node + ".lightGroupsList").split(" ")
+
+            fnprefix = maya_utils.get_render_filename_prefix(renderlayer)
+            for group in groups:
+                grprefix = fnprefix + "_" + group
+                with capsule.attribute_values({
+                    "defaultRenderGlobals.imageFilePrefix": grprefix
+                }):
+                    gpattern = maya_utils.compose_render_filename(renderlayer,
+                                                                  aov_name,
+                                                                  camera)
+                    aov_lg_name = aov_name + "_" + group
+                    output_path = staging_dir + "/" + gpattern
+                    outputs[aov_lg_name] = output_path.replace("\\", "/")
+
+    def render(self):
+        pass

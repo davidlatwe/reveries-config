@@ -23,10 +23,6 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
         representation = context["representation"]
         file_path = self.file_path(representation)
 
-        start = representation["data"]["startFrame"]
-        end = representation["data"]["endFrame"]
-        is_sequence = start != end
-
         # Get the root node
         obj = hou.node("/obj")
 
@@ -45,7 +41,7 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
 
         # Explicitly create a file node
         file_node = container.createNode("file", node_name=node_name)
-        file_node.setParms({"file": self.format_path(file_path, is_sequence)})
+        file_node.setParms({"file": self.format_path(file_path)})
 
         # Set display on last node
         file_node.setDisplayFlag(True)
@@ -60,14 +56,12 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
                                      self.__class__.__name__,
                                      suffix="")
 
-    def format_path(self, path, is_sequence):
+    def format_path(self, path):
         """Format file path correctly for single vdb or vdb sequence"""
+        expanded_dir = os.path.dirname(os.path.expandvars(path))
+        vdbs = [f for f in os.listdir(expanded_dir) if f.endswith(".vdb")]
+        is_sequence = len(vdbs) > 1
 
-        expanded = os.path.expandvars(path)
-        if not os.path.exists(expanded):
-            raise RuntimeError("Path does not exist: %s" % expanded)
-
-        # The path is either a single file or sequence in a folder.
         if is_sequence:
             head, tail = os.path.split(path)
             # Set <frame>.vdb to $F4.vdb
@@ -85,10 +79,6 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
 
     def update(self, container, representation):
 
-        start = representation["data"]["startFrame"]
-        end = representation["data"]["endFrame"]
-        is_sequence = start != end
-
         node = container["node"]
         try:
             file_node = next(n for n in node.children() if
@@ -99,7 +89,7 @@ class VdbLoader(HoudiniBaseLoader, api.Loader):
 
         # Update the file path
         file_path = api.get_representation_path(representation)
-        file_path = self.format_path(file_path, is_sequence)
+        file_path = self.format_path(file_path)
 
         file_node.setParms({"fileName": file_path})
 

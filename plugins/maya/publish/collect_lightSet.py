@@ -1,13 +1,12 @@
 
 import pyblish.api
-from maya import cmds
-from reveries import plugins
-from reveries.maya import pipeline, utils
 
 
 def create_texture_subset_from_lightSet(instance, textures, use_txmaps):
     """
     """
+    from reveries import plugins
+
     family = "reveries.texture"
     subset = instance.data["subset"]
     subset = "texture" + subset[0].upper() + subset[1:]
@@ -30,6 +29,8 @@ class CollectLightSet(pyblish.api.InstancePlugin):
     families = ["reveries.lightset"]
 
     def process(self, instance):
+        from maya import cmds
+        from reveries.maya import pipeline, utils
 
         lights = list()
         light_types = dict()
@@ -73,6 +74,7 @@ class CollectLightSet(pyblish.api.InstancePlugin):
             create_texture_subset_from_lightSet(instance, stray, is_arnold)
 
     def collect_ai_mesh_light(self, instance):
+        from maya import cmds
 
         if "aiMeshLight" in instance.data["lightsByType"]:
             self.log.info("Collecting Arnold mesh light sources..")
@@ -82,6 +84,7 @@ class CollectLightSet(pyblish.api.InstancePlugin):
                 instance.data["lights"] += cmds.ls(mesh, long=True)
 
     def collect_ai_shader_emission(self, instance):
+        from maya import cmds
 
         self.log.info("Collecting Arnold shader emission light sources..")
 

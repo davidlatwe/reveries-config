@@ -52,6 +52,27 @@ def get_arnold_aov_names(layer=None):
     return aov_names
 
 
+def get_all_light_groups():
+    # loop over all light groups in the scene
+    # (NOTE) Referenced from `lightGroupsListReplace()`
+    #        in `{mtoa}/scripts/mtoa/ui/ae/aiAOVTemplate.py`
+    lights = cmds.ls(exactType=["pointLight",
+                                "directionalLight",
+                                "spotLight",
+                                "areaLight",
+                                "aiAreaLight",
+                                "aiSkyDomeLight",
+                                "aiMeshLight",
+                                "aiPhotometricLight"])
+    light_groups = set()
+    for light in lights:
+        name = cmds.getAttr(light + ".aiAov")
+        if name:
+            light_groups.add(name)
+
+    return list(light_groups)
+
+
 def update_full_scene():
     cmds.arnoldRenderView(option=["Update Full Scene", "1"])
 

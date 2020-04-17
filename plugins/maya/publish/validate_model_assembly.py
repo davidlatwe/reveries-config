@@ -1,6 +1,5 @@
 
 import pyblish.api
-from maya import cmds
 
 
 class ValidateModelAssembly(pyblish.api.InstancePlugin):
@@ -36,6 +35,8 @@ class ValidateModelAssembly(pyblish.api.InstancePlugin):
             raise Exception("%s <Model Assembly> Failed." % instance)
 
     def get_roots(self, nodes):
+        from maya import cmds
+
         nodes = sorted(cmds.ls(nodes, long=True), reverse=True)
         roots = set()
 

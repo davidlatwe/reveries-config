@@ -1,10 +1,9 @@
 
 import pyblish.api
-from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class Disconnect(RepairInstanceAction):
+class Disconnect(plugins.RepairInstanceAction):
 
     label = "Disconnect default shaders"
 
@@ -31,14 +30,13 @@ class ValidateLookNoInitSG(pyblish.api.InstancePlugin):
 
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
         pyblish.api.Category("Disconnect"),
         Disconnect,
     ]
 
     @classmethod
     def get_invalid(cls, instance):
-
         from maya import cmds
 
         invalid = list()
@@ -72,7 +70,6 @@ class ValidateLookNoInitSG(pyblish.api.InstancePlugin):
     def fix_invalid(cls, instance):
         """This will disconnect all connection from default shaders
         """
-
         from maya import cmds
 
         invalid = cls.get_invalid(instance)

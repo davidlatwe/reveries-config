@@ -1,6 +1,6 @@
 
 import pyblish.api
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
 class ValidateTextureNoFunnyPath(pyblish.api.InstancePlugin):
@@ -19,7 +19,7 @@ class ValidateTextureNoFunnyPath(pyblish.api.InstancePlugin):
     ]
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
     ]
 
     def process(self, instance):

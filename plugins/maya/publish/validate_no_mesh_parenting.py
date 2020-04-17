@@ -1,12 +1,9 @@
 
 import pyblish.api
-
-from maya import cmds
-
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalid(MayaSelectInvalidInstanceAction):
+class SelectInvalid(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Select Invalided"
 
@@ -41,6 +38,8 @@ class ValidateNoMeshParenting(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        from maya import cmds
+
         invalid = list()
         checked = list()
 

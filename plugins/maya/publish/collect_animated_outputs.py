@@ -1,8 +1,5 @@
 
 import pyblish.api
-import maya.cmds as cmds
-
-from reveries.maya import lib, pipeline
 
 
 class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
@@ -21,6 +18,8 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        import maya.cmds as cmds
+        from reveries.maya import lib, pipeline
 
         variant = instance.data["subset"][len("animation"):].lower()
         members = instance[:]

@@ -1,16 +1,14 @@
-from maya import cmds
 
 import pyblish.api
-from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalid(MayaSelectInvalidInstanceAction):
+class SelectInvalid(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Select Locked"
 
 
-class RepairInvalid(RepairInstanceAction):
+class RepairInvalid(plugins.RepairInstanceAction):
 
     label = "Unlock"
 
@@ -39,6 +37,8 @@ class ValidateNormalsUnlocked(pyblish.api.Validator):
     @staticmethod
     def has_locked_normals(mesh):
         """Return whether a mesh node has locked normals"""
+        from maya import cmds
+
         return any(cmds.polyNormalPerVertex("{}.vtxFace[*][*]".format(mesh),
                                             query=True,
                                             freezeNormal=True))
@@ -46,6 +46,7 @@ class ValidateNormalsUnlocked(pyblish.api.Validator):
     @classmethod
     def get_invalid(cls, instance):
         """Return the meshes with locked normals in instance"""
+        from maya import cmds
 
         meshes = cmds.ls(instance, type="mesh", long=True)
         return [mesh for mesh in meshes if cls.has_locked_normals(mesh)]
@@ -62,6 +63,8 @@ class ValidateNormalsUnlocked(pyblish.api.Validator):
     @classmethod
     def fix_invalid(cls, instance):
         """Unlocks all normals on the meshes in this instance."""
+        from maya import cmds
+
         invalid = cls.get_invalid(instance)
         for mesh in invalid:
             cmds.polyNormalPerVertex(mesh, unFreezeNormal=True)

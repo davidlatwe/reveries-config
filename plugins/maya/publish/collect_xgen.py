@@ -1,11 +1,12 @@
 
 import pyblish.api
-from maya import cmds
-from reveries import plugins
-from reveries.maya import lib, xgen, pipeline
 
 
 def create_model_subset_from_xgen(instance):
+    from maya import cmds
+    from reveries import plugins
+    from reveries.maya import lib
+
     family = "reveries.model"
     subset = instance.data["subset"]
     subset = "model" + subset[0].upper() + subset[1:]
@@ -19,19 +20,19 @@ def create_model_subset_from_xgen(instance):
 
     member += lib.list_all_parents(member)
     if member:
-        model = plugins.create_dependency_instance(instance,
-                                                   subset,
-                                                   family,
-                                                   member,
-                                                   category="XGen Bound Mesh")
-        # Only need to extract model `mayaBinary` representation
-        model.data["extractType"] = "mayaBinary"
+        plugins.create_dependency_instance(instance,
+                                           subset,
+                                           family,
+                                           member,
+                                           sublabel="bound mesh")
         return True
 
     return False
 
 
 def create_texture_subset_from_xgen(instance, textures):
+    from reveries import plugins
+
     family = "reveries.texture"
     subset = instance.data["subset"]
     subset = "texture" + subset[0].upper() + subset[1:]
@@ -39,7 +40,7 @@ def create_texture_subset_from_xgen(instance, textures):
                                        subset,
                                        family,
                                        textures,
-                                       category="XGen Maps")
+                                       sublabel="attr map")
 
 
 class CollectXGen(pyblish.api.InstancePlugin):
@@ -56,6 +57,10 @@ class CollectXGen(pyblish.api.InstancePlugin):
 
     def get_interactive(self, instance):
         """Interactive Groom Spline"""
+        from maya import cmds
+        from reveries.maya import xgen, pipeline
+
+        instance.data["families"] = ["reveries.xgen.interactive"]
 
         descriptions = xgen.interactive.list_lead_descriptions(instance[:])
         instance.data["igsDescriptions"] = descriptions
@@ -77,6 +82,10 @@ class CollectXGen(pyblish.api.InstancePlugin):
 
     def get_legacy(self, instance):
         """Legacy XGen"""
+        from maya import cmds
+        from reveries.maya import xgen
+
+        instance.data["families"] = ["reveries.xgen.legacy"]
 
         palettes = []
         palette_nodes = cmds.ls(instance, type="xgmPalette", long=True)

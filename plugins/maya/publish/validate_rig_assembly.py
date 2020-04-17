@@ -1,8 +1,5 @@
 
 import pyblish.api
-from maya import cmds
-
-from reveries.maya.lib import TRANSFORM_ATTRS
 
 
 class ValidateRigAssembly(pyblish.api.InstancePlugin):
@@ -19,6 +16,8 @@ class ValidateRigAssembly(pyblish.api.InstancePlugin):
     families = ["reveries.rig"]
 
     def process(self, instance):
+        from maya import cmds
+        from reveries.maya.lib import TRANSFORM_ATTRS
 
         root = cmds.ls(instance, assemblies=True, long=True)
 

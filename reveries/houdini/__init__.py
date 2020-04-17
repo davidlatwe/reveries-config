@@ -6,9 +6,8 @@ from pyblish import api as pyblish
 import pyblish_qml.settings
 
 from avalon import api as avalon
-from avalon.houdini import pipeline as houdini
 
-from . import lib
+from . import callbacks
 from .. import PLUGINS_DIR
 
 
@@ -28,11 +27,11 @@ def install():
     avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
 
     # install callbacks
-    log.info("Installing callbacks ... ")
-    avalon.on("init", on_init)
-    avalon.before("save", before_save)
-    avalon.on("save", on_save)
-    avalon.on("open", on_open)
+    print("Installing callbacks ... ")
+    avalon.before("save", callbacks.before_save)
+    avalon.on("save", callbacks.on_save)
+    avalon.on("open", callbacks.on_open)
+    avalon.on("taskChanged", callbacks.on_task_changed)
 
     # Config Pyblish QML
     pyblish_qml.settings.Directions = {
@@ -47,25 +46,3 @@ def install():
             "targets": ["default", "deadline"],
         },
     }
-
-
-def on_init(*args):
-    houdini.on_houdini_initialize()
-
-
-def before_save(*args):
-    pass
-
-
-def on_save(*args):
-
-    avalon.logger.info("Running callback on save..")
-
-    nodes = lib.get_id_required_nodes()
-    for node, new_id in lib.generate_ids(nodes):
-        lib.set_id(node, new_id, overwrite=False)
-
-
-def on_open(*args):
-
-    avalon.logger.info("Running callback on open..")

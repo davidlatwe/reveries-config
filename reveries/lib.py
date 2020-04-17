@@ -171,26 +171,6 @@ def publish_remote():
     print("All good. Success!")
 
 
-def in_remote():
-    remote = set([
-        "deadline",
-    ])
-
-    registered = set(pyblish.api.registered_hosts())
-
-    return registered.intersection(remote)
-
-
-def to_remote():
-    remote = set([
-        "deadline",
-    ])
-
-    registered = set(pyblish.api.registered_targets())
-
-    return registered.intersection(remote)
-
-
 def get_deadline_pools():
     """Listing Deadline pools via Deadlin web service
     """

@@ -1,6 +1,5 @@
-import pyblish.api
 
-from maya import cmds
+import pyblish.api
 
 
 class ValidateSingleCamera(pyblish.api.InstancePlugin):
@@ -15,6 +14,8 @@ class ValidateSingleCamera(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from maya import cmds
+
         cameras = cmds.ls(instance[:], type="camera")
 
         if len(cameras) == 0:

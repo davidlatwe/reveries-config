@@ -19,9 +19,7 @@ from ..utils import get_representation_path_
 
 from ..plugins import (
     PackageLoader,
-    message_box_error,
-    SelectInvalidInstanceAction,
-    SelectInvalidContextAction,
+    message_box_error
 )
 
 from .pipeline import (
@@ -691,26 +689,3 @@ class HierarchicalLoader(MayaBaseLoader):
             cmds.delete([container["objectName"]] + members)
 
         return True
-
-
-class MayaSelectInvalidInstanceAction(SelectInvalidInstanceAction):
-
-    def select(self, invalid):
-        from maya import cmds
-        cmds.select(invalid, replace=True, noExpand=True)
-
-    def deselect(self):
-        from maya import cmds
-        cmds.select(deselect=True)
-
-
-class MayaSelectInvalidContextAction(SelectInvalidContextAction):
-    """ Select invalid nodes in context"""
-
-    def select(self, invalid):
-        from maya import cmds
-        cmds.select(invalid, replace=True, noExpand=True)
-
-    def deselect(self):
-        from maya import cmds
-        cmds.select(deselect=True)

@@ -131,6 +131,24 @@ label = "Point Cache"
 icon = "diamond"
 
 [[families]]
+name = "reveries.pointcache.abc"
+label = "Point Cache"
+icon = "diamond"
+hideFilter = true
+
+[[families]]
+name = "reveries.pointcache.gpu"
+label = "Point Cache"
+icon = "diamond"
+hideFilter = true
+
+[[families]]
+name = "reveries.pointcache.fbx"
+label = "Point Cache"
+icon = "diamond"
+hideFilter = true
+
+[[families]]
 name = "reveries.camera"
 label = "Camera"
 icon = "video-camera"

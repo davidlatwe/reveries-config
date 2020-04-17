@@ -1,11 +1,9 @@
 
 import pyblish.api
-
-from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class RepairInvalid(RepairInstanceAction):
+class RepairInvalid(plugins.RepairInstanceAction):
 
     label = "Remove Namespaces"
 
@@ -23,7 +21,7 @@ class ValidateNoNamespace(pyblish.api.InstancePlugin):
     label = "No Namespaces"
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
         pyblish.api.Category("Fix It"),
         RepairInvalid,
     ]

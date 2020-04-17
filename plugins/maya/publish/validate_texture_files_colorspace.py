@@ -1,7 +1,6 @@
 
 import pyblish.api
-
-from reveries.maya import plugins
+from reveries import plugins
 
 
 class ValidateTextureFilesColorspace(pyblish.api.InstancePlugin):

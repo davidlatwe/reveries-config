@@ -1,17 +1,18 @@
 
 import pyblish.api
-from reveries.maya import pipeline
-from reveries.plugins import RepairInstanceAction
-from reveries import utils
+from reveries import plugins
 
 
-class SetRenderRange(RepairInstanceAction):
+class SetRenderRange(plugins.RepairInstanceAction):
 
     label = "Set Render Range"
     on = "processed"
 
 
 def get_render_range(instance):
+    from reveries import utils
+    from reveries.maya import pipeline
+
     project = instance.context.data["projectDoc"]
     asset_name = pipeline.has_turntable()
     proj_start, proj_end, _ = utils.compose_timeline_data(project,

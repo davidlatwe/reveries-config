@@ -1,7 +1,5 @@
 
 import pyblish.api
-
-from maya import cmds
 from reveries.plugins import context_process
 
 
@@ -34,6 +32,7 @@ class ValidateDefaultShadersConnections(pyblish.api.InstancePlugin):
 
     @context_process
     def process(self, context):
+        from maya import cmds
 
         invalid = list()
         for plug, input_node in self.DEFAULTS:

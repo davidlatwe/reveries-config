@@ -1,18 +1,14 @@
 
 import pyblish.api
-from maya import cmds
-
-from reveries import lib
-from reveries.plugins import RepairInstanceAction
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalid(MayaSelectInvalidInstanceAction):
+class SelectInvalid(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Select Unfreezed"
 
 
-class FreezeTransform(RepairInstanceAction):
+class FreezeTransform(plugins.RepairInstanceAction):
 
     label = "Freeze Transform"
 
@@ -51,6 +47,8 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
             list: Transforms that are not identity matrix
 
         """
+        from maya import cmds
+        from reveries import lib
 
         invalid = list()
 
@@ -89,5 +87,7 @@ class ValidateTranformFreezed(pyblish.api.InstancePlugin):
     @classmethod
     def fix_invalid(cls, instance):
         """Freeze transforms"""
+        from maya import cmds
+
         for item in cls.get_invalid(instance):
             cmds.makeIdentity(item, apply=True)

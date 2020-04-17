@@ -1,0 +1,17 @@
+[State]
+Type=Enum
+Items=Global Enabled;Opt-In;Disabled
+Label=State
+Default=Disabled
+
+[PythonExecutable]
+Type=string
+Label=Python Executable Path
+Default=
+Description=Python executable for running publish
+
+[PublishScript]
+Type=string
+Label=Avalon Publish Script Path
+Default=
+Description=A Python script for running publish

@@ -1,5 +1,4 @@
 
-import maya.cmds as cmds
 import pyblish.api
 
 
@@ -14,6 +13,7 @@ class CollectTimeline(pyblish.api.ContextPlugin):
     label = "時間軸資訊"
 
     def process(self, context):
+        import maya.cmds as cmds
         from reveries.maya import lib
 
         context.data.update(

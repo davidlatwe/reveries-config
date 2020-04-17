@@ -1,5 +1,5 @@
+
 import pyblish.api
-from maya import cmds
 
 
 class CollectAllInstanced(pyblish.api.InstancePlugin):
@@ -11,6 +11,7 @@ class CollectAllInstanced(pyblish.api.InstancePlugin):
     label = "Collect All Instanced"
 
     def process(self, instance):
+        from maya import cmds
 
         instanced_hierarchies = dict()
         instanced_roots = set()

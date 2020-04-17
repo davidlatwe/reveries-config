@@ -1,5 +1,5 @@
+
 import pyblish.api
-from maya import cmds
 
 
 class CollectAllDescendents(pyblish.api.InstancePlugin):
@@ -11,6 +11,8 @@ class CollectAllDescendents(pyblish.api.InstancePlugin):
     label = "Collect All Descendents"
 
     def process(self, instance):
+        from maya import cmds
+
         # Collect all descendents
         instance += cmds.listRelatives(instance,
                                        allDescendents=True,

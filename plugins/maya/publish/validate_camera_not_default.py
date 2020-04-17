@@ -1,10 +1,9 @@
-from maya import cmds
 
 import pyblish.api
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalid(MayaSelectInvalidInstanceAction):
+class SelectInvalid(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Select Invalid Camera"
 
@@ -26,6 +25,7 @@ class ValidateCameraNotDefault(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        from maya import cmds
 
         if instance.data["family"] == "reveries.renderlayer":
             cameras = [instance.data["camera"], ]

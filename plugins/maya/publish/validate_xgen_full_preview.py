@@ -1,10 +1,9 @@
 
 import pyblish.api
+from reveries import plugins
 
-from reveries.plugins import RepairInstanceAction
 
-
-class FixXGenFullPreview(RepairInstanceAction):
+class FixXGenFullPreview(plugins.RepairInstanceAction):
 
     label = "Set 100% Preview"
 

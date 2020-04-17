@@ -1,13 +1,9 @@
 
-import os
 import contextlib
 import pyblish.api
-from reveries.plugins import PackageExtractor
-from reveries.maya import lib, capsule
-from maya import cmds
 
 
-class ExtractAnimation(PackageExtractor):
+class ExtractAnimation(pyblish.api.InstancePlugin):
     """Extract animation curve
     """
 
@@ -18,50 +14,59 @@ class ExtractAnimation(PackageExtractor):
         "reveries.animation",
     ]
 
-    representations = [
-        "anim",
-    ]
+    def process(self, instance):
+        from maya import cmds
+        from reveries import utils
+        from reveries.maya import lib, capsule
 
-    def extract_anim(self, packager):
         cmds.loadPlugin("animImportExport", quiet=True)
 
-        package_path = packager.create_package()
+        staging_dir = utils.stage_dir()
+        script = "%s.mel" % instance.data["subset"]
+        filename = "%s.anim" % instance.data["subset"]
+        scriptpath = "%s/%s" % (staging_dir, script)
+        outpath = "%s/%s" % (staging_dir, filename)
 
-        entry_file = packager.file_name("anim")
-        entry_path = os.path.join(package_path, entry_file)
+        animated_asset = instance.data["animatedAssetId"]
 
-        sele_file = packager.file_name("mel")
-        sele_path = os.path.join(package_path, sele_file)
+        instance.data["repr.anim._stage"] = staging_dir
+        instance.data["repr.anim._files"] = [filename, script]
+        instance.data["repr.anim.entryFileName"] = filename
+        instance.data["repr.anim.animatedAssetId"] = animated_asset
 
         # Save animated nodes with order
         with capsule.maintained_selection():
-            cmds.select(self.data["outAnim"], replace=True)
+            cmds.select(instance.data["outAnim"], replace=True)
 
             with contextlib.nested(
-                capsule.namespaced(self.data["animatedNamespace"], new=False),
+                capsule.namespaced(instance.data["animatedNamespace"],
+                                   new=False),
                 capsule.relative_namespaced()
             ):
                 # Save with basename
-                with open(sele_path, "w") as fp:
+                with open(scriptpath, "w") as fp:
                     fp.write("select -r\n" +
                              "\n".join(cmds.ls(sl=True)) +
                              ";")
 
-        context_data = self.context.data
-        start = context_data.get("startFrame")
-        end = context_data.get("endFrame")
+        context_data = instance.context.data
+        start = context_data["startFrame"]
+        end = context_data["endFrame"]
+
+        instance.data["startFrame"] = start
+        instance.data["endFrame"] = end
 
         with contextlib.nested(
             capsule.no_refresh(),
             capsule.maintained_selection(),
             capsule.undo_chunk(),
         ):
-            lib.bake(self.data["outAnim"],
+            lib.bake(instance.data["outAnim"],
                      frame_range=(start, end),
                      shape=False)
 
-            cmds.select(self.data["outAnim"], replace=True, noExpand=True)
-            cmds.file(entry_path,
+            cmds.select(instance.data["outAnim"], replace=True, noExpand=True)
+            cmds.file(outpath,
                       force=True,
                       typ="animExport",
                       exportSelectedAnim=True,
@@ -84,6 +89,3 @@ class ExtractAnimation(PackageExtractor):
                                "-controlPoints 0 "
                                "-shape 0")
                       )
-
-        packager.add_data({"entryFileName": entry_file,
-                           "animatedAssetId": self.data["animatedAssetId"]})

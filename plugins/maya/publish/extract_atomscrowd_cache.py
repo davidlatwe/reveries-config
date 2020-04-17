@@ -1,57 +1,65 @@
 
-import os
 import pyblish.api
 
-from reveries.plugins import PackageExtractor
 
-
-class ExtractAtomsCrowdCache(PackageExtractor):
+class ExtractAtomsCrowdCache(pyblish.api.InstancePlugin):
 
     label = "Extract AtomsCrowd Cache"
     order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
     families = ["reveries.atomscrowd"]
 
-    representations = [
-        "atoms",
-    ]
-
-    def extract_atoms(self, packager):
+    def process(self, instance):
+        from reveries import utils
         from AtomsMaya.hostbridge.commands import MayaCommandsHostBridge
 
-        packager.skip_stage()
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
 
-        if self.data.get("useCustomRange"):
-            start_frame = int(self.data["startFrame"])
-            end_frame = int(self.data["endFrame"])
+        if instance.data.get("useCustomRange"):
+            start = int(instance.data["startFrame"])
+            end = int(instance.data["endFrame"])
         else:
-            start_frame = int(self.context.data.get("startFrame"))
-            end_frame = int(self.context.data.get("endFrame"))
+            context = instance.context
+            start = int(context.data["startFrame"])
+            end = int(context.data["endFrame"])
 
-        package_path = packager.create_package()
+            instance.data["startFrame"] = start
+            instance.data["endFrame"] = end
 
-        entry_file = packager.file_name("atoms")
-        entry_path = os.path.join(package_path, entry_file)
+        # Get agentTypes
+        agent_types = set()
+        for node in instance.data["AtomsAgentGroups"]:
+            agent_group = MayaCommandsHostBridge.get_agent_group(node)
+            agent_types.update(agent_group.agentTypeMapper().keys())
 
-        cache_dir = str(os.path.dirname(entry_path))
-        cache_name = str(os.path.basename(entry_path).replace(".atoms", ""))
+        filename = "%s.atoms" % instance.data["subset"]  # Cache header
+        agent_type = "agentTypes/%s.agentType"  # agentType file
+        agent_script = "agentTypes/%s.py"  # Python event wrapper script
+        frames = "%s.%%04d.%%s.atoms" % instance.data["subset"]  # Frame files
+        variation = "%s.json" % instance.data["subset"]  # Crowd Variation
 
-        agent_groups = self.data["AtomsAgentGroups"]
+        files = [frames % (f, x)
+                 for f in range(start, end)
+                 for x in ("frame", "header", "meta", "pose")]
+        files += [agent_type % agtype for agtype in agent_types]
+        files += [agent_script % agtype for agtype in agent_types]
+        files += [filename, variation]
+
+        instance.data["repr.atoms._stage"] = staging_dir
+        instance.data["repr.atoms._hardlinks"] = files
+        instance.data["repr.atoms.entryFileName"] = filename
+        instance.data["repr.atoms.variationFile"] = variation
+
+        cache_dir = staging_dir
+        cache_name = instance.data["subset"]
+
+        agent_groups = instance.data["AtomsAgentGroups"]
         MayaCommandsHostBridge.export_atoms_cache(cache_dir,
                                                   cache_name,
-                                                  start_frame,
-                                                  end_frame,
+                                                  start,
+                                                  end,
                                                   agent_groups)
 
-        variation_file = packager.file_name("json")
-        variation_path = os.path.join(package_path, variation_file)
-
+        variation_path = "%s/%s" % (staging_dir, variation)
         with open(variation_path, "w") as variation:
-            variation.write(self.data["variationStr"])
-
-        packager.add_data({
-            "entryFileName": entry_file,
-            "variationFile": variation_file,
-            "startFrame": start_frame,
-            "endFrame": end_frame,
-        })
+            variation.write(instance.data["variationStr"])

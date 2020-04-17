@@ -1,12 +1,9 @@
 
 import pyblish.api
-
-from maya import cmds
-
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectInvalidOutsiders(MayaSelectInvalidInstanceAction):
+class SelectInvalidOutsiders(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Select Outsiders"
 
@@ -33,6 +30,7 @@ class ValidateRigContents(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
+        from maya import cmds
 
         control_sets = instance.data["controlSets"]
         assert control_sets, "Must have 'ControlSet' in rig instance"

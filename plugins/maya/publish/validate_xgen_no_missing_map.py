@@ -1,6 +1,5 @@
 
 import pyblish.api
-import reveries.maya.xgen.legacy as xgen
 
 
 class ValidateXGenNoMissingMap(pyblish.api.InstancePlugin):
@@ -20,6 +19,7 @@ class ValidateXGenNoMissingMap(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
         from maya import cmds
+        import reveries.maya.xgen.legacy as xgen
 
         invalid = list()
 

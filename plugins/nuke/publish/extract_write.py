@@ -1,101 +1,75 @@
 
 import os
 import pyblish.api
-import reveries.utils
-import reveries.lib
-
-from avalon.vendor import clique
-from reveries.plugins import PackageExtractor
 
 
-class ExtractWrite(PackageExtractor):
+class ExtractWrite(pyblish.api.InstancePlugin):
     """Start GUI rendering if not delegate to Deadline
     """
 
     label = "Extract Write"
     order = pyblish.api.ExtractorOrder
     hosts = ["nuke"]
-
-    targets = ["localhost"]
-
     families = [
         "reveries.write",
     ]
 
-    representations = [
-        "imageSeq",
-    ]
-
-    def extract_imageSeq(self, packager):
+    def process(self, instance):
         """Extract per renderlayer that has AOVs (Arbitrary Output Variable)
         """
-        packager.skip_stage()
-        package_path = packager.create_package()
+        import nukescripts
 
-        self.log.info("Extracting render output..")
-        self.add_sequence(packager, self.data["outputPath"], package_path)
+        node = instance[0]
 
-    def add_sequence(self, packager, seq_path, package_path):
-        """
-        """
-        seq_dir, pattern = os.path.split(seq_path)
+        staging_path = instance.data["outputPath"]
+        staging_dir, pattern = os.path.split(staging_path)
+        published_dir = self.published_dir(instance)
 
-        self.log.info("Collecting sequence from: %s" % seq_dir)
-        assert os.path.isdir(seq_dir), "Sequence dir not exists."
+        if not os.path.isdir(staging_dir):
+            os.makedirs(staging_dir)
 
-        # (NOTE) Did not consider frame step (byFrame)
-        start_frame = self.data["startFrame"]
-        end_frame = self.data["endFrame"]
+        sequence = dict()
+        files = list()
 
-        patterns = [
-            clique.PATTERNS["frames"],
-            clique.DIGITS_PATTERN,
-        ]
-        minimum_items = 1 if start_frame == end_frame else 2
-        collections, _ = clique.assemble(os.listdir(seq_dir),
-                                         patterns=patterns,
-                                         minimum_items=minimum_items)
+        sequence["_"] = {
+            "imageFormat": instance.data["fileExt"],
+            "fpattern": pattern,
+            "resolution": instance.context.data["resolution"],
+        }
 
-        assert len(collections), "Extraction failed, no sequence found."
+        start = int(instance.data["startFrame"])
+        end = int(instance.data["endFrame"])
+        step = int(instance.data["step"])
 
-        for sequence in collections:
-            if pattern == (sequence.head +
-                           "#" * sequence.padding +
-                           sequence.tail):
-                break
-        else:
-            raise Exception("No sequence match this pattern: %s" % pattern)
+        fname = nukescripts.frame.replaceHashes(pattern)
+        for frame_num in range(start, end, step):
+            files.apppend(fname % frame_num)
 
-        entry_fname = (sequence.head +
-                       "%%0%dd" % sequence.padding +
-                       sequence.tail)
+        seq_pattern = os.path.join(published_dir, pattern).replace("\\", "/")
+        instance.data["publishedSeqPatternPath"] = seq_pattern
 
-        project = self.context.data["projectDoc"]
-        e_in, e_out, handles, _ = reveries.utils.get_timeline_data(project)
+        instance.data["repr.imageSeq._stage"] = staging_dir
+        instance.data["repr.imageSeq._hardlinks"] = files
+        instance.data["repr.imageSeq.sequence"] = sequence
+        instance.data["repr.imageSeq._delayRun"] = {
+            "func": self.render,
+            "args": [
+                node.fullName(),
+                start, end, step,
+            ],
+        }
 
-        packager.add_data({"sequence": {
-            "_": {
-                "imageFormat": self.data["fileExt"],
-                "fname": entry_fname,
-                "seqSrcDir": seq_dir,
-                "seqStart": list(sequence.indexes)[0],
-                "seqEnd": list(sequence.indexes)[-1],
-                "startFrame": start_frame,
-                "endFrame": end_frame,
-                "byFrameStep": self.data["byFrameStep"],
-                "edit_in": e_in,
-                "edit_out": e_out,
-                "handles": handles,
-                "resolution": self.context.data["resolution"],
-                "fps": self.context.data["fps"],
-            }
-        }})
+    def published_dir(self, instance):
+        template_publish = instance.data["publishPathTemplate"]
+        template_data = instance.data["publishPathTemplateData"]
+        published_dir = template_publish.format(representation="TexturePack",
+                                                **template_data)
+        return published_dir
 
-        for file in [entry_fname % i for i in sequence.indexes]:
-            src = seq_dir + "/" + file
-            dst = os.path.join(package_path, file)
-            packager.add_hardlink(src, dst)
+    def render(self, node, start, end, step):
+        import nuke
 
-        seq_pattern = os.path.join(package_path,
-                                   entry_fname).replace("\\", "/")
-        self.data["publishedSeqPatternPath"] = seq_pattern
+        nuke.render(node,
+                    start=start,
+                    end=end,
+                    incr=step)

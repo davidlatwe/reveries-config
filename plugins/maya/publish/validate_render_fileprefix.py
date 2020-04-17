@@ -1,6 +1,5 @@
 
 import pyblish.api
-from reveries.maya import lib
 
 
 class ValidateRenderFileNamePrefix(pyblish.api.InstancePlugin):
@@ -20,6 +19,8 @@ class ValidateRenderFileNamePrefix(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
         """filename prefix must set and have tags"""
+        from reveries.maya import lib
+
         prefix = instance.data["fileNamePrefix"] or ""
         cls.log.debug("Collected file name prefix: %s" % prefix)
 

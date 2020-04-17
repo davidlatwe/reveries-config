@@ -1,13 +1,12 @@
 
 import pyblish.api
-from maya import cmds
-from reveries import plugins
-from reveries.maya import pipeline, utils
 
 
 def create_texture_subset_from_look(instance, textures, use_txmaps):
     """
     """
+    from reveries import plugins
+
     family = "reveries.texture"
     subset = instance.data["subset"]
     subset = "texture" + subset[0].upper() + subset[1:]
@@ -32,6 +31,9 @@ class CollectLook(pyblish.api.InstancePlugin):
     families = ["reveries.look"]
 
     def process(self, instance):
+        from maya import cmds
+        from reveries.maya import pipeline, utils
+
         surfaces = cmds.ls(instance,
                            noIntermediate=True,
                            type="surfaceShape")

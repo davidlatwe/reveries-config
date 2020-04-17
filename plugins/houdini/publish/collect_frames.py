@@ -39,4 +39,7 @@ class CollectFrames(pyblish.api.InstancePlugin):
             output = hou.expandStringAtFrame(raw_output, frame)
             frames.add(output)
 
-        instance.data.update({"frameOutputs": sorted(frames)})
+        instance.data.update({
+            "frameOutputs": sorted(frames),
+            "singleOutput": len(frames) == 1,
+        })

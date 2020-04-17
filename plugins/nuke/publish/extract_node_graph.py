@@ -1,9 +1,8 @@
 
-import os
 import nuke
 import pyblish.api
 from avalon.nuke import lib
-from reveries.plugins import PackageExtractor
+from reveries import utils
 
 
 def walk_tree(node):
@@ -13,31 +12,28 @@ def walk_tree(node):
             yield n
 
 
-class ExtractNodeGraph(PackageExtractor):
+class ExtractNodeGraph(pyblish.api.InstancePlugin):
 
     label = "Extract Node Graph"
     order = pyblish.api.ExtractorOrder + 0.1
     hosts = ["nuke"]
-
     families = [
         "reveries.write",
     ]
 
-    representations = [
-        "nkscript",
-    ]
-
-    targets = ["localhost"]
-
-    def extract_nkscript(self, packager):
-        node = self.member[0]
-
-        package_path = packager.create_package()
+    def process(self, instance):
+        node = instance[0]
 
         ext = "nknc" if nuke.env["nc"] else "nk"
 
-        fname = packager.file_name(extension=ext)
-        fpath = os.path.join(package_path, fname)
+        staging_dir = utils.stage_dir()
+        filename = "%s.%s" % (instance.data["subset"], ext)
+        outpath = "%s/%s" % (staging_dir, filename)
+
+        instance.data["repr.nkscript._stage"] = staging_dir
+        instance.data["repr.nkscript._files"] = [filename]
+        instance.data["repr.nkscript.scriptName"] = filename
+        instance.data["repr.nkscript.outputNode"] = node.fullName()
 
         with lib.maintained_selection():
             lib.reset_selection()
@@ -47,14 +43,9 @@ class ExtractNodeGraph(PackageExtractor):
             if node.Class() == "Write":
                 # Swap image file path to published path bedore copy
                 output = node["file"].value()
-                node["file"].setValue(self.data["publishedSeqPatternPath"])
-                nuke.nodeCopy(fpath)
+                node["file"].setValue(instance.data["publishedSeqPatternPath"])
+                nuke.nodeCopy(outpath)
                 node["file"].setValue(output)
 
             else:
-                nuke.nodeCopy(fpath)
-
-        packager.add_data({
-            "outputNode": node.fullName(),
-            "scriptName": fname,
-        })
+                nuke.nodeCopy(outpath)

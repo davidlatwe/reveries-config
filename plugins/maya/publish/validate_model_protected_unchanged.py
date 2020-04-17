@@ -1,7 +1,6 @@
 
 import pyblish.api
-
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
 def _hash(mesh):
@@ -46,7 +45,7 @@ def get_protected(instance):
     return protected
 
 
-class SelectChanged(MayaSelectInvalidInstanceAction):
+class SelectChanged(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Invalid Modified"
     symptom = "changed"

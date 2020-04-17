@@ -1,38 +1,31 @@
 
-import os
 import contextlib
 import pyblish.api
 
-from maya import cmds
-from avalon import maya
 
-from reveries.plugins import PackageExtractor
-from reveries.maya import capsule, utils
-
-
-class ExtractRig(PackageExtractor):
+class ExtractRig(pyblish.api.InstancePlugin):
     """Extract rig as mayaBinary"""
 
-    label = "Extract Rig (mayaBinary)"
+    label = "Extract Rig (mb)"
     order = pyblish.api.ExtractorOrder
     hosts = ["maya"]
     families = ["reveries.rig"]
 
-    representations = [
-        "mayaBinary",
-    ]
+    def process(self, instance):
+        from maya import cmds
+        from avalon import maya
+        from reveries import utils
+        from reveries.maya import capsule
 
-    def extract_mayaBinary(self, packager):
-        # Define extract output file path
-        entry_file = packager.file_name("mb")
-        package_path = packager.create_package()
-        entry_path = os.path.join(package_path, entry_file)
+        staging_dir = utils.stage_dir()
+        filename = "%s.mb" % instance.data["subset"]
+        outpath = "%s/%s" % (staging_dir, filename)
 
         # Perform extraction
         self.log.info("Performing extraction..")
         with contextlib.nested(
             capsule.no_undo(),
-            capsule.no_display_layers(self.member),
+            capsule.no_display_layers(instance[:]),
             maya.maintained_selection(),
         ):
             with capsule.undo_chunk_when_no_undo():
@@ -69,19 +62,18 @@ class ExtractRig(PackageExtractor):
                 #   are dag connections that would make the model container be
                 #   exported as well, and we don't want that happens.
                 #   So we just remove them all for good.
-                for container in self.context.data["RootContainers"]:
+                for container in instance.context.data["RootContainers"]:
                     cmds.delete(container)
 
-                mesh_nodes = cmds.ls(self.member,
+                mesh_nodes = cmds.ls(instance,
                                      type="mesh",
                                      noIntermediate=True,
                                      long=True)
                 geo_id_and_hash = self.hash(set(mesh_nodes))
-                packager.add_data({"modelProfile": geo_id_and_hash})
 
-                cmds.select(cmds.ls(self.member), noExpand=True)
+                cmds.select(cmds.ls(instance), noExpand=True)
 
-                cmds.file(entry_path,
+                cmds.file(outpath,
                           force=True,
                           typ="mayaBinary",
                           exportSelected=True,
@@ -92,23 +84,22 @@ class ExtractRig(PackageExtractor):
                           constructionHistory=True,
                           shader=True)
 
-        packager.add_data({
-            "entryFileName": entry_file,
-        })
-
-        self.log.info("Extracted {name} to {path}".format(
-            name=self.data["subset"],
-            path=entry_path)
-        )
+        instance.data["repr.mayaBinary._stage"] = staging_dir
+        instance.data["repr.mayaBinary._files"] = [filename]
+        instance.data["repr.mayaBinary.entryFileName"] = filename
+        instance.data["repr.mayaBinary.modelProfile"] = geo_id_and_hash
 
     def hash(self, mesh_nodes):
+        from maya import cmds
+        from reveries.maya import utils as maya_utils
+
         # Hash model and collect Avalon UUID
         geo_id_and_hash = dict()
-        hasher = utils.MeshHasher()
+        hasher = maya_utils.MeshHasher()
         for mesh in mesh_nodes:
             # Get ID
             transform = cmds.listRelatives(mesh, parent=True, fullPath=True)[0]
-            id = utils.get_id(transform)
+            id = maya_utils.get_id(transform)
             assert id is not None, ("Some mesh has no Avalon UUID. "
                                     "This should not happend.")
             hasher.set_mesh(mesh)

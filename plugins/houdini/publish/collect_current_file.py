@@ -1,6 +1,5 @@
-import os
-import hou
 
+import os
 import pyblish.api
 
 
@@ -13,6 +12,7 @@ class CollectHoudiniCurrentFile(pyblish.api.ContextPlugin):
 
     def process(self, context):
         """Inject the current working file"""
+        import hou
 
         filepath = hou.hipFile.path()
         if not os.path.exists(filepath):

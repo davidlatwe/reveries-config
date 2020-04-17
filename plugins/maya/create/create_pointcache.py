@@ -19,11 +19,9 @@ class PointCacheCreator(avalon.maya.Creator):
     def process(self):
         # Build pipeline render settings
 
-        self.data["extractType"] = [
-            "Alembic",
-            "GPUCache",
-            "FBXCache",
-        ]
+        self.data["exportAlembic"] = True
+        self.data["exportGPUCache"] = True
+        self.data["exportFBXCache"] = False
 
         self.data["staticCache"] = False
         self.data["isDummy"] = False

@@ -4,9 +4,7 @@ import os
 import shutil
 import subprocess
 import pyblish.api
-
-from reveries.plugins import RepairInstanceAction
-from reveries.houdini.plugins import HoudiniSelectInvalidInstanceAction
+from reveries import plugins
 
 
 def open(filepath):
@@ -19,19 +17,19 @@ def open(filepath):
         subprocess.call(('xdg-open', filepath))
 
 
-class SelectInvalidNodes(HoudiniSelectInvalidInstanceAction):
+class SelectInvalidNodes(plugins.HoudiniSelectInvalidInstanceAction):
 
     label = "Select ROP Node"
     symptom = "node"
 
 
-class OpenStagingDirs(RepairInstanceAction):
+class OpenStagingDirs(plugins.RepairInstanceAction):
 
     label = "Open Folder"
     symptom = "by_open"
 
 
-class CleanUpStagingDirs(RepairInstanceAction):
+class CleanUpStagingDirs(plugins.RepairInstanceAction):
 
     label = "Delete Files"
     symptom = "by_remove"

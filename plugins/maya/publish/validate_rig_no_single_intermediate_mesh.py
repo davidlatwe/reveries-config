@@ -1,7 +1,6 @@
 
 import pyblish.api
-from reveries.plugins import depended_plugins_succeed
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
 class ValidateNoSingleIntermediateMesh(pyblish.api.InstancePlugin):
@@ -20,7 +19,7 @@ class ValidateNoSingleIntermediateMesh(pyblish.api.InstancePlugin):
 
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
     ]
 
     dependencies = [
@@ -38,7 +37,7 @@ class ValidateNoSingleIntermediateMesh(pyblish.api.InstancePlugin):
 
         invalid = list()
 
-        if not depended_plugins_succeed(cls, instance):
+        if not plugins.depended_plugins_succeed(cls, instance):
             raise Exception("Depended plugin failed. See error log.")
 
         for out_set in instance.data["outSets"]:

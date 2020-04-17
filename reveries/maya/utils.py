@@ -781,6 +781,18 @@ def get_render_resolution(layer=None):
     return width, height
 
 
+def get_render_padding(renderer):
+    if renderer == "vray":
+        from . import vray
+
+        if not cmds.objExists("vraySettings"):
+            vray.utils.create_vray_settings()
+
+        return cmds.getAttr("vraySettings.fileNamePadding")
+    else:
+        return cmds.getAttr("defaultRenderGlobals.extensionPadding")
+
+
 def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
     """
     """
@@ -789,7 +801,7 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
     multi_render_cams = len(lib.ls_renderable_cameras(layer)) > 1
     has_renderlayers = lib.ls_renderable_layers() != ["defaultRenderLayer"]
     is_animated = cmds.getAttr("defaultRenderGlobals.animation")
-    padding_str = ""
+    padding_str = "#" * get_render_padding(renderer)
     scene_name = cmds.file(query=True,
                            sceneName=True,
                            shortName=True).rsplit(".", 1)[0]
@@ -854,8 +866,6 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
             prefix = prefix + pass_sep + "rgba"
 
         if is_animated:
-            padding_str = "#" * cmds.getAttr("vraySettings.fileNamePadding")
-
             # When rendering to a non-raw format, vray places a period before
             # the padding, even though it doesn't show up in the render
             # globals filename.
@@ -890,9 +900,6 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
                 not any(t in prefix
                         for t in ["<RenderLayer>", "<Layer>", "%l"])):
             prefix = "/".join(["<RenderLayer>", prefix])
-
-        padding_str = "#" * cmds.getAttr("defaultRenderGlobals"
-                                         ".extensionPadding")
 
         with capsule.maintained_modification():
             cmds.setAttr("defaultRenderGlobals.imageFilePrefix",

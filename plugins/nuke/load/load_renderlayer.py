@@ -21,17 +21,12 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         "renderLayer",
     ]
 
-    def set_path(self, read, aov_name, file_name):
-        read["file"].setValue(
-            os.path.join(
-                self.package_path,
-                aov_name,  # AOV name
-                file_name,
-            ).replace("\\", "/")
-        )
+    def set_path(self, read, aov_name, path):
+        read["file"].setValue(path)
         read["label"].setValue(aov_name)
 
     def set_range(self, read, start, end):
+        start, end = int(start), int(end)
         read["first"].setValue(start)
         read["last"].setValue(end)
         read["origfirst"].setValue(start)
@@ -51,19 +46,30 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
     def load(self, context, name=None, namespace=None, options=None):
 
         representation = context["representation"]
+        version = context["version"]
+
+        start = version["data"]["startFrame"]
+        end = version["data"]["endFrame"]
 
         nodes = list()
 
-        for name, data in representation["data"]["sequence"].items():
+        for aov_name, data in representation["data"]["sequence"].items():
             read = nuke.Node("Read")
             nodes.append(read)
 
-            self.set_path(read, aov_name=name, file_name=data["fname"])
+            if "fname" in data:
+                tail = "%s/%s" % (aov_name, data["fname"])
+            else:
+                tail = data["fpattern"]
+
+            path = os.path.join(self.package_path, tail).replace("\\", "/")
+
+            self.set_path(read, aov_name=aov_name, path=path)
             self.set_format(read, data["resolution"])
-            self.set_range(read, start=data["seqStart"], end=data["seqEnd"])
+            self.set_range(read, start=start, end=end)
 
             # Mark aov name
-            lib.set_avalon_knob_data(read, {("aov", "AOV"): name})
+            lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
 
         asset = context["asset"]
 
@@ -82,6 +88,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         read_nodes = dict()
 
         parents = avalon.io.parenthood(representation)
+        version, subset, asset, project = parents
+
         self.package_path = get_representation_path_(representation, parents)
 
         for node in container["_members"]:
@@ -89,22 +97,21 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 data = lib.get_avalon_knob_data(node)
                 read_nodes[data["aov"]] = node
 
+        start = version["data"]["startFrame"]
+        end = version["data"]["endFrame"]
+
         with lib.sync_copies(list(read_nodes.values())):
-            for name, data in representation["data"]["sequence"].items():
-                read = read_nodes.get(name)
+            for aov_name, data in representation["data"]["sequence"].items():
+                read = read_nodes.get(aov_name)
                 if not read:
                     continue
 
-                self.set_path(read, aov_name=name, file_name=data["fname"])
+                self.set_path(read, aov_name=aov_name, file_name=data["fname"])
                 self.set_format(read, data["resolution"])
-                self.set_range(read,
-                               start=data["seqStart"],
-                               end=data["seqEnd"])
+                self.set_range(read, start=start, end=end)
 
         node = container["_node"]
         with lib.sync_copies([node], force=True):
-            version, subset, asset, project = parents
-
             asset_name = asset["data"].get("shortName", asset["name"])
             families = subset["data"]["families"]  # avalon-core:subset-3.0
             family_name = families[0].split(".")[-1]

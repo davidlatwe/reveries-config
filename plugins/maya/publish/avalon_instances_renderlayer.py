@@ -1,14 +1,12 @@
 
 import os
-from maya import cmds
-
 import pyblish.api
 import avalon.api
-import reveries.lib
-from reveries.maya import lib, utils
 
 
 def get_render_attr(attr, layer):
+    from reveries.maya import lib
+
     return lib.query_by_renderlayer("defaultRenderGlobals",
                                     attr,
                                     layer)
@@ -27,12 +25,11 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
     hosts = ["maya"]
     label = "Render Layers"
 
-    def process(self, context):
+    targets = ["deadline"]
 
-        if not (reveries.lib.to_remote() or reveries.lib.in_remote()):
-            self.log.info("Not in Deadline publish session. "
-                          "Skipping renderlayer collection.")
-            return
+    def process(self, context):
+        from maya import cmds
+        from reveries.maya import lib, utils
 
         asset = avalon.api.Session["AVALON_ASSET"]
         filepath = context.data["currentMaking"].replace("\\", "/")
@@ -68,7 +65,8 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
 
         # Context data
         workspace = context.data["workspaceDir"]
-        context.data["outputDir"] = os.path.join(workspace, "renders")
+        outputdir = os.path.join(workspace, "renders").replace("\\", "/")
+        context.data["outputDir"] = outputdir
         # Are there other renderlayer than defaultRenderLayer ?
         context.data["hasRenderLayers"] = len(valid_layers) > 1
         # Using Render Setup system ?
@@ -98,7 +96,7 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
                 "renderlayer": layer,
                 "startFrame": get_render_attr("startFrame", layer),
                 "endFrame": get_render_attr("endFrame", layer),
-                "byFrameStep": get_render_attr("byFrameStep", layer),
+                "step": get_render_attr("byFrameStep", layer),
                 "renderer": renderer,
                 "resolution": utils.get_render_resolution(layer),
                 "fileNamePrefix": utils.get_render_filename_prefix(layer),
@@ -162,6 +160,8 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
                 instance[:] += members
 
     def parse_render_globals(self, layer, render_globals):
+        from reveries.maya import lib
+
         overrides = dict()
 
         attributes = [

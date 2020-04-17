@@ -1,7 +1,6 @@
 
 import pyblish.api
 from reveries import plugins
-from reveries.maya import plugins as maya_plugins
 
 
 class RepairInvalid(plugins.RepairInstanceAction):
@@ -20,7 +19,7 @@ class ValidateShapeRenderStats(pyblish.api.Validator):
     ]
     actions = [
         pyblish.api.Category("Select"),
-        maya_plugins.MayaSelectInvalidInstanceAction,
+        plugins.MayaSelectInvalidInstanceAction,
         pyblish.api.Category("Fix"),
         RepairInvalid,
     ]

@@ -1,4 +1,5 @@
 from avalon import houdini
+from reveries import lib
 
 
 class CreateVDBCache(houdini.Creator):
@@ -21,6 +22,11 @@ class CreateVDBCache(houdini.Creator):
         # able to publish even current Avalon session is not in this
         # asset.
         self.data["assetConfirmed"] = False
+
+        self.data["deadlinePriority"] = 80
+        self.data["deadlinePool"] = lib.get_deadline_pools()
+        self.data["deadlineFramesPerTask"] = 1
+        self.data["deadlineSuspendJob"] = False
 
     def process(self):
         instance = super(CreateVDBCache, self).process()

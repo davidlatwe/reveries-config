@@ -1,11 +1,9 @@
 
 import pyblish.api
-
 from reveries import plugins
-from reveries.maya import plugins as maya_plugins
 
 
-class SelectAtomsSimNodes(maya_plugins.MayaSelectInvalidContextAction):
+class SelectAtomsSimNodes(plugins.MayaSelectInvalidContextAction):
 
     label = "Select Atoms Sim Nodes"
 

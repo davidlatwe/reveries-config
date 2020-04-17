@@ -1,10 +1,9 @@
 
 import pyblish.api
-from reveries.maya.xgen import legacy as xgen
-from reveries.maya.plugins import MayaSelectInvalidInstanceAction
+from reveries import plugins
 
 
-class SelectDuplicated(MayaSelectInvalidInstanceAction):
+class SelectDuplicated(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Select Duplicated"
 
@@ -30,6 +29,7 @@ class ValidateXGenUniqueNames(pyblish.api.InstancePlugin):
     @classmethod
     def get_invalid(cls, instance):
         from maya import cmds
+        from reveries.maya.xgen import legacy as xgen
 
         invalid = list()
 

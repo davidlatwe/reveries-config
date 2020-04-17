@@ -1,7 +1,6 @@
 
 import pyblish.api
-from reveries.plugins import context_process
-from reveries.maya.plugins import MayaSelectInvalidContextAction
+from reveries import plugins
 
 
 class ValidateNoNameCollision(pyblish.api.InstancePlugin):
@@ -15,10 +14,10 @@ class ValidateNoNameCollision(pyblish.api.InstancePlugin):
     ]
     actions = [
         pyblish.api.Category("Select"),
-        MayaSelectInvalidContextAction,
+        plugins.MayaSelectInvalidContextAction,
     ]
 
-    @context_process
+    @plugins.context_process
     def process(self, context):
         invalid = self.get_invalid(context)
 
