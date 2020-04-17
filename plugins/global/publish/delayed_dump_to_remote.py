@@ -167,6 +167,20 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
             "contextDump": None,  # Wait for context dump
             "id": instance.id,
         }
+
+        # Include optional data if present in (version data)
+        optionals = [
+            "startFrame",
+            "endFrame",
+            "step",
+            "handles",
+            "hasUnversionedSurfaces",
+        ]
+        for key in optionals:
+            if key in instance.data:
+                dump[key] = instance.data[key]
+
+        # Representation data
         for key in instance.data:
             if not key.startswith("repr."):
                 continue
