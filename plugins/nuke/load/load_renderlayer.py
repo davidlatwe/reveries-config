@@ -52,19 +52,19 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
         nodes = list()
 
-        for name, data in representation["data"]["sequence"].items():
+        for aov_name, data in representation["data"]["sequence"].items():
             read = nuke.Node("Read")
             nodes.append(read)
 
-            tail = data.get("fpattern", "%s/%s" % (name, data["fname"]))
+            tail = data.get("fpattern", "%s/%s" % (aov_name, data["fname"]))
             path = os.path.join(self.package_path, tail).replace("\\", "/")
 
-            self.set_path(read, aov_name=name, path=path)
+            self.set_path(read, aov_name=aov_name, path=path)
             self.set_format(read, data["resolution"])
             self.set_range(read, start=start, end=end)
 
             # Mark aov name
-            lib.set_avalon_knob_data(read, {("aov", "AOV"): name})
+            lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
 
         asset = context["asset"]
 
@@ -96,12 +96,12 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         end = version["data"]["endFrame"]
 
         with lib.sync_copies(list(read_nodes.values())):
-            for name, data in representation["data"]["sequence"].items():
-                read = read_nodes.get(name)
+            for aov_name, data in representation["data"]["sequence"].items():
+                read = read_nodes.get(aov_name)
                 if not read:
                     continue
 
-                self.set_path(read, aov_name=name, file_name=data["fname"])
+                self.set_path(read, aov_name=aov_name, file_name=data["fname"])
                 self.set_format(read, data["resolution"])
                 self.set_range(read, start=start, end=end)
 
