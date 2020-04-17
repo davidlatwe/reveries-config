@@ -20,7 +20,7 @@ class ExtractCamera(pyblish.api.InstancePlugin):
         from reveries import utils
         from reveries.maya import lib, utils as maya_utils
 
-        staging_dir = utils.stage_dir()
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
 
         context_data = instance.context.data
         start = context_data["startFrame"]
