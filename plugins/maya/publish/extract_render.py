@@ -102,7 +102,11 @@ class ExtractRender(pyblish.api.InstancePlugin):
                 # groups = all_groups[:]
                 groups = ["lgroups"]  # ALl light groups get merged in batch
             else:
-                groups = cmds.getAttr(aov_node + ".lightGroupsList").split(" ")
+                group_list = cmds.getAttr(aov_node + ".lightGroupsList")
+                groups = [group for group in group_list.split(" ") if group]
+
+            if not groups:
+                continue
 
             fnprefix = maya_utils.get_render_filename_prefix(renderlayer)
             for group in groups:
