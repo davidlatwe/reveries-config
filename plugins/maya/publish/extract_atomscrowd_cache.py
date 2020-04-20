@@ -39,7 +39,7 @@ class ExtractAtomsCrowdCache(pyblish.api.InstancePlugin):
         variation = "%s.json" % instance.data["subset"]  # Crowd Variation
 
         files = [frames % (f, x)
-                 for f in range(start, end)
+                 for f in range(start, end + 1)
                  for x in ("frame", "header", "meta", "pose")]
         files += [agent_type % agtype for agtype in agent_types]
         files += [agent_script % agtype for agtype in agent_types]
