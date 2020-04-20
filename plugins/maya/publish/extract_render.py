@@ -86,7 +86,7 @@ class ExtractRender(pyblish.api.InstancePlugin):
         from mtoa import aovs
         from reveries.maya import arnold, capsule, utils as maya_utils
 
-        all_groups = arnold.get_all_light_groups()
+        # all_groups = arnold.get_all_light_groups()
         lighting_aovs = aovs.getLightingAOVs()
 
         for aov_node in arnold.get_arnold_aov_nodes(renderlayer):
@@ -99,7 +99,8 @@ class ExtractRender(pyblish.api.InstancePlugin):
 
             if cmds.getAttr(aov_node + ".lightGroups"):
                 # All light groups
-                groups = all_groups[:]
+                # groups = all_groups[:]
+                groups = ["lgroups"]  # ALl light groups get merged in batch
             else:
                 groups = cmds.getAttr(aov_node + ".lightGroupsList").split(" ")
 
