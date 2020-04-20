@@ -42,7 +42,7 @@ class ExtractWrite(pyblish.api.InstancePlugin):
         step = int(instance.data["step"])
 
         fname = nukescripts.frame.replaceHashes(pattern)
-        for frame_num in range(start, end, step):
+        for frame_num in range(start, end + 1, step):
             files.apppend(fname % frame_num)
 
         seq_pattern = os.path.join(published_dir, pattern).replace("\\", "/")
