@@ -24,6 +24,9 @@ class CleanupStage(pyblish.api.ContextPlugin):
             if not instance.data.get("publish", True):
                 continue
 
+            if instance.data["family"] == "reveries.renderlayer":
+                continue
+
             stage_dirs = [value for key, value in instance.data.items()
                           if re.match(r"repr\.[a-zA-Z_]*\._stage", key)
                           and os.path.isdir(value)]
