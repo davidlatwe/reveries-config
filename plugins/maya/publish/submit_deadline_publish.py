@@ -134,8 +134,16 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                 renderer = instance.data["renderer"]
                 rendercam = instance.data["camera"]
 
+                output_path_keys = dict()
+                outpaths = instance.data["outputPaths"]
+                for count, outpath in enumerate(outpaths.values()):
+                    head, tail = os.path.split(outpath)
+                    output_path_keys["OutputDirectory%d" % count] = head
+                    output_path_keys["OutputFilename%d" % count] = tail
+
                 payload["JobInfo"]["Frames"] = frames
                 payload["JobInfo"]["ChunkSize"] = frame_per_task
+                payload["JobInfo"].update(output_path_keys)
 
                 payload["PluginInfo"] = {
                     # Input
