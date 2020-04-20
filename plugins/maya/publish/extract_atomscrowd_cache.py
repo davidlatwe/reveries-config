@@ -15,16 +15,8 @@ class ExtractAtomsCrowdCache(pyblish.api.InstancePlugin):
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
 
-        if instance.data.get("useCustomRange"):
-            start = int(instance.data["startFrame"])
-            end = int(instance.data["endFrame"])
-        else:
-            context = instance.context
-            start = int(context.data["startFrame"])
-            end = int(context.data["endFrame"])
-
-            instance.data["startFrame"] = start
-            instance.data["endFrame"] = end
+        start = int(instance.data["startFrame"])
+        end = int(instance.data["endFrame"])
 
         # Get agentTypes
         agent_types = set()
@@ -37,6 +29,7 @@ class ExtractAtomsCrowdCache(pyblish.api.InstancePlugin):
         agent_script = "agentTypes/%s.py"  # Python event wrapper script
         frames = "%s.%%04d.%%s.atoms" % instance.data["subset"]  # Frame files
         variation = "%s.json" % instance.data["subset"]  # Crowd Variation
+        # (NOTE) Atoms Crowd cache padding is always 4
 
         files = [frames % (f, x)
                  for f in range(start, end + 1)
