@@ -96,7 +96,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
         if out_sets:
             # Cacheables from OutSet of loaded subset
             out_cache = dict()
-            subset = instance.data["subset"][len("pointcache"):]
+            subset = backup.data["subset"][len("pointcache"):]
 
             for out_set in out_sets:
 
@@ -126,8 +126,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                         members.remove(n)
 
             # Re-Create instances
-            context = instance.context
-            source_data = instance.data
+            context = backup.context
 
             for k, (has_hidden, cacheables) in out_cache.items():
                 namespace, name = k
@@ -151,7 +150,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance = context.create_instance(namespace + "." + name)
                 created = True
 
-                instance.data.update(source_data)
+                instance.data.update(backup.data)
 
                 # New subset name
                 #
@@ -164,7 +163,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance.data["startFrame"] = start_frame
                 instance.data["endFrame"] = end_frame
 
-                self.add_families(instance, source_data)
+                self.add_families(instance)
 
         if not members:
             # Nothing left, all in/has OutSet
@@ -193,7 +192,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             instance.data["startFrame"] = start_frame
             instance.data["endFrame"] = end_frame
 
-            self.add_families(instance, instance.data)
+            self.add_families(instance)
 
     def pick_locators(self, members):
         import maya.cmds as cmds
@@ -202,23 +201,23 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                                   parent=True,
                                   fullPath=True) or []
 
-    def add_families(self, instance, source):
+    def add_families(self, instance):
 
         families = list()
 
-        if "extractType" in source:  # For backward compat
+        if "extractType" in instance.data:  # For backward compat
             families.append({
                 "Alembic": "reveries.pointcache.abc",
                 "GPUCache": "reveries.pointcache.gpu",
                 "FBXCache": "reveries.pointcache.fbx",
-            }[source.pop("extractType")])
+            }[instance.data.pop("extractType")])
 
         else:
-            if source.pop("exportAlembic"):
+            if instance.data.pop("exportAlembic"):
                 families.append("reveries.pointcache.abc")
-            if source.pop("exportGPUCache"):
+            if instance.data.pop("exportGPUCache"):
                 families.append("reveries.pointcache.gpu")
-            if source.pop("exportFBXCache"):
+            if instance.data.pop("exportFBXCache"):
                 families.append("reveries.pointcache.fbx")
 
         instance.data["families"] = families
