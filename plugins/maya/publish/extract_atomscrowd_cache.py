@@ -37,6 +37,7 @@ class ExtractAtomsCrowdCache(pyblish.api.InstancePlugin):
         agent_script = "agentTypes/%s.py"  # Python event wrapper script
         frames = "%s.%%04d.%%s.atoms" % instance.data["subset"]  # Frame files
         variation = "%s.json" % instance.data["subset"]  # Crowd Variation
+        # (NOTE) Atoms Crowd cache padding is always 4
 
         files = [frames % (f, x)
                  for f in range(start, end + 1)

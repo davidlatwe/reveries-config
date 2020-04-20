@@ -85,9 +85,12 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
         # Ensure option created
         arnold.utils.create_options()
 
-        arnold_tx_settings = {
+        render_settings = {
+            # Disable Auto TX update and enable to use existing TX
             "defaultArnoldRenderOptions.autotx": False,
             "defaultArnoldRenderOptions.use_existing_tiled_textures": True,
+            # Ensure frame padding == 4
+            "defaultRenderGlobals.extensionPadding": 4,
         }
 
         # Yeti
@@ -108,8 +111,8 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
             capsule.attribute_states(file_node_attrs.keys(), lock=False),
             # Change to published path
             capsule.attribute_values(file_node_attrs),
-            # Disable Auto TX update and enable to use existing TX
-            capsule.attribute_values(arnold_tx_settings),
+            # Fixed render settings
+            capsule.attribute_values(render_settings),
         ):
             cmds.select(nodes, replace=True)
             asses = cmds.arnoldExportAss(filename=outpath,
