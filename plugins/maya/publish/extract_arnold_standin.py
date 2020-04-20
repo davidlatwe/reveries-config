@@ -37,7 +37,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
         use_sequence = start != end
         if use_sequence:
             instance.data["repr.Ass._hardlinks"] = [
-                pattern % i for i in range(start, end, step)]
+                pattern % i for i in range(start, end + 1, step)]
         else:
             instance.data["repr.Ass._hardlinks"] = [firstfile]
 

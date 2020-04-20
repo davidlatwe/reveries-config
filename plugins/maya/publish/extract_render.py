@@ -65,7 +65,7 @@ class ExtractRender(pyblish.api.InstancePlugin):
             step = int(instance.data["step"])
 
             fname = pattern.replace(padding_str, frame_str)
-            for frame_num in range(start, end, step):
+            for frame_num in range(start, end + 1, step):
                 files.append(fname % frame_num)
 
         instance.data["outputPaths"] = outputs
