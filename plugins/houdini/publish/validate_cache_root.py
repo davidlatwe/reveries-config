@@ -29,4 +29,5 @@ class ValidateCacheRoot(pyblish.api.InstancePlugin):
             os.path.relpath(output, cache_root)
         except ValueError as e:
             self.log.error(e)
-            raise Exception("Please write output under %s" % cache_root)
+            raise Exception("Please write output under %s, "
+                            "or use '$JOB' over '$HIP'." % cache_root)
