@@ -56,6 +56,8 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
         else:
             file_node_attrs = texture.data.get("fileNodeAttrs", dict())
 
+        expand_procedurals = instance.data.get("expandProcedurals", True)
+
         instance.data["repr.Ass._delayRun"] = {
             "func": self.export_ass,
             "args": [
@@ -68,6 +70,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                 "start": start,
                 "end": end,
                 "step": step,
+                "expand_procedurals": expand_procedurals,
             }
         }
 
@@ -78,7 +81,8 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                    has_yeti,
                    start,
                    end,
-                   step):
+                   step,
+                   expand_procedurals=True):
         from maya import cmds, mel
         from reveries.maya import arnold, capsule
 
@@ -120,7 +124,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                                          startFrame=start,
                                          endFrame=end,
                                          frameStep=step,
-                                         expandProcedurals=True,
+                                         expandProcedurals=expand_procedurals,
                                          boundingBox=True,
                                          # Mask:
                                          #      Shapes,
