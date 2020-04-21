@@ -116,6 +116,10 @@ class ExtractRender(pyblish.api.InstancePlugin):
         """
         fnprefix = maya_utils.get_render_filename_prefix(layer)
 
+        def setext(path, ext):
+            path, _ = os.path.splitext(path)
+            return path + "." + ext
+
         for aov_node in aov_nodes:
             aov_name = cmds.getAttr(aov_node + ".name")
             groups = light_groups.get(aov_node, [])
@@ -126,22 +130,24 @@ class ExtractRender(pyblish.api.InstancePlugin):
             drivers = cmds.listConnections(aov_node + ".outputs[*].driver",
                                            source=True,
                                            destination=False) or []
-            for i in range(len(drivers)):
+            for i, driver in enumerate(drivers):
                 if i == 0:
                     driver_suffix = ""
                 else:
                     driver_suffix = "_%d" % i
+
+                ext = cmds.getAttr(driver + ".aiTranslator")
 
                 if driver_suffix:
                     ftprefix = fnprefix + driver_suffix
                     with capsule.attribute_values({
                         "defaultRenderGlobals.imageFilePrefix": ftprefix
                     }):
-                        gpattern = maya_utils.compose_render_filename(layer,
-                                                                      aov_name,
-                                                                      camera)
+                        pattern = maya_utils.compose_render_filename(layer,
+                                                                     aov_name,
+                                                                     camera)
                         aov_dv_name = aov_name + driver_suffix
-                        output_path = staging_dir + "/" + gpattern
+                        output_path = staging_dir + "/" + setext(pattern, ext)
                         outputs[aov_dv_name] = output_path.replace("\\", "/")
 
                 for group in groups:
@@ -149,11 +155,11 @@ class ExtractRender(pyblish.api.InstancePlugin):
                     with capsule.attribute_values({
                         "defaultRenderGlobals.imageFilePrefix": grprefix
                     }):
-                        gpattern = maya_utils.compose_render_filename(layer,
-                                                                      aov_name,
-                                                                      camera)
+                        pattern = maya_utils.compose_render_filename(layer,
+                                                                     aov_name,
+                                                                     camera)
                         aov_lg_name = aov_name + "_" + group + driver_suffix
-                        output_path = staging_dir + "/" + gpattern
+                        output_path = staging_dir + "/" + setext(pattern, ext)
                         outputs[aov_lg_name] = output_path.replace("\\", "/")
 
     def render(self):
