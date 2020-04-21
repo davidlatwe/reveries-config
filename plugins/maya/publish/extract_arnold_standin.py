@@ -56,6 +56,8 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
         else:
             file_node_attrs = texture.data.get("fileNodeAttrs", dict())
 
+        expand_procedurals = instance.data.get("expandProcedurals", True)
+
         instance.data["repr.Ass._delayRun"] = {
             "func": self.export_ass,
             "args": [
@@ -68,6 +70,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                 "start": start,
                 "end": end,
                 "step": step,
+                "expand_procedurals": expand_procedurals,
             }
         }
 
@@ -78,16 +81,20 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                    has_yeti,
                    start,
                    end,
-                   step):
+                   step,
+                   expand_procedurals=True):
         from maya import cmds, mel
         from reveries.maya import arnold, capsule
 
         # Ensure option created
         arnold.utils.create_options()
 
-        arnold_tx_settings = {
+        render_settings = {
+            # Disable Auto TX update and enable to use existing TX
             "defaultArnoldRenderOptions.autotx": False,
             "defaultArnoldRenderOptions.use_existing_tiled_textures": True,
+            # Ensure frame padding == 4
+            "defaultRenderGlobals.extensionPadding": 4,
         }
 
         # Yeti
@@ -108,8 +115,8 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
             capsule.attribute_states(file_node_attrs.keys(), lock=False),
             # Change to published path
             capsule.attribute_values(file_node_attrs),
-            # Disable Auto TX update and enable to use existing TX
-            capsule.attribute_values(arnold_tx_settings),
+            # Fixed render settings
+            capsule.attribute_values(render_settings),
         ):
             cmds.select(nodes, replace=True)
             asses = cmds.arnoldExportAss(filename=outpath,
@@ -117,7 +124,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                                          startFrame=start,
                                          endFrame=end,
                                          frameStep=step,
-                                         expandProcedurals=True,
+                                         expandProcedurals=expand_procedurals,
                                          boundingBox=True,
                                          # Mask:
                                          #      Shapes,

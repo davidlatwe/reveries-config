@@ -461,6 +461,21 @@ def query_by_setuplayer(node, attr, layer):
     return root
 
 
+def has_renderlayer_override(node, attr):
+    if is_using_renderSetup():
+        from maya.app.renderSetup.model import renderSetup
+        return renderSetup.hasOverrideApplied(node, attr)
+    else:
+        name = "%s.%s" % (node, attr)
+        current_layer = cmds.editRenderLayerGlobals(query=True,
+                                                    currentRenderLayer=True)
+        if current_layer == "defaultRenderLayer":
+            return False
+        return name in cmds.editRenderLayerAdjustment(current_layer,
+                                                      query=True,
+                                                      layer=True) or []
+
+
 def is_visible(node,
                displayLayer=True,
                intermediateObject=True,

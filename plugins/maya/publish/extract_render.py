@@ -38,10 +38,10 @@ class ExtractRender(pyblish.api.InstancePlugin):
         frame_str = "%%0%dd" % padding
 
         if renderer == "arnold":
-            self.get_arnold_light_groups(staging_dir,
-                                         renderlayer,
-                                         camera,
-                                         outputs)
+            self.get_arnold_extra_aov_outputs(staging_dir,
+                                              renderlayer,
+                                              camera,
+                                              outputs)
 
         # Assume the rendering has been completed at this time being,
         # start to check and extract the rendering outputs
@@ -77,45 +77,84 @@ class ExtractRender(pyblish.api.InstancePlugin):
             "func": self.render,
         }
 
-    def get_arnold_light_groups(self,
-                                staging_dir,
-                                renderlayer,
-                                camera,
-                                outputs):
+    def get_arnold_extra_aov_outputs(self,
+                                     staging_dir,
+                                     layer,
+                                     camera,
+                                     outputs):
         from maya import cmds
         from mtoa import aovs
         from reveries.maya import arnold, capsule, utils as maya_utils
 
+        aov_nodes = arnold.get_arnold_aov_nodes(layer)
+
+        """Parse light groups
+        """
         # all_groups = arnold.get_all_light_groups()
         lighting_aovs = aovs.getLightingAOVs()
+        light_groups = dict()
 
-        for aov_node in arnold.get_arnold_aov_nodes(renderlayer):
+        for aov_node in aov_nodes:
             aov_name = cmds.getAttr(aov_node + ".name")
             if aov_name not in lighting_aovs:
                 continue
-
-            if aov_name == "RGBA":
-                aov_name = "beauty"
 
             if cmds.getAttr(aov_node + ".lightGroups"):
                 # All light groups
                 # groups = all_groups[:]
                 groups = ["lgroups"]  # ALl light groups get merged in batch
             else:
-                groups = cmds.getAttr(aov_node + ".lightGroupsList").split(" ")
+                group_list = cmds.getAttr(aov_node + ".lightGroupsList")
+                groups = [group for group in group_list.split(" ") if group]
 
-            fnprefix = maya_utils.get_render_filename_prefix(renderlayer)
-            for group in groups:
-                grprefix = fnprefix + "_" + group
-                with capsule.attribute_values({
-                    "defaultRenderGlobals.imageFilePrefix": grprefix
-                }):
-                    gpattern = maya_utils.compose_render_filename(renderlayer,
-                                                                  aov_name,
-                                                                  camera)
-                    aov_lg_name = aov_name + "_" + group
-                    output_path = staging_dir + "/" + gpattern
-                    outputs[aov_lg_name] = output_path.replace("\\", "/")
+            if not groups:
+                continue
+
+            light_groups[aov_node] = groups
+
+        """Parse drivers
+        """
+        fnprefix = maya_utils.get_render_filename_prefix(layer)
+
+        for aov_node in aov_nodes:
+            aov_name = cmds.getAttr(aov_node + ".name")
+            groups = light_groups.get(aov_node, [])
+
+            if aov_name == "RGBA":
+                aov_name = "beauty"
+
+            drivers = cmds.listConnections(aov_node + ".outputs[*].driver",
+                                           source=True,
+                                           destination=False) or []
+            for i in range(len(drivers)):
+                if i == 0:
+                    driver_suffix = ""
+                else:
+                    driver_suffix = "_%d" % i
+
+                if driver_suffix:
+                    ftprefix = fnprefix + driver_suffix
+                    with capsule.attribute_values({
+                        "defaultRenderGlobals.imageFilePrefix": ftprefix
+                    }):
+                        gpattern = maya_utils.compose_render_filename(layer,
+                                                                      aov_name,
+                                                                      camera)
+                        aov_dv_name = aov_name + driver_suffix
+                        output_path = staging_dir + "/" + gpattern
+                        outputs[aov_dv_name] = output_path.replace("\\", "/")
+
+                for group in groups:
+                    grprefix = fnprefix + "_" + group + driver_suffix
+                    with capsule.attribute_values({
+                        "defaultRenderGlobals.imageFilePrefix": grprefix
+                    }):
+                        gpattern = maya_utils.compose_render_filename(layer,
+                                                                      aov_name,
+                                                                      camera)
+                        aov_lg_name = aov_name + "_" + group + driver_suffix
+                        output_path = staging_dir + "/" + gpattern
+                        outputs[aov_lg_name] = output_path.replace("\\", "/")
 
     def render(self):
         pass

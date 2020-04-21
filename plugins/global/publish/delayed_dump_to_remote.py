@@ -121,7 +121,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
                         c.id for c in instance.data.get("childInstances", [])
                     ],
                 }
-                for instance in context
+                for instance in instances
             ],
         }
 

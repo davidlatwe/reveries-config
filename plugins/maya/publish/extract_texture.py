@@ -212,6 +212,10 @@ class ExtractTexture(pyblish.api.InstancePlugin):
         template_data = instance.data["publishPathTemplateData"]
         published_dir = template_publish.format(representation="TexturePack",
                                                 **template_data)
+        if not os.path.isdir(published_dir):
+            # Ensure dir exists, even no new or changed texture files
+            os.makedirs(published_dir)
+
         return plugins.env_embedded_path(published_dir)
 
     def stage_textures(self, staging_dir, files_to_copy):

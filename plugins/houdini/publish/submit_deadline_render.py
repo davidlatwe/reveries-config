@@ -186,6 +186,15 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         submitter = instance.context.data["deadlineSubmitter"]
         environment = submitter.environment()
 
+        optional_vars = [
+            "AVALON_CACHE_ROOT",
+            "JOB",
+        ]
+        for var in optional_vars:
+            value = os.getenv(var)
+            if value:
+                environment[var] = value
+
         dumped = ";".join(instance.data["dumpedExtractors"])
         environment["PYBLISH_EXTRACTOR_DUMPS"] = dumped
 
