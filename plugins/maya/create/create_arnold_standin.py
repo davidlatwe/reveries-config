@@ -26,6 +26,7 @@ class ArnoldStandInCreator(avalon.maya.Creator):
         #        motionBlur state in Arnold.
 
         self.data["staticCache"] = True
+        self.data["expandProcedurals"] = True
 
         self.data["deadlinePriority"] = 80
         self.data["deadlinePool"] = lib.get_deadline_pools()
