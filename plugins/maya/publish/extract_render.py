@@ -86,50 +86,45 @@ class ExtractRender(pyblish.api.InstancePlugin):
         from mtoa import aovs
         from reveries.maya import arnold, capsule, utils as maya_utils
 
-        aov_nodes = arnold.get_arnold_aov_nodes(layer)
-
-        """Parse light groups
-        """
-        # all_groups = arnold.get_all_light_groups()
+        all_groups = arnold.get_all_light_groups()
         lighting_aovs = aovs.getLightingAOVs()
-        light_groups = dict()
-
-        for aov_node in aov_nodes:
-            aov_name = cmds.getAttr(aov_node + ".name")
-            if aov_name not in lighting_aovs:
-                continue
-
-            if cmds.getAttr(aov_node + ".lightGroups"):
-                # All light groups
-                # groups = all_groups[:]
-                groups = ["lgroups"]  # ALl light groups get merged in batch
-            else:
-                group_list = cmds.getAttr(aov_node + ".lightGroupsList")
-                groups = [group for group in group_list.split(" ") if group]
-
-            if not groups:
-                continue
-
-            light_groups[aov_node] = groups
-
-        """Parse drivers
-        """
         fnprefix = maya_utils.get_render_filename_prefix(layer)
 
         def setext(path, ext):
             path, _ = os.path.splitext(path)
             return path + "." + ext
 
-        for aov_node in aov_nodes:
+        for aov_node in arnold.get_arnold_aov_nodes(layer):
             aov_name = cmds.getAttr(aov_node + ".name")
-            groups = light_groups.get(aov_node, [])
-
-            if aov_name == "RGBA":
-                aov_name = "beauty"
 
             drivers = cmds.listConnections(aov_node + ".outputs[*].driver",
                                            source=True,
                                            destination=False) or []
+            all_exr = all(cmds.getAttr(d + ".aiTranslator") == "exr"
+                          for d in drivers)
+
+            # Get light groups
+
+            if aov_name in lighting_aovs:
+                if cmds.getAttr(aov_node + ".lightGroups"):
+                    # All light groups
+                    if all_exr:
+                        # ALl light groups get merged in *batch* and
+                        # all drivers are set to EXR
+                        groups = ["lgroups"]
+                    else:
+                        groups = all_groups[:]
+                else:
+                    group_list = cmds.getAttr(aov_node + ".lightGroupsList")
+                    groups = [grp for grp in group_list.split(" ") if grp]
+            else:
+                groups = []
+
+            # Compute outputs from all drivers
+
+            if aov_name == "RGBA":
+                aov_name = "beauty"
+
             for i, driver in enumerate(drivers):
                 if i == 0:
                     driver_suffix = ""
@@ -139,9 +134,9 @@ class ExtractRender(pyblish.api.InstancePlugin):
                 ext = cmds.getAttr(driver + ".aiTranslator")
 
                 if driver_suffix:
-                    ftprefix = fnprefix + driver_suffix
+                    prefix = fnprefix + driver_suffix
                     with capsule.attribute_values({
-                        "defaultRenderGlobals.imageFilePrefix": ftprefix
+                        "defaultRenderGlobals.imageFilePrefix": prefix
                     }):
                         pattern = maya_utils.compose_render_filename(layer,
                                                                      aov_name,
@@ -151,9 +146,9 @@ class ExtractRender(pyblish.api.InstancePlugin):
                         outputs[aov_dv_name] = output_path.replace("\\", "/")
 
                 for group in groups:
-                    grprefix = fnprefix + "_" + group + driver_suffix
+                    prefix = fnprefix + "_" + group + driver_suffix
                     with capsule.attribute_values({
-                        "defaultRenderGlobals.imageFilePrefix": grprefix
+                        "defaultRenderGlobals.imageFilePrefix": prefix
                     }):
                         pattern = maya_utils.compose_render_filename(layer,
                                                                      aov_name,
