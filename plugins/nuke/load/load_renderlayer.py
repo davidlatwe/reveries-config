@@ -2,9 +2,11 @@
 import os
 import nuke
 import avalon.api
-from avalon.nuke import pipeline, lib
+from collections import OrderedDict
+from avalon.nuke import pipeline, lib, command
 from reveries.plugins import PackageLoader
 from reveries.utils import get_representation_path_
+from reveries.nuke import lib as nuke_lib
 
 
 class RenderLayerLoader(PackageLoader, avalon.api.Loader):
@@ -47,42 +49,68 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
         representation = context["representation"]
         version = context["version"]
-
-        start = version["data"]["startFrame"]
-        end = version["data"]["endFrame"]
-
-        nodes = list()
-
-        for aov_name, data in representation["data"]["sequence"].items():
-            read = nuke.Node("Read")
-            nodes.append(read)
-
-            if "fname" in data:
-                tail = "%s/%s" % (aov_name, data["fname"])
-            else:
-                tail = data["fpattern"]
-
-            path = os.path.join(self.package_path, tail).replace("\\", "/")
-
-            self.set_path(read, aov_name=aov_name, path=path)
-            self.set_format(read, data["resolution"])
-            self.set_range(read, start=start, end=end)
-
-            # Mark aov name
-            lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
-
         asset = context["asset"]
 
         asset_name = asset["data"].get("shortName", asset["name"])
         families = context["subset"]["data"]["families"]
         family_name = families[0].split(".")[-1]
+        name = name or context["subset"]["name"]
         namespace = namespace or "%s_%s" % (asset_name, family_name)
-        pipeline.containerise(name=context["subset"]["name"],
-                              namespace=namespace,
-                              nodes=nodes,
-                              context=context,
-                              loader=self.__class__.__name__,
-                              no_backdrop=True)
+
+        start = version["data"]["startFrame"]
+        end = version["data"]["endFrame"]
+
+        lib.reset_selection()
+
+        with command.viewer_update_and_undo_stop():
+            group = nuke.createNode("Group")
+            group.begin()
+
+            aovs = OrderedDict()
+            sequences = representation["data"]["sequence"]
+            has_beauty = "beauty" in sequences
+
+            for aov_name, data in [(k, sequences[k]) for k in
+                                   sorted(sequences, key=lambda k: k.lower())]:
+                read = nuke.Node("Read")
+                read["selected"].setValue(False)
+                read.autoplace()
+                aovs[aov_name] = read
+
+                if "fname" in data:
+                    tail = "%s/%s" % (aov_name, data["fname"])
+                else:
+                    tail = data["fpattern"]
+
+                path = os.path.join(self.package_path, tail).replace("\\", "/")
+
+                self.set_path(read, aov_name=aov_name, path=path)
+                self.set_format(read, data["resolution"])
+                self.set_range(read, start=start, end=end)
+
+                # Mark aov name
+                lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
+
+            beauty = aovs.pop("beauty") if has_beauty else aovs.popitem()[1]
+            nuke_lib.exr_merge(beauty, aovs.values())
+
+            output = nuke.createNode("Output")
+            output.autoplace()
+
+            group.end()
+
+            stamp = nuke.createNode("PostageStamp")
+            stamp.setName(namespace)
+            group.setName(name)
+
+            nodes = [stamp, group] + group.nodes()
+
+            return pipeline.containerise(name=name,
+                                         namespace=namespace,
+                                         nodes=nodes,
+                                         context=context,
+                                         loader=self.__class__.__name__,
+                                         no_backdrop=True)
 
     def update(self, container, representation):
         read_nodes = dict()
@@ -106,7 +134,14 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 if not read:
                     continue
 
-                self.set_path(read, aov_name=aov_name, file_name=data["fname"])
+                if "fname" in data:
+                    tail = "%s/%s" % (aov_name, data["fname"])
+                else:
+                    tail = data["fpattern"]
+
+                path = os.path.join(self.package_path, tail).replace("\\", "/")
+
+                self.set_path(read, aov_name=aov_name, path=path)
                 self.set_format(read, data["resolution"])
                 self.set_range(read, start=start, end=end)
 
@@ -127,7 +162,15 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         nodes = list(container["_members"])
         nodes.append(container["_node"])
 
+        delete_bin = list()
         for node in nodes:
             for copy in lib.find_copies(node):
-                nuke.delete(copy)
-            nuke.delete(node)
+                delete_bin.append(copy)
+            delete_bin.append(node)
+
+        with command.viewer_update_and_undo_stop():
+            for node in delete_bin:
+                try:
+                    nuke.delete(node)
+                except ValueError:
+                    pass
