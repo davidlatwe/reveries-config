@@ -134,7 +134,14 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 if not read:
                     continue
 
-                self.set_path(read, aov_name=aov_name, file_name=data["fname"])
+                if "fname" in data:
+                    tail = "%s/%s" % (aov_name, data["fname"])
+                else:
+                    tail = data["fpattern"]
+
+                path = os.path.join(self.package_path, tail).replace("\\", "/")
+
+                self.set_path(read, aov_name=aov_name, path=path)
                 self.set_format(read, data["resolution"])
                 self.set_range(read, start=start, end=end)
 
@@ -155,7 +162,15 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         nodes = list(container["_members"])
         nodes.append(container["_node"])
 
+        delete_bin = list()
         for node in nodes:
             for copy in lib.find_copies(node):
-                nuke.delete(copy)
-            nuke.delete(node)
+                delete_bin.append(copy)
+            delete_bin.append(node)
+
+        with command.viewer_update_and_undo_stop():
+            for node in delete_bin:
+                try:
+                    nuke.delete(node)
+                except ValueError:
+                    pass
