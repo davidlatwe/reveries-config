@@ -1,11 +1,11 @@
 
-import os
 import nuke
 import avalon.api
 from collections import OrderedDict
 from avalon.nuke import pipeline, lib, command
 from reveries.plugins import PackageLoader
 from reveries.utils import get_representation_path_
+from reveries.tools import seqparser
 from reveries.nuke import lib as nuke_lib
 
 
@@ -60,6 +60,13 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         start = version["data"]["startFrame"]
         end = version["data"]["endFrame"]
 
+        sequences = seqparser.show_on_stray(
+            root=self.package_path,
+            sequences=representation["data"]["sequence"],
+            framerange=(start, end),
+            parent=pipeline.get_main_window(),
+        )
+
         lib.reset_selection()
 
         with command.viewer_update_and_undo_stop():
@@ -67,7 +74,6 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             group.begin()
 
             aovs = OrderedDict()
-            sequences = representation["data"]["sequence"]
             has_beauty = "beauty" in sequences
 
             for aov_name, data in [(k, sequences[k]) for k in
@@ -77,14 +83,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 read.autoplace()
                 aovs[aov_name] = read
 
-                if "fname" in data:
-                    tail = "%s/%s" % (aov_name, data["fname"])
-                else:
-                    tail = data["fpattern"]
-
-                path = os.path.join(self.package_path, tail).replace("\\", "/")
-
-                self.set_path(read, aov_name=aov_name, path=path)
+                self.set_path(read, aov_name=aov_name, path=data["_resolved"])
                 self.set_format(read, data["resolution"])
                 self.set_range(read, start=start, end=end)
 
@@ -128,20 +127,20 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         start = version["data"]["startFrame"]
         end = version["data"]["endFrame"]
 
+        sequences = seqparser.show_on_stray(
+            root=self.package_path,
+            sequences=representation["data"]["sequence"],
+            framerange=(start, end),
+            parent=pipeline.get_main_window(),
+        )
+
         with lib.sync_copies(list(read_nodes.values())):
-            for aov_name, data in representation["data"]["sequence"].items():
+            for aov_name, data in sequences.items():
                 read = read_nodes.get(aov_name)
                 if not read:
                     continue
 
-                if "fname" in data:
-                    tail = "%s/%s" % (aov_name, data["fname"])
-                else:
-                    tail = data["fpattern"]
-
-                path = os.path.join(self.package_path, tail).replace("\\", "/")
-
-                self.set_path(read, aov_name=aov_name, path=path)
+                self.set_path(read, aov_name=aov_name, path=data["_resolved"])
                 self.set_format(read, data["resolution"])
                 self.set_range(read, start=start, end=end)
 
