@@ -12,6 +12,9 @@ class ValidateDeadlineScheduling(pyblish.api.ContextPlugin):
         invalid = set()
 
         for instance in context:
+            if not instance.data.get("publish", True):
+                continue
+
             if "deadlinePriority" in instance.data:
                 invalid.add(self.check_priority(instance))
 
