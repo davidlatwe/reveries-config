@@ -97,16 +97,20 @@ class ExtractLook(pyblish.api.InstancePlugin):
 
         # Animatable attrs
         # Custom attributes in assembly node which require to be animated.
-        self.log.info("Serialising animatable attributes..")
-        animatable = dict()
-        root = cmds.ls(instance.data["dagMembers"], assemblies=True)
-        if root:
-            root = root[0]
-            for attr in cmds.listAttr(root, userDefined=True) or list():
-                animatable[attr] = cmds.listConnections(root + "." + attr,
-                                                        destination=True,
-                                                        source=False,
-                                                        plugs=True)
+        self.log.info("Serialising 'avnlook_' prefixed attributes..")
+        avnlook_anim = dict()
+        for node in cmds.ls(instance.data["dagMembers"], type="transform"):
+            id = maya_utils.get_id(node)
+            user_attrs = cmds.listAttr(node, userDefined=True) or []
+            for attr in user_attrs:
+                if not attr.startswith("avnlook_"):
+                    continue
+                connected = cmds.listConnections(node + "." + attr,
+                                                 source=False,
+                                                 destination=True,
+                                                 plugs=True)
+                if connected:
+                    avnlook_anim[id + "." + attr] = connected
 
         surfaces = cmds.ls(instance.data["dagMembers"],
                            noIntermediate=True,
@@ -238,7 +242,7 @@ class ExtractLook(pyblish.api.InstancePlugin):
 
         relationships = {
             "shaderById": shader_by_id,
-            "animatable": animatable,
+            "avnlookAttrs": avnlook_anim,
             "uvChooser": uv_chooser,
             "creaseSets": crease_sets,
             "arnoldAttrs": arnold_attrs,

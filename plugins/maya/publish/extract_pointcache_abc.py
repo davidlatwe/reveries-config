@@ -106,5 +106,6 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
                     ],
                     attrPrefix=[
                         "ai",  # Write out Arnold attributes
+                        "avnlook_",  # Write out lookDev controls
                     ],
                 )
