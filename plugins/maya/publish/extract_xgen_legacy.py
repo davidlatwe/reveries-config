@@ -55,10 +55,10 @@ class ExtractXGenLegacy(pyblish.api.InstancePlugin):
                     self.log.critical(msg)
                     raise OSError(msg)
 
-            for root, _, files in os.walk(map_stage):
+            for root, _, fnames in os.walk(map_stage):
                 relative = os.path.relpath(root, staging_dir)
                 relative = "" if relative == "." else (relative + "/")
-                for file in files:
+                for file in fnames:
                     map_file = relative + file
                     files.append(map_file)
 
@@ -79,10 +79,10 @@ class ExtractXGenLegacy(pyblish.api.InstancePlugin):
                 xgen.export_grooming(desc, groom, groom_path)
 
                 # Walk groom_path and add into files
-                for root, _, files in os.walk(groom_path):
+                for root, _, fnames in os.walk(groom_path):
                     relative = os.path.relpath(root, staging_dir)
                     relative = "" if relative == "." else (relative + "/")
-                    for file in files:
+                    for file in fnames:
                         groom_file = relative + file
                         files.append(groom_file)
 
