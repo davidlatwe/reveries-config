@@ -463,9 +463,9 @@ class HierarchicalLoader(MayaBaseLoader):
                 try:
                     sub_hierarchy = hierarchy[data["containerId"]]
                 except KeyError:
-                    self.log.warning("Asset possibly been removed in parent "
-                                     "asset. Container ID: %s",
-                                     data["containerId"])
+                    self.log.debug("Asset possibly been removed in parent "
+                                   "asset. Container ID: %s",
+                                   data["containerId"])
                     continue
 
                 child_ident, member_data = sub_hierarchy.popitem()

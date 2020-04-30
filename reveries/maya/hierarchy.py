@@ -212,7 +212,7 @@ def container_from_id_path(container_id_path, parent_namespace):
                     print("    " + node)
             print("---------------------")
         """
-        _log.warning(message % (container_id_path, parent_namespace))
+        _log.debug(message % (container_id_path, parent_namespace))
 
         return None
 
@@ -234,8 +234,8 @@ def container_from_id_path(container_id_path, parent_namespace):
             break
 
     if not len(walkers):
-        cmds.warning("Container Id %s not found under namespace %s, "
-                     "this is a bug." % (container_id_path, parent_namespace))
+        _log.debug("Container Id %s not found under namespace %s, possibly "
+                   "been removed." % (container_id_path, parent_namespace))
         return None
 
     elif len(walkers) > 1:
