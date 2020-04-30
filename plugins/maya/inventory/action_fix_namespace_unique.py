@@ -78,7 +78,9 @@ class FixNamespaceUnique(avalon.api.InventoryAction):
                 cached_document[id] = doc
             return doc
 
-        for container in containers:
+        for container in sorted(containers,
+                                key=lambda c: c["namespace"],
+                                reverse=True):
             namespace = container["namespace"]
             filter = {"id": "pyblish.avalon.container", "namespace": namespace}
             if len(lib.lsAttrs(filter)) == 1:
@@ -97,9 +99,11 @@ class FixNamespaceUnique(avalon.api.InventoryAction):
                 family = version["data"]["families"][0]
             family_name = family.split(".")[-1]
 
+            parent_namespace = namespace.rsplit(":", 1)[0]
             new_namespace = pipeline.unique_root_namespace(
                 asset_name=asset_name,
                 family_name=family_name,
+                parent_namespace=parent_namespace[1:],
             )
 
             CON = container["objectName"]
@@ -113,7 +117,7 @@ class FixNamespaceUnique(avalon.api.InventoryAction):
             else:
                 cmds.namespace(add=new_namespace)
 
-            for node in members:
+            for node in sorted(members, reverse=True):
                 if not cmds.objExists(node):
                     continue
                 if cmds.referenceQuery(node, isNodeReferenced=True):
@@ -124,7 +128,7 @@ class FixNamespaceUnique(avalon.api.InventoryAction):
                 new = "|".join(p.replace(namespace[1:], new_namespace[1:], 1)
                                for p in node.split("|"))
                 if node != new:
-                    cmds.rename(node, new)
+                    cmds.rename(node, new.split("|")[-1])
 
             cmds.setAttr(CON + ".namespace", new_namespace, type="string")
             container["namespace"] = new_namespace
