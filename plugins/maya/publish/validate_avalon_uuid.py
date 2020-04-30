@@ -239,7 +239,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         asset_id = str(instance.context.data["assetDoc"]["_id"])
 
         family = instance.data["family"]
-        required_types = pipeline.uuid_required_node_types(family)
+        required_types = set(pipeline.uuid_required_node_types(family))
 
         nodes = cmds.ls(instance, long=True)  # Ensure existed nodes
         lock_state = cmds.lockNode(nodes, query=True, lock=True)
@@ -248,7 +248,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
                 cls.log.debug("Skipping locked node: %s" % node)
                 continue
 
-            if cmds.nodeType(node) not in required_types:
+            node_types = set(cmds.nodeType(node, inherited=True))
+            if not node_types.intersection(required_types):
                 continue
 
             if node in group_nodes:

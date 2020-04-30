@@ -499,7 +499,7 @@ def uuid_required_node_types(family):
         else:
             raise
 
-    return list(types)
+    return types
 
 
 def has_turntable():
