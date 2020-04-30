@@ -599,7 +599,8 @@ class HierarchicalLoader(MayaBaseLoader):
                 current_members[namespace_old] = data_old
 
         # Update sub-subsets
-        cache_container_by_id()
+        if not container.get("_cached", False):
+            cache_container_by_id()
         namespace = container["namespace"]
         group_name = self.group_name(namespace, container["name"])
 

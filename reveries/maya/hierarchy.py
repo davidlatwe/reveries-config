@@ -400,6 +400,8 @@ def change_subset(container, namespace, root, data_new, data_old, force):
     """
     from avalon.pipeline import get_representation_context
 
+    container["_cached"] = True
+
     is_repr_diff = (data_old["representation"] !=
                     data_new["representation"])
     has_override = (data_old["representation"] !=
