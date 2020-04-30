@@ -223,13 +223,12 @@ def container_from_id_path(container_id_path,
             break
 
     if len(walkers) > 1:
-        raise RuntimeError("Container Id %s not unique under namespace %s, "
-                           "this is a bug."
-                           % (container_id_path, parent_namespace))
+        cmds.warning("Container Id %s not unique under namespace %s, "
+                     "this is a bug." % (container_id_path, parent_namespace))
     if not len(walkers):
-        raise RuntimeError("Container Id %s not found under namespace %s, "
-                           "this is a bug."
-                           % (container_id_path, parent_namespace))
+        cmds.warning("Container Id %s not found under namespace %s, "
+                     "this is a bug." % (container_id_path, parent_namespace))
+        return
 
     container = next(iter(walkers.keys()))
 
