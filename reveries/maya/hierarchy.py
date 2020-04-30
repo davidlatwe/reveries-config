@@ -315,6 +315,7 @@ def add_subset(data, namespace, root, on_update=None):
     options = {
         "containerId": data["containerId"],
         "hierarchy": data["hierarchy"],
+        "_cached": True,
     }
 
     sub_container = avalon.api.load(data["loaderCls"],

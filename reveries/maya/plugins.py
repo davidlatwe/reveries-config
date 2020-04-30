@@ -504,7 +504,8 @@ class HierarchicalLoader(MayaBaseLoader):
         update_id_verifiers(hierarchy)
 
         # Load sub-subsets
-        cache_container_by_id()
+        if not options.get("_cached", False):
+            cache_container_by_id()
         sub_containers = []
         for data in members:
 
