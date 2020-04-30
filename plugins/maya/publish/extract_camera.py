@@ -69,6 +69,8 @@ class ExtractCamera(pyblish.api.InstancePlugin):
 
         euler_filter = instance.data.get("eulerFilter", False)
 
+        duplicate_input_graph = bool(cmds.ls(instance, type="stereoRigCamera"))
+
         instance.data["repr.mayaAscii._stage"] = staging_dir
         instance.data["repr.mayaAscii._files"] = [ma_filename]
         instance.data["repr.mayaAscii.entryFileName"] = ma_filename
@@ -100,6 +102,9 @@ class ExtractCamera(pyblish.api.InstancePlugin):
                 do_bake,
                 donot_bake
             ],
+            "kwargs": {
+                "duplicate_input_graph": duplicate_input_graph,
+            }
         }
 
     def extract_all(self,
@@ -112,7 +117,8 @@ class ExtractCamera(pyblish.api.InstancePlugin):
                     step,
                     euler_filter,
                     do_bake,
-                    donot_bake):
+                    donot_bake,
+                    duplicate_input_graph=False):
         from maya import cmds
         from reveries.maya import io, lib, capsule
 
@@ -127,9 +133,11 @@ class ExtractCamera(pyblish.api.InstancePlugin):
 
                 # bake to worldspace
                 frame_range = (start, end)
-                baked_camera = lib.bake_to_world_space(cam_transform,
-                                                       frame_range,
-                                                       step=step)[0]
+                baked_camera = lib.bake_to_world_space(
+                    cam_transform,
+                    frame_range,
+                    step=step,
+                    duplicate_input_graph=duplicate_input_graph)[0]
                 delete_bin.append(baked_camera)
 
                 cmds.select(baked_camera,
