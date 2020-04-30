@@ -634,6 +634,9 @@ class HierarchicalLoader(MayaBaseLoader):
                 else:
                     # Update, but Loaders are different, remove first, add
                     # later.
+                    con_id = sub_container["containerId"]
+                    con_node = ":" + sub_container["objectName"]
+                    cache_container_by_id(remove=(con_id, con_node))
                     avalon.api.remove(sub_container)
                     add_list.append(data_new)
 

@@ -135,7 +135,7 @@ def container_to_id_path(container):
 _cached_container_by_id = {"_": None}
 
 
-def cache_container_by_id(add=None):
+def cache_container_by_id(add=None, remove=None):
     if add:
         container = add
         container_by_id = _cached_container_by_id["_"]
@@ -146,6 +146,14 @@ def cache_container_by_id(add=None):
 
         node = ":" + container["objectName"]
         container_by_id[id].add(node)
+
+        return
+
+    elif remove:
+        id, node = remove
+        container_by_id = _cached_container_by_id["_"]
+
+        container_by_id[id].remove(node)
 
         return
 
@@ -240,7 +248,7 @@ def container_from_id_path(container_id_path, parent_namespace):
         container = next(iter(walkers.keys()))
 
     # Remove resolved container from cache
-    cached_containers[leaf_id].remove(container)
+    cache_container_by_id(remove=(leaf_id, container))
 
     return container
 
