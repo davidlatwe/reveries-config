@@ -17,7 +17,7 @@ class UpdateNamespace(avalon.api.InventoryAction):
     label = "Update Namespace"
     icon = "wrench"
     color = "#F13A3A"
-    order = -100
+    order = -101
 
     @staticmethod
     def is_compatible(container):
