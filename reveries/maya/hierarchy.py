@@ -2,6 +2,7 @@
 import contextlib
 import logging
 import avalon.io
+from collections import OrderedDict
 
 from maya import cmds
 from avalon.maya.pipeline import (
@@ -162,9 +163,7 @@ def cache_container_by_id(add=None):
     _cached_container_by_id["_"] = container_by_id
 
 
-def container_from_id_path(container_id_path,
-                           parent_namespace,
-                           cached_containers=None):
+def container_from_id_path(container_id_path, parent_namespace):
     """Find container node from container id path
 
     Args:
@@ -176,22 +175,25 @@ def container_from_id_path(container_id_path,
 
     """
     container_ids = container_id_path.split("|")
+    cached_containers = _cached_container_by_id["_"]
+
+    leaf_id = container_ids.pop()  # leaf container id
 
     if cached_containers is None:
         leaf_containers = lib.lsAttr("containerId",
-                                     container_ids.pop(),  # leaf container id
+                                     leaf_id,
                                      parent_namespace + "::")
     else:
         leaf_containers = [
             node for node in
-            cached_containers.get(container_ids.pop(), [])
+            cached_containers.get(leaf_id, [])
             if node.startswith(parent_namespace + ":")
         ]
 
     if not leaf_containers:
         message = ("No leaf containers with Id %s under namespace %s, "
                    "possibly been removed in parent asset.")
-
+        """For debug
         if cached_containers:
             message += " (Using cache)"
             # Listing cache for debug
@@ -201,16 +203,17 @@ def container_from_id_path(container_id_path,
                 for node in nodes:
                     print("    " + node)
             print("---------------------")
-
+        """
         _log.warning(message % (container_id_path, parent_namespace))
 
         return None
 
-    walkers = {leaf: climb_container_id(leaf) for leaf in leaf_containers}
+    walkers = OrderedDict([(leaf, climb_container_id(leaf))
+                           for leaf in leaf_containers])
 
     while container_ids:
         con_id = container_ids.pop()
-        next_walkers = dict()
+        next_walkers = OrderedDict()
 
         for leaf, walker in walkers.items():
             _id = next(walker)
@@ -222,15 +225,22 @@ def container_from_id_path(container_id_path,
         if len(walkers) == 1:
             break
 
-    if len(walkers) > 1:
-        cmds.warning("Container Id %s not unique under namespace %s, "
-                     "this is a bug." % (container_id_path, parent_namespace))
     if not len(walkers):
         cmds.warning("Container Id %s not found under namespace %s, "
                      "this is a bug." % (container_id_path, parent_namespace))
-        return
+        return None
 
-    container = next(iter(walkers.keys()))
+    elif len(walkers) > 1:
+        cmds.warning("Container Id %s not unique under namespace %s, "
+                     "this is a bug." % (container_id_path, parent_namespace))
+        # (NOTE) This shuold have been resolved in this commit, but just in
+        #        case and take a wild guess.
+        container = next(reversed(walkers.keys()))
+    else:
+        container = next(iter(walkers.keys()))
+
+    # Remove resolved container from cache
+    cached_containers[leaf_id].remove(container)
 
     return container
 
