@@ -14,7 +14,7 @@ class UpdateNamespace(avalon.api.InventoryAction):
     the container if namespace not consistent.
 
     """
-    label = "Update Namespace"
+    label = "Namespace Dirty"
     icon = "wrench"
     color = "#F13A3A"
     order = -101

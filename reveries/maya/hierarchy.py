@@ -2,6 +2,7 @@
 import contextlib
 import logging
 import avalon.io
+from collections import OrderedDict
 
 from maya import cmds
 from avalon.maya.pipeline import (
@@ -134,7 +135,7 @@ def container_to_id_path(container):
 _cached_container_by_id = {"_": None}
 
 
-def cache_container_by_id(add=None):
+def cache_container_by_id(add=None, remove=None):
     if add:
         container = add
         container_by_id = _cached_container_by_id["_"]
@@ -145,6 +146,14 @@ def cache_container_by_id(add=None):
 
         node = ":" + container["objectName"]
         container_by_id[id].add(node)
+
+        return
+
+    elif remove:
+        id, node = remove
+        container_by_id = _cached_container_by_id["_"]
+
+        container_by_id[id].remove(node)
 
         return
 
@@ -162,9 +171,7 @@ def cache_container_by_id(add=None):
     _cached_container_by_id["_"] = container_by_id
 
 
-def container_from_id_path(container_id_path,
-                           parent_namespace,
-                           cached_containers=None):
+def container_from_id_path(container_id_path, parent_namespace):
     """Find container node from container id path
 
     Args:
@@ -176,22 +183,25 @@ def container_from_id_path(container_id_path,
 
     """
     container_ids = container_id_path.split("|")
+    cached_containers = _cached_container_by_id["_"]
+
+    leaf_id = container_ids.pop()  # leaf container id
 
     if cached_containers is None:
         leaf_containers = lib.lsAttr("containerId",
-                                     container_ids.pop(),  # leaf container id
+                                     leaf_id,
                                      parent_namespace + "::")
     else:
         leaf_containers = [
             node for node in
-            cached_containers.get(container_ids.pop(), [])
+            cached_containers.get(leaf_id, [])
             if node.startswith(parent_namespace + ":")
         ]
 
     if not leaf_containers:
         message = ("No leaf containers with Id %s under namespace %s, "
                    "possibly been removed in parent asset.")
-
+        """For debug
         if cached_containers:
             message += " (Using cache)"
             # Listing cache for debug
@@ -201,16 +211,17 @@ def container_from_id_path(container_id_path,
                 for node in nodes:
                     print("    " + node)
             print("---------------------")
-
-        _log.warning(message % (container_id_path, parent_namespace))
+        """
+        _log.debug(message % (container_id_path, parent_namespace))
 
         return None
 
-    walkers = {leaf: climb_container_id(leaf) for leaf in leaf_containers}
+    walkers = OrderedDict([(leaf, climb_container_id(leaf))
+                           for leaf in leaf_containers])
 
     while container_ids:
         con_id = container_ids.pop()
-        next_walkers = dict()
+        next_walkers = OrderedDict()
 
         for leaf, walker in walkers.items():
             _id = next(walker)
@@ -222,15 +233,22 @@ def container_from_id_path(container_id_path,
         if len(walkers) == 1:
             break
 
-    if len(walkers) > 1:
+    if not len(walkers):
+        _log.debug("Container Id %s not found under namespace %s, possibly "
+                   "been removed." % (container_id_path, parent_namespace))
+        return None
+
+    elif len(walkers) > 1:
         cmds.warning("Container Id %s not unique under namespace %s, "
                      "this is a bug." % (container_id_path, parent_namespace))
-    if not len(walkers):
-        cmds.warning("Container Id %s not found under namespace %s, "
-                     "this is a bug." % (container_id_path, parent_namespace))
-        return
+        # (NOTE) This shuold have been resolved in this commit, but just in
+        #        case and take a wild guess.
+        container = next(reversed(walkers.keys()))
+    else:
+        container = next(iter(walkers.keys()))
 
-    container = next(iter(walkers.keys()))
+    # Remove resolved container from cache
+    cache_container_by_id(remove=(leaf_id, container))
 
     return container
 
@@ -315,6 +333,7 @@ def add_subset(data, namespace, root, on_update=None):
     options = {
         "containerId": data["containerId"],
         "hierarchy": data["hierarchy"],
+        "_cached": True,
     }
 
     sub_container = avalon.api.load(data["loaderCls"],
@@ -388,6 +407,8 @@ def change_subset(container, namespace, root, data_new, data_old, force):
     """
     """
     from avalon.pipeline import get_representation_context
+
+    container["_cached"] = True
 
     is_repr_diff = (data_old["representation"] !=
                     data_new["representation"])

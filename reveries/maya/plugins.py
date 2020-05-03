@@ -463,9 +463,9 @@ class HierarchicalLoader(MayaBaseLoader):
                 try:
                     sub_hierarchy = hierarchy[data["containerId"]]
                 except KeyError:
-                    self.log.warning("Asset possibly been removed in parent "
-                                     "asset. Container ID: %s",
-                                     data["containerId"])
+                    self.log.debug("Asset possibly been removed in parent "
+                                   "asset. Container ID: %s",
+                                   data["containerId"])
                     continue
 
                 child_ident, member_data = sub_hierarchy.popitem()
@@ -504,7 +504,8 @@ class HierarchicalLoader(MayaBaseLoader):
         update_id_verifiers(hierarchy)
 
         # Load sub-subsets
-        cache_container_by_id()
+        if not options.get("_cached", False):
+            cache_container_by_id()
         sub_containers = []
         for data in members:
 
@@ -598,7 +599,8 @@ class HierarchicalLoader(MayaBaseLoader):
                 current_members[namespace_old] = data_old
 
         # Update sub-subsets
-        cache_container_by_id()
+        if not container.get("_cached", False):
+            cache_container_by_id()
         namespace = container["namespace"]
         group_name = self.group_name(namespace, container["name"])
 
@@ -632,6 +634,9 @@ class HierarchicalLoader(MayaBaseLoader):
                 else:
                     # Update, but Loaders are different, remove first, add
                     # later.
+                    con_id = sub_container["containerId"]
+                    con_node = ":" + sub_container["objectName"]
+                    cache_container_by_id(remove=(con_id, con_node))
                     avalon.api.remove(sub_container)
                     add_list.append(data_new)
 
