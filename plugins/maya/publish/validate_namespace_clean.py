@@ -4,8 +4,8 @@ from reveries import plugins
 from reveries.plugins import context_process
 
 
-class ValidateNamespaceUpdated(pyblish.api.InstancePlugin):
-    """Ensure container imprinted namespace updated
+class ValidateNamespaceClean(pyblish.api.InstancePlugin):
+    """Ensure container namespace is not dirty
 
     Sometimes subset's namespace may change or remove due to scene import
     or other reason. If that happened and container's imprinted attribute
@@ -14,7 +14,7 @@ class ValidateNamespaceUpdated(pyblish.api.InstancePlugin):
 
     """
 
-    label = "Namespace Updated"
+    label = "Namespace Clean"
     order = pyblish.api.ValidatorOrder + 0
     hosts = ["maya"]
     families = ["reveries.setdress"]
@@ -29,7 +29,7 @@ class ValidateNamespaceUpdated(pyblish.api.InstancePlugin):
     def process(self, context):
         invalids = self.get_invalid(context)
         if invalids:
-            raise Exception("Container namespace corrupted. Click 'Fix It' "
+            raise Exception("Container namespace dirty. Click 'Fix It' "
                             "to reslove.")
 
     @classmethod
