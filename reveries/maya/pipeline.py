@@ -112,14 +112,21 @@ def get_container_from_namespace(namespace):
     Returns a str
 
     """
-    nodes = lib.lsAttrs({"id": AVALON_CONTAINER_ID}, namespace=namespace)
+    nodes = lib.lsAttrs({"id": AVALON_CONTAINER_ID},
+                        # (TODO) This `namespace` should be attribute, not
+                        #        node's namespace.
+                        namespace=namespace)
+
+    if not nodes:
+        raise RuntimeError("No matched container, this is a bug.")
 
     if "*" in namespace:
         return nodes
 
-    if not len(nodes) == 1:
-        raise RuntimeError("Has none or more then one container, "
-                           "this is a bug.")
+    if len(nodes) > 1:
+        cmds.warning("Has more then one matched container, "
+                     "returning first matched.")
+
     return nodes[0]
 
 
