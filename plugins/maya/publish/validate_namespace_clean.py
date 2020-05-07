@@ -47,6 +47,8 @@ class ValidateNamespaceClean(pyblish.api.InstancePlugin):
         invalids = list()
 
         for container in containers:
+            if not container.get("subsetGroup"):
+                continue
             namespace = lib.get_ns(container["subsetGroup"])
             if container["namespace"] != namespace:
                 invalids.append(container)
