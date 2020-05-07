@@ -89,12 +89,13 @@ class AssetOutliner(QtWidgets.QWidget):
 
     def on_all_loaded(self):
         """Add all items from the current scene"""
+        items = list()
 
         with lib.preserve_expanded_rows(self.view):
             with lib.preserve_selection(self.view):
                 self.clear()
                 nodes = commands.get_all_asset_nodes()
-                items = commands.create_items(nodes)
+                items += commands.create_items(nodes)
                 self.add_items(items)
 
         return len(items) > 0

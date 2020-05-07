@@ -12,6 +12,7 @@ from ....utils import get_representation_path_
 from ....maya import lib, utils
 from ...pipeline import (
     get_container_from_namespace,
+    iter_containers_from_namespace,
     get_group_from_container,
     parse_container,
 )
@@ -45,8 +46,8 @@ def group_from_namespace(namespace):
         str: group node in long name
 
     """
-    container = get_container_from_namespace(namespace)
-    return get_group_from_container(container)
+    for container in iter_containers_from_namespace(namespace):
+        yield get_group_from_container(container)
 
 
 def get_asset_id(node):
@@ -131,17 +132,27 @@ def get_all_asset_nodes():
         # (TODO): This black list should be somewhere else
         if container["loader"] in ("LookLoader",
                                    "CameraLoader",
+                                   "ArnoldAssLoader",
+                                   "SetDressLoader",
                                    "LightSetLoader"):
             continue
 
         # Gather all information
-        container_name = container["objectName"]
         subset = container["name"]
         namespace = container["namespace"]
 
-        for node in cmds.ls(cmds.sets(container_name,
-                                      query=True,
-                                      nodesOnly=True)):
+        # (NOTE) Previously, nodes was collecting from container objectSet,
+        #        but container may lost it's member nodes during production.
+        #        So change to get asset nodes from hierarchy to ensure user
+        #        always gets all loaded subsets.
+        group = container.get("subsetGroup")
+        if not group:
+            continue
+
+        for node in cmds.listRelatives(group,
+                                       allDescendents=True,
+                                       path=True,
+                                       type="transform"):
 
             asset_id = get_asset_id(node)
             if asset_id is None:
@@ -221,9 +232,9 @@ def create_items(nodes, by_selection=False):
         else:
             for namespace in namespaces:
                 selection = set()
-                group = group_from_namespace(namespace)
-                if group is not None:
-                    selection.add(group)
+                for group in group_from_namespace(namespace):
+                    if group is not None:
+                        selection.add(group)
                 namespace_selection[namespace] = selection
 
         asset_view_items.append({"label": asset["name"],
