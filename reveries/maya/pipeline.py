@@ -123,6 +123,20 @@ def get_container_from_namespace(namespace):
     return nodes[0]
 
 
+def iter_containers_from_namespace(namespace):
+    """Yield container nodes from namespace
+
+    Arguments:
+        namespace (str): Namespace string
+
+    Yield str
+
+    """
+    for node in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
+                             "namespace": namespace}):
+        yield node
+
+
 def get_container_from_group(group):
     """Return container node from subset group
 
