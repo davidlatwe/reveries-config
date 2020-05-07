@@ -2,7 +2,6 @@
 import avalon.api
 from avalon.pipeline import AVALON_CONTAINER_ID
 from reveries.maya.plugins import ReferenceLoader
-from reveries.maya.vendor import sticker
 
 
 class MayaShareLoader(ReferenceLoader, avalon.api.Loader):
@@ -23,6 +22,7 @@ class MayaShareLoader(ReferenceLoader, avalon.api.Loader):
 
     def process_reference(self, context, name, namespace, group, options):
         import maya.cmds as cmds
+        from reveries.maya.vendor import sticker
 
         representation = context["representation"]
 
