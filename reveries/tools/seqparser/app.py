@@ -7,6 +7,7 @@ from avalon.tools import lib as tools_lib
 from avalon import style
 
 from ...lib import pindict
+from ... import plugins
 from . import widgets, command
 
 
@@ -104,9 +105,18 @@ class Window(QtWidgets.QDialog):
         max_sequence = 50
         for i, item in enumerate(command.ls_sequences(path)):
             if i > max_sequence:
-                # (TODO) Prompt dialog asking continue the process or not
-                print("Too many sequences.")
-                return
+                # Prompt dialog asking continue the process or not
+                respond = plugins.message_box_warning(
+                    title="Warning",
+                    message=("Found over %d sequences, do you wish to "
+                             "continue ?" % max_sequence),
+                    optional=True
+                )
+                if respond:
+                    # Double it
+                    max_sequence += max_sequence
+                else:
+                    return
 
             sequences.append(item)
 
