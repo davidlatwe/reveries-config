@@ -144,7 +144,7 @@ class SequenceWidget(QtWidgets.QWidget):
         for row in range(self.data["model"].rowCount(root_index)):
             index = self.data["model"].index(row, column=0, parent=root_index)
             item = index.internalPointer()
-            if all(k in item for k in with_keys):
+            if all(item.get(k) for k in with_keys):
                 sequences.append(item)
 
         return sequences
@@ -175,7 +175,7 @@ class SequenceModel(models.TreeModel):
         item["paddingStr"] = sequence["paddingStr"]
         # Optional
         item["name"] = sequence.get("name", "")
-        item["resolution"] = sequence.get("resolution", (0, 0))
+        item["resolution"] = sequence.get("resolution")  # Should be (w, h)
 
         html_fpattern = "{dir}{head}{padding}{tail}"
 
@@ -208,6 +208,11 @@ class SequenceModel(models.TreeModel):
         if role == self.HTMLTextRole:
             node = index.internalPointer()
             return node["fpatternHTML"]
+
+        if role == QtCore.Qt.DisplayRole:
+            if index.column() == self.Columns.index("resolution"):
+                node = index.internalPointer()
+                return node["resolution"] or (0, 0)
 
         return super(SequenceModel, self).data(index, role)
 
