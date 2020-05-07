@@ -16,7 +16,7 @@ module.window = None
 
 class Window(QtWidgets.QDialog):
 
-    def __init__(self, root=None, callback=None, parent=None):
+    def __init__(self, root=None, callback=None, with_keys=None, parent=None):
         super(Window, self).__init__(parent=parent)
         self.setWindowTitle("Setup Sequences")
 
@@ -40,6 +40,7 @@ class Window(QtWidgets.QDialog):
                 "accept": QtWidgets.QPushButton("Accept"),
                 "cancel": QtWidgets.QPushButton("Cancel"),
                 "callback": callback,
+                "with_keys": with_keys,
             },
         })
 
@@ -84,9 +85,10 @@ class Window(QtWidgets.QDialog):
         return self.data["sequences"]["view"].collected(with_keys)
 
     def run_callback(self):
-        callback = self.datadata["endDialog"]["callback"]
+        callback = self.data["endDialog"]["callback"]
+        with_keys = self.data["endDialog"]["with_keys"]
         if callback is not None:
-            callback(self.collected())
+            callback(self.collected(with_keys))
 
     def open_browser(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(parent=self)
@@ -114,7 +116,7 @@ class Window(QtWidgets.QDialog):
         self.data["sequences"]["view"].add_sequences(sequences)
 
 
-def show(callback=None, parent=None):
+def show(callback=None, with_keys=None, parent=None):
     """Display Main GUI"""
     # Remember window
     if module.window is not None:
@@ -138,7 +140,7 @@ def show(callback=None, parent=None):
             module.window = None
 
     with tools_lib.application():
-        window = Window(callback=callback, parent=parent)
+        window = Window(callback=callback, with_keys=with_keys, parent=parent)
         window.show()
         window.setStyleSheet(style.load_stylesheet())
 
