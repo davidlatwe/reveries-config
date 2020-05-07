@@ -644,7 +644,7 @@ def maps_to_transfer(description):
         description (str): XGen Legacy description name
 
     Returns:
-        list: A list of collected map files
+        list: A list of tuples of palette root dir and collected map file
 
     """
     transfer = set()
@@ -668,7 +668,8 @@ def maps_to_transfer(description):
 
                 if os.path.isfile(file_path):
                     # Copy file
-                    transfer.add(file_path.replace("\\", "/"))
+                    item = (root, file_path.replace("\\", "/"))
+                    transfer.add(item)
                     break
 
                 elif os.path.isdir(dir_path):
@@ -676,7 +677,8 @@ def maps_to_transfer(description):
                     # copy folder
                     for file in os.listdir(dir_path):
                         file_path = os.path.join(dir_path, file)
-                        transfer.add(file_path.replace("\\", "/"))
+                        item = (root, file_path.replace("\\", "/"))
+                        transfer.add(item)
                     break
 
             else:
@@ -686,7 +688,14 @@ def maps_to_transfer(description):
                 continue
 
         else:
-            transfer.add(path.replace("\\", "/"))
+            # (NOTE) In publish, all path of map file should be prefixed with
+            #   `${DESC}`, or it will not be found when loading it back since
+            #   we did not handle and change this kind of path in XGen work
+            #   scene.
+            path = path.replace("\\", "/")
+            head = os.path.dirname(path)
+            item = (head, path)
+            transfer.add(item)
 
     return sorted(list(transfer))
 
