@@ -139,8 +139,9 @@ class SequenceWidget(QtWidgets.QWidget):
     def collected(self, with_keys=None):
         with_keys = with_keys or list()
         sequences = list()
-        for row in range(self.data["model"].rowCount()):
-            index = self.data["model"].index(row, column=0)
+        root_index = QtCore.QModelIndex()
+        for row in range(self.data["model"].rowCount(root_index)):
+            index = self.data["model"].index(row, column=0, parent=root_index)
             item = index.internalPointer()
             if all(k in item for k in with_keys):
                 sequences.append(item)
