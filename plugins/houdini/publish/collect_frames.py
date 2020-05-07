@@ -24,6 +24,7 @@ class CollectFrames(pyblish.api.InstancePlugin):
 
         if start_frame is None:
             self.log.info("No frame range data, skipping.")
+            instance.data["singleOutput"] = True
             return
 
         self.log.info("Collecting range: [{s} - {e} @ {p}]"
