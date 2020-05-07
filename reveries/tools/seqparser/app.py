@@ -140,7 +140,6 @@ def show(callback=None, with_keys=None, parent=None):
             # Raise and activate the window
             module.window.raise_()             # for MacOS
             module.window.activateWindow()     # for Windows
-            module.window.refresh()
             return
         except RuntimeError as e:
             if not str(e).rstrip().endswith("already deleted."):
