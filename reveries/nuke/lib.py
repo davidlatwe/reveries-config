@@ -1,5 +1,6 @@
 
 from collections import OrderedDict
+from contextlib import contextmanager
 import nuke
 
 
@@ -82,3 +83,12 @@ def shuffle_copy(a, b, layer):
     shuffle["out"].setValue(layer)
 
     return shuffle
+
+
+@contextmanager
+def group_scope(group):
+    group.begin()
+    try:
+        yield
+    finally:
+        group.end()

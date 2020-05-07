@@ -71,32 +71,40 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
         with command.viewer_update_and_undo_stop():
             group = nuke.createNode("Group")
-            group.begin()
 
-            aovs = OrderedDict()
-            has_beauty = "beauty" in sequences
+            with nuke_lib.group_scope(group):
 
-            for aov_name, data in [(k, sequences[k]) for k in
-                                   sorted(sequences, key=lambda k: k.lower())]:
-                read = nuke.Node("Read")
-                read["selected"].setValue(False)
-                read.autoplace()
-                aovs[aov_name] = read
+                aovs = OrderedDict()
+                has_beauty = "beauty" in sequences
 
-                self.set_path(read, aov_name=aov_name, path=data["_resolved"])
-                self.set_format(read, data["resolution"])
-                self.set_range(read, start=start, end=end)
+                sorted_seqs = [
+                    (k, sequences[k]) for k in
+                    sorted(sequences, key=lambda k: k.lower())
+                ]
 
-                # Mark aov name
-                lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
+                for aov_name, data in sorted_seqs:
+                    read = nuke.Node("Read")
+                    read["selected"].setValue(False)
+                    read.autoplace()
+                    aovs[aov_name] = read
+                    path = data["_resolved"]
 
-            beauty = aovs.pop("beauty") if has_beauty else aovs.popitem()[1]
-            nuke_lib.exr_merge(beauty, aovs.values())
+                    self.set_path(read, aov_name=aov_name, path=path)
+                    self.set_format(read, data["resolution"])
+                    self.set_range(read, start=start, end=end)
 
-            output = nuke.createNode("Output")
-            output.autoplace()
+                    # Mark aov name
+                    lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
 
-            group.end()
+                if has_beauty:
+                    beauty = aovs.pop("beauty")
+                else:
+                    beauty = aovs.popitem()[1]
+
+                nuke_lib.exr_merge(beauty, aovs.values())
+
+                output = nuke.createNode("Output")
+                output.autoplace()
 
             stamp = nuke.createNode("PostageStamp")
             stamp.setName(namespace)
