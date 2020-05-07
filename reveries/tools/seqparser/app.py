@@ -33,6 +33,7 @@ class Window(QtWidgets.QDialog):
 
             "sequences": {
                 "main": QtWidgets.QWidget(),
+                "single": QtWidgets.QCheckBox("Single Frame"),
                 "view": widgets.SequenceWidget(),
             },
 
@@ -50,15 +51,19 @@ class Window(QtWidgets.QDialog):
             layout.addWidget(root_path["label"])
             layout.addWidget(root_path["path"], stretch=True)
             layout.addWidget(root_path["find"])
+            layout.setContentsMargins(4, 0, 4, 0)
 
         with data.pin("sequences") as sequences:
-            layout = QtWidgets.QHBoxLayout(sequences["main"])
+            layout = QtWidgets.QVBoxLayout(sequences["main"])
+            layout.addWidget(sequences["single"])
             layout.addWidget(sequences["view"])
+            layout.setContentsMargins(4, 6, 4, 0)
 
         with data.pin("endDialog") as end_dialog:
             layout = QtWidgets.QHBoxLayout(end_dialog["main"])
             layout.addWidget(end_dialog["accept"])
             layout.addWidget(end_dialog["cancel"])
+            layout.setContentsMargins(4, 0, 4, 0)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(data["rootPath"]["main"])
@@ -68,10 +73,13 @@ class Window(QtWidgets.QDialog):
         if root:
             data["rootPath"]["path"].setText(root)
             data["rootPath"]["find"].setEnabled(False)
+            data["sequences"]["single"].setEnabled(False)
         data["rootPath"]["path"].setReadOnly(True)
 
         data["rootPath"]["path"].textChanged.connect(self.ls_sequences)
         data["rootPath"]["find"].clicked.connect(self.open_browser)
+
+        data["sequences"]["single"].stateChanged.connect(self.on_single)
 
         data["endDialog"]["accept"].clicked.connect(self.run_callback)
         data["endDialog"]["accept"].clicked.connect(self.accept)
@@ -80,10 +88,15 @@ class Window(QtWidgets.QDialog):
         self.data = data
 
         # Defaults
+        self.is_single = False
         self.resize(600, 800)
 
     def collected(self, with_keys=None):
         return self.data["sequences"]["view"].collected(with_keys)
+
+    def on_single(self, state):
+        self.is_single = bool(state)
+        self.ls_sequences(self.data["rootPath"]["path"].text())
 
     def run_callback(self):
         callback = self.data["endDialog"]["callback"]
@@ -101,9 +114,11 @@ class Window(QtWidgets.QDialog):
             print("Not a valid path.")
             return
 
+        min_length = 1 if self.is_single else 2
+
         sequences = list()
         max_sequence = 50
-        for i, item in enumerate(command.ls_sequences(path)):
+        for i, item in enumerate(command.ls_sequences(path, min_length)):
             if i > max_sequence:
                 # Prompt dialog asking continue the process or not
                 respond = plugins.message_box_warning(

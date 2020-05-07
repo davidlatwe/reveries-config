@@ -63,6 +63,7 @@ class SequenceWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(data["view"])
+        layout.setContentsMargins(0, 0, 0, 0)
 
         data["view"].customContextMenuRequested.connect(self.on_context_menu)
 
