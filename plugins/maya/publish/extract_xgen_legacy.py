@@ -38,18 +38,23 @@ class ExtractXGenLegacy(pyblish.api.InstancePlugin):
 
             # Stage maps
             map_stage = staging_dir + "/maps/%s" % palette
-            if not os.path.isdir(map_stage):
-                os.makedirs(map_stage)
 
-            for src in xgen.maps_to_transfer(desc):
+            for head, src in xgen.maps_to_transfer(desc):
+                relative = os.path.relpath(src, head)
                 if os.path.isfile(src):
+                    relative = os.path.dirname(relative)
                     ship = shutil.copy2
                 elif os.path.isdir(src):
                     ship = shutil.copytree
                 else:
                     continue
+
+                dst_dir = map_stage + "/" + relative
+                if not os.path.isdir(dst_dir):
+                    os.makedirs(dst_dir)
+
                 try:
-                    ship(src, map_stage)
+                    ship(src, dst_dir)
                 except OSError:
                     msg = "An unexpected error occurred."
                     self.log.critical(msg)
@@ -58,6 +63,7 @@ class ExtractXGenLegacy(pyblish.api.InstancePlugin):
             for root, _, fnames in os.walk(map_stage):
                 relative = os.path.relpath(root, staging_dir)
                 relative = "" if relative == "." else (relative + "/")
+                relative = relative.replace("\\", "/")
                 for file in fnames:
                     map_file = relative + file
                     files.append(map_file)
