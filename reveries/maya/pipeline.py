@@ -117,11 +117,11 @@ def get_container_from_namespace(namespace):
                         #        node's namespace.
                         namespace=namespace)
 
-    if not nodes:
-        raise RuntimeError("No matched container, this is a bug.")
-
     if "*" in namespace:
         return nodes
+
+    if not nodes:
+        raise RuntimeError("No matched container, this is a bug.")
 
     if len(nodes) > 1:
         cmds.warning("Has more then one matched container, "
