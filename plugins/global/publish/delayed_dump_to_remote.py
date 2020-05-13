@@ -170,6 +170,7 @@ class DelayedDumpToRemote(pyblish.api.ContextPlugin):
 
         # Include optional data if present in (version data)
         optionals = [
+            "reprRoot",
             "startFrame",
             "endFrame",
             "step",
