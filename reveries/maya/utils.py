@@ -473,7 +473,7 @@ class Identifier(object):
         """
         full_address = self.read_full_address(node) or ""
         if self.ID_SEP in full_address:
-            return self.read_full_address(node).split(self.ID_SEP)[0]
+            return full_address.split(self.ID_SEP)[0]
         else:
             return None
 
@@ -721,6 +721,39 @@ def get_id(node):
 
 def get_id_status(node):
     return _identifier.status(node)
+
+
+def get_id_loosely(node):
+    id = get_id(node)
+
+    if id is None:
+        try:
+            # AvalonID may have imprinted on shape node if it's coming
+            # from alembic which published by Houdini.
+            full_address = cmds.getAttr(node + "." + lib.AVALON_ID_ATTR_LONG)
+        except ValueError:
+            pass
+        else:
+            id = full_address.split(":")[-1]
+
+    return id
+
+
+def get_id_namespace_loosely(node):
+    id_namespace = get_id_namespace(node)
+
+    if id_namespace is None:
+        try:
+            # AvalonID may have imprinted on shape node if it's coming
+            # from alembic which published by Houdini.
+            full_address = cmds.getAttr(node + "." + lib.AVALON_ID_ATTR_LONG)
+        except ValueError:
+            pass
+        else:
+            if _identifier.ID_SEP in full_address:
+                id_namespace = full_address.split(_identifier.ID_SEP)[0]
+
+    return id_namespace
 
 
 def update_id_verifiers(nodes):

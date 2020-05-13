@@ -103,9 +103,9 @@ class SelectionModel(models.TreeModel):
 
         for node in selection:
 
-            asset = asset_by_id(_identifier.read_namespace(node))
+            asset = asset_by_id(utils.get_id_namespace_loosely(node))
             name = node.rsplit("|", 1)[-1]
-            node_id = _identifier.read_address(node)
+            node_id = utils.get_id_loosely(node)
             node_id_status = _identifier.status(node)
             time = _identifier.get_time(node)
 

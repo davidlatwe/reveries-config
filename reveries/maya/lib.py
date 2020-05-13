@@ -1415,9 +1415,20 @@ def ls_nodes_by_id(ids, namespace=None, nodes=None):
             if node.hasFn(om.MFn.kDagNode):
                 # DAG node only
                 fn_node = dag_fn.setObject(node)
-                # Include all instances
-                for path in fn_node.getAllPaths():
-                    namespace_nodes.add(path.partialPathName())
+
+                if node.hasFn(om.MFn.kShape):
+                    # AvalonID may have imprinted on shape node if it's coming
+                    # from alembic which published by Houdini.
+                    for i in range(fn_node.parentCount()):
+                        parent = fn_node.parent(i)
+                        fn_parent = dag_fn.setObject(parent)
+                        # Include all instances
+                        for path in fn_parent.getAllPaths():
+                            namespace_nodes.add(path.partialPathName())
+                else:
+                    # Include all instances
+                    for path in fn_node.getAllPaths():
+                        namespace_nodes.add(path.partialPathName())
             else:
                 fn_node = dep_fn.setObject(node)
                 namespace_nodes.add(fn_node.name())
@@ -1429,7 +1440,7 @@ def ls_nodes_by_id(ids, namespace=None, nodes=None):
 
     id_map = defaultdict(set)
     for node in all_nodes:
-        id = utils.get_id(node)
+        id = utils.get_id_loosely(node)
 
         if id is None:
             continue
@@ -1439,7 +1450,7 @@ def ls_nodes_by_id(ids, namespace=None, nodes=None):
 
         elif is_namespace_wrapper(id, node):
             for member in cmds.sets(node, query=True, nodesOnly=True) or []:
-                id = utils.get_id(member)
+                id = utils.get_id_loosely(member)
                 if id is not None and id in ids:
                     id_map[id].add(member)
 

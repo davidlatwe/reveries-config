@@ -51,9 +51,7 @@ def group_from_namespace(namespace):
 
 
 def get_asset_id(node):
-    if not lib.hasAttr(node, lib.AVALON_ID_ATTR_LONG):
-        return None
-    return utils.get_id_namespace(node)
+    return utils.get_id_namespace_loosely(node)
 
 
 def list_descendents(nodes):
@@ -491,7 +489,7 @@ def _look_via_uv(look, relationships, nodes):
                         ):
         node = cmds.listRelatives(mesh, parent=True, path=True)[0]
 
-        id = utils.get_id(node)
+        id = utils.get_id_loosely(node)
         if id in uv_via_id:
             continue
 
