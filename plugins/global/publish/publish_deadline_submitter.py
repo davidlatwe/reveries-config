@@ -106,6 +106,10 @@ class DeadlineSubmitter(object):
             self._submit(index, payload)
 
     def _submit(self, index, payload):
+        # (NOTE) "Error: Alternate job auxiliary path <...> doesn't exist"
+        #   If Deadline Repository has custom Auxiliary Files path that is
+        #   set to a file server and you got this error, try re-connect the
+        #   file server.
         if self._cmd:
             jobid = self._via_command(payload)
         else:
