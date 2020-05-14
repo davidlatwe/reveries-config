@@ -8,36 +8,42 @@ class SelectMissing(plugins.MayaSelectInvalidInstanceAction):
 
     label = "沒有編號"
     symptom = "missing"
+    on = "processed"
 
 
 class SelectDuplicated(plugins.MayaSelectInvalidInstanceAction):
 
     label = "重複編號"
     symptom = "duplicated"
+    on = "processed"
 
 
 class SelectMissMatchedAsset(plugins.MayaSelectInvalidInstanceAction):
 
     label = "Asset Id 錯誤"
     symptom = "asset_id"
+    on = "processed"
 
 
 class RepairIDMissing(plugins.RepairInstanceAction):
 
     label = "沒有編號"
     symptom = "missing"
+    on = "processed"
 
 
 class RepairIDDuplicated(plugins.RepairInstanceAction):
 
     label = "重複編號"
     symptom = "duplicated"
+    on = "processed"
 
 
 class RepairMissMatchedAsset(plugins.RepairInstanceAction):
 
     label = "Asset Id 錯誤"
     symptom = "asset_id"
+    on = "processed"
 
 
 class ValidateAvalonUUID(pyblish.api.InstancePlugin):
@@ -149,8 +155,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
         return invalid
 
-    def echo(self, instance, invalid, cause):
-        self.log.error(
+    def message(self, instance, invalid, cause):
+        return (
             "'{}' {} :\n{}".format(
                 instance,
                 cause,
@@ -166,17 +172,17 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         invalid = self.get_invalid_missing(instance, uuids_dict)
         if invalid:
             IS_INVALID = True
-            self.echo(instance, invalid, "發現部分物件**沒有**編號")
+            self.log.error(self.message(instance, invalid, "發現部分物件**沒有**編號"))
 
         invalid = self.get_invalid_duplicated(instance, uuids_dict)
         if invalid:
-            IS_INVALID = True
-            self.echo(instance, invalid, "發現**重複**編號的物件")
+            # IS_INVALID = True
+            self.log.warning(self.message(instance, invalid, "發現**重複**編號的物件"))
 
         invalid = self.get_invalid_asset_id(instance, uuids_dict)
         if invalid:
             IS_INVALID = True
-            self.echo(instance, invalid, "發現 Asset Id 錯誤")
+            self.log.error(self.message(instance, invalid, "發現 Asset Id 錯誤"))
 
         # End
         if IS_INVALID:
