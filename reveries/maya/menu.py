@@ -68,15 +68,6 @@ def install():
         cmds.menuItem("Set Avalon Id", parent="Menu_Utilities",
                       command=interactive.apply_avalon_uuid)
 
-        cmds.menuItem("Avalon Id Editor", parent="Menu_Utilities", command="""
-import reveries.maya.tools
-reveries.maya.tools.show('avalonideditor')
-""")
-        cmds.menuItem("Model Differ", parent="Menu_Utilities", command="""
-import reveries.maya.tools
-reveries.maya.tools.show('modeldiffer')
-""")
-
         # Rendering tools
         cmds.menuItem("Menu_Render",
                       label="Render",
@@ -96,6 +87,29 @@ reveries.maya.tools.show('modeldiffer')
                       label="Fix renderGlobalsEncoding",
                       parent="Menu_Render",
                       command=interactive.fix_renderGlobalsEncoding_not_found)
+
+        # Modeling tools
+        cmds.menuItem("Menu_Model",
+                      label="Model",
+                      tearOff=True,
+                      subMenu=True,
+                      parent=self._menu)
+
+        cmds.menuItem("Avalon Id Editor", parent="Menu_Model", command="""
+import reveries.maya.tools
+reveries.maya.tools.show('avalonideditor')
+""")
+        cmds.menuItem("Model Differ", parent="Menu_Model", command="""
+import reveries.maya.tools
+reveries.maya.tools.show('modeldiffer')
+""")
+        cmds.menuItem("Combine With Id", parent="Menu_Model",
+                      image="polyUnite.png",
+                      command=interactive.combine_with_id)
+
+        cmds.menuItem("Separate With Id", parent="Menu_Model",
+                      image="polySeparate.png",
+                      command=interactive.separate_with_id)
 
         # LookDev tools
         cmds.menuItem("Menu_LookDev",

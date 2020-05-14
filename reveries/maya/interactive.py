@@ -523,3 +523,58 @@ def fix_renderGlobalsEncoding_not_found(*args):
         {bug}();
     }}
     """.format(fix=proc_name, bug=new_proc_name))
+
+
+def separate_with_id(*args):
+    """Separate meshes with AvalonID preserved"""
+    selection = cmds.ls(sl=True, objectsOnly=True)
+    assert len(selection) == 1, "Select one object or faces in one object."
+    node = selection[0]
+    type = cmds.nodeType(node)
+
+    if type == "transform":
+        child = cmds.listRelatives(node,
+                                   shapes=True,
+                                   noIntermediate=True,
+                                   path=True)
+        if not child:
+            raise Exception("Please select mesh type object, this is a group.")
+        parent = node
+
+    elif type == "mesh":
+        parent = cmds.listRelatives(node, parent=True, path=True)[0]
+
+    else:
+        raise Exception("Please select mesh type object.")
+
+    id = utils.get_id(parent)
+    asset_id = utils.get_id_namespace(parent)
+
+    mel.eval("performPolyShellSeparate")
+    new_nodes = cmds.ls(sl=True, type="transform")
+    cmds.delete(new_nodes, constructionHistory=True)
+
+    with utils.id_namespace(asset_id):
+        for sep in new_nodes:
+            utils.upsert_id(sep, id=id)
+
+    cmds.rename(parent, parent + "_sep")
+
+
+def combine_with_id(*args):
+    """Combine meshes with AvalonID preserved"""
+    selection = cmds.ls(sl=True, objectsOnly=True, type="transform")
+    assert len(selection) > 1, "Select at least two objects to combine."
+
+    anchor = selection[-1]
+    parent = cmds.listRelatives(anchor, parent=True, path=True)[0]
+    id = utils.get_id(anchor)
+    asset_id = utils.get_id_namespace(anchor)
+
+    cmds.polyUnite(constructionHistory=False, centerPivot=True)
+    new_node = cmds.ls(sl=True, type="transform")[0]
+
+    with utils.id_namespace(asset_id):
+        utils.upsert_id(new_node, id=id)
+
+    cmds.parent(new_node, parent)
