@@ -881,10 +881,15 @@ def bake_to_world_space(nodes,
             # Duplicate the node
             short_name = node.rsplit("|", 1)[-1]
             new_name = "{0}_baked".format(short_name)
-            new_node = cmds.duplicate(node,
-                                      name=new_name,
-                                      upstreamNodes=duplicate_input_graph,
-                                      renameChildren=True)[0]
+            new_nodes = cmds.duplicate(node,
+                                       name=new_name,
+                                       upstreamNodes=duplicate_input_graph,
+                                       renameChildren=True)
+            if duplicate_input_graph:
+                # Remove upstream animCurves for scaleConstraint later
+                cmds.delete(cmds.ls(new_nodes, type="animCurve"))
+
+            new_node = new_nodes[0]
 
             # Connect all attributes on the node except for transform
             # attributes
