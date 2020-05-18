@@ -1186,6 +1186,12 @@ def apply_shaders(relationships,
         for surface in surfaces:
             try:
                 cmds.sets(surface, forceElement=shader)
+            except ValueError:
+                # `surface` not exists in scene, possible case is a group node
+                #  has same avalonID as another geometry which has face assige
+                #  in relationship table. That group node probably came from
+                #  mesh separation with AvalonID inheriting.
+                pass
             except RuntimeError as e:
                 if "Unable to update render layer adjustment" not in str(e):
                     log.error("RuntimeError -> Command: cmds.sets('%s', "
