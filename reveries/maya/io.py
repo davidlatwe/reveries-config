@@ -251,6 +251,16 @@ def export_alembic(file,
     If there are multiple `-root`, and `-sl` has given, each root node must
     have it's descendant node been selected, or the root will not be exported.
 
+    (NOTE) Scene unit
+
+    Looks like Alembic in Maya always stores transformation in `centimeter`,
+    and does not scale the value when importing into scenes that units are NOT
+    set to `centimeter`. But does save deformation in absolute form.
+
+    So one MUST ensure the scene units is set to `centimeter` when importing
+    transformation (or connect a unitConversion node), otherwise the transform
+    value will be incorrect.
+
     """
 
     # Ensure alembic exporter is loaded
