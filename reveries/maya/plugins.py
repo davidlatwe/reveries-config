@@ -130,6 +130,10 @@ class ReferenceLoader(MayaBaseLoader):
                                namespace=namespace,
                                group=group_name,
                                options=options)
+        # (TODO) The group node may not be named exactly as `group_name` if
+        #   `namespace` already exists. Might need to get the group node from
+        #   `process_reference` so we could get the real name in case it's been
+        #   renamed by Maya. May reference `ImportLoader.process_import`.
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
@@ -343,11 +347,11 @@ class ImportLoader(MayaBaseLoader):
 
         options = options or dict()
 
-        self.process_import(context=context,
-                            name=name,
-                            namespace=namespace,
-                            group=group_name,
-                            options=options)
+        group_name = self.process_import(context=context,
+                                         name=name,
+                                         namespace=namespace,
+                                         group=group_name,
+                                         options=options) or group_name
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
@@ -500,6 +504,10 @@ class HierarchicalLoader(MayaBaseLoader):
                               groupReference=True,
                               groupName=group_name,
                               typ="Alembic")
+        # (TODO) The group node may not be named exactly as `group_name` if
+        #   `namespace` already exists. Might need to get the group node from
+        #   `hierarchy` so we could get the real name in case it's been renamed
+        #   by Maya.
 
         update_id_verifiers(hierarchy)
 

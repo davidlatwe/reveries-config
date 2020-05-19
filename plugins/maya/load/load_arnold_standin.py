@@ -58,14 +58,18 @@ class ArnoldAssLoader(ImportLoader, avalon.api.Loader):
 
         with capsule.namespaced(namespace):
             standin = arnold.create_standin(entry_path)
-            transform = cmds.listRelatives(standin, parent=True)[0]
+            transform = cmds.listRelatives(standin, parent=True, path=True)[0]
             group = cmds.group(transform, name=group, world=True)
 
         if use_sequence:
             cmds.setAttr(standin + ".useFrameExtension", True)
             cmds.connectAttr("time1.outTime", standin + ".frameNumber")
 
-        self[:] = [standin, transform, group]
+        self[:] = [group] + cmds.listRelatives(group,
+                                               allDescendents=True,
+                                               path=True) or []
+
+        return group
 
     def retrive(self, representation):
         if "useSequence" not in representation["data"]:
