@@ -20,7 +20,7 @@ class PriorityThiefHammerOnJobSubmitted(Deadline.Events.DeadlineEventListener):
         del self.OnJobSubmittedCallback
 
     def OnJobSubmitted(self, job):
-        if job.JobPriority >= 80:
+        if job.JobPriority > 80:
             job.JobPriority = 70
             RepositoryUtils.SaveJob(job)
             print("Job submitted with priority over 80. Fall back to 70, Bam !")
