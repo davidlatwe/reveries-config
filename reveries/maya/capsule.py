@@ -305,7 +305,7 @@ def namespaced(namespace, new=True):
 
     """
     original = cmds.namespaceInfo(currentNamespace=True)
-    if new:
+    if new and not cmds.namespace(exists=namespace):
         cmds.namespace(add=namespace)
 
     try:
