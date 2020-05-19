@@ -329,7 +329,11 @@ def _attach_subset(slot, namespace, root, subset_group):
 def add_subset(data, namespace, root, on_update=None):
     """
     """
-    sub_namespace = namespace + ":" + data["namespace"]
+    if data["namespace"]:
+        sub_namespace = namespace + ":" + data["namespace"]
+    else:
+        sub_namespace = namespace
+
     options = {
         "containerId": data["containerId"],
         "hierarchy": data["hierarchy"],
