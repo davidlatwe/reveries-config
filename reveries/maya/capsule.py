@@ -380,7 +380,7 @@ class StripNamespace(object):
 
                 # strip namespace by renaming via api, bypassing read-only
                 # restrictions
-                _, tail = node.rsplit("|", 1)
+                tail = node.rsplit("|", 1)[-1]
                 stripped = tail.rsplit(":", 1)[-1]
                 api_node.setName(stripped)
 
