@@ -31,10 +31,16 @@ def get_sub_container_nodes(container):
 
     """
     containers = []
-    namespace = container["namespace"] + ":"
 
-    for node in lib.lsAttrs({"id": AVALON_CONTAINER_ID}, namespace=namespace):
+    for node in cmds.ls(cmds.sets(container["objectName"], query=True),
+                        type="objectSet"):
+        id = node + ".id"
+        if not cmds.objExists(id):
+            continue
+        if not cmds.getAttr(id) == AVALON_CONTAINER_ID:
+            continue
         containers.append(node)
+
     return containers
 
 
@@ -48,13 +54,10 @@ def parse_sub_containers(container):
         list: A list of member container dictionaries.
 
     """
-    # Get avalon containers in this package setdress container
     containers = []
-    namespace = container["namespace"] + ":"
 
-    for node in lib.lsAttrs({"id": AVALON_CONTAINER_ID}, namespace=namespace):
-        member_container = parse_container(node)
-        containers.append(member_container)
+    for node in get_sub_container_nodes(container):
+        containers.append(parse_container(node))
 
     return containers
 
