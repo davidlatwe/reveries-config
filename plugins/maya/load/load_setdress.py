@@ -172,7 +172,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                                         absoluteName=True)
         for container_id, sub_matrix in data["subMatrix"].items():
 
-            container = container_from_id_path(container_id, current_NS)
+            container = container_from_id_path(self, container_id, current_NS)
             if not container:
                 # Possibly been removed in parent asset
                 continue

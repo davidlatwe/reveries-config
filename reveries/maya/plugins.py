@@ -422,6 +422,10 @@ def _parse_members_data(entry_path):
 class HierarchicalLoader(MayaBaseLoader):
     """Hierarchical referencing based asset loader
     """
+    def __init__(self, context):
+        super(HierarchicalLoader, self).__init__(context)
+        self._parent = None
+        self._cache = None
 
     def _members_data_from_container(self, container):
         current_repr = avalon.io.find_one({
@@ -457,6 +461,8 @@ class HierarchicalLoader(MayaBaseLoader):
         members = _parse_members_data(entry_path)
 
         options = options or dict()
+
+        self._parent = options.get("_parent")
 
         if "containerId" in options:
             container_id = options["containerId"]
@@ -512,19 +518,19 @@ class HierarchicalLoader(MayaBaseLoader):
         update_id_verifiers(hierarchy)
 
         # Load sub-subsets
-        if not options.get("_cached", False):
-            cache_container_by_id()
+        cache_container_by_id(self)
         sub_containers = []
         for data in members:
 
             repr_id = data["representation"]
             data["representationDoc"] = get_representation(repr_id)
             data["loaderCls"] = get_loader(data["loader"], repr_id)
+            data["_parent"] = self
 
             root = group_name
             with add_subset(data, namespace, root) as sub_container:
 
-                cache_container_by_id(add=sub_container)
+                cache_container_by_id(self, add=sub_container)
                 self.apply_variation(data=data,
                                      container=sub_container)
 
@@ -551,9 +557,10 @@ class HierarchicalLoader(MayaBaseLoader):
         """
         import maya.cmds as cmds
 
-        # Flag `_force_update` from `container` is a workaround
+        # Flag `_force_update` and `_parent` from `container` is a workaround
         # should coming from `options`
         force_update = container.pop("_force_update", False)
+        self._parent = container.pop("_parent", None)
 
         nodes = cmds.sets(container["objectName"], query=True)
         reference_node = next(iter(lib.get_reference_nodes(nodes)), None)
@@ -607,8 +614,7 @@ class HierarchicalLoader(MayaBaseLoader):
                 current_members[namespace_old] = data_old
 
         # Update sub-subsets
-        if not container.get("_cached", False):
-            cache_container_by_id()
+        cache_container_by_id(self, update=container["namespace"])
         namespace = container["namespace"]
         group_name = self.group_name(namespace, container["name"])
 
@@ -618,6 +624,7 @@ class HierarchicalLoader(MayaBaseLoader):
             repr_id = data_new["representation"]
             data_new["representationDoc"] = get_representation(repr_id)
             data_new["loaderCls"] = get_loader(data_new["loader"], repr_id)
+            data_new["_parent"] = self
 
             sub_ns = data_new["namespace"]
 
@@ -644,7 +651,7 @@ class HierarchicalLoader(MayaBaseLoader):
                     # later.
                     con_id = sub_container["containerId"]
                     con_node = ":" + sub_container["objectName"]
-                    cache_container_by_id(remove=(con_id, con_node))
+                    cache_container_by_id(self, remove=(con_id, con_node))
                     avalon.api.remove(sub_container)
                     add_list.append(data_new)
 
@@ -657,7 +664,7 @@ class HierarchicalLoader(MayaBaseLoader):
             on_update = container
             with add_subset(data, namespace, root, on_update) as sub_container:
 
-                cache_container_by_id(add=sub_container)
+                cache_container_by_id(self, add=sub_container)
                 self.apply_variation(data=data,
                                      container=sub_container)
 

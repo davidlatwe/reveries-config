@@ -135,43 +135,64 @@ def container_to_id_path(container):
 _cached_container_by_id = {"_": None}
 
 
-def cache_container_by_id(add=None, remove=None):
+class UpwardContainerCache(object):
+
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.cache = dict()
+
+    def get(self, id):
+        return self.cache.get(id, [])
+
+    def add(self, id, node):
+        if id not in self.cache:
+            self.cache[id] = set()
+        self.cache[id].add(node)
+
+        if self.parent is not None:
+            # Pass new node into parent loader's cache, so the parent loader
+            # can access the node from it's cache when overriding variations
+            # there, after this loader is finished loading and cache removed.
+            self.parent.add(id, node)
+
+    def remove(self, id, node):
+        self.cache[id].remove(node)
+
+
+def cache_container_by_id(plugin, add=None, remove=None, update=None):
     if add:
         container = add
-        container_by_id = _cached_container_by_id["_"]
-
         id = container["containerId"]
-        if id not in container_by_id:
-            container_by_id[id] = set()
-
         node = ":" + container["objectName"]
-        container_by_id[id].add(node)
+        container_by_id = plugin._cache
+        container_by_id.add(id, node)
 
         return
 
     elif remove:
         id, node = remove
-        container_by_id = _cached_container_by_id["_"]
-
-        container_by_id[id].remove(node)
+        container_by_id = plugin._cache
+        container_by_id.remove(id, node)
 
         return
 
-    # New cache
-    container_by_id = dict()
+    # Init cache
+    parent = plugin._parent
+    container_by_id = UpwardContainerCache(None if parent is None
+                                           else parent._cache)
 
-    for attr in lib.lsAttr("containerId"):
-        id = cmds.getAttr(attr)
-        if id not in container_by_id:
-            container_by_id[id] = set()
+    if update:
+        namespace = update
 
-        node = ":" + attr.rsplit(".", 1)[0]
-        container_by_id[id].add(node)
+        for attr in lib.lsAttr("containerId", namespace=namespace + "::"):
+            id = cmds.getAttr(attr)
+            node = ":" + attr.rsplit(".", 1)[0]
+            container_by_id.add(id, node)
 
-    _cached_container_by_id["_"] = container_by_id
+    plugin._cache = container_by_id
 
 
-def container_from_id_path(container_id_path, parent_namespace):
+def container_from_id_path(plugin, container_id_path, parent_namespace):
     """Find container node from container id path
 
     Args:
@@ -183,35 +204,24 @@ def container_from_id_path(container_id_path, parent_namespace):
 
     """
     container_ids = container_id_path.split("|")
-    cached_containers = _cached_container_by_id["_"]
+    container_by_id = plugin._cache
 
     leaf_id = container_ids.pop()  # leaf container id
 
-    if cached_containers is None:
+    if container_by_id is None:
         leaf_containers = lib.lsAttr("containerId",
                                      leaf_id,
                                      parent_namespace + "::")
     else:
         leaf_containers = [
             node for node in
-            cached_containers.get(leaf_id, [])
+            container_by_id.get(leaf_id)
             if node.startswith(parent_namespace + ":")
         ]
 
     if not leaf_containers:
         message = ("No leaf containers with Id %s under namespace %s, "
                    "possibly been removed in parent asset.")
-        """For debug
-        if cached_containers:
-            message += " (Using cache)"
-            # Listing cache for debug
-            print("\nCached containers:\n")
-            for id, nodes in cached_containers.items():
-                print("  " + id)
-                for node in nodes:
-                    print("    " + node)
-            print("---------------------")
-        """
         _log.debug(message % (container_id_path, parent_namespace))
 
         return None
@@ -248,7 +258,7 @@ def container_from_id_path(container_id_path, parent_namespace):
         container = next(iter(walkers.keys()))
 
     # Remove resolved container from cache
-    cache_container_by_id(remove=(leaf_id, container))
+    cache_container_by_id(plugin, remove=(leaf_id, container))
 
     return container
 
@@ -337,7 +347,7 @@ def add_subset(data, namespace, root, on_update=None):
     options = {
         "containerId": data["containerId"],
         "hierarchy": data["hierarchy"],
-        "_cached": True,
+        "_parent": data.pop("_parent", None),
     }
 
     sub_container = avalon.api.load(data["loaderCls"],
@@ -412,7 +422,7 @@ def change_subset(container, namespace, root, data_new, data_old, force):
     """
     from avalon.pipeline import get_representation_context
 
-    container["_cached"] = True
+    container["_parent"] = data_new.pop("_parent", None)
 
     is_repr_diff = (data_old["representation"] !=
                     data_new["representation"])
