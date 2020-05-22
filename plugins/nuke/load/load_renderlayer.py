@@ -47,8 +47,13 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                     break
 
     def is_singleaov(self, path):
-        data = exrheader.read_exr_header(path)
-        return set(data["channels"]) == {"R", "G", "B", "A"}
+        try:
+            data = exrheader.read_exr_header(path)
+        except Exception:
+            self.log.warning("EXR header read failed: %s" % path)
+            return False
+        return set(data["channels"]) in [{"R", "G", "B", "A"},
+                                         {"R", "G", "B"}]
 
     def load(self, context, name=None, namespace=None, options=None):
 
@@ -103,43 +108,46 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
             multiaov_reads.append(read)
 
-        has_beauty = "beauty" in singleaovs
+        nodes = multiaov_reads[:]
 
-        with command.viewer_update_and_undo_stop():
-            group = nuke.createNode("Group")
-            group.autoplace()
+        if singleaovs:
+            has_beauty = "beauty" in singleaovs
 
-            with nuke_lib.group_scope(group):
+            with command.viewer_update_and_undo_stop():
+                group = nuke.createNode("Group")
+                group.autoplace()
 
-                for aov_name, data in singleaovs.items():
-                    read = nuke.Node("Read")
-                    read["selected"].setValue(False)
-                    read.autoplace()
-                    path = data["_resolved"]
+                with nuke_lib.group_scope(group):
 
-                    self.set_path(read, aov_name=aov_name, path=path)
-                    self.set_format(read, data["resolution"])
-                    self.set_range(read, start=start, end=end)
+                    for aov_name, data in singleaovs.items():
+                        read = nuke.Node("Read")
+                        read["selected"].setValue(False)
+                        read.autoplace()
+                        path = data["_resolved"]
 
-                    # Mark aov name
-                    lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
-                    singleaov_reads[aov_name] = read
+                        self.set_path(read, aov_name=aov_name, path=path)
+                        self.set_format(read, data["resolution"])
+                        self.set_range(read, start=start, end=end)
 
-                if has_beauty:
-                    beauty = singleaov_reads.pop("beauty")
-                else:
-                    beauty = singleaov_reads.popitem()[1]
+                        # Mark aov name
+                        lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
+                        singleaov_reads[aov_name] = read
 
-                nuke_lib.exr_merge(beauty, singleaov_reads.values())
+                    if has_beauty:
+                        beauty = singleaov_reads.pop("beauty")
+                    else:
+                        beauty = singleaov_reads.popitem()[1]
 
-                output = nuke.createNode("Output")
-                output.autoplace()
+                    nuke_lib.exr_merge(beauty, singleaov_reads.values())
 
-            stamp = nuke.createNode("PostageStamp")
-            stamp.setName(namespace)
-            group.setName(name)
+                    output = nuke.createNode("Output")
+                    output.autoplace()
 
-        nodes = multiaov_reads + [stamp, group] + group.nodes()
+                stamp = nuke.createNode("PostageStamp")
+                stamp.setName(namespace)
+                group.setName(name)
+
+            nodes += [stamp, group] + group.nodes()
 
         return pipeline.containerise(name=name,
                                      namespace=namespace,
