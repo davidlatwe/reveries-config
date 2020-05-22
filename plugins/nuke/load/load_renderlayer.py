@@ -7,6 +7,7 @@ from reveries.plugins import PackageLoader
 from reveries.utils import get_representation_path_
 from reveries.tools import seqparser
 from reveries.nuke import lib as nuke_lib
+from reveries.vendor import parse_exr_header as exrheader
 
 
 class RenderLayerLoader(PackageLoader, avalon.api.Loader):
@@ -45,6 +46,10 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 finally:
                     break
 
+    def is_singleaov(self, path):
+        data = exrheader.read_exr_header(path)
+        return set(data["channels"]) == {"R", "G", "B", "A"}
+
     def load(self, context, name=None, namespace=None, options=None):
 
         representation = context["representation"]
@@ -67,26 +72,49 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             parent=pipeline.get_main_window(),
         )
 
+        # Filter out multi-channle sequence
+        multiaovs = OrderedDict()
+        singleaovs = OrderedDict()
+
+        for aov_name in sorted(sequences, key=lambda k: k.lower()):
+            data = sequences[aov_name]
+            path = data["_resolved"] % start
+            if self.is_singleaov(path):
+                singleaovs[aov_name] = data
+            else:
+                multiaovs[aov_name] = data
+
+        multiaov_reads = list()
+        singleaov_reads = OrderedDict()
+
         lib.reset_selection()
+
+        for aov_name, data in multiaovs.items():
+            read = nuke.Node("Read")
+            read["selected"].setValue(False)
+            read.autoplace()
+            path = data["_resolved"]
+
+            self.set_path(read, aov_name=aov_name, path=path)
+            self.set_format(read, data["resolution"])
+            self.set_range(read, start=start, end=end)
+
+            # Mark aov name
+            lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
+            multiaov_reads.append(read)
+
+        has_beauty = "beauty" in singleaovs
 
         with command.viewer_update_and_undo_stop():
             group = nuke.createNode("Group")
+            group.autoplace()
 
             with nuke_lib.group_scope(group):
 
-                aovs = OrderedDict()
-                has_beauty = "beauty" in sequences
-
-                sorted_seqs = [
-                    (k, sequences[k]) for k in
-                    sorted(sequences, key=lambda k: k.lower())
-                ]
-
-                for aov_name, data in sorted_seqs:
+                for aov_name, data in singleaovs.items():
                     read = nuke.Node("Read")
                     read["selected"].setValue(False)
                     read.autoplace()
-                    aovs[aov_name] = read
                     path = data["_resolved"]
 
                     self.set_path(read, aov_name=aov_name, path=path)
@@ -95,13 +123,14 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
                     # Mark aov name
                     lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
+                    singleaov_reads[aov_name] = read
 
                 if has_beauty:
-                    beauty = aovs.pop("beauty")
+                    beauty = singleaov_reads.pop("beauty")
                 else:
-                    beauty = aovs.popitem()[1]
+                    beauty = singleaov_reads.popitem()[1]
 
-                nuke_lib.exr_merge(beauty, aovs.values())
+                nuke_lib.exr_merge(beauty, singleaov_reads.values())
 
                 output = nuke.createNode("Output")
                 output.autoplace()
@@ -110,14 +139,14 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             stamp.setName(namespace)
             group.setName(name)
 
-            nodes = [stamp, group] + group.nodes()
+        nodes = multiaov_reads + [stamp, group] + group.nodes()
 
-            return pipeline.containerise(name=name,
-                                         namespace=namespace,
-                                         nodes=nodes,
-                                         context=context,
-                                         loader=self.__class__.__name__,
-                                         no_backdrop=True)
+        return pipeline.containerise(name=name,
+                                     namespace=namespace,
+                                     nodes=nodes,
+                                     context=context,
+                                     loader=self.__class__.__name__,
+                                     no_backdrop=True)
 
     def update(self, container, representation):
         read_nodes = dict()
