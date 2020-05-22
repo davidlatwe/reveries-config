@@ -80,7 +80,10 @@ class ValidateModelProtectedUnchanged(pyblish.api.InstancePlugin):
                                       shapes=True,
                                       path=True,
                                       noIntermediate=True,
-                                      type="mesh")[0]
+                                      type="mesh")
+            if not mesh:
+                continue
+            mesh = mesh[0]
 
             if not data["points"] == _hash(mesh)["points"]:
                 invalid.append(name)
