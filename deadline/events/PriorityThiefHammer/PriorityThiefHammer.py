@@ -20,7 +20,11 @@ class PriorityThiefHammerOnJobSubmitted(Deadline.Events.DeadlineEventListener):
         del self.OnJobSubmittedCallback
 
     def OnJobSubmitted(self, job):
-        if job.JobPriority > self.GetConfigEntry("ValidPriority"):
-            job.JobPriority = self.GetConfigEntry("Penalty")
+        valid = self.GetIntegerConfigEntryWithDefault("ValidPriority", 80)
+        penalty = self.GetIntegerConfigEntryWithDefault("Penalty", 70)
+
+        if job.JobPriority > valid:
+            job.JobPriority = penalty
             RepositoryUtils.SaveJob(job)
-            print("Job submitted with priority over 80. Fall back to 70, Bam !")
+            print("Job submitted with priority over %d. Fall back to %d, Bam !"
+                  % (valid, penalty))
