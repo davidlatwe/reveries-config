@@ -3,3 +3,21 @@ Type=Enum
 Items=Global Enabled;Opt-In;Disabled
 Label=State
 Default=Disabled
+
+[ValidPriority]
+Type=integer
+Minimum=0
+Maximum=100
+Increment=1
+Label=Valid Starting Priority
+Default=80
+Description=
+
+[Penalty]
+Type=integer
+Minimum=0
+Maximum=100
+Increment=1
+Label=Priority Penalty
+Default=70
+Description=Push priority back to this number if invalid.
