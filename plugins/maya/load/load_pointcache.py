@@ -1,8 +1,5 @@
 
 import avalon.api
-
-import reveries.maya.lib
-from reveries.maya import utils
 from reveries.maya.plugins import ReferenceLoader
 from avalon.vendor import qargparse
 
@@ -34,6 +31,8 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
 
     def process_reference(self, context, name, namespace, group, options):
         import maya.cmds as cmds
+        import reveries.maya.lib
+        from reveries.maya import utils
 
         representation = context["representation"]
 
