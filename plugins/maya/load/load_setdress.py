@@ -19,11 +19,10 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         "setPackage"
     ]
 
-    def has_input_connections(self, node):
+    def has_input_connections(self, node, attributes):
         import maya.cmds as cmds
-        from reveries.maya.lib import TRANSFORM_ATTRS
 
-        for attr in TRANSFORM_ATTRS:
+        for attr in attributes:
             conns = cmds.listConnections(node + "." + attr,
                                          source=True,
                                          destination=False,
@@ -58,6 +57,14 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             if not transform:
                 continue
 
+            if transform == "<alembic>":
+                abc = transform = is_hidden
+                alembic = sub_matrix
+                cmds.setAttr(abc + ".speed", alembic[0])
+                cmds.setAttr(abc + ".offset", alembic[1])
+                cmds.setAttr(abc + ".cycleType", alembic[2])
+                continue
+
             with self.keep_scale_pivot(transform):
                 cmds.xform(transform,
                            objectSpace=True,
@@ -70,6 +77,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         """
         import maya.cmds as cmds
         from reveries.lib import matrix_equals
+        from reveries.maya.lib import TRANSFORM_ATTRS
 
         assembly = container["subsetGroup"]
 
@@ -84,7 +92,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         if has_matrix_override and not force:
             self.log.warning("Matrix override preserved on %s",
                              assembly)
-        elif self.has_input_connections(assembly):
+        elif self.has_input_connections(assembly, TRANSFORM_ATTRS):
             self.log.warning("Input connection preserved on %s",
                              assembly)
         else:
@@ -102,14 +110,29 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             if not transform:
                 continue
 
-            current_sub_matrix = cmds.xform(transform,
-                                            query=True,
-                                            matrix=True,
-                                            objectSpace=True)
-            current_hidden = not cmds.getAttr(transform + ".visibility")
-
             origin_sub_matrix, origin_hidden = old_data_map.get(transform,
                                                                 (None, False))
+
+            _tag = transform
+            if _tag == "<alembic>":
+                abc = transform = is_hidden
+                alembic = sub_matrix
+
+                current_sub_matrix = [
+                    cmds.getAttr(abc + ".speed"),
+                    cmds.getAttr(abc + ".offset"),
+                    cmds.getAttr(abc + ".cycleType"),
+                ]
+                current_hidden = None
+                attributes = ["speed", "offset", "cycleType"]
+
+            else:
+                current_sub_matrix = cmds.xform(transform,
+                                                query=True,
+                                                matrix=True,
+                                                objectSpace=True)
+                current_hidden = not cmds.getAttr(transform + ".visibility")
+                attributes = TRANSFORM_ATTRS
 
             # Updating matrix
             if origin_sub_matrix:
@@ -121,12 +144,19 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             if has_matrix_override and not force:
                 self.log.warning("Sub-Matrix override preserved on %s",
                                  transform)
-            elif self.has_input_connections(transform):
+            elif self.has_input_connections(transform, attributes):
                 self.log.warning("Input connection preserved on %s",
                                  transform)
+            elif _tag == "<alembic>":
+                cmds.setAttr(abc + ".speed", alembic[0])
+                cmds.setAttr(abc + ".offset", alembic[1])
+                cmds.setAttr(abc + ".cycleType", alembic[2])
             else:
                 with self.keep_scale_pivot(transform):
                     cmds.xform(transform, objectSpace=True, matrix=sub_matrix)
+
+            if _tag == "<alembic>":
+                continue
 
             # Updating visibility
             if origin_hidden:
@@ -202,3 +232,12 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                     matrix = DEFAULT_MATRIX
 
                 yield transform, matrix, is_hidden
+
+            # Alembic, If any..
+            # (NOTE) Shouldn't be loaded here with matrix, need decouple
+            alembic = data.get("alembic", {}).get(container_id)
+            if alembic:
+                abc = cmds.ls(nodes, type="AlembicNode")
+                if abc:
+                    abc = abc[0]  # Should have one and only one alembic node
+                    yield "<alembic>", alembic, abc

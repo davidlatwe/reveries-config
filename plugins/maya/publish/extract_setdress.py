@@ -61,10 +61,23 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
         data["subMatrix"][id_path] = dict()
         data["hidden"][id_path] = list()
 
-        members = cmds.sets(container["objectName"], query=True)
-        transforms = cmds.ls(members,
-                             type="transform",
-                             referencedNodes=True)
+        nodes = cmds.sets(container["objectName"], query=True, nodesOnly=True)
+
+        # Alembic, If any..
+        # (NOTE) Shouldn't be extracted here with matrix, need decouple
+        if container["loader"] == "PointCacheReferenceLoader":
+            abc = cmds.ls(nodes, type="AlembicNode")
+            if abc:
+                abc = abc[0]  # Should have one and only one alembic node
+                data["alembic"][id_path] = [
+                    cmds.getAttr(abc + ".speed"),
+                    cmds.getAttr(abc + ".offset"),
+                    cmds.getAttr(abc + ".cycleType"),
+                ]
+
+        # Transform Matrix
+        #
+        transforms = cmds.ls(nodes, type="transform", referencedNodes=True)
 
         for transform in transforms:
             matrix = cmds.xform(transform,
@@ -114,6 +127,7 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
 
             data["subMatrix"] = dict()
             data["hidden"] = dict()
+            data["alembic"] = dict()
 
             self._collect_components_matrix(data, container)
 
