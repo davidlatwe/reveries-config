@@ -49,3 +49,7 @@ class ExtractNodeGraph(pyblish.api.InstancePlugin):
 
             else:
                 nuke.nodeCopy(outpath)
+
+        # (TODO) The nuke script will be extracrted befroe write node being
+        #   rendered if the target has set to Deadline.
+        #   This extraction Should ALWAYS run after write node being rendered.
