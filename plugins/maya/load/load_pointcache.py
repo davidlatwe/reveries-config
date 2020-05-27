@@ -31,7 +31,6 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
 
     def process_reference(self, context, name, namespace, group, options):
         import maya.cmds as cmds
-        import reveries.maya.lib
         from reveries.maya import utils
 
         representation = context["representation"]
@@ -54,7 +53,6 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
         # (NOTE) Nodes loaded from Alembic did not have verifiers
         utils.update_id_verifiers(nodes)
 
-        reveries.maya.lib.lock_transform(group)
         self[:] = nodes
 
     def update(self, container, representation):
