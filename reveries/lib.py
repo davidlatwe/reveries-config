@@ -27,9 +27,18 @@ DEFAULT_MATRIX = [1.0, 0.0, 0.0, 0.0,
                   0.0, 0.0, 0.0, 1.0]
 
 
+_td = datetime.datetime.now() - datetime.datetime.utcnow()
+_sec = _td.days * 86400 + _td.seconds
+if _sec % 60 != 0:
+    _td = datetime.timedelta(seconds=int((_sec + 30) // 60) * 60)
+    # Avoid "ValueError: tzinfo.utcoffset() must return a whole number of
+    # minutes".
+    # Referenced from https://trac.edgewall.org/ticket/12617
+
+
 class LocalTZ(datetime.tzinfo):
     """Local time zone info, I guess."""
-    delta = datetime.datetime.now() - datetime.datetime.utcnow()
+    delta = _td
     utcoffset = dst = lambda self, dt: self.delta
 
 
