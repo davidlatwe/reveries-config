@@ -1,6 +1,5 @@
 
 import pyblish.api
-from collections import defaultdict
 from reveries import plugins
 
 
@@ -238,6 +237,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     def _get_avalon_uuid(cls, instance):
         from maya import cmds
         from reveries.maya import utils, pipeline
+        from collections import defaultdict
 
         uuids = defaultdict(list)
         group_nodes = cls.ls_subset_groups()
