@@ -33,6 +33,8 @@ class ExtractTexture(pyblish.api.InstancePlugin):
         PREVIOUS = dict()
         CURRENT = dict()
 
+        USE_TX = instance.data.get("useTxMaps", False)
+        files_to_tx = dict()
         files_to_copy = dict()
 
         # Get previous files
@@ -78,7 +80,6 @@ class ExtractTexture(pyblish.api.InstancePlugin):
 
         # To transfer
         #
-        USE_TX = instance.data.get("useTxMaps", False)
         new_version = instance.data["versionNext"]
 
         for fpattern, data in CURRENT.items():
@@ -159,7 +160,14 @@ class ExtractTexture(pyblish.api.InstancePlugin):
                         tx_abs_path = to_tx(abs_path)
                         tx_stage_file = to_tx(file)
 
+                        if current_color_space == "Raw":
+                            input_colorspace = "linear"
+                        else:
+                            input_colorspace = current_color_space
+
                         files_to_copy[tx_stage_file] = tx_abs_path
+                        files_to_tx[tx_abs_path] = (abs_path,
+                                                    input_colorspace)
 
                     all_files.append(file)
 
@@ -171,6 +179,8 @@ class ExtractTexture(pyblish.api.InstancePlugin):
                                             current_color_space)
 
         file_inventory += NEW_OR_CHANGED
+
+        instance.data["maketx"] = files_to_tx
 
         instance.data["repr.TexturePack._stage"] = staging_dir
         instance.data["repr.TexturePack._hardlinks"] = list(files_to_copy)
@@ -228,6 +238,7 @@ class ExtractTexture(pyblish.api.InstancePlugin):
                 os.makedirs(dst_dir)
 
             try:
+                self.log.info("Staging %s" % src)
                 shutil.copy2(src, dst)
             except OSError:
                 msg = "An unexpected error occurred."
