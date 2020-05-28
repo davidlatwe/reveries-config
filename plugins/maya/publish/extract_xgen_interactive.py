@@ -56,7 +56,9 @@ class ExtractXGenInteractive(pyblish.api.InstancePlugin):
                 # Get bounded meshes
                 bound_map[desc_id] = list()
                 for mesh in xgen.interactive.list_bound_meshes(description):
-                    transform = cmds.listRelatives(mesh, parent=True)
+                    transform = cmds.listRelatives(mesh,
+                                                   parent=True,
+                                                   fullPath=True)
                     id = maya_utils.get_id(transform[0])
                     bound_map[desc_id].append(id)
 
