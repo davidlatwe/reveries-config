@@ -228,6 +228,7 @@ class ExtractTexture(pyblish.api.InstancePlugin):
                 os.makedirs(dst_dir)
 
             try:
+                self.log.info("Staging %s" % src)
                 shutil.copy2(src, dst)
             except OSError:
                 msg = "An unexpected error occurred."
