@@ -59,7 +59,7 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
         id_path = hierarchy.container_to_id_path(container)
 
         data["subMatrix"][id_path] = dict()
-        data["hidden"][id_path] = list()
+        data["hidden"][id_path] = dict()
 
         nodes = cmds.sets(container["objectName"], query=True, nodesOnly=True)
 
@@ -89,13 +89,22 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
                 matrix = "<default>"
 
             address = maya_utils.get_id(transform)
-            data["subMatrix"][id_path][address] = matrix
+            short = transform.split("|")[-1].split(":")[-1]
+            # (NOTE) New data model for duplicated AvalonID..
+            #   Use transform node's short name as a buffer for AvalonID
+            #   duplication..
+            if address not in data["subMatrix"][id_path]:
+                data["subMatrix"][id_path][address] = dict()
+            data["subMatrix"][id_path][address][short] = matrix
 
             # Collect visbility with matrix
             visibility = cmds.getAttr(transform + ".visibility")
             if not visibility:
                 # Only record hidden nodes
-                data["hidden"][id_path].append(address)
+                if address not in data["hidden"][id_path]:
+                    # (NOTE) New data model for duplicated AvalonID..
+                    data["hidden"][id_path][address] = list()
+                data["hidden"][id_path][address].append(short)
 
         # Collect subseet group node's matrix
         subset_group = container["subsetGroup"]

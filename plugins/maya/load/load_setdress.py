@@ -186,7 +186,11 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
 
         transform_id_map = dict()
         for transform in cmds.ls(nodes, type="transform"):
-            transform_id_map[get_id(transform)] = transform
+            id = get_id(transform)
+            if id not in transform_id_map:
+                # (NOTE) New data model for duplicated AvalonID..
+                transform_id_map[id] = list()
+            transform_id_map[id].append(transform)
 
         return transform_id_map
 
@@ -197,6 +201,9 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         from reveries.lib import DEFAULT_MATRIX
         from reveries.maya.hierarchy import container_from_id_path
         from reveries.maya.pipeline import get_group_from_container
+
+        def d(mx):
+            return DEFAULT_MATRIX if mx == "<default>" else mx
 
         current_NS = cmds.namespaceInfo(currentNamespace=True,
                                         absoluteName=True)
@@ -210,7 +217,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             full_NS = cmds.getAttr(container + ".namespace")
             nodes = cmds.namespaceInfo(full_NS, listOnlyDependencyNodes=True)
             # Collect hidden nodes' address
-            hidden = data.get("hidden", {}).get(container_id, [])
+            hidden = data.get("hidden", {}).get(container_id, {})
 
             transform_id_map = self.transform_by_id(nodes)
 
@@ -221,17 +228,32 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                     _, matrix = sub_matrix[address].popitem()
                     transform = get_group_from_container(container)
 
+                    yield transform, d(matrix), is_hidden
+
                 else:
-                    transform = transform_id_map.get(address)
+                    transforms = transform_id_map.get(address)
                     matrix = sub_matrix[address]
 
-                    if address in hidden and transform is not None:
+                    if address in hidden and transforms is not None:
                         is_hidden = True
 
-                if matrix == "<default>":
-                    matrix = DEFAULT_MATRIX
+                    if isinstance(matrix, dict):
+                        # (NOTE) New data model for duplicated AvalonID..
+                        for transform in transforms or []:
+                            short = transform.split("|")[-1].split(":")[-1]
+                            _matrix = matrix.get(short)
 
-                yield transform, matrix, is_hidden
+                            if _matrix is None:
+                                continue
+
+                            _hidden = is_hidden and short in hidden[address]
+
+                            yield transform, d(_matrix), _hidden
+
+                    else:
+                        transform = transforms[-1] if transforms else None
+
+                        yield transform, d(matrix), is_hidden
 
             # Alembic, If any..
             # (NOTE) Shouldn't be loaded here with matrix, need decouple
