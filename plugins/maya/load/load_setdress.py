@@ -44,6 +44,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         """
         """
         import maya.cmds as cmds
+        from reveries.maya.lib import TRANSFORM_ATTRS
 
         assembly = container["subsetGroup"]
 
@@ -63,6 +64,10 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 cmds.setAttr(abc + ".speed", alembic[0])
                 cmds.setAttr(abc + ".offset", alembic[1])
                 cmds.setAttr(abc + ".cycleType", alembic[2])
+                continue
+
+            if self.has_input_connections(transform, TRANSFORM_ATTRS):
+                # Possible an object that is part of pointcache
                 continue
 
             with self.keep_scale_pivot(transform):
