@@ -34,7 +34,9 @@ class ValidateXGenDescriptionInRoot(pyblish.api.InstancePlugin):
         invalid = list()
 
         for description in instance.data["igsDescriptions"]:
-            transform = cmds.listRelatives(description, parent=True)[0]
+            transform = cmds.listRelatives(description,
+                                           parent=True,
+                                           fullPath=True)[0]
             # Should not have parent
             if cmds.listRelatives(transform, parent=True):
                 invalid.append(description)
