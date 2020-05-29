@@ -59,6 +59,7 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
         id_path = hierarchy.container_to_id_path(container)
 
         data["subMatrix"][id_path] = dict()
+        data["inheritsTransform"][id_path] = dict()
         data["hidden"][id_path] = dict()
 
         nodes = cmds.sets(container["objectName"], query=True, nodesOnly=True)
@@ -97,6 +98,13 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
                 data["subMatrix"][id_path][address] = dict()
             data["subMatrix"][id_path][address][short] = matrix
 
+            # Collect `inheritsTransform`...
+            inherits = cmds.getAttr(transform + ".inheritsTransform")
+            if address not in data["inheritsTransform"][id_path]:
+                # (NOTE) New data model for duplicated AvalonID..
+                data["inheritsTransform"][id_path][address] = dict()
+            data["inheritsTransform"][id_path][address][short] = inherits
+
             # Collect visbility with matrix
             visibility = cmds.getAttr(transform + ".visibility")
             if not visibility:
@@ -113,9 +121,11 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
                             query=True,
                             matrix=True,
                             objectSpace=True)
+        inherits = cmds.getAttr(subset_group + ".inheritsTransform")
 
         name = subset_group.rsplit(":", 1)[-1]
         data["subMatrix"][id_path]["GROUP"] = {name: matrix}
+        data["inheritsTransform"][id_path]["GROUP"] = {name: inherits}
 
     def parse_matrix(self, instance):
         from maya import cmds
@@ -132,6 +142,7 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
             data["matrix"] = matrix
 
             data["subMatrix"] = dict()
+            data["inheritsTransform"] = dict()
             data["hidden"] = dict()
             data["alembic"] = dict()
 
