@@ -31,6 +31,16 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 return True
         return False
 
+    def set_attr(self, attr, value):
+        import maya.cmds as cmds
+
+        if not cmds.getAttr(attr, lock=True):
+            try:
+                cmds.setAttr(attr, value)
+            except Exception:
+                # Ignore all errors
+                pass
+
     @contextlib.contextmanager
     def keep_scale_pivot(self, node):
         import maya.cmds as cmds
@@ -63,20 +73,20 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             if transform == "<alembic>":
                 abc = transform = is_hidden
                 alembic = sub_matrix
-                cmds.setAttr(abc + ".speed", alembic[0])
-                cmds.setAttr(abc + ".offset", alembic[1])
-                cmds.setAttr(abc + ".cycleType", alembic[2])
+                self.set_attr(abc + ".speed", alembic[0])
+                self.set_attr(abc + ".offset", alembic[1])
+                self.set_attr(abc + ".cycleType", alembic[2])
                 continue
 
             if (is_hidden
                     and not self.has_input_connections(transform,
                                                        ["visibility"])):
-                cmds.setAttr(transform + ".visibility", False)
+                self.set_attr(transform + ".visibility", False)
 
             # inheritsTransform
             current_inherits = cmds.getAttr(transform + ".it")
             if inherits is not None and not current_inherits == inherits:
-                cmds.setAttr(transform + ".it", inherits)
+                self.set_attr(transform + ".it", inherits)
 
             if self.has_input_connections(transform, TRANSFORM_ATTRS):
                 # Possible an object that is part of pointcache
@@ -165,9 +175,9 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 self.log.warning("Input connection preserved on %s",
                                  transform)
             elif _tag == "<alembic>":
-                cmds.setAttr(abc + ".speed", alembic[0])
-                cmds.setAttr(abc + ".offset", alembic[1])
-                cmds.setAttr(abc + ".cycleType", alembic[2])
+                self.set_attr(abc + ".speed", alembic[0])
+                self.set_attr(abc + ".offset", alembic[1])
+                self.set_attr(abc + ".cycleType", alembic[2])
             else:
                 with self.keep_scale_pivot(transform):
                     cmds.xform(transform, objectSpace=True, matrix=sub_matrix)
@@ -187,14 +197,14 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             elif inherits is not None:
                 if force:
                     if current_inherits and not inherits:
-                        cmds.setAttr(transform + ".it", True)
+                        self.set_attr(transform + ".it", True)
                     elif not current_inherits and inherits:
-                        cmds.setAttr(transform + ".it", False)
+                        self.set_attr(transform + ".it", False)
                 else:
                     if origin_inherits and not inherits:
-                        cmds.setAttr(transform + ".it", True)
+                        self.set_attr(transform + ".it", True)
                     elif not origin_inherits and inherits:
-                        cmds.setAttr(transform + ".it", False)
+                        self.set_attr(transform + ".it", False)
 
             # Updating visibility
             if self.has_input_connections(transform, ["visibility"]):
@@ -210,14 +220,14 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                                  transform)
             elif force:
                 if current_hidden and not is_hidden:
-                    cmds.setAttr(transform + ".visibility", True)
+                    self.set_attr(transform + ".visibility", True)
                 elif not current_hidden and is_hidden:
-                    cmds.setAttr(transform + ".visibility", False)
+                    self.set_attr(transform + ".visibility", False)
             else:
                 if origin_hidden and not is_hidden:
-                    cmds.setAttr(transform + ".visibility", True)
+                    self.set_attr(transform + ".visibility", True)
                 elif not origin_hidden and is_hidden:
-                    cmds.setAttr(transform + ".visibility", False)
+                    self.set_attr(transform + ".visibility", False)
 
     def transform_by_id(self, nodes):
         """
