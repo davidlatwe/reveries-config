@@ -114,9 +114,6 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
                             matrix=True,
                             objectSpace=True)
 
-        if matrix_equals(matrix, DEFAULT_MATRIX):
-            return
-
         name = subset_group.rsplit(":", 1)[-1]
         data["subMatrix"][id_path]["GROUP"] = {name: matrix}
 
