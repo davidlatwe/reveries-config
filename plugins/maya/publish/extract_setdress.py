@@ -79,6 +79,7 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
         # Transform Matrix
         #
         transforms = cmds.ls(nodes, type="transform", referencedNodes=True)
+        transforms = set(transforms) - set(cmds.ls(transforms, type=["joint"]))
 
         for transform in transforms:
             matrix = cmds.xform(transform,
