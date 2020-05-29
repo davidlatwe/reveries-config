@@ -130,7 +130,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                         self.set_range(read, start=start, end=end)
 
                         # Mark aov name
-                        lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
+                        knob = ("aov", "AOV")
+                        lib.set_avalon_knob_data(read, {knob: aov_name})
                         singleaov_reads[aov_name] = read
 
                     if has_beauty:
