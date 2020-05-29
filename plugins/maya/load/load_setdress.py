@@ -66,6 +66,11 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 cmds.setAttr(abc + ".cycleType", alembic[2])
                 continue
 
+            if (is_hidden
+                    and not self.has_input_connections(transform,
+                                                       ["visibility"])):
+                cmds.setAttr(transform + ".visibility", False)
+
             if self.has_input_connections(transform, TRANSFORM_ATTRS):
                 # Possible an object that is part of pointcache
                 continue
@@ -74,8 +79,6 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 cmds.xform(transform,
                            objectSpace=True,
                            matrix=sub_matrix)
-            if is_hidden:
-                cmds.setAttr(transform + ".visibility", False)
 
     def update_variation(self, data_new, data_old, container, force=False):
         """
@@ -164,6 +167,9 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 continue
 
             # Updating visibility
+            if self.has_input_connections(transform, ["visibility"]):
+                continue
+
             if origin_hidden:
                 has_hidden_override = current_hidden != origin_hidden
             else:
