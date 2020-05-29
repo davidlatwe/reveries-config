@@ -54,7 +54,9 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             cmds.xform(assembly, objectSpace=True, matrix=matrix)
 
         # Apply matrix to components
-        for transform, sub_matrix, is_hidden in self.parse_sub_matrix(data):
+        for parsed in self.parse_sub_matrix(data):
+            transform, sub_matrix, is_hidden, inherits = parsed
+
             if not transform:
                 continue
 
@@ -66,6 +68,16 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 cmds.setAttr(abc + ".cycleType", alembic[2])
                 continue
 
+            if (is_hidden
+                    and not self.has_input_connections(transform,
+                                                       ["visibility"])):
+                cmds.setAttr(transform + ".visibility", False)
+
+            # inheritsTransform
+            current_inherits = cmds.getAttr(transform + ".it")
+            if inherits is not None and not current_inherits == inherits:
+                cmds.setAttr(transform + ".it", inherits)
+
             if self.has_input_connections(transform, TRANSFORM_ATTRS):
                 # Possible an object that is part of pointcache
                 continue
@@ -74,8 +86,6 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 cmds.xform(transform,
                            objectSpace=True,
                            matrix=sub_matrix)
-            if is_hidden:
-                cmds.setAttr(transform + ".visibility", False)
 
     def update_variation(self, data_new, data_old, container, force=False):
         """
@@ -106,17 +116,17 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 cmds.xform(assembly, objectSpace=True, matrix=new_matrix)
 
         # Update matrix to components
-        old_data_map = {t: (m, h) for t, m, h in
+        old_data_map = {t: (m, h, i) for t, m, h, i in
                         self.parse_sub_matrix(data_old)}
 
         for parsed in self.parse_sub_matrix(data_new):
-            transform, sub_matrix, is_hidden = parsed
+            transform, sub_matrix, is_hidden, inherits = parsed
 
             if not transform:
                 continue
 
-            origin_sub_matrix, origin_hidden = old_data_map.get(transform,
-                                                                (None, False))
+            origin = old_data_map.get(transform, (None, False, None))
+            origin_sub_matrix, origin_hidden, origin_inherits = origin
 
             _tag = transform
             if _tag == "<alembic>":
@@ -129,6 +139,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                     cmds.getAttr(abc + ".cycleType"),
                 ]
                 current_hidden = None
+                current_inherits = None
                 attributes = ["speed", "offset", "cycleType"]
 
             else:
@@ -137,6 +148,7 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                                                 matrix=True,
                                                 objectSpace=True)
                 current_hidden = not cmds.getAttr(transform + ".visibility")
+                current_inherits = cmds.getAttr(transform + ".it")
                 attributes = TRANSFORM_ATTRS
 
             # Updating matrix
@@ -163,7 +175,31 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             if _tag == "<alembic>":
                 continue
 
+            # Updating inheritsTransform
+            if origin_inherits is not None:
+                has_inherits_override = current_inherits != origin_inherits
+            else:
+                has_inherits_override = False
+
+            if has_inherits_override and not force:
+                self.log.warning("InheritsTransform override preserved on %s",
+                                 transform)
+            elif inherits is not None:
+                if force:
+                    if current_inherits and not inherits:
+                        cmds.setAttr(transform + ".it", True)
+                    elif not current_inherits and inherits:
+                        cmds.setAttr(transform + ".it", False)
+                else:
+                    if origin_inherits and not inherits:
+                        cmds.setAttr(transform + ".it", True)
+                    elif not origin_inherits and inherits:
+                        cmds.setAttr(transform + ".it", False)
+
             # Updating visibility
+            if self.has_input_connections(transform, ["visibility"]):
+                continue
+
             if origin_hidden:
                 has_hidden_override = current_hidden != origin_hidden
             else:
@@ -223,6 +259,8 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             nodes = cmds.namespaceInfo(full_NS, listOnlyDependencyNodes=True)
             # Collect hidden nodes' address
             hidden = data.get("hidden", {}).get(container_id, {})
+            # Collect inheritsTransform
+            inherits = data.get("inheritsTransform", {}).get(container_id, {})
 
             transform_id_map = self.transform_by_id(nodes)
 
@@ -231,9 +269,10 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
 
                 if address == "GROUP":
                     _, matrix = sub_matrix[address].popitem()
+                    _, _inherits = inherits.get(address, {"": None}).popitem()
                     transform = get_group_from_container(container)
 
-                    yield transform, d(matrix), is_hidden
+                    yield transform, d(matrix), is_hidden, _inherits
 
                 else:
                     transforms = transform_id_map.get(address)
@@ -252,13 +291,15 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                                 continue
 
                             _hidden = is_hidden and short in hidden[address]
+                            _inherits = inherits.get(address, {}).get(short)
 
-                            yield transform, d(_matrix), _hidden
+                            yield transform, d(_matrix), _hidden, _inherits
 
                     else:
                         transform = transforms[-1] if transforms else None
-
-                        yield transform, d(matrix), is_hidden
+                        # `inherits` must be None because we didn't collect
+                        # this attribute while using previous data model.
+                        yield transform, d(matrix), is_hidden, None
 
             # Alembic, If any..
             # (NOTE) Shouldn't be loaded here with matrix, need decouple
@@ -267,4 +308,4 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 abc = cmds.ls(nodes, type="AlembicNode")
                 if abc:
                     abc = abc[0]  # Should have one and only one alembic node
-                    yield "<alembic>", alembic, abc
+                    yield "<alembic>", alembic, abc, None
