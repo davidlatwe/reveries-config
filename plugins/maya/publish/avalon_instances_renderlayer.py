@@ -116,6 +116,7 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
             if not render_cams:
                 self.log.warning("No renderable camera in %s, skipping.."
                                  "" % layer)
+                continue
 
             # Keep track of the amount of all renderable cameras in the
             # layer so we can use this information elsewhere, however note
