@@ -123,7 +123,9 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
             # that we split instances per camera below as `data["camera"]`
             data["cameras"] = render_cams
 
-            for camera in render_cams:
+            render_cams = self.pair_stereo_cameras(render_cams)
+
+            for camera, stereo_pairs in render_cams.items():
 
                 # Define nice label
                 label = "{0} ({1})".format(layername, data["asset"])
@@ -149,6 +151,7 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
                 data["subset"] = subset
                 data["subsetGroup"] = "Renders"
                 data["camera"] = camera
+                data["stereo"] = stereo_pairs
 
                 data["dependencies"] = dict()
                 data["futureDependencies"] = dict()
@@ -208,3 +211,66 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
             members.add(node.partialPathName())
 
         return list(members)
+
+    def pair_stereo_cameras(self, cameras):
+        render_cams = dict()
+
+        for cam in cameras:
+            stereo_rig = self.stereo_rig(cam)
+            if not stereo_rig:
+                render_cams[cam] = None
+                continue
+
+            side = self.stereo_side(stereo_rig, cam)
+            if side is None:
+                raise Exception("Side not found, possible corrupted stereo "
+                                "camera rig: %s" % stereo_rig)
+
+            if stereo_rig not in render_cams:
+                render_cams[stereo_rig] = [None, None]
+            render_cams[stereo_rig][side] = cam
+
+        return render_cams
+
+    def stereo_rig(self, camera):
+        """Returns setreo rig camera if this camera is being rigged
+
+        Args:
+            camera (str): Camera long name
+
+        Returns:
+            (str): Setreo rig camera short name or None if not stereo
+
+        """
+        from maya import cmds
+
+        stereo_rig = cmds.listConnections(camera,
+                                          destination=False,
+                                          source=True,
+                                          type="stereoRigCamera")
+        if stereo_rig:
+            return cmds.ls(stereo_rig)[0]
+
+    def stereo_side(self, stereo_rig, camera):
+        """Returns which side is this camera in the stereo rig
+
+        Args:
+            stereo_rig (str): Stereo rig camera name
+            camera (str): Camera name
+
+        Returns:
+            (int): Side of camera, 0 for "left" or 1 for "right"
+                   (None if stereo rig is corrupted)
+
+        """
+        from maya import cmds
+
+        camera = cmds.listRelatives(camera, parent=True, path=True)[0]
+        cam_msg = camera + ".message"
+
+        if cmds.isConnected(cam_msg, stereo_rig + ".leftCamera"):
+            return 0
+        elif cmds.isConnected(cam_msg, stereo_rig + ".rightCamera"):
+            return 1
+        else:
+            return None
