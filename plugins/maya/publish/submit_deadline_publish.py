@@ -1,5 +1,6 @@
 
 import os
+import copy
 import json
 import platform
 import pyblish.api
@@ -123,64 +124,8 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                 # Change Deadline group for Yeti
                 payload["JobInfo"]["Group"] = "yeti_render"
 
-            if instance.data["family"] in self.RENDER_TYPES:
-                # Render Job
-                output_dir = context.data["outputDir"]
-                has_renderlayer = context.data["hasRenderLayers"]
-                use_rendersetup = context.data["usingRenderSetup"]
-
-                output_prefix = instance.data["fileNamePrefix"]
-                renderlayer = instance.data["renderlayer"]
-                renderer = instance.data["renderer"]
-                rendercam = instance.data["camera"]
-
-                output_path_keys = dict()
-                outpaths = instance.data["outputPaths"]
-                for count, outpath in enumerate(outpaths.values()):
-                    head, tail = os.path.split(outpath)
-                    output_path_keys["OutputDirectory%d" % count] = head
-                    output_path_keys["OutputFilename%d" % count] = tail
-
-                payload["JobInfo"]["Frames"] = frames
-                payload["JobInfo"]["ChunkSize"] = frame_per_task
-                payload["JobInfo"].update(output_path_keys)
-
-                payload["PluginInfo"] = {
-                    # Input
-                    "SceneFile": fpath,
-                    # Resolve relative references
-                    "ProjectPath": workspace,
-                    # Mandatory for Deadline
-                    "Version": maya_version,
-                    # Output directory and filename
-                    "OutputFilePath": output_dir,
-                    "OutputFilePrefix": output_prefix,
-
-                    "UsingRenderLayers": has_renderlayer,
-                    "UseLegacyRenderLayers": not use_rendersetup,
-                    "RenderLayer": renderlayer,
-                    "Renderer": renderer,
-                    "Camera": rendercam,
-                }
-            else:
-                # Script Job
-                reveries_path = reveries.__file__
-                script_file = os.path.join(os.path.dirname(reveries_path),
-                                           "scripts",
-                                           "deadline_extract.py")
-
-                payload["PluginInfo"] = {
-                    "ScriptJob": True,
-                    "ScriptFilename": script_file,
-                    # Input
-                    "SceneFile": fpath,
-                    # Resolve relative references
-                    "ProjectPath": workspace,
-                    # Mandatory for Deadline
-                    "Version": maya_version,
-                }
-
             # Environment
+            #
 
             environment = self.assemble_environment(instance)
 
@@ -207,15 +152,99 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             }
             payload["JobInfo"].update(parsed_environment)
 
-            self.log.info("Submitting.. %s" % instance)
-            self.log.info(json.dumps(
-                payload, indent=4, sort_keys=True)
-            )
+            # About to submit...
+            #
 
-            # Submit
+            if instance.data["family"] in self.RENDER_TYPES:
+                # Render Job
+                output_dir = context.data["outputDir"]
+                has_renderlayer = context.data["hasRenderLayers"]
+                use_rendersetup = context.data["usingRenderSetup"]
 
-            submitter = context.data["deadlineSubmitter"]
-            submitter.add_job(payload)
+                output_prefix = instance.data["fileNamePrefix"]
+                renderlayer = instance.data["renderlayer"]
+                renderer = instance.data["renderer"]
+
+                payload["JobInfo"]["Frames"] = frames
+                payload["JobInfo"]["ChunkSize"] = frame_per_task
+
+                payload["PluginInfo"] = {
+                    # Input
+                    "SceneFile": fpath,
+                    # Resolve relative references
+                    "ProjectPath": workspace,
+                    # Mandatory for Deadline
+                    "Version": maya_version,
+                    # Output directory and filename
+                    "OutputFilePath": output_dir,
+                    "OutputFilePrefix": output_prefix,
+
+                    "UsingRenderLayers": has_renderlayer,
+                    "UseLegacyRenderLayers": not use_rendersetup,
+                    "RenderLayer": renderlayer,
+                    "Renderer": renderer,
+                }
+
+                def parse_output_path(outpaths):
+                    output_path_keys = dict()
+                    for count, outpath in enumerate(outpaths.values()):
+                        head, tail = os.path.split(outpath)
+                        output_path_keys["OutputDirectory%d" % count] = head
+                        output_path_keys["OutputFilename%d" % count] = tail
+
+                    return output_path_keys
+
+                stereo_pairs = instance.data.get("stereo")
+                if stereo_pairs is None:
+                    # Normal render
+                    rendercam = instance.data["camera"]
+                    outpaths = instance.data["outputPaths"]
+
+                    output_path_keys = parse_output_path(outpaths)
+                    payload["JobInfo"].update(output_path_keys)
+                    payload["PluginInfo"]["Camera"] = rendercam
+
+                    self.submit_instance(context, instance, payload)
+
+                else:
+                    # Stereo render
+                    stereo_outputs = instance.data["outputPaths"]
+                    for cam, out in zip(stereo_pairs, stereo_outputs):
+                        stereo_payload = copy.deepcopy(payload)
+
+                        output_path_keys = parse_output_path(out)
+                        stereo_payload["JobInfo"].update(output_path_keys)
+                        stereo_payload["PluginInfo"]["Camera"] = cam
+
+                        self.submit_instance(context, instance, stereo_payload)
+
+            else:
+                # Script Job
+                reveries_path = reveries.__file__
+                script_file = os.path.join(os.path.dirname(reveries_path),
+                                           "scripts",
+                                           "deadline_extract.py")
+
+                payload["PluginInfo"] = {
+                    "ScriptJob": True,
+                    "ScriptFilename": script_file,
+                    # Input
+                    "SceneFile": fpath,
+                    # Resolve relative references
+                    "ProjectPath": workspace,
+                    # Mandatory for Deadline
+                    "Version": maya_version,
+                }
+
+                self.submit_instance(context, instance, payload)
+
+    def submit_instance(self, context, instance, payload):
+        self.log.info("Submitting.. %s" % instance)
+        self.log.info(json.dumps(
+            payload, indent=4, sort_keys=True)
+        )
+        submitter = context.data["deadlineSubmitter"]
+        submitter.add_job(payload)
 
     def assemble_environment(self, instance):
         """Compose submission required environment variables for instance
