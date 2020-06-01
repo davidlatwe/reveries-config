@@ -14,11 +14,14 @@ class CollectAllDescendents(pyblish.api.InstancePlugin):
         from maya import cmds
 
         # Collect all descendents
-        instance += cmds.listRelatives(instance,
-                                       allDescendents=True,
-                                       fullPath=True) or []
+        members = instance[:]
 
-        instance[:] = sorted(set(instance))
+        for node in instance:
+            if not cmds.objExists(node):
+                self.log.warning("No object matches name: %s" % node)
+                continue
+            members += cmds.listRelatives(node,
+                                          allDescendents=True,
+                                          fullPath=True) or []
 
-        self.log.debug("Descendents collected for instance {!r}."
-                       "".format(str(instance.name)))
+        instance[:] = sorted(set(members))
