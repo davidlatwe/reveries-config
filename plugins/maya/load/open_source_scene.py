@@ -68,6 +68,9 @@ class OpenMayaSource(object):
         version_data = context["version"]["data"]
 
         source = version_data["source"]
+        if not source.startswith("{root}"):
+            root = source.split(avalon.api.Session["AVALON_PROJECT"])[0]
+            source = source.replace(root, "{root}/", 1)
         file_path = source.format(root=avalon.api.registered_root())
 
         # Switch context before load
