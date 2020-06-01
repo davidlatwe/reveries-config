@@ -96,7 +96,7 @@ class ExtractRender(pyblish.api.InstancePlugin):
 
             pattern = os.path.relpath(aov_path, staging_dir)
             if stereo:
-                pattern = pattern.replace(stereo, "{side}")
+                pattern = pattern.replace(stereo, "{stereo}")
 
             sequence[aov_name] = {
                 "imageFormat": instance.data["fileExt"],
