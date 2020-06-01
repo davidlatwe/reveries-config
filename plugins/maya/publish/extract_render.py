@@ -18,17 +18,62 @@ class ExtractRender(pyblish.api.InstancePlugin):
     def process(self, instance):
         """Extract per renderlayer that has AOVs (Arbitrary Output Variable)
         """
+        self.log.info("Computing render output path..")
+
+        staging_dir = instance.context.data["outputDir"]
+
+        hardlinks = list()
+        stereo_pairs = instance.data.get("stereo")
+        if stereo_pairs is None:
+            # Normal render
+            camera = instance.data["camera"]
+            outputs, sequence, files = self.compute_outputs(instance,
+                                                            camera,
+                                                            staging_dir)
+            instance.data["outputPaths"] = outputs
+            instance.data["repr.renderLayer.sequence"] = sequence
+            hardlinks = files
+
+        else:
+            # Stereo render
+            left, right = stereo_pairs
+
+            outputs_l, sequence, files_l = self.compute_outputs(instance,
+                                                                left,
+                                                                staging_dir,
+                                                                stereo="Left")
+            outputs_r, ________, files_r = self.compute_outputs(instance,
+                                                                right,
+                                                                staging_dir,
+                                                                stereo="Right")
+
+            instance.data["outputPaths"] = [outputs_l, outputs_r]
+            instance.data["repr.renderLayer.sequence"] = sequence
+            instance.data["repr.renderLayer.stereo"] = True
+            hardlinks = files_l + files_r
+
+        instance.data["repr.renderLayer._stage"] = staging_dir
+        instance.data["repr.renderLayer._hardlinks"] = hardlinks
+        instance.data["repr.renderLayer._delayRun"] = {
+            "func": self.render,
+        }
+
+    def compute_outputs(self, instance, camera, staging_dir, stereo=False):
         from maya import cmds
         from reveries.maya import utils as maya_utils
 
-        self.log.info("Computing render output path..")
-
         renderer = instance.data["renderer"]
         renderlayer = instance.data["renderlayer"]
-        camera = instance.data["camera"]
+
+        if stereo:
+            stereo_rig = instance.data["camera"]
+            camera_uuid = maya_utils.get_id(stereo_rig)
+            focal = cmds.getAttr(stereo_rig + ".focalLength")
+        else:
+            camera_uuid = maya_utils.get_id(camera)
+            focal = cmds.getAttr(camera + ".focalLength")
 
         # Computing output path may take a while
-        staging_dir = instance.context.data["outputDir"]
         outputs = maya_utils.get_output_paths(staging_dir,
                                               renderer,
                                               renderlayer,
@@ -50,13 +95,15 @@ class ExtractRender(pyblish.api.InstancePlugin):
         for aov_name, aov_path in outputs.items():
 
             pattern = os.path.relpath(aov_path, staging_dir)
+            if stereo:
+                pattern = pattern.replace(stereo, "{side}")
 
             sequence[aov_name] = {
                 "imageFormat": instance.data["fileExt"],
                 "fpattern": pattern,
-                "focalLength": cmds.getAttr(camera + ".focalLength"),
+                "focalLength": focal,
                 "resolution": instance.data["resolution"],
-                "cameraUUID": maya_utils.get_id(camera),
+                "cameraUUID": camera_uuid,
                 "renderlayer": renderlayer,
             }
 
@@ -68,14 +115,7 @@ class ExtractRender(pyblish.api.InstancePlugin):
             for frame_num in range(start, end + 1, step):
                 files.append(fname % frame_num)
 
-        instance.data["outputPaths"] = outputs
-
-        instance.data["repr.renderLayer._stage"] = staging_dir
-        instance.data["repr.renderLayer._hardlinks"] = files
-        instance.data["repr.renderLayer.sequence"] = sequence
-        instance.data["repr.renderLayer._delayRun"] = {
-            "func": self.render,
-        }
+        return outputs, sequence, files
 
     def get_arnold_extra_aov_outputs(self,
                                      staging_dir,
