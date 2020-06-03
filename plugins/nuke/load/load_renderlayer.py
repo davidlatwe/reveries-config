@@ -5,7 +5,6 @@ from collections import OrderedDict
 from avalon.nuke import pipeline, lib, command
 from reveries.plugins import PackageLoader
 from reveries.utils import get_representation_path_
-from reveries.tools import seqparser
 from reveries.nuke import lib as nuke_lib
 from reveries.vendor import parse_exr_header as exrheader
 
@@ -55,6 +54,18 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         return set(data["channels"]) in [{"R", "G", "B", "A"},
                                          {"R", "G", "B"}]
 
+    def resolve_path(self, sequences):
+        import os
+
+        for aov_name, data in sequences.items():
+            if "fname" in data:
+                tail = "%s/%s" % (aov_name, data["fname"])
+            else:
+                tail = data["fpattern"]
+
+            path = os.path.join(self.package_path, tail).replace("\\", "/")
+            data["_resolved"] = path
+
     def load(self, context, name=None, namespace=None, options=None):
 
         representation = context["representation"]
@@ -70,12 +81,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         start = version["data"]["startFrame"]
         end = version["data"]["endFrame"]
 
-        sequences = seqparser.show_on_stray(
-            root=self.package_path,
-            sequences=representation["data"]["sequence"],
-            framerange=(start, end),
-            parent=pipeline.get_main_window(),
-        )
+        sequences = representation["data"]["sequence"]
+        self.resolve_path(sequences)
 
         # Filter out multi-channle sequence
         multiaovs = OrderedDict()
@@ -173,12 +180,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         start = version["data"]["startFrame"]
         end = version["data"]["endFrame"]
 
-        sequences = seqparser.show_on_stray(
-            root=self.package_path,
-            sequences=representation["data"]["sequence"],
-            framerange=(start, end),
-            parent=pipeline.get_main_window(),
-        )
+        sequences = representation["data"]["sequence"]
+        self.resolve_path(sequences)
 
         with lib.sync_copies(list(read_nodes.values())):
             for aov_name, data in sequences.items():
