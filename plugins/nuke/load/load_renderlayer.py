@@ -24,7 +24,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
     ]
 
     def set_path(self, read, aov_name, path):
-        read["file"].setValue(path)
+        read["file"].setValue(path.format(stereo="%V"))
         read["label"].setValue(aov_name)
 
     def set_range(self, read, start, end):
@@ -45,7 +45,20 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 finally:
                     break
 
-    def is_singleaov(self, path):
+    def is_singleaov(self, path, start):
+        import os
+
+        path = path % start
+
+        if "{stereo}" in path:
+            for side in ["Left", "Right"]:
+                _p = path.format(stereo=side)
+                if os.path.isfile(_p):
+                    path = _p
+                    break
+            else:
+                raise FileNotFoundError("Both side not exist in: %s" % path)
+
         try:
             data = exrheader.read_exr_header(path)
         except Exception:
@@ -95,8 +108,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
         for aov_name in sorted(sequences, key=lambda k: k.lower()):
             data = sequences[aov_name]
-            path = data["_resolved"] % start
-            if self.is_singleaov(path):
+            if self.is_singleaov(data["_resolved"], start):
                 singleaovs[aov_name] = data
             else:
                 multiaovs[aov_name] = data
