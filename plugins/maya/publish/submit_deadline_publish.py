@@ -209,14 +209,18 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                 else:
                     # Stereo render
                     stereo_outputs = instance.data["outputPaths"]
+                    left = True
                     for cam, out in zip(stereo_pairs, stereo_outputs):
+                        side = "  [L]" if left else "  [R]"
                         stereo_payload = copy.deepcopy(payload)
 
                         output_path_keys = parse_output_path(out)
                         stereo_payload["JobInfo"].update(output_path_keys)
+                        stereo_payload["JobInfo"]["Name"] += side
                         stereo_payload["PluginInfo"]["Camera"] = cam
 
                         self.submit_instance(context, instance, stereo_payload)
+                        left = False
 
             else:
                 # Script Job
