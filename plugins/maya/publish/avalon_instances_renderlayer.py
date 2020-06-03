@@ -213,6 +213,15 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
         return list(members)
 
     def pair_stereo_cameras(self, cameras):
+        """Pair stereo cameras if any
+
+        Returns:
+
+            dict: Key would be camera name, the value would be a pair of
+                stereo side cameras or None if the camera is not stereo.
+                (NOTE) The setero pair is a list: [left, right]
+
+        """
         render_cams = dict()
 
         for cam in cameras:
