@@ -95,8 +95,6 @@ class ExtractRender(pyblish.api.InstancePlugin):
         for aov_name, aov_path in outputs.items():
 
             pattern = os.path.relpath(aov_path, staging_dir)
-            if stereo:
-                pattern = pattern.replace(stereo, "{stereo}")
 
             sequence[aov_name] = {
                 "imageFormat": instance.data["fileExt"],
@@ -106,6 +104,10 @@ class ExtractRender(pyblish.api.InstancePlugin):
                 "cameraUUID": camera_uuid,
                 "renderlayer": renderlayer,
             }
+
+            if stereo:
+                stereo_formated = pattern.replace(stereo, "{stereo}")
+                sequence[aov_name]["fpattern"] = stereo_formated
 
             start = int(instance.data["startFrame"])
             end = int(instance.data["endFrame"])
