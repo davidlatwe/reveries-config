@@ -63,6 +63,11 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             else:
                 tail = data["fpattern"]
 
+            padding = tail.count("#")
+            if padding:
+                frame_str = "%%0%dd" % padding
+                tail = tail.replace("#" * padding, frame_str)
+
             path = os.path.join(self.package_path, tail).replace("\\", "/")
             data["_resolved"] = path
 
