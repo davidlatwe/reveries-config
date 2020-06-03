@@ -125,7 +125,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             path = data["_resolved"]
 
             self.set_path(read, aov_name=aov_name, path=path)
-            self.set_format(read, data["resolution"])
+            # self.set_format(read, data["resolution"])
             self.set_range(read, start=start, end=end)
 
             # Mark aov name
@@ -150,7 +150,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                         path = data["_resolved"]
 
                         self.set_path(read, aov_name=aov_name, path=path)
-                        self.set_format(read, data["resolution"])
+                        # self.set_format(read, data["resolution"])
                         self.set_range(read, start=start, end=end)
 
                         # Mark aov name
@@ -207,7 +207,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                     continue
 
                 self.set_path(read, aov_name=aov_name, path=data["_resolved"])
-                self.set_format(read, data["resolution"])
+                # self.set_format(read, data["resolution"])
                 self.set_range(read, start=start, end=end)
 
         node = container["_node"]
