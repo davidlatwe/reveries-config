@@ -172,6 +172,11 @@ def show(callback=None, with_keys=None, parent=None):
 
 
 def show_on_stray(root, sequences, framerange, parent=None):
+    """Used for renderlayer loader to pick up nu-documented sequences
+
+    DEPRECATED
+
+    """
     start, end = framerange
     min_length = 1 if start == end else 2
 
@@ -219,6 +224,8 @@ def show_on_stray(root, sequences, framerange, parent=None):
             window.add_sequences(stray + resolved)
 
             if window.exec_():
+                # (NOTE) Here it returns a list of items, but we need dict in
+                #   Loader, this may not work in future.
                 sequences = window.collected(with_keys=["name", "resolution"])
 
     # (TODO) Remember resolved ?

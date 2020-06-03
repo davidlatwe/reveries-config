@@ -5,7 +5,6 @@ from collections import OrderedDict
 from avalon.nuke import pipeline, lib, command
 from reveries.plugins import PackageLoader
 from reveries.utils import get_representation_path_
-from reveries.tools import seqparser
 from reveries.nuke import lib as nuke_lib
 from reveries.vendor import parse_exr_header as exrheader
 
@@ -25,7 +24,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
     ]
 
     def set_path(self, read, aov_name, path):
-        read["file"].setValue(path)
+        read["file"].setValue(path.format(stereo="%V"))
         read["label"].setValue(aov_name)
 
     def set_range(self, read, start, end):
@@ -46,7 +45,20 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 finally:
                     break
 
-    def is_singleaov(self, path):
+    def is_singleaov(self, path, start):
+        import os
+
+        path = path % start
+
+        if "{stereo}" in path:
+            for side in ["Left", "Right"]:
+                _p = path.format(stereo=side)
+                if os.path.isfile(_p):
+                    path = _p
+                    break
+            else:
+                raise FileNotFoundError("Both side not exist in: %s" % path)
+
         try:
             data = exrheader.read_exr_header(path)
         except Exception:
@@ -54,6 +66,23 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             return False
         return set(data["channels"]) in [{"R", "G", "B", "A"},
                                          {"R", "G", "B"}]
+
+    def resolve_path(self, sequences):
+        import os
+
+        for aov_name, data in sequences.items():
+            if "fname" in data:
+                tail = "%s/%s" % (aov_name, data["fname"])
+            else:
+                tail = data["fpattern"]
+
+            padding = tail.count("#")
+            if padding:
+                frame_str = "%%0%dd" % padding
+                tail = tail.replace("#" * padding, frame_str)
+
+            path = os.path.join(self.package_path, tail).replace("\\", "/")
+            data["_resolved"] = path
 
     def load(self, context, name=None, namespace=None, options=None):
 
@@ -70,12 +99,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         start = version["data"]["startFrame"]
         end = version["data"]["endFrame"]
 
-        sequences = seqparser.show_on_stray(
-            root=self.package_path,
-            sequences=representation["data"]["sequence"],
-            framerange=(start, end),
-            parent=pipeline.get_main_window(),
-        )
+        sequences = representation["data"]["sequence"]
+        self.resolve_path(sequences)
 
         # Filter out multi-channle sequence
         multiaovs = OrderedDict()
@@ -83,8 +108,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
         for aov_name in sorted(sequences, key=lambda k: k.lower()):
             data = sequences[aov_name]
-            path = data["_resolved"] % start
-            if self.is_singleaov(path):
+            if self.is_singleaov(data["_resolved"], start):
                 singleaovs[aov_name] = data
             else:
                 multiaovs[aov_name] = data
@@ -101,7 +125,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             path = data["_resolved"]
 
             self.set_path(read, aov_name=aov_name, path=path)
-            self.set_format(read, data["resolution"])
+            # self.set_format(read, data["resolution"])
             self.set_range(read, start=start, end=end)
 
             # Mark aov name
@@ -126,7 +150,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                         path = data["_resolved"]
 
                         self.set_path(read, aov_name=aov_name, path=path)
-                        self.set_format(read, data["resolution"])
+                        # self.set_format(read, data["resolution"])
                         self.set_range(read, start=start, end=end)
 
                         # Mark aov name
@@ -173,12 +197,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         start = version["data"]["startFrame"]
         end = version["data"]["endFrame"]
 
-        sequences = seqparser.show_on_stray(
-            root=self.package_path,
-            sequences=representation["data"]["sequence"],
-            framerange=(start, end),
-            parent=pipeline.get_main_window(),
-        )
+        sequences = representation["data"]["sequence"]
+        self.resolve_path(sequences)
 
         with lib.sync_copies(list(read_nodes.values())):
             for aov_name, data in sequences.items():
@@ -187,7 +207,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                     continue
 
                 self.set_path(read, aov_name=aov_name, path=data["_resolved"])
-                self.set_format(read, data["resolution"])
+                # self.set_format(read, data["resolution"])
                 self.set_range(read, start=start, end=end)
 
         node = container["_node"]

@@ -20,14 +20,14 @@ class SequenceWidget(QtWidgets.QWidget):
             "view": QtWidgets.QTreeView(),
             "fpatternDel": None,
             "nameDel": None,
-            "resolutionDel": None,
+            # "resolutionDel": None,
         }
 
         data["proxy"].setSourceModel(data["model"])
         data["view"].setModel(data["proxy"])
         data["fpatternDel"] = delegates.LineHTMLDelegate(data["view"])
         data["nameDel"] = delegates.NameEditDelegate()
-        data["resolutionDel"] = delegates.ResolutionDelegate()
+        # data["resolutionDel"] = delegates.ResolutionDelegate()
 
         fpattern_delegate = data["fpatternDel"]
         column = data["model"].Columns.index("fpattern")
@@ -37,9 +37,9 @@ class SequenceWidget(QtWidgets.QWidget):
         column = data["model"].Columns.index("name")
         data["view"].setItemDelegateForColumn(column, name_delegate)
 
-        res_delegate = data["resolutionDel"]
-        column = data["model"].Columns.index("resolution")
-        data["view"].setItemDelegateForColumn(column, res_delegate)
+        # res_delegate = data["resolutionDel"]
+        # column = data["model"].Columns.index("resolution")
+        # data["view"].setItemDelegateForColumn(column, res_delegate)
 
         data["proxy"].setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
         data["view"].setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -77,22 +77,24 @@ class SequenceWidget(QtWidgets.QWidget):
             return
 
         menu = QtWidgets.QMenu(view)
-        icon_res = qtawesome.icon("fa.film", color="gray")
+        # icon_res = qtawesome.icon("fa.film", color="gray")
         icon_dir = qtawesome.icon("fa.folder-open", color="gray")
 
-        res_act = QtWidgets.QAction(menu, icon=icon_res, text="Set Resolution")
-        res_act.triggered.connect(self.action_set_resolution)
+        # res_act = QtWidgets.QAction(menu, icon=icon_res,
+        #                             text="Set Resolution")
+        # res_act.triggered.connect(self.action_set_resolution)
 
         dir_act = QtWidgets.QAction(menu, icon=icon_dir, text="Open Dir")
         dir_act.triggered.connect(self.action_open_dir)
 
-        menu.addAction(res_act)
+        # menu.addAction(res_act)
         menu.addAction(dir_act)
 
         globalpos = view.mapToGlobal(point)
         menu.exec_(globalpos)
 
     def action_set_resolution(self):
+        # Unused action
         dialog = QtWidgets.QDialog(self)
         editor = delegates.ResolutionEditor()
         layout = QtWidgets.QVBoxLayout(dialog)
@@ -154,7 +156,7 @@ class SequenceModel(models.TreeModel):
 
     Columns = [
         "fpattern",
-        "resolution",
+        # "resolution",
         "name",
     ]
 
@@ -175,7 +177,7 @@ class SequenceModel(models.TreeModel):
         item["paddingStr"] = sequence["paddingStr"]
         # Optional
         item["name"] = sequence.get("name", "")
-        item["resolution"] = sequence.get("resolution")  # Should be (w, h)
+        # item["resolution"] = sequence.get("resolution")  # Should be (w, h)
 
         html_fpattern = "{dir}{head}{padding}{tail}"
 
@@ -209,10 +211,10 @@ class SequenceModel(models.TreeModel):
             node = index.internalPointer()
             return node["fpatternHTML"]
 
-        if role == QtCore.Qt.DisplayRole:
-            if index.column() == self.Columns.index("resolution"):
-                node = index.internalPointer()
-                return node["resolution"] or (0, 0)
+        # if role == QtCore.Qt.DisplayRole:
+        #     if index.column() == self.Columns.index("resolution"):
+        #         node = index.internalPointer()
+        #         return node["resolution"] or (0, 0)
 
         return super(SequenceModel, self).data(index, role)
 
@@ -221,8 +223,8 @@ class SequenceModel(models.TreeModel):
 
         # Make the version column editable
         if index.column() in [self.Columns.index("fpattern"),
-                              self.Columns.index("name"),
-                              self.Columns.index("resolution"), ]:
+                              # self.Columns.index("resolution"), ]:
+                              self.Columns.index("name"), ]:
             flags |= QtCore.Qt.ItemIsEditable
 
         return flags
