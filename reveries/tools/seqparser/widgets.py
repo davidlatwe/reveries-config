@@ -133,6 +133,9 @@ class SequenceWidget(QtWidgets.QWidget):
         for path in to_open:
             os.startfile(path)
 
+    def set_stereo(self, vlaue):
+        self.data["model"].set_stereo(vlaue)
+
     def add_sequences(self, sequences):
         model = self.data["model"]
         model.clear()
@@ -162,6 +165,18 @@ class SequenceModel(models.TreeModel):
 
     HTMLTextRole = QtCore.Qt.UserRole + 10
 
+    def __init__(self, parent=None):
+        super(SequenceModel, self).__init__(parent)
+        self._stereo = False
+        self._stereo_icons = {
+            "Left": qtawesome.icon("fa.bullseye", color="#FC3731"),
+            "Right": qtawesome.icon("fa.bullseye", color="#53D8DF"),
+            None: qtawesome.icon("fa.circle", color="#656565"),
+        }
+
+    def set_stereo(self, value):
+        self._stereo = value
+
     def add_sequence(self, sequence):
         root_index = QtCore.QModelIndex()
         last = self.rowCount(root_index)
@@ -178,6 +193,37 @@ class SequenceModel(models.TreeModel):
         # Optional
         item["name"] = sequence.get("name", "")
         # item["resolution"] = sequence.get("resolution")  # Should be (w, h)
+
+        if self._stereo:
+
+            def take_side(fpattern):
+                if "Left" in fpattern:
+                    return "Left", fpattern.replace("Left", "{stereo}")
+                elif "Right" in fpattern:
+                    return "Right", fpattern.replace("Right", "{stereo}")
+                else:
+                    return None, fpattern
+
+            this_side, this_side_p = take_side(item["fpattern"])
+
+            if this_side is not None:
+                for row in reversed(range(last)):
+                    index = self.index(row, column=0, parent=root_index)
+                    other = index.internalPointer()
+                    if other.get("stereoSide"):
+                        # Paired
+                        continue
+
+                    other_side, other_side_p = take_side(other["fpattern"])
+                    if other_side is None:
+                        continue
+
+                    if this_side != other_side and this_side_p == other_side_p:
+                        item["stereoSide"] = this_side
+                        item["stereoPattern"] = this_side_p
+                        other["stereoSide"] = other_side
+                        other["stereoPattern"] = other_side_p
+                        break
 
         html_fpattern = "{dir}{head}{padding}{tail}"
 
@@ -215,6 +261,13 @@ class SequenceModel(models.TreeModel):
         #     if index.column() == self.Columns.index("resolution"):
         #         node = index.internalPointer()
         #         return node["resolution"] or (0, 0)
+
+        if role == QtCore.Qt.DecorationRole:
+            if index.column() == self.Columns.index("name"):
+                if self._stereo:
+                    node = index.internalPointer()
+                    side = node.get("stereoSide")
+                    return self._stereo_icons[side]
 
         return super(SequenceModel, self).data(index, role)
 

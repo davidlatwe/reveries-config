@@ -33,7 +33,9 @@ class Window(QtWidgets.QDialog):
 
             "sequences": {
                 "main": QtWidgets.QWidget(),
-                "single": QtWidgets.QCheckBox("Single Frame"),
+                "options": QtWidgets.QWidget(),
+                "single": QtWidgets.QCheckBox("Include Single Frame"),
+                "stereo": QtWidgets.QCheckBox("Pair Stereo Sequences"),
                 "view": widgets.SequenceWidget(),
             },
 
@@ -54,8 +56,14 @@ class Window(QtWidgets.QDialog):
             layout.setContentsMargins(4, 0, 4, 0)
 
         with data.pin("sequences") as sequences:
-            layout = QtWidgets.QVBoxLayout(sequences["main"])
+            layout = QtWidgets.QHBoxLayout(sequences["options"])
             layout.addWidget(sequences["single"])
+            layout.addSpacing(5)
+            layout.addWidget(sequences["stereo"])
+            layout.addStretch()
+            layout.setContentsMargins(2, 2, 2, 2)
+            layout = QtWidgets.QVBoxLayout(sequences["main"])
+            layout.addWidget(sequences["options"])
             layout.addWidget(sequences["view"])
             layout.setContentsMargins(4, 6, 4, 0)
 
@@ -80,6 +88,7 @@ class Window(QtWidgets.QDialog):
         data["rootPath"]["find"].clicked.connect(self.open_browser)
 
         data["sequences"]["single"].stateChanged.connect(self.on_single)
+        data["sequences"]["stereo"].stateChanged.connect(self.on_stereo)
 
         data["endDialog"]["accept"].clicked.connect(self.run_callback)
         data["endDialog"]["accept"].clicked.connect(self.accept)
@@ -96,6 +105,10 @@ class Window(QtWidgets.QDialog):
 
     def on_single(self, state):
         self.is_single = bool(state)
+        self.ls_sequences(self.data["rootPath"]["path"].text())
+
+    def on_stereo(self, state):
+        self.data["sequences"]["view"].set_stereo(bool(state))
         self.ls_sequences(self.data["rootPath"]["path"].text())
 
     def run_callback(self):
