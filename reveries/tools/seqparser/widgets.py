@@ -122,6 +122,7 @@ class SequenceModel(models.TreeModel):
     Columns = [
         "fpattern",
         "name",
+        "frames",
     ]
 
     HTMLTextRole = QtCore.Qt.UserRole + 10
@@ -151,6 +152,7 @@ class SequenceModel(models.TreeModel):
         item["root"] = sequence["root"]
         item["fpattern"] = sequence["fpattern"]
         item["paddingStr"] = sequence["paddingStr"]
+        item["frames"] = "%d-%d" % (sequence["start"], sequence["end"])
         # Optional
         item["name"] = sequence.get("name", "")
 
