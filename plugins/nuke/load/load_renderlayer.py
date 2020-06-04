@@ -23,29 +23,33 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         "renderLayer",
     ]
 
-    def set_path(self, read, aov_name, path):
+    @classmethod
+    def set_path(cls, read, aov_name, path):
         read["file"].setValue(path.format(stereo="%V"))
         read["label"].setValue(aov_name)
 
-    def set_range(self, read, start, end):
+    @classmethod
+    def set_range(cls, read, start, end):
         start, end = int(start), int(end)
         read["first"].setValue(start)
         read["last"].setValue(end)
         read["origfirst"].setValue(start)
         read["origlast"].setValue(end)
 
-    def set_format(self, read, resolution):
+    @classmethod
+    def set_format(cls, read, resolution):
         w, h = resolution
         for format in nuke.formats():
             if format.width() == w and format.height() == h:
                 try:
                     read["format"].setValue(format.name())
                 except TypeError:
-                    self.log.warning("Unrecognized format")
+                    cls.log.warning("Unrecognized format")
                 finally:
                     break
 
-    def is_singleaov(self, path, start):
+    @classmethod
+    def is_singleaov(cls, path, start):
         import os
 
         path = path % start
@@ -62,12 +66,13 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         try:
             data = exrheader.read_exr_header(path)
         except Exception:
-            self.log.warning("EXR header read failed: %s" % path)
+            cls.log.warning("EXR header read failed: %s" % path)
             return False
         return set(data["channels"]) in [{"R", "G", "B", "A"},
                                          {"R", "G", "B"}]
 
-    def resolve_path(self, sequences):
+    @classmethod
+    def resolve_path(cls, sequences, root_path):
         import os
 
         for aov_name, data in sequences.items():
@@ -81,26 +86,19 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                 frame_str = "%%0%dd" % padding
                 tail = tail.replace("#" * padding, frame_str)
 
-            path = os.path.join(self.package_path, tail).replace("\\", "/")
+            path = os.path.join(root_path, tail).replace("\\", "/")
             data["_resolved"] = path
 
-    def load(self, context, name=None, namespace=None, options=None):
+    @classmethod
+    def build_sequences(cls,
+                        sequences,
+                        root_path,
+                        group_name,
+                        stamp_name,
+                        start,
+                        end):
 
-        representation = context["representation"]
-        version = context["version"]
-        asset = context["asset"]
-
-        asset_name = asset["data"].get("shortName", asset["name"])
-        families = context["subset"]["data"]["families"]
-        family_name = families[0].split(".")[-1]
-        name = name or context["subset"]["name"]
-        namespace = namespace or "%s_%s" % (asset_name, family_name)
-
-        start = version["data"]["startFrame"]
-        end = version["data"]["endFrame"]
-
-        sequences = representation["data"]["sequence"]
-        self.resolve_path(sequences)
+        cls.resolve_path(sequences, root_path)
 
         # Filter out multi-channle sequence
         multiaovs = OrderedDict()
@@ -108,7 +106,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
         for aov_name in sorted(sequences, key=lambda k: k.lower()):
             data = sequences[aov_name]
-            if self.is_singleaov(data["_resolved"], start):
+            if cls.is_singleaov(data["_resolved"], start):
                 singleaovs[aov_name] = data
             else:
                 multiaovs[aov_name] = data
@@ -124,9 +122,9 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             read.autoplace()
             path = data["_resolved"]
 
-            self.set_path(read, aov_name=aov_name, path=path)
-            # self.set_format(read, data["resolution"])
-            self.set_range(read, start=start, end=end)
+            cls.set_path(read, aov_name=aov_name, path=path)
+            # cls.set_format(read, data["resolution"])
+            cls.set_range(read, start=start, end=end)
 
             # Mark aov name
             lib.set_avalon_knob_data(read, {("aov", "AOV"): aov_name})
@@ -149,9 +147,9 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                         read.autoplace()
                         path = data["_resolved"]
 
-                        self.set_path(read, aov_name=aov_name, path=path)
-                        # self.set_format(read, data["resolution"])
-                        self.set_range(read, start=start, end=end)
+                        cls.set_path(read, aov_name=aov_name, path=path)
+                        # cls.set_format(read, data["resolution"])
+                        cls.set_range(read, start=start, end=end)
 
                         # Mark aov name
                         knob = ("aov", "AOV")
@@ -169,10 +167,35 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                     output.autoplace()
 
                 stamp = nuke.createNode("PostageStamp")
-                stamp.setName(namespace)
-                group.setName(name)
+                stamp.setName(stamp_name)
+                group.setName(group_name)
 
             nodes += [stamp, group] + group.nodes()
+
+        return nodes
+
+    def load(self, context, name=None, namespace=None, options=None):
+
+        representation = context["representation"]
+        version = context["version"]
+        asset = context["asset"]
+
+        asset_name = asset["data"].get("shortName", asset["name"])
+        families = context["subset"]["data"]["families"]
+        family_name = families[0].split(".")[-1]
+        name = name or context["subset"]["name"]
+        namespace = namespace or "%s_%s" % (asset_name, family_name)
+
+        sequences = representation["data"]["sequence"]
+        start = version["data"]["startFrame"]
+        end = version["data"]["endFrame"]
+
+        nodes = self.build_sequences(sequences,
+                                     self.package_path,
+                                     group_name=name,
+                                     stamp_name=namespace,
+                                     start=start,
+                                     end=end,)
 
         return pipeline.containerise(name=name,
                                      namespace=namespace,
@@ -204,6 +227,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
             for aov_name, data in sequences.items():
                 read = read_nodes.get(aov_name)
                 if not read:
+                    # (TODO) Create Read node for new or removed AOV.
                     continue
 
                 self.set_path(read, aov_name=aov_name, path=data["_resolved"])
