@@ -109,14 +109,19 @@ class SequenceWidget(QtWidgets.QWidget):
             model.add_sequence(sequence)
 
     def collected(self, with_keys=None):
+        model = self.data["model"]
         with_keys = with_keys or list()
-        sequences = list()
+        sequences = dict()
         root_index = QtCore.QModelIndex()
-        for row in range(self.data["model"].rowCount(root_index)):
-            index = self.data["model"].index(row, column=0, parent=root_index)
+        for row in range(model.rowCount(root_index)):
+            index = model.index(row, column=0, parent=root_index)
             item = index.internalPointer()
             if all(item.get(k) for k in with_keys):
-                sequences.append(item)
+                if model._stereo:
+                    item["fpattern"] = item["stereoPattern"]
+
+                if item["name"] not in sequences:
+                    sequences[item["name"]] = item
 
         return sequences
 

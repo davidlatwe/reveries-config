@@ -259,8 +259,6 @@ def show_on_stray(root, sequences, framerange, parent=None):
             window.add_sequences(stray + resolved)
 
             if window.exec_():
-                # (NOTE) Here it returns a list of items, but we need dict in
-                #   Loader, this may not work in future.
                 sequences = window.collected(with_keys=["name", "resolution"])
 
     # (TODO) Remember resolved ?
