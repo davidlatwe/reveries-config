@@ -89,6 +89,7 @@ class NameEditDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class ResolutionEditor(QtWidgets.QWidget):
+    # DEPRECATED
 
     value_changed = QtCore.Signal(list)
 
@@ -130,6 +131,7 @@ class ResolutionEditor(QtWidgets.QWidget):
 
 
 class ResolutionDelegate(QtWidgets.QStyledItemDelegate):
+    # DEPRECATED
 
     value_changed = QtCore.Signal(list)
 

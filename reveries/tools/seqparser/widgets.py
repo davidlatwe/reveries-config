@@ -1,5 +1,6 @@
 
 import os
+import re
 from avalon.vendor.Qt import QtWidgets, QtCore, QtGui, QtCompat
 from avalon.vendor import qtawesome
 from avalon.tools import models
@@ -20,14 +21,12 @@ class SequenceWidget(QtWidgets.QWidget):
             "view": QtWidgets.QTreeView(),
             "fpatternDel": None,
             "nameDel": None,
-            # "resolutionDel": None,
         }
 
         data["proxy"].setSourceModel(data["model"])
         data["view"].setModel(data["proxy"])
         data["fpatternDel"] = delegates.LineHTMLDelegate(data["view"])
         data["nameDel"] = delegates.NameEditDelegate()
-        # data["resolutionDel"] = delegates.ResolutionDelegate()
 
         fpattern_delegate = data["fpatternDel"]
         column = data["model"].Columns.index("fpattern")
@@ -36,10 +35,6 @@ class SequenceWidget(QtWidgets.QWidget):
         name_delegate = data["nameDel"]
         column = data["model"].Columns.index("name")
         data["view"].setItemDelegateForColumn(column, name_delegate)
-
-        # res_delegate = data["resolutionDel"]
-        # column = data["model"].Columns.index("resolution")
-        # data["view"].setItemDelegateForColumn(column, res_delegate)
 
         data["proxy"].setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
         data["view"].setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -77,47 +72,15 @@ class SequenceWidget(QtWidgets.QWidget):
             return
 
         menu = QtWidgets.QMenu(view)
-        # icon_res = qtawesome.icon("fa.film", color="gray")
         icon_dir = qtawesome.icon("fa.folder-open", color="gray")
-
-        # res_act = QtWidgets.QAction(menu, icon=icon_res,
-        #                             text="Set Resolution")
-        # res_act.triggered.connect(self.action_set_resolution)
 
         dir_act = QtWidgets.QAction(menu, icon=icon_dir, text="Open Dir")
         dir_act.triggered.connect(self.action_open_dir)
 
-        # menu.addAction(res_act)
         menu.addAction(dir_act)
 
         globalpos = view.mapToGlobal(point)
         menu.exec_(globalpos)
-
-    def action_set_resolution(self):
-        # Unused action
-        dialog = QtWidgets.QDialog(self)
-        editor = delegates.ResolutionEditor()
-        layout = QtWidgets.QVBoxLayout(dialog)
-        layout.addWidget(editor)
-
-        view = self.data["view"]
-        proxy = view.model()
-        model = proxy.sourceModel()
-        column = model.Columns.index("resolution")
-
-        index = view.selectionModel().selectedRows(column)[0]
-        index = proxy.mapToSource(index)
-        editor.set_value(model.data(index, QtCore.Qt.DisplayRole))
-
-        def set_res(value):
-            for index in view.selectionModel().selectedRows(column):
-                index = proxy.mapToSource(index)
-                model.setData(index, value)
-
-        editor.value_changed.connect(set_res)
-
-        dialog.setWindowTitle("Set Resolution")
-        dialog.exec_()
 
     def action_open_dir(self):
         view = self.data["view"]
@@ -133,6 +96,12 @@ class SequenceWidget(QtWidgets.QWidget):
         for path in to_open:
             os.startfile(path)
 
+    def set_stereo(self, vlaue):
+        self.data["model"].set_stereo(vlaue)
+
+    def search_channel_name(self, head, tail):
+        self.data["model"].search_channel_name(head, tail)
+
     def add_sequences(self, sequences):
         model = self.data["model"]
         model.clear()
@@ -140,14 +109,19 @@ class SequenceWidget(QtWidgets.QWidget):
             model.add_sequence(sequence)
 
     def collected(self, with_keys=None):
+        model = self.data["model"]
         with_keys = with_keys or list()
-        sequences = list()
+        sequences = dict()
         root_index = QtCore.QModelIndex()
-        for row in range(self.data["model"].rowCount(root_index)):
-            index = self.data["model"].index(row, column=0, parent=root_index)
+        for row in range(model.rowCount(root_index)):
+            index = model.index(row, column=0, parent=root_index)
             item = index.internalPointer()
             if all(item.get(k) for k in with_keys):
-                sequences.append(item)
+                if model._stereo:
+                    item["fpattern"] = item["stereoPattern"]
+
+                if item["name"] not in sequences:
+                    sequences[item["name"]] = item
 
         return sequences
 
@@ -156,11 +130,41 @@ class SequenceModel(models.TreeModel):
 
     Columns = [
         "fpattern",
-        # "resolution",
         "name",
+        "frames",
     ]
 
     HTMLTextRole = QtCore.Qt.UserRole + 10
+
+    def __init__(self, parent=None):
+        super(SequenceModel, self).__init__(parent)
+        self._stereo = False
+        self._stereo_icons = {
+            "Left": qtawesome.icon("fa.bullseye", color="#FC3731"),
+            "Right": qtawesome.icon("fa.bullseye", color="#53D8DF"),
+            None: qtawesome.icon("fa.circle", color="#656565"),
+        }
+
+    def set_stereo(self, value):
+        self._stereo = value
+
+    def search_channel_name(self, head, tail):
+        if not head and not tail:
+            return
+
+        pattern = re.compile(".*?%s([0-9a-zA-Z_]*)%s.*" % (head, tail))
+
+        root_index = QtCore.QModelIndex()
+        last = self.rowCount(root_index)
+        column = self.Columns.index("name")
+
+        for row in range(last):
+            index = self.index(row, column=column, parent=root_index)
+            item = index.internalPointer()
+            result = pattern.search(item["fpattern"])
+            if result and result.groups():
+                name = pattern.search(item["fpattern"]).group(1)
+                self.setData(index, name)
 
     def add_sequence(self, sequence):
         root_index = QtCore.QModelIndex()
@@ -175,9 +179,40 @@ class SequenceModel(models.TreeModel):
         item["root"] = sequence["root"]
         item["fpattern"] = sequence["fpattern"]
         item["paddingStr"] = sequence["paddingStr"]
+        item["frames"] = "%d-%d" % (sequence["start"], sequence["end"])
         # Optional
         item["name"] = sequence.get("name", "")
-        # item["resolution"] = sequence.get("resolution")  # Should be (w, h)
+
+        if self._stereo:
+
+            def take_side(fpattern):
+                if "Left" in fpattern:
+                    return "Left", fpattern.replace("Left", "{stereo}")
+                elif "Right" in fpattern:
+                    return "Right", fpattern.replace("Right", "{stereo}")
+                else:
+                    return None, fpattern
+
+            this_side, this_side_p = take_side(item["fpattern"])
+
+            if this_side is not None:
+                for row in reversed(range(last)):
+                    index = self.index(row, column=0, parent=root_index)
+                    other = index.internalPointer()
+                    if other.get("stereoSide"):
+                        # Paired
+                        continue
+
+                    other_side, other_side_p = take_side(other["fpattern"])
+                    if other_side is None:
+                        continue
+
+                    if this_side != other_side and this_side_p == other_side_p:
+                        item["stereoSide"] = this_side
+                        item["stereoPattern"] = this_side_p
+                        other["stereoSide"] = other_side
+                        other["stereoPattern"] = other_side_p
+                        break
 
         html_fpattern = "{dir}{head}{padding}{tail}"
 
@@ -211,10 +246,12 @@ class SequenceModel(models.TreeModel):
             node = index.internalPointer()
             return node["fpatternHTML"]
 
-        # if role == QtCore.Qt.DisplayRole:
-        #     if index.column() == self.Columns.index("resolution"):
-        #         node = index.internalPointer()
-        #         return node["resolution"] or (0, 0)
+        if role == QtCore.Qt.DecorationRole:
+            if index.column() == self.Columns.index("name"):
+                if self._stereo:
+                    node = index.internalPointer()
+                    side = node.get("stereoSide")
+                    return self._stereo_icons[side]
 
         return super(SequenceModel, self).data(index, role)
 
@@ -223,7 +260,6 @@ class SequenceModel(models.TreeModel):
 
         # Make the version column editable
         if index.column() in [self.Columns.index("fpattern"),
-                              # self.Columns.index("resolution"), ]:
                               self.Columns.index("name"), ]:
             flags |= QtCore.Qt.ItemIsEditable
 
