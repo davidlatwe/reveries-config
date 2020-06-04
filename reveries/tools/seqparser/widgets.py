@@ -1,5 +1,6 @@
 
 import os
+import re
 from avalon.vendor.Qt import QtWidgets, QtCore, QtGui, QtCompat
 from avalon.vendor import qtawesome
 from avalon.tools import models
@@ -98,6 +99,9 @@ class SequenceWidget(QtWidgets.QWidget):
     def set_stereo(self, vlaue):
         self.data["model"].set_stereo(vlaue)
 
+    def search_channel_name(self, head, tail):
+        self.data["model"].search_channel_name(head, tail)
+
     def add_sequences(self, sequences):
         model = self.data["model"]
         model.clear()
@@ -138,6 +142,24 @@ class SequenceModel(models.TreeModel):
 
     def set_stereo(self, value):
         self._stereo = value
+
+    def search_channel_name(self, head, tail):
+        if not head and not tail:
+            return
+
+        pattern = re.compile(".*?%s([0-9a-zA-Z_]*)%s.*" % (head, tail))
+
+        root_index = QtCore.QModelIndex()
+        last = self.rowCount(root_index)
+        column = self.Columns.index("name")
+
+        for row in range(last):
+            index = self.index(row, column=column, parent=root_index)
+            item = index.internalPointer()
+            result = pattern.search(item["fpattern"])
+            if result and result.groups():
+                name = pattern.search(item["fpattern"]).group(1)
+                self.setData(index, name)
 
     def add_sequence(self, sequence):
         root_index = QtCore.QModelIndex()

@@ -36,6 +36,10 @@ class Window(QtWidgets.QDialog):
                 "options": QtWidgets.QWidget(),
                 "single": QtWidgets.QCheckBox("Include Single Frame"),
                 "stereo": QtWidgets.QCheckBox("Pair Stereo Sequences"),
+                "nameRegex": QtWidgets.QWidget(),
+                "label": QtWidgets.QLabel("Channel Name: "),
+                "nHead": QtWidgets.QLineEdit(),
+                "nTail": QtWidgets.QLineEdit(),
                 "view": widgets.SequenceWidget(),
             },
 
@@ -62,8 +66,15 @@ class Window(QtWidgets.QDialog):
             layout.addWidget(sequences["stereo"])
             layout.addStretch()
             layout.setContentsMargins(2, 2, 2, 2)
+            layout = QtWidgets.QHBoxLayout(sequences["nameRegex"])
+            layout.addWidget(sequences["label"])
+            layout.addWidget(sequences["nHead"], stretch=True)
+            layout.addWidget(sequences["nTail"], stretch=True)
+            layout.setContentsMargins(2, 2, 2, 2)
             layout = QtWidgets.QVBoxLayout(sequences["main"])
             layout.addWidget(sequences["options"])
+            layout.addSpacing(8)
+            layout.addWidget(sequences["nameRegex"])
             layout.addWidget(sequences["view"])
             layout.setContentsMargins(4, 6, 4, 0)
 
@@ -89,6 +100,9 @@ class Window(QtWidgets.QDialog):
 
         data["sequences"]["single"].stateChanged.connect(self.on_single)
         data["sequences"]["stereo"].stateChanged.connect(self.on_stereo)
+
+        data["sequences"]["nHead"].textChanged.connect(self.on_nhead_changed)
+        data["sequences"]["nTail"].textChanged.connect(self.on_ntail_changed)
 
         data["endDialog"]["accept"].clicked.connect(self.run_callback)
         data["endDialog"]["accept"].clicked.connect(self.accept)
@@ -152,6 +166,14 @@ class Window(QtWidgets.QDialog):
 
     def add_sequences(self, sequences):
         self.data["sequences"]["view"].add_sequences(sequences)
+
+    def on_nhead_changed(self, head):
+        tail = self.data["sequences"]["nTail"].text()
+        self.data["sequences"]["view"].search_channel_name(head, tail)
+
+    def on_ntail_changed(self, tail):
+        head = self.data["sequences"]["nHead"].text()
+        self.data["sequences"]["view"].search_channel_name(head, tail)
 
 
 def show(callback=None, with_keys=None, parent=None):
