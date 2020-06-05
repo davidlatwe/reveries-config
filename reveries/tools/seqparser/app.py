@@ -123,7 +123,6 @@ class Window(QtWidgets.QDialog):
 
     def on_stereo(self, state):
         self.data["sequences"]["view"].set_stereo(bool(state))
-        self.ls_sequences(self.data["rootPath"]["path"].text())
 
     def run_callback(self):
         callback = self.data["endDialog"]["callback"]
