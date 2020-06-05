@@ -49,6 +49,29 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                     break
 
     @classmethod
+    def pick_beauty(cls, channels, group_name):
+        from avalon.tools import widgets
+        from avalon.vendor import qargparse
+
+        options = [
+            qargparse.Enum(name="beauty",
+                           label="Beauty As",
+                           items=sorted(channels.keys()),
+                           default=0,
+                           help="Select a default channel for exr_merge.")
+        ]
+        dialog = widgets.OptionDialog()
+        dialog.setWindowTitle("Pick Beauty - %s" % group_name)
+        dialog.setMinimumWidth(300)
+        dialog.create(options)
+
+        if not dialog.exec_():
+            return
+        # Get option
+        options = dialog.parse()
+        return options.get("beauty")
+
+    @classmethod
     def is_singleaov(cls, path, start):
         import os
 
@@ -133,7 +156,13 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         nodes = multiaov_reads[:]
 
         if singleaovs:
-            has_beauty = "beauty" in singleaovs
+
+            if "beauty" in singleaovs:
+                # Default channel (RGBA) for exr_merge
+                beauty_name = "beauty"
+            else:
+                # Ask artist if want to assign a beauty if not found
+                beauty_name = cls.pick_beauty(singleaovs, group_name)
 
             with command.viewer_update_and_undo_stop():
                 group = nuke.createNode("Group")
@@ -156,8 +185,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                         lib.set_avalon_knob_data(read, {knob: aov_name})
                         singleaov_reads[aov_name] = read
 
-                    if has_beauty:
-                        beauty = singleaov_reads.pop("beauty")
+                    if beauty_name:
+                        beauty = singleaov_reads.pop(beauty_name)
                     else:
                         beauty = singleaov_reads.popitem()[1]
 

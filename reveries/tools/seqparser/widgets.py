@@ -164,6 +164,11 @@ class SequenceModel(models.TreeModel):
             result = pattern.search(item["fpattern"])
             if result and result.groups():
                 name = pattern.search(item["fpattern"]).group(1)
+
+                # Arnold light groups
+                if "_lgroups" in item.get("head", ""):
+                    name += "_lgroups"
+
                 self.setData(index, name)
 
     def add_sequence(self, sequence):
@@ -183,36 +188,35 @@ class SequenceModel(models.TreeModel):
         # Optional
         item["name"] = sequence.get("name", "")
 
-        if self._stereo:
+        # Collect stereo data even user did not specify
+        def take_side(fpattern):
+            if "Left" in fpattern:
+                return "Left", fpattern.replace("Left", "{stereo}")
+            elif "Right" in fpattern:
+                return "Right", fpattern.replace("Right", "{stereo}")
+            else:
+                return None, fpattern
 
-            def take_side(fpattern):
-                if "Left" in fpattern:
-                    return "Left", fpattern.replace("Left", "{stereo}")
-                elif "Right" in fpattern:
-                    return "Right", fpattern.replace("Right", "{stereo}")
-                else:
-                    return None, fpattern
+        this_side, this_side_p = take_side(item["fpattern"])
 
-            this_side, this_side_p = take_side(item["fpattern"])
+        if this_side is not None:
+            for row in reversed(range(last)):
+                index = self.index(row, column=0, parent=root_index)
+                other = index.internalPointer()
+                if other.get("stereoSide"):
+                    # Paired
+                    continue
 
-            if this_side is not None:
-                for row in reversed(range(last)):
-                    index = self.index(row, column=0, parent=root_index)
-                    other = index.internalPointer()
-                    if other.get("stereoSide"):
-                        # Paired
-                        continue
+                other_side, other_side_p = take_side(other["fpattern"])
+                if other_side is None:
+                    continue
 
-                    other_side, other_side_p = take_side(other["fpattern"])
-                    if other_side is None:
-                        continue
-
-                    if this_side != other_side and this_side_p == other_side_p:
-                        item["stereoSide"] = this_side
-                        item["stereoPattern"] = this_side_p
-                        other["stereoSide"] = other_side
-                        other["stereoPattern"] = other_side_p
-                        break
+                if this_side != other_side and this_side_p == other_side_p:
+                    item["stereoSide"] = this_side
+                    item["stereoPattern"] = this_side_p
+                    other["stereoSide"] = other_side
+                    other["stereoPattern"] = other_side_p
+                    break
 
         html_fpattern = "{dir}{head}{padding}{tail}"
 
