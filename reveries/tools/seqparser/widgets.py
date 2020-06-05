@@ -164,6 +164,11 @@ class SequenceModel(models.TreeModel):
             result = pattern.search(item["fpattern"])
             if result and result.groups():
                 name = pattern.search(item["fpattern"]).group(1)
+
+                # Arnold light groups
+                if "_lgroups" in item.get("head", ""):
+                    name += "_lgroups"
+
                 self.setData(index, name)
 
     def add_sequence(self, sequence):
