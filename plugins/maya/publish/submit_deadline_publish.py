@@ -23,6 +23,10 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
         "reveries.renderlayer",
     ]
 
+    SCRIPT_SEQUENCE_TYPES = [
+        "reveries.standin",
+    ]
+
     def process(self, context):
         import reveries
 
@@ -224,6 +228,12 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
 
             else:
                 # Script Job
+
+                if instance.data["family"] in self.SCRIPT_SEQUENCE_TYPES:
+                    # Extract in sequence
+                    payload["JobInfo"]["Frames"] = frames
+                    payload["JobInfo"]["ChunkSize"] = frame_per_task
+
                 reveries_path = reveries.__file__
                 script_file = os.path.join(os.path.dirname(reveries_path),
                                            "scripts",
