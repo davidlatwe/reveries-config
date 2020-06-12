@@ -1386,27 +1386,22 @@ def hasAttrExact(node, attr):
     return cmds.attributeQuery(attr, node=node, exists=True)
 
 
-def ls_nodes_by_id(ids, namespace=None, nodes=None):
+def _ls_nodes_by_id(namespace=None):
     """Return nodes by matching Avalon UUID
+
+    DEPRECATED, replaced by `ls_avalon_nodes`
 
     This function is faster then using `lsAttrs({"AvalonID": id})` because
     it does not return nodes with long name, and matching a list of ids in
     one `ls`.
 
     Args:
-        ids (list or set): A list of ids
         namespace (str, optional): Search under this namespace, default all.
 
     Returns:
         defaultdict(set): {id(str): nodes(set)}
 
     """
-    from . import utils  # Avoid circular import
-
-    def is_namespace_wrapper(id, node):
-        return (id == AVALON_NAMESPACE_WRAPPER_ID and
-                cmds.nodeType(node) == "objectSet")
-
     namespace = namespace or ""
 
     namespace_nodes = set()
@@ -1444,10 +1439,66 @@ def ls_nodes_by_id(ids, namespace=None, nodes=None):
                 fn_node = dep_fn.setObject(node)
                 namespace_nodes.add(fn_node.name())
 
-    if nodes:
-        all_nodes = namespace_nodes.intersection(set(nodes))
+    return namespace_nodes
+
+
+def ls_avalon_nodes(namespace=None):
+    """Return nodes that have `AvalonID` imprinted
+
+    If AvalonID was imprinted on shape node, parent node will be returned
+    instead.
+
+    Args:
+        namespace (str, optional): Search under this namespace, default all.
+
+    Returns:
+        set: A set of node names (unique short name)
+
+    """
+    namespace = namespace or ""
+    filter = "{0}*.{1}".format(namespace, AVALON_ID_ATTR_LONG)
+
+    nodes = cmds.ls(filter, recursive=True, objectsOnly=True)
+    shapes = cmds.ls(nodes, shapes=True)
+    if shapes:
+        # AvalonID may have imprinted on shape node if it's coming
+        # from alembic which published by Houdini.
+        parents = cmds.listRelatives(shapes, allParents=True, path=True) or []
+        nodes = set(nodes) - set(shapes)
+        nodes.update(parents)
+
+        return nodes
     else:
-        all_nodes = namespace_nodes
+        return set(nodes)
+
+
+def ls_nodes_by_id(ids, namespace=None, nodes=None):
+    """Listing AvalonID matched nodes from scene
+
+    If `namespace` given, only matching AvalonID under this namespace.
+    If `nodes` given, only matching AvalonID with `nodes`, and `namespace`
+    will be ignored.
+    If both `namespace` and `nodes` are None, will scan entire scene.
+
+    Args:
+        ids (list or set): A list of AvalonID
+        namespace (str, optional): Search under this namespace, default all.
+        nodes (list or set, optional): A list of nodes
+
+    Returns:
+        defaultdict(set): {id(str): nodes(set)}
+
+    """
+    from . import utils  # Avoid circular import
+
+    def is_namespace_wrapper(id, node):
+        return (id == AVALON_NAMESPACE_WRAPPER_ID and
+                cmds.nodeType(node) == "objectSet")
+
+    if nodes:
+        all_nodes = nodes
+    else:
+        all_nodes = ls_avalon_nodes(namespace)
 
     id_map = defaultdict(set)
     for node in all_nodes:
