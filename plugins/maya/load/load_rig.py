@@ -117,8 +117,8 @@ class RigLoader(ReferenceLoader, avalon.api.Loader):
         from maya import cmds
 
         referenced = cmds.referenceQuery(reference_node,
-                                        nodes=True,
-                                        dagPath=True)
+                                         nodes=True,
+                                         dagPath=True)
         transforms = cmds.ls(referenced, type="transform", long=True)
         meshes = cmds.listRelatives(transforms,
                                     shapes=True,
@@ -134,11 +134,11 @@ class RigLoader(ReferenceLoader, avalon.api.Loader):
 
             parent = cmds.ls(mesh.rsplit("|", 1)[0], uuid=True)[0]
             shading = cmds.ls(cmds.listConnections(mesh,
-                                                source=False,
-                                                destination=True,
-                                                connections=True,
-                                                type="shadingEngine"),
-                            uuid=True)
+                                                   source=False,
+                                                   destination=True,
+                                                   connections=True,
+                                                   type="shadingEngine"),
+                              uuid=True)
             mesh = cmds.ls(mesh, uuid=True)[0]
             mesh_uuids[mesh] = (parent, shading)
 
@@ -161,7 +161,8 @@ class RigLoader(ReferenceLoader, avalon.api.Loader):
                 fostered_shape = cmds.ls(uuid, long=True)
 
                 if parent and fostered_shape:
-                    # Move fostered mesh node to newly referenced transform node
+                    # Move fostered mesh node to newly referenced transform
+                    # node.
                     fostered_shape = fostered_shape[0]
                     shape = cmds.parent(fostered_shape,
                                         parent[0],
