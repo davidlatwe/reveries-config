@@ -1,5 +1,6 @@
 
 import avalon.api
+from avalon.vendor import qargparse
 from reveries.maya.plugins import ReferenceLoader
 
 
@@ -17,6 +18,11 @@ class XGenInteractiveLoader(ReferenceLoader, avalon.api.Loader):
 
     representations = [
         "XGenInteractive",
+    ]
+
+    options = [
+        qargparse.Integer("count", default=1, min=1, help="Batch load count."),
+        qargparse.Double3("offset", help="Offset loaded subsets."),
     ]
 
     def process_reference(self, context, name, namespace, group, options):
