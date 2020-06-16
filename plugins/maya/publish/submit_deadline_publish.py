@@ -234,6 +234,12 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                     payload["JobInfo"]["Frames"] = frames
                     payload["JobInfo"]["ChunkSize"] = frame_per_task
 
+                    head, tail = os.path.split(instance.data["outputPath"])
+                    payload["JobInfo"].update({
+                        "OutputDirectory0": head,
+                        "OutputFilename0": tail,
+                    })
+
                 reveries_path = reveries.__file__
                 script_file = os.path.join(os.path.dirname(reveries_path),
                                            "scripts",
