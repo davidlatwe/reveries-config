@@ -22,7 +22,7 @@ class ValidateCameraStereoPairs(pyblish.api.InstancePlugin):
         from maya import cmds
 
         if instance.data["family"] == "reveries.camera":
-            stereo_rig = cmds.ls(instance, type="stereoRigTransform")
+            stereo_rig = cmds.ls(instance, type="stereoRigCamera")
             if not stereo_rig:
                 return
 
@@ -39,8 +39,12 @@ class ValidateCameraStereoPairs(pyblish.api.InstancePlugin):
             # Not likely to happen..
             raise Exception("This is a bug.")
 
-        left_cam = self.validate_side(stereo_rig, "Left")
-        right_cam = self.validate_side(stereo_rig, "Right")
+        stereo_rig_trans = cmds.listRelatives(stereo_rig,
+                                              parent=True,
+                                              path=True)[0]
+
+        left_cam = self.validate_side(stereo_rig_trans, "Left")
+        right_cam = self.validate_side(stereo_rig_trans, "Right")
 
         if not left_cam or not right_cam:
             raise Exception("Not a valid stereo camera.")
