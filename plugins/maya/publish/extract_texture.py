@@ -176,10 +176,22 @@ class ExtractTexture(pyblish.api.InstancePlugin):
         instance.data["repr.TexturePack._hardlinks"] = list(files_to_copy)
         instance.data["repr.TexturePack.fileInventory"] = file_inventory
 
+        # (NOTE) We need to delay extract textrues is because the texture
+        #   instance could be a child instance of `reveries.standin`, and
+        #   a standin could be extracted in Deadline so the extraction of
+        #   the child should be there, too.
+        #
+        #   But a standin could also be extracted in sequential Deadline
+        #   tasks, which isn't fit for extracting it's textures.
+        #
+        #   So we extract it here in local, and put a mock function which
+        #   will do nothing when the Deadline extraction script runs in
+        #   each tasks.
+        #
         instance.data["repr.TexturePack._delayRun"] = {
-            "func": self.stage_textures,
-            "args": [staging_dir, files_to_copy],
+            "func": self.mock_stage,
         }
+        self.stage_textures(staging_dir, files_to_copy)
 
     def update_file_node_attrs(self, instance, file_nodes, path, color_space):
         # (NOTE) All input `file_nodes` will be set to same `color_space`
@@ -234,3 +246,7 @@ class ExtractTexture(pyblish.api.InstancePlugin):
                 msg = "An unexpected error occurred."
                 self.log.critical(msg)
                 raise OSError(msg)
+
+    def mock_stage(self, *args, **kwargs):
+        # Do nothing, texture files should already been staged by now.
+        pass
