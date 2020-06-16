@@ -4,6 +4,8 @@ import logging
 import avalon.lib
 import pyblish.lib
 
+from Deadline.Scripting import RepositoryUtils
+
 log = logging.getLogger("APTS")
 log.setLevel(logging.INFO)
 
@@ -14,13 +16,15 @@ log.addHandler(handler)
 
 
 def __main__(*args):
-    """An entry script for multiple post task scripts
+    """An entry script for multiple post task scripts (chained)
 
     This script will lookup script names from job property's environment key
     `AVALON_POST_TASK_SCRIPTS`.
 
     The script must be in `reveries.scripts.post_task` and must have function
     `__main__` defined.
+
+    The process will NOT continue if any error raised in scripts. (chained)
 
     (NOTE) Post task script will not run if task has error.
 
@@ -31,6 +35,7 @@ def __main__(*args):
     """
     deadlinePlugin = args[0]
     job = deadlinePlugin.GetJob()
+    task = deadlinePlugin.GetCurrentTask()
 
     script_names = job.GetJobEnvironmentKeyValue("AVALON_POST_TASK_SCRIPTS")
     if not script_names:
@@ -56,12 +61,19 @@ def __main__(*args):
                 script.__main__(*args)
 
             except Exception as error:
-                # Deadline will requeue the task if error raised in
-                # post task script.
 
                 pyblish.lib.extract_traceback(error, script.__file__)
                 message = "{p.__name__} Error: {e} -- {e.traceback}"
 
                 log.error(message.format(p=script, e=error))
 
-                # (TODO) Fail the task if error raised ?
+                # Fail the task if error raised and stop running the rest of
+                # of the scripts.
+                RepositoryUtils.FailTasks(job, [task])
+                break
+
+                # (NOTE) Change to Failed state so Deadline won't requeue the
+                #   task, since the error being raised here most likely not
+                #   able to be resolved by re-run the task again.
+                #   If it could, define and raise a custom type of error and
+                #   handling it in another except statement.
