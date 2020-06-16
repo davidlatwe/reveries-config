@@ -43,10 +43,11 @@ class ValidateCameraVersioned(pyblish.api.InstancePlugin):
                 break
         else:
             # Is camera being publish ?
+            camera_ln = cmds.ls(camera, long=True)[0]
             camera_instances = [i for i in instance.context
                                 if (i.data["family"] == cls.camera_family and
                                     i.data.get("publish", True))]
-            if not any(camera in inst for inst in camera_instances):
+            if not any(camera_ln in inst for inst in camera_instances):
                 invalid.append(camera)
 
         return invalid

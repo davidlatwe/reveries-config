@@ -25,7 +25,7 @@ class ValidateAvalonDependencies(pyblish.api.InstancePlugin):
     """
 
     label = "Avalon Dependencies Acyclic"
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder + 0.4
 
     # These families are allowed to publish the works that were build
     # upon the previous version of themself.
