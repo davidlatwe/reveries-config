@@ -256,6 +256,7 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
         stereo_rig = cmds.listConnections(camera,
                                           destination=False,
                                           source=True,
+                                          shapes=True,
                                           type="stereoRigCamera")
         if stereo_rig:
             return cmds.ls(stereo_rig)[0]
@@ -277,9 +278,13 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
         camera = cmds.listRelatives(camera, parent=True, path=True)[0]
         cam_msg = camera + ".message"
 
-        if cmds.isConnected(cam_msg, stereo_rig + ".leftCamera"):
+        stereo_rig_trans = cmds.listRelatives(stereo_rig,
+                                              parent=True,
+                                              path=True)[0]
+
+        if cmds.isConnected(cam_msg, stereo_rig_trans + ".leftCamera"):
             return 0
-        elif cmds.isConnected(cam_msg, stereo_rig + ".rightCamera"):
+        elif cmds.isConnected(cam_msg, stereo_rig_trans + ".rightCamera"):
             return 1
         else:
             return None
