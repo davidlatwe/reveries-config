@@ -1,6 +1,7 @@
 
 import os
 import logging
+import subprocess
 
 log = logging.getLogger("APTS.publish_by_task")
 
@@ -22,19 +23,40 @@ def __main__(*args):
 
     job = deadline_plugin.GetJob()
     task = deadline_plugin.GetCurrentTask()
+    frames = task.TaskFrameList
 
-    files = get_output_files(job, task)
+    files = get_output_files(job, frames)
 
-    # (TODO) Run publish with collected file path
+    log.info("%d output files collected from %d frames."
+             % (len(files), len(frames)))
+
+    python = os.getenv("PYBLISH_FILESYS_EXECUTABLE")
+    script = os.getenv("PYBLISH_FILESYS_SCRIPT")
+    dumpfile = os.getenv("PYBLISH_DUMP_FILE")
+
+    args = [
+        python,
+        script,
+        "--dump",
+        dumpfile,
+        "--progress",
+        str(len(frames)),
+        "--progress-output",
+        " ".join(files),
+        "--Deadline-Support",
+    ]
+    popen = subprocess.Popen(args,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+    output, _ = popen.communicate()
+    print(output)
 
 
-def get_output_files(job, task):
+def get_output_files(job, frames):
     files = list()
 
     output_directories = job.OutputDirectories
     output_filenames = job.OutputFileNames
-
-    frames = task.TaskFrameList
 
     for dir in output_directories:
         for file in output_filenames:

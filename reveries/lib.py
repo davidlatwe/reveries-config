@@ -139,12 +139,8 @@ def iter_uri(path, sep):
         yield path
 
 
-def publish_remote():
+def publish_remote(context=None, error_prefix=""):
     """Perform a publish without pyblish GUI that will sys.exit on errors.
-
-    This will:
-        - `sys.exit(1)` on nothing being collected
-        - `sys.exit(2)` on errors during publish
 
     Note: This function assumes Avalon has been installed prior to this.
           As such it does *not* trigger avalon.api.install().
@@ -153,18 +149,18 @@ def publish_remote():
     log = logging.getLogger("Pyblish")
 
     if not avalon.io._is_installed:
-        log.error("Fatal Error: Avalon not installed, see log..")
-        sys.exit(2)
+        log.error(error_prefix + "Avalon not installed, see log..")
+        return
 
     # Start publish
 
     print("Starting pyblish.util.pyblish()..")
-    context = pyblish.util.publish()
+    context = pyblish.util.publish(context)
     print("Finished pyblish.util.publish(), checking for errors..")
 
     if not context:
-        log.warning("Fatal Error: Nothing collected.")
-        sys.exit(1)
+        log.error(error_prefix + "Nothing collected.")
+        return
 
     # Collect errors, {plugin name: error}
     error_results = [r for r in context.data["results"] if r["error"]]
@@ -174,8 +170,8 @@ def publish_remote():
         for result in error_results:
             log.error(error_format.format(**result))
 
-        log.error("Fatal Error: Errors occurred during publish, see log..")
-        sys.exit(2)
+        log.error(error_prefix + "Errors occurred during publish, see log..")
+        return
 
     print("All good. Success!")
 
