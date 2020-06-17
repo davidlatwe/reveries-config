@@ -18,10 +18,10 @@ def __main__(*args):
         (str): Script type name, e.g. "post task"
 
     """
-    deadlinePlugin = args[0]
+    deadline_plugin = args[0]
 
-    job = deadlinePlugin.GetJob()
-    task = deadlinePlugin.GetCurrentTask()
+    job = deadline_plugin.GetJob()
+    task = deadline_plugin.GetCurrentTask()
 
     files = get_output_files(job, task)
 
@@ -31,13 +31,13 @@ def __main__(*args):
 def get_output_files(job, task):
     files = list()
 
-    outputDirectories = job.OutputDirectories
-    outputFilenames = job.OutputFileNames
+    output_directories = job.OutputDirectories
+    output_filenames = job.OutputFileNames
 
     frames = task.TaskFrameList
 
-    for dir in outputDirectories:
-        for file in outputFilenames:
+    for dir in output_directories:
+        for file in output_filenames:
             file = format_padding(file)
             for frame in frames:
                 path = os.path.join(dir, file % frame).replace("\\", "/")

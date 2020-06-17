@@ -32,6 +32,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     targets = ["localhost"]
 
+    def __init__(self, *args, **kwargs):
+        super(IntegrateAvalonSubset, self).__init__(*args, **kwargs)
+        self.transfers = dict(files=list(),
+                              hardlinks=list())
+
     def process(self, instance):
 
         # Atomicity
@@ -49,9 +54,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         if not all(result["success"] for result in context.data["results"]):
             self.log.warning("Atomicity not held, aborting.")
             return
-
-        self.transfers = dict(files=list(),
-                              hardlinks=list())
 
         # Assemble data and create version, representations
         subset, version, representations = self.register(instance)
@@ -268,8 +270,10 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         Args:
             subset (dict): the registered subset of the asset
+            families (list): instance's families
             version_number (int): the version number
             locations (list): the currently registered locations
+            data (dict): version data
 
         Returns:
             dict: collection of data to create a version

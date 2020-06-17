@@ -33,9 +33,9 @@ def __main__(*args):
         (str): Script type name, e.g. "post task"
 
     """
-    deadlinePlugin = args[0]
-    job = deadlinePlugin.GetJob()
-    task = deadlinePlugin.GetCurrentTask()
+    deadline_plugin = args[0]
+    job = deadline_plugin.GetJob()
+    task = deadline_plugin.GetCurrentTask()
 
     script_names = job.GetJobEnvironmentKeyValue("AVALON_POST_TASK_SCRIPTS")
     if not script_names:
