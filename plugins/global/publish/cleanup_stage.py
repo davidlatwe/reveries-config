@@ -24,7 +24,10 @@ class CleanupStage(pyblish.api.ContextPlugin):
             if not instance.data.get("publish", True):
                 continue
 
-            if instance.data["family"] == "reveries.renderlayer":
+            if instance.data.get("_progressivePublishing", False):
+                # We can not clear stage while in progressive publishing until
+                # complete signal received, since there must be files still
+                # waiting to be integrated by other publish session.
                 continue
 
             stage_dirs = [value for key, value in instance.data.items()

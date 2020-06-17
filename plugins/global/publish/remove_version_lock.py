@@ -16,6 +16,9 @@ class RemoveVersionLock(pyblish.api.ContextPlugin):
             if not instance.data.get("publish", True):
                 continue
 
+            if instance.data.get("_progressivePublishing", False):
+                continue
+
             lockfile = instance.data["_versionlock"]
             os.remove(lockfile)
             # (TODO) If publish process stopped by user, version dir will

@@ -3,6 +3,7 @@ import os
 import shutil
 import pyblish.api
 import avalon.api
+import avalon.io
 
 
 class ExtractAssumedDestination(pyblish.api.InstancePlugin):
@@ -32,6 +33,7 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
         version = None
         version_num = 1  # assume there is no version yet, start at 1
         version_pinned = "versionPin" in instance.data
+        is_progressive = instance.data.get("progressivePublish")
 
         subset = avalon.io.find_one({
             "type": "subset",
@@ -72,11 +74,23 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
             version_dir = os.path.abspath(os.path.normpath(version_dir))
 
             lockfile = version_dir + "/" + self.LOCK
+            version_locked = is_version_locked(lockfile)
 
-            if not version_pinned and is_version_locked(lockfile):
+            if not version_pinned and version_locked:
                 # Bump version
                 version_num += 1
                 continue
+
+            elif is_progressive and version_locked:
+                # In progressive publish mode, publish will be triggered
+                # multiple times with files that only be part of sequence,
+                # so we wouldn't want nor need to clear the version every
+                # time it runs.
+                # Unless version dir is not locked. The version dir will
+                # be unlocked only when progress completed signal received.
+                # See `./plugins/global/publish/remove_version_lock.py`
+                #
+                break
 
             else:
                 if not os.path.isdir(version_dir):

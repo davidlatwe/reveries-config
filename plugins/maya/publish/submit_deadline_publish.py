@@ -34,6 +34,8 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             self.log.warning("Atomicity not held, aborting.")
             return
 
+        reveries_path = reveries.__file__
+
         # Context data
 
         username = context.data["user"]
@@ -132,6 +134,12 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             #
 
             environment = self.assemble_environment(instance)
+            if environment.get("AVALON_POST_TASK_SCRIPTS"):
+                script_file = os.path.join(os.path.dirname(reveries_path),
+                                           "scripts",
+                                           "post_task",
+                                           "_chained.py")
+                payload["JobInfo"]["PostTaskScript"] = script_file
 
             if instance.data.get("hasAtomsCrowds"):
                 # Change Deadline group for AtomsCrowd
@@ -240,7 +248,6 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                         "OutputFilename0": tail,
                     })
 
-                reveries_path = reveries.__file__
                 script_file = os.path.join(os.path.dirname(reveries_path),
                                            "scripts",
                                            "deadline_extract.py")
@@ -291,5 +298,13 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
 
         environment["PYBLISH_EXTRACTOR_DUMPS"] = ";".join(dumped)
         environment["PYBLISH_DUMP_FILE"] = instance.data["dumpPath"]
+
+        # Post task scripts
+        post_task = list()
+        if instance.data.get("progressivePublish"):
+            post_task.append("publish_by_task")
+        if instance.data.get("notifyLocalSync"):
+            post_task.append("emit_changes")
+        environment["AVALON_POST_TASK_SCRIPTS"] = ";".join(post_task)
 
         return environment

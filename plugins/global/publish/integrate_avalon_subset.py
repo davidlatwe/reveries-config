@@ -62,7 +62,9 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         # Integrate representations' files to shareable space
         self.log.info("Integrating representations to shareable space ...")
-        self.integrate()
+
+        is_progressive = instance.data.get("progressivePublish")
+        self.integrate(skip_exists=is_progressive)
 
     def register(self, instance):
 
@@ -151,7 +153,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         return subset, version, list(representations.values())
 
-    def integrate(self):
+    def integrate(self, skip_exists=False):
         """Move the files
 
         Through `self.transfers`
@@ -186,6 +188,9 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
                 self.log.debug("Src: {!r}".format(src))
                 self.log.debug("Dst: {!r}".format(dst))
+
+                if os.path.isfile(dst) and skip_exists:
+                    continue
 
                 self.log.info("Copying {0}: {1} -> {2}".format(job, src, dst))
                 if src == dst:
