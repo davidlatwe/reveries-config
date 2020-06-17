@@ -34,6 +34,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     def __init__(self, *args, **kwargs):
         super(IntegrateAvalonSubset, self).__init__(*args, **kwargs)
+        self.is_progressive = 0
         self.transfers = dict(files=list(),
                               hardlinks=list())
 
@@ -62,12 +63,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         # Integrate representations' files to shareable space
         self.log.info("Integrating representations to shareable space ...")
-
-        is_progressive = instance.data.get("progressivePublish")
-        self.integrate(skip_exists=is_progressive)
+        self.integrate()
 
     def register(self, instance):
-
+        # `_progressivePublishing` flag also take as processed frame count.
+        self.is_progressive = instance.data.get("_progressivePublishing", 0)
         context = instance.context
 
         # Assemble
@@ -153,12 +153,13 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         return subset, version, list(representations.values())
 
-    def integrate(self, skip_exists=False):
+    def integrate(self):
         """Move the files
 
         Through `self.transfers`
 
         """
+        skip_exists = self.is_progressive
 
         # Write to disk
         #          _
@@ -270,7 +271,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                        families,
                        version_number,
                        locations,
-                       data=None):
+                       data):
         """ Copy given source to destination
 
         Args:
@@ -300,6 +301,22 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         else:
             version["schema"] = "avalon-core:version-2.0"
             version["data"]["families"] = families
+
+        if self.is_progressive:
+            try:
+                start = int(data["startFrame"])
+                end = int(data["endFrame"])
+                step = int(data["step"])
+
+            except KeyError:
+                raise KeyError("Missing frame range data, this is a bug.")
+
+            else:
+                progress = self.is_progressive
+                version["progress"] = {
+                    "total": len(range(start, end + 1, step)),
+                    "current": progress,
+                }
 
         return version
 
