@@ -301,7 +301,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
 
         # Post task scripts
         post_task = list()
-        if instance.data.get("progressivePublish"):
+        if instance.data.get("setupProgressivePublish"):
             post_task.append("publish_by_task")
         if instance.data.get("notifyLocalSync"):
             post_task.append("emit_changes")

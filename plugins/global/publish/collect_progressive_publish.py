@@ -17,4 +17,4 @@ class CollectProgressivePublish(pyblish.api.InstancePlugin):
             # Single frame standin
             return
 
-        instance.data["progressivePublish"] = True
+        instance.data["setupProgressivePublish"] = True
