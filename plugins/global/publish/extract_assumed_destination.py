@@ -33,7 +33,7 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
         version = None
         version_num = 1  # assume there is no version yet, start at 1
         version_pinned = "versionPin" in instance.data
-        is_progressive = instance.data.get("progressivePublish")
+        is_progressive = instance.data.get("_progressivePublishing")
 
         subset = avalon.io.find_one({
             "type": "subset",
@@ -86,10 +86,6 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
                 # multiple times with files that only be part of sequence,
                 # so we wouldn't want nor need to clear the version every
                 # time it runs.
-                # Unless version dir is not locked. The version dir will
-                # be unlocked only when progress completed signal received.
-                # See `./plugins/global/publish/remove_version_lock.py`
-                #
                 break
 
             else:

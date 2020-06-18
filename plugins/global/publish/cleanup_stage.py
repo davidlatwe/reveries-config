@@ -25,9 +25,13 @@ class CleanupStage(pyblish.api.ContextPlugin):
                 continue
 
             if instance.data.get("_progressivePublishing", False):
-                # We can not clear stage while in progressive publishing until
-                # complete signal received, since there must be files still
-                # waiting to be integrated by other publish session.
+                # In progressive publish mode, we cannot for sure when to
+                # cleanup stage since even the progress has been marked as
+                # complete, artist still may need rerun the process due to
+                # other reason which isn't related to scene change but bugs
+                # or hardware issues.
+                # If running in Deadline for example, we can cleanup on job
+                # delete.
                 continue
 
             stage_dirs = [value for key, value in instance.data.items()

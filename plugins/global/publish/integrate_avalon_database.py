@@ -54,11 +54,6 @@ class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
                           "$inc": {"progress.current": progress}}
                 io.update_many(filter_, update)
 
-                if (existed_version["progress"]["current"] + progress
-                        == existed_version["progress"]["total"]):
-                    # Completed !
-                    instance.data["_progressivePublishing"] = None
-
             else:
                 self.log.info("Version existed, representation file has been "
                               "overwritten.")
