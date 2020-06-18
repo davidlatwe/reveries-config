@@ -29,7 +29,7 @@ if __name__ == "__main__":
                         help="Prefix error message to trigger job fail.")
 
     data = dict()
-    args = parser.parse_args(sys.argv)
+    args = parser.parse_args(sys.argv[1:])
 
     if args.dump:
         data["_pyblishDumpFile"] = args.dump
