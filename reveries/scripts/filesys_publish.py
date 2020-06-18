@@ -50,7 +50,7 @@ if __name__ == "__main__":
     avalon.api.install(filesys)
     pyblish.api.register_target("localhost")
 
-    context = pyblish.util.publish()
+    context = pyblish.api.Context()
     context.data.update(data)
 
     lib.publish_remote(context, error_prefix)
