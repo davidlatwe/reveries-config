@@ -73,7 +73,6 @@ class AvalonIntegrateOnJobFinish(Deadline.Events.DeadlineEventListener):
             script,
             "--dump",
             dumpfile,
-            "--Deadline-Support",
         ]
         environ = {
             key: os.environ[key]
@@ -94,3 +93,5 @@ class AvalonIntegrateOnJobFinish(Deadline.Events.DeadlineEventListener):
                                  stderr=subprocess.STDOUT)
         output, _ = popen.communicate()
         print(output)
+        if popen.returncode != 0:
+            raise Exception("Publish failed, see log..")

@@ -19,14 +19,11 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--progress",
                         type=int,
                         default=-1,
-                        help="Publish progress step, e.g. frame count.")
+                        help="Instance progressive publish frame count.")
     parser.add_argument("-u", "--update",
                         type=str,
                         nargs="*",
-                        help="Progressive publish output file abs path.")
-    parser.add_argument("-D", "--Deadline-support",
-                        action="store_true",
-                        help="Prefix error message to trigger job fail.")
+                        help="Instance progressive publish output file path.")
 
     data = dict()
     args = parser.parse_args(sys.argv[1:])
@@ -35,15 +32,12 @@ if __name__ == "__main__":
         data["_pyblishDumpFile"] = args.dump
 
     if args.progress:
+        data["_progressivePublishing"] = True
         data["_progressiveStep"] = args.progress
 
     if args.update:
-        data["_progressiveOutput"] = args.progressive
         data["_progressivePublishing"] = True
-
-    error_prefix = ""
-    if args.Deadline_support:
-        error_prefix = "Fatal Error: "
+        data["_progressiveOutput"] = args.update
 
     # Run
 
@@ -53,4 +47,5 @@ if __name__ == "__main__":
     context = pyblish.api.Context()
     context.data.update(data)
 
-    lib.publish_remote(context, error_prefix)
+    if lib.publish_remote(context) != 0:
+        raise Exception("FileSys publish failed.")

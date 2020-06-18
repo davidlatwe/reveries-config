@@ -34,6 +34,10 @@ def __main__(*args):
     script = os.getenv("PYBLISH_FILESYS_SCRIPT")
     dumpfile = os.getenv("PYBLISH_DUMP_FILE")
 
+    log.info("Publish executable:  %s" % python)
+    log.info("Publish script:      %s" % script)
+    log.info("Publish dump file:   %s" % dumpfile)
+
     args = [
         python,
         script,
@@ -43,13 +47,14 @@ def __main__(*args):
         str(len(frames)),
         "--update",
         " ".join(files),
-        "--Deadline-Support",
     ]
     popen = subprocess.Popen(args,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
     output, _ = popen.communicate()
     print(output)
+    if popen.returncode != 0:
+        raise Exception("Publish failed, see log..")
 
 
 def get_output_files(job, frames):
