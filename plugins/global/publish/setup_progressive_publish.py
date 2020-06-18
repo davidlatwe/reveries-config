@@ -2,7 +2,7 @@
 import pyblish.api
 
 
-class CollectProgressivePublish(pyblish.api.InstancePlugin):
+class SetupProgressivePublish(pyblish.api.InstancePlugin):
     """
     """
     order = pyblish.api.CollectorOrder + 0.4
