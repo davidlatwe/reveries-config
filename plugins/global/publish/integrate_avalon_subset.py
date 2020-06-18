@@ -36,6 +36,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         super(IntegrateAvalonSubset, self).__init__(*args, **kwargs)
         self.is_progressive = None
         self.progress = 0
+        self.progress_output = None
         self.transfers = dict(files=list(),
                               hardlinks=list())
 
@@ -67,10 +68,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         self.integrate()
 
     def register(self, instance):
-        # `_progressivePublishing` flag also take as processed frame count.
-        self.is_progressive = instance.data.get("_progressivePublishing")
-        self.progress = instance.data.get("_progressiveStep", 0)
         context = instance.context
+
+        self.is_progressive = context.data.get("_progressivePublishing")
+        self.progress = instance.data.get("_progressiveStep", -1)
+        self.progress_output = instance.data.get("_progressiveOutput")
 
         # Assemble
         #
@@ -161,7 +163,14 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         Through `self.transfers`
 
         """
-        skip_exists = self.is_progressive
+        if self.progress_output is None:
+            progress_output = None
+        else:
+            progress_output = [
+                os.path.abspath(
+                    os.path.normpath(os.path.expandvars(file)))
+                for file in self.progress_output
+            ]
 
         # Write to disk
         #          _
@@ -192,8 +201,12 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 self.log.debug("Src: {!r}".format(src))
                 self.log.debug("Dst: {!r}".format(dst))
 
-                if os.path.isfile(dst) and skip_exists:
-                    continue
+                if self.is_progressive:
+                    if os.path.isfile(dst):
+                        continue
+                    if (progress_output is not None
+                            and src not in progress_output):
+                        continue
 
                 self.log.info("Copying {0}: {1} -> {2}".format(job, src, dst))
                 if src == dst:

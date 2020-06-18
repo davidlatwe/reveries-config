@@ -33,7 +33,7 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
         version = None
         version_num = 1  # assume there is no version yet, start at 1
         version_pinned = "versionPin" in instance.data
-        is_progressive = instance.data.get("_progressivePublishing")
+        is_progressive = context.data.get("_progressivePublishing")
 
         subset = avalon.io.find_one({
             "type": "subset",

@@ -46,9 +46,15 @@ class CollectInstancesFromDump(pyblish.api.ContextPlugin):
         children = instance.data["childInstances"]
         instance_to_keep = [instance] + children[:]
 
-        for instance in list(context):
-            if instance not in instance_to_keep:
-                context.remove(instance)
+        for other in list(context):
+            if other not in instance_to_keep:
+                context.remove(other)
+
+        for key in ["_progressiveStep", "_progressiveOutput"]:
+            if key in context.data:
+                # Pass progressive publishing args from context to
+                # main instance.
+                instance.data[key] = context.data.pop(key)
 
     def parse_context(self, context, dump_path):
 
