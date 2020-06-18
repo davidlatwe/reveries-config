@@ -74,18 +74,17 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
             version_dir = os.path.abspath(os.path.normpath(version_dir))
 
             lockfile = version_dir + "/" + self.LOCK
-            version_locked = is_version_locked(lockfile)
-
-            if not version_pinned and version_locked:
+            if not version_pinned and is_version_locked(lockfile):
                 # Bump version
                 version_num += 1
                 continue
 
-            elif is_progressive and version_locked:
+            elif is_progressive:
                 # In progressive publish mode, publish will be triggered
                 # multiple times with files that only be part of sequence,
                 # so we wouldn't want nor need to clear the version every
                 # time it runs.
+                self.log.info("Progressive publishing, skip cleanup.")
                 break
 
             else:
@@ -104,10 +103,9 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
                                          "try next..")
                         continue
 
+                self.log.info("Version %03d will be created for %s" %
+                              (version_num, instance))
                 break
-
-        self.log.info("Version %03d will be created for %s" %
-                      (version_num, instance))
 
         instance.data["publishPathTemplateData"] = template_data
         instance.data["publishPathTemplate"] = template_publish
