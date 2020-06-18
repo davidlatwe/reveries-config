@@ -9,10 +9,11 @@ from Deadline.Scripting import RepositoryUtils
 log = logging.getLogger("APTS")
 log.setLevel(logging.INFO)
 
-formatter = logging.Formatter("%(name)-24s: %(levelname)-8s %(message)s")
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-log.addHandler(handler)
+if not log.handlers:
+    formatter = logging.Formatter("%(name)-24s: %(levelname)-8s %(message)s")
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
 
 
 def __main__(*args):
