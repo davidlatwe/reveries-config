@@ -41,7 +41,7 @@ def __main__(*args):
         dumpfile,
         "--progress",
         str(len(frames)),
-        "--progress-output",
+        "--update",
         " ".join(files),
         "--Deadline-Support",
     ]

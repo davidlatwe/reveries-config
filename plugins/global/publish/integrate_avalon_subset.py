@@ -34,7 +34,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     def __init__(self, *args, **kwargs):
         super(IntegrateAvalonSubset, self).__init__(*args, **kwargs)
-        self.is_progressive = 0
+        self.is_progressive = None
+        self.progress = 0
         self.transfers = dict(files=list(),
                               hardlinks=list())
 
@@ -67,7 +68,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     def register(self, instance):
         # `_progressivePublishing` flag also take as processed frame count.
-        self.is_progressive = instance.data.get("_progressivePublishing", 0)
+        self.is_progressive = instance.data.get("_progressivePublishing")
+        self.progress = instance.data.get("_progressiveStep", 0)
         context = instance.context
 
         # Assemble
@@ -302,7 +304,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             version["schema"] = "avalon-core:version-2.0"
             version["data"]["families"] = families
 
-        if self.is_progressive:
+        if self.is_progressive and self.progress >= 0:
             try:
                 start = int(data["startFrame"])
                 end = int(data["endFrame"])
@@ -312,10 +314,9 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 raise KeyError("Missing frame range data, this is a bug.")
 
             else:
-                progress = self.is_progressive
                 version["progress"] = {
                     "total": len(range(start, end + 1, step)),
-                    "current": progress,
+                    "current": self.progress,
                 }
 
         return version

@@ -47,11 +47,15 @@ class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
         else:
             if instance.data.get("_progressivePublishing"):
                 self.log.info("Update version publish progress.")
-                # Update version document "data.time" and "progress.current"
-                progress = version["progress"]["current"]
+                # Update version document "data.time"
                 filter_ = {"_id": existed_version["_id"]}
-                update = {"$set": {"data.time": context.data["time"]},
-                          "$inc": {"progress.current": progress}}
+                update = {"$set": {"data.time": context.data["time"]}}
+                if "progress" in version:
+                    # Update version document "progress.current"
+                    progress = version["progress"]["current"]
+                    update["$inc"] = {"progress.current": progress}
+                else:
+                    pass  # progress == -1, no progress update needed.
                 io.update_many(filter_, update)
 
             else:

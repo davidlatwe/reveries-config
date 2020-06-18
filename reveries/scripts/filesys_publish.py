@@ -18,9 +18,9 @@ if __name__ == "__main__":
                         help="Context or Instance dump file path.")
     parser.add_argument("-p", "--progress",
                         type=int,
-                        default=0,
-                        help="Publish progress, e.g. processed frame count.")
-    parser.add_argument("-o", "--progress-output",
+                        default=-1,
+                        help="Publish progress step, e.g. frame count.")
+    parser.add_argument("-u", "--update",
                         type=str,
                         nargs="*",
                         help="Progressive publish output file abs path.")
@@ -35,10 +35,11 @@ if __name__ == "__main__":
         data["_pyblishDumpFile"] = args.dump
 
     if args.progress:
-        data["_progressivePublishing"] = args.progress
+        data["_progressiveStep"] = args.progress
 
-    if args.progress_output:
+    if args.update:
         data["_progressiveOutput"] = args.progressive
+        data["_progressivePublishing"] = True
 
     error_prefix = ""
     if args.Deadline_support:
