@@ -24,6 +24,10 @@ if __name__ == "__main__":
                         type=str,
                         nargs="*",
                         help="Instance progressive publish output file path.")
+    parser.add_argument("-j", "--jobid",
+                        type=str,
+                        default="",
+                        help="Deadline job id to be registered with.")
 
     data = dict()
     args = parser.parse_args(sys.argv[1:])
@@ -38,6 +42,9 @@ if __name__ == "__main__":
     if args.update:
         data["_progressivePublishing"] = True
         data["_progressiveOutput"] = args.update
+
+    if args.jobid:
+        data["deadlineJobId"] = args.jobid
 
     # Run
 

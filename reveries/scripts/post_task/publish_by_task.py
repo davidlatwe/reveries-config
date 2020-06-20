@@ -47,6 +47,8 @@ def __main__(*args):
         str(len(frames)),
         "--update",
         " ".join(files),
+        "--jobid",
+        job.JobId,
     ]
     popen = subprocess.Popen(args,
                              stdout=subprocess.PIPE,

@@ -50,7 +50,9 @@ class CollectInstancesFromDump(pyblish.api.ContextPlugin):
             if other not in instance_to_keep:
                 context.remove(other)
 
-        for key in ["_progressiveStep", "_progressiveOutput"]:
+        for key in ["_progressiveStep",
+                    "_progressiveOutput",
+                    "deadlineJobId"]:
             if key in context.data:
                 # Pass progressive publishing args from context to
                 # main instance.

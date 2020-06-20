@@ -371,6 +371,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             "step",
             "handles",
             "hasUnversionedSurfaces",
+            "deadlineJobId",
         ]
         for key in optionals:
             if key in instance.data:
