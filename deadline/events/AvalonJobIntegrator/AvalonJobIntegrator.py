@@ -49,14 +49,10 @@ class AvalonIntegrateOnJobFinish(Deadline.Events.DeadlineEventListener):
 
         print("Avalon job found, prepare to run publish..")
 
-        python = job.GetJobExtraInfoKeyValueWithDefault(
-            "PYBLISH_FILESYS_EXECUTABLE",
-            self.GetConfigEntry("PythonExecutable")
-        )
-        script = job.GetJobExtraInfoKeyValueWithDefault(
-            "PYBLISH_FILESYS_SCRIPT",
-            self.GetConfigEntry("PublishScript")
-        )
+        python = (job.GetJobEnvironmentKeyValue("PYBLISH_FILESYS_EXECUTABLE")
+                  or self.GetConfigEntry("PythonExecutable"))
+        script = (job.GetJobEnvironmentKeyValue("PYBLISH_FILESYS_SCRIPT")
+                  or self.GetConfigEntry("PublishScript"))
         dumpfile = job.GetJobEnvironmentKeyValue("PYBLISH_DUMP_FILE")
 
         # Check resources
