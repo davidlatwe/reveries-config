@@ -426,6 +426,7 @@ def change_subset(container, namespace, root, data_new, data_old, force):
     from avalon.pipeline import get_representation_context
 
     container["_parent"] = data_new.pop("_parent", None)
+    container["_force_update"] = force
 
     is_repr_diff = (data_old["representation"] !=
                     data_new["representation"])
