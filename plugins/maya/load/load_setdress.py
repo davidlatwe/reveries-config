@@ -63,8 +63,10 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
         with self.keep_scale_pivot(assembly):
             cmds.xform(assembly, objectSpace=True, matrix=matrix)
 
+        container_id_map = self.containers_by_id(data["subMatrix"].keys())
+
         # Apply matrix to components
-        for parsed in self.parse_sub_matrix(data):
+        for parsed in self.parse_sub_matrix(data, container_id_map):
             transform, sub_matrix, is_hidden, inherits = parsed
 
             if not transform:
@@ -125,11 +127,16 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             with self.keep_scale_pivot(assembly):
                 cmds.xform(assembly, objectSpace=True, matrix=new_matrix)
 
+        container_id_map = self.containers_by_id(
+            # Look up container ids in one batch
+            set(data_old["subMatrix"]).union(data_new["subMatrix"])
+        )
+
         # Update matrix to components
         old_data_map = {t: (m, h, i) for t, m, h, i in
-                        self.parse_sub_matrix(data_old)}
+                        self.parse_sub_matrix(data_old, container_id_map)}
 
-        for parsed in self.parse_sub_matrix(data_new):
+        for parsed in self.parse_sub_matrix(data_new, container_id_map):
             transform, sub_matrix, is_hidden, inherits = parsed
 
             if not transform:
@@ -229,6 +236,22 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 elif not origin_hidden and is_hidden:
                     self.set_attr(transform + ".visibility", False)
 
+    def containers_by_id(self, container_ids):
+        import maya.cmds as cmds
+        from reveries.maya.hierarchy import container_from_id_path
+
+        container_id_map = dict()
+        current_NS = cmds.namespaceInfo(currentNamespace=True,
+                                        absoluteName=True)
+        for container_id in container_ids:
+            container = container_from_id_path(self, container_id, current_NS)
+            if not container:
+                # Possibly been removed in parent asset
+                continue
+            container_id_map[container_id] = container
+
+        return container_id_map
+
     def transform_by_id(self, nodes):
         """
         """
@@ -245,22 +268,19 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
 
         return transform_id_map
 
-    def parse_sub_matrix(self, data):
+    def parse_sub_matrix(self, data, container_id_map):
         """
         """
         import maya.cmds as cmds
         from reveries.lib import DEFAULT_MATRIX
-        from reveries.maya.hierarchy import container_from_id_path
         from reveries.maya.pipeline import get_group_from_container
 
         def d(mx):
             return DEFAULT_MATRIX if mx == "<default>" else mx
 
-        current_NS = cmds.namespaceInfo(currentNamespace=True,
-                                        absoluteName=True)
         for container_id, sub_matrix in data["subMatrix"].items():
 
-            container = container_from_id_path(self, container_id, current_NS)
+            container = container_id_map.get(container_id)
             if not container:
                 # Possibly been removed in parent asset
                 continue
