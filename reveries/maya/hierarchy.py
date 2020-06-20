@@ -428,23 +428,30 @@ def change_subset(container, namespace, root, data_new, data_old, force):
     container["_parent"] = data_new.pop("_parent", None)
     container["_force_update"] = force
 
-    is_repr_diff = (data_old["representation"] !=
-                    data_new["representation"])
-    has_override = (data_old["representation"] !=
-                    container["representation"])
-    require_update = (data_new["representation"] !=
-                      container["representation"])
+    hierarchical_loaders = [
+        "SetDressLoader",
+    ]
 
-    if is_repr_diff and has_override and not force:
-        container["_representationUpdateSkept"] = True
+    require_update = (
+        data_new["representation"] != container["representation"]
+        or container["loader"] in hierarchical_loaders
+    )
+    is_updatable = (
+        data_old["representation"] == container["representation"]
+        or force
+    )
 
-    elif require_update:
+    # Update representation or not
+    if require_update and is_updatable:
         current_repr = get_representation_context(container["representation"])
         loader = data_new["loaderCls"](current_repr)
         loader.update(container, data_new["representationDoc"])
+    else:
+        # No need or could not update
+        pass
 
     try:
-        # Update parenting and matrix
+        # Update subset group's parenting and matrix
         with capsule.namespaced(namespace, new=False) as namespace:
             subset_group = _attach_subset(data_new["slot"],
                                           namespace,
