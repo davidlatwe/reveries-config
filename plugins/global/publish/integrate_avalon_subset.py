@@ -327,7 +327,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 raise KeyError("Missing frame range data, this is a bug.")
 
             else:
-                version["progress"] = {
+                version["data"]["progress"] = {
                     "total": len(range(start, end + 1, step)),
                     "current": self.progress,
                 }
