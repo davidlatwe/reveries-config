@@ -87,7 +87,7 @@ class AvalonJobProgressDelete(Deadline.Events.DeadlineEventListener):
                                       "name": data["version"],
                                       "parent": subset["_id"]})
         avalon.io.update_many({"_id": version["_id"]},
-                              {"$unset": {"progress": "",
+                              {"$unset": {"data.progress": "",
                                           "data.deadlineJobId": ""}})
 
     def load_environment(self, job):
