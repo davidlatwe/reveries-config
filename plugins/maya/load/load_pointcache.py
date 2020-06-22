@@ -56,12 +56,12 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
         self[:] = nodes
 
     def update(self, container, representation):
+        from reveries.maya.plugins import ReferenceLoader
         import maya.cmds as cmds
 
         uuid = cmds.ls(container["objectName"], uuid=True)
 
-        super(PointCacheReferenceLoader,
-              self).update(container, representation)
+        ReferenceLoader.update(self, container, representation)
 
         if representation["name"] == "Alembic":
             nodes = cmds.sets(cmds.ls(uuid), query=True, nodesOnly=True)
