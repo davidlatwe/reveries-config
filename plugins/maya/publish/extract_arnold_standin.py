@@ -34,6 +34,8 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
         firstfile = pattern % start
         outpath = "%s/%s" % (staging_dir, cachename)
 
+        instance.data["outputPath"] = "%s/%s" % (staging_dir, pattern)
+
         use_sequence = start != end
         if use_sequence:
             instance.data["repr.Ass._hardlinks"] = [

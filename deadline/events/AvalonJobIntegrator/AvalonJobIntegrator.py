@@ -41,10 +41,18 @@ class AvalonIntegrateOnJobFinish(Deadline.Events.DeadlineEventListener):
             # Not a valid Avalon job
             return
 
+        if "AVALON_POST_TASK_SCRIPTS" in job_environ:
+            post = job.GetJobExtraInfoKeyValue("AVALON_POST_TASK_SCRIPTS")
+            if "publish_by_task" in post:
+                # Progressive publish job
+                return
+
         print("Avalon job found, prepare to run publish..")
 
-        python = self.GetConfigEntry("PythonExecutable")
-        script = self.GetConfigEntry("PublishScript")
+        python = (job.GetJobEnvironmentKeyValue("PYBLISH_FILESYS_EXECUTABLE")
+                  or self.GetConfigEntry("PythonExecutable"))
+        script = (job.GetJobEnvironmentKeyValue("PYBLISH_FILESYS_SCRIPT")
+                  or self.GetConfigEntry("PublishScript"))
         dumpfile = job.GetJobEnvironmentKeyValue("PYBLISH_DUMP_FILE")
 
         # Check resources
@@ -59,6 +67,7 @@ class AvalonIntegrateOnJobFinish(Deadline.Events.DeadlineEventListener):
         args = [
             python,
             script,
+            "--dump",
             dumpfile,
         ]
         environ = {
@@ -80,3 +89,5 @@ class AvalonIntegrateOnJobFinish(Deadline.Events.DeadlineEventListener):
                                  stderr=subprocess.STDOUT)
         output, _ = popen.communicate()
         print(output)
+        if popen.returncode != 0:
+            raise Exception("Publish failed, see log..")

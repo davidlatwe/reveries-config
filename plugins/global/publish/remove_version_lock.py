@@ -11,6 +11,9 @@ class RemoveVersionLock(pyblish.api.ContextPlugin):
     order = pyblish.api.IntegratorOrder + 0.1
 
     def process(self, context):
+        if context.data.get("_progressivePublishing", False):
+            self.log.info("Progressive publishing, skip version unlock.")
+            return
 
         for instance in context:
             if not instance.data.get("publish", True):

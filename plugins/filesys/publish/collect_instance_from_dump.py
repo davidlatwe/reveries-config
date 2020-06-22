@@ -1,6 +1,5 @@
 
 import os
-import sys
 import json
 import pyblish.api
 
@@ -15,9 +14,14 @@ class CollectInstancesFromDump(pyblish.api.ContextPlugin):
 
     label = "Collect Instances From Dump"
     order = pyblish.api.CollectorOrder - 0.2
+    hosts = ["filesys"]
 
     def process(self, context):
-        dump_path = sys.argv[1]
+        dump_path = context.data.get("_pyblishDumpFile")
+        if not dump_path:
+            self.log.warning("Did not provide context/instance dump file.")
+            return
+
         dump_file = os.path.basename(dump_path)
 
         if not dump_file.endswith(".json"):
@@ -42,9 +46,17 @@ class CollectInstancesFromDump(pyblish.api.ContextPlugin):
         children = instance.data["childInstances"]
         instance_to_keep = [instance] + children[:]
 
-        for instance in list(context):
-            if instance not in instance_to_keep:
-                context.remove(instance)
+        for other in list(context):
+            if other not in instance_to_keep:
+                context.remove(other)
+
+        for key in ["_progressiveStep",
+                    "_progressiveOutput",
+                    "deadlineJobId"]:
+            if key in context.data:
+                # Pass progressive publishing args from context to
+                # main instance.
+                instance.data[key] = context.data.pop(key)
 
     def parse_context(self, context, dump_path):
 

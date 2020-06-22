@@ -32,6 +32,14 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     targets = ["localhost"]
 
+    def __init__(self, *args, **kwargs):
+        super(IntegrateAvalonSubset, self).__init__(*args, **kwargs)
+        self.is_progressive = None
+        self.progress = 0
+        self.progress_output = None
+        self.transfers = dict(files=list(),
+                              hardlinks=list())
+
     def process(self, instance):
 
         # Atomicity
@@ -50,9 +58,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             self.log.warning("Atomicity not held, aborting.")
             return
 
-        self.transfers = dict(files=list(),
-                              hardlinks=list())
-
         # Assemble data and create version, representations
         subset, version, representations = self.register(instance)
 
@@ -63,8 +68,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         self.integrate()
 
     def register(self, instance):
-
         context = instance.context
+
+        self.is_progressive = context.data.get("_progressivePublishing")
+        self.progress = instance.data.get("_progressiveStep", -1)
+        self.progress_output = instance.data.get("_progressiveOutput")
 
         # Assemble
         #
@@ -155,6 +163,14 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         Through `self.transfers`
 
         """
+        if self.progress_output is None:
+            progress_output = None
+        else:
+            progress_output = [
+                os.path.abspath(
+                    os.path.normpath(os.path.expandvars(file)))
+                for file in self.progress_output
+            ]
 
         # Write to disk
         #          _
@@ -184,6 +200,13 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
                 self.log.debug("Src: {!r}".format(src))
                 self.log.debug("Dst: {!r}".format(dst))
+
+                if self.is_progressive:
+                    if os.path.isfile(dst):
+                        continue
+                    if (progress_output is not None
+                            and src not in progress_output):
+                        continue
 
                 self.log.info("Copying {0}: {1} -> {2}".format(job, src, dst))
                 if src == dst:
@@ -263,13 +286,15 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                        families,
                        version_number,
                        locations,
-                       data=None):
+                       data):
         """ Copy given source to destination
 
         Args:
             subset (dict): the registered subset of the asset
+            families (list): instance's families
             version_number (int): the version number
             locations (list): the currently registered locations
+            data (dict): version data
 
         Returns:
             dict: collection of data to create a version
@@ -291,6 +316,21 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         else:
             version["schema"] = "avalon-core:version-2.0"
             version["data"]["families"] = families
+
+        if self.is_progressive and self.progress >= 0:
+            try:
+                start = int(data["startFrame"])
+                end = int(data["endFrame"])
+                step = int(data["step"])
+
+            except KeyError:
+                raise KeyError("Missing frame range data, this is a bug.")
+
+            else:
+                version["progress"] = {
+                    "total": len(range(start, end + 1, step)),
+                    "current": self.progress,
+                }
 
         return version
 
@@ -331,6 +371,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             "step",
             "handles",
             "hasUnversionedSurfaces",
+            "deadlineJobId",
         ]
         for key in optionals:
             if key in instance.data:

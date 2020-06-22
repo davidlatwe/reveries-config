@@ -73,6 +73,17 @@ class DeadlineSubmitter(object):
             "AVALON_TOOLS": os.getenv("AVALON_TOOLS", ""),
         }, **avalon.api.Session)
 
+        # From current environment (required)
+        for var in [
+            "PYBLISH_FILESYS_EXECUTABLE",
+            "PYBLISH_FILESYS_SCRIPT",
+        ]:
+            try:
+                environment[var] = os.environ[var]
+            except KeyError:
+                self.log.error("Required environ var '%s' missing." % var)
+                raise KeyError("Missing important environment variable.")
+
         self._environment = environment
 
     def environment(self):

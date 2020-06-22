@@ -45,20 +45,39 @@ class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
             self.update_dependent(instance, version_id)
 
         else:
-            self.log.info("Version existed, representation file has been "
-                          "overwritten.")
-            # Update version document "data.time"
-            filter_ = {"_id": existed_version["_id"]}
-            update = {"$set": {"data.time": context.data["time"]}}
-            io.update_many(filter_, update)
-            # Update representation documents "data"
-            for representation in representations:
-                filter_ = {
-                    "name": representation["name"],
-                    "parent": existed_version["_id"],
-                }
-                update = {"$set": {"data": representation["data"]}}
+            if context.data.get("_progressivePublishing"):
+                if instance.data.get("_progressiveOutput") is None:
+                    pass  # Not given any output, no progress change
+
+                else:
+                    self.log.info("Update version publish progress.")
+                    # Update version document "data.time"
+                    filter_ = {"_id": existed_version["_id"]}
+                    update = {"$set": {"data.time": context.data["time"]}}
+                    if "progress" in version:
+                        # Update version document "progress.current"
+                        progress = version["progress"]["current"]
+                        update["$inc"] = {"progress.current": progress}
+                    else:
+                        pass  # progress == -1, no progress update needed.
+                    io.update_many(filter_, update)
+
+            else:
+                self.log.info("Version existed, representation file has been "
+                              "overwritten.")
+                # Update version document "data.time"
+                filter_ = {"_id": existed_version["_id"]}
+                update = {"$set": {"data.time": context.data["time"]}}
                 io.update_many(filter_, update)
+
+                # Update representation documents "data"
+                for representation in representations:
+                    filter_ = {
+                        "name": representation["name"],
+                        "parent": existed_version["_id"],
+                    }
+                    update = {"$set": {"data": representation["data"]}}
+                    io.update_many(filter_, update)
 
     def write_database(self, instance, version, representations):
         """Write version and representations to database
