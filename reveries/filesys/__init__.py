@@ -2,6 +2,7 @@
 import os
 import sys
 import logging
+import contextlib
 import avalon.api
 import pyblish.api
 
@@ -14,6 +15,7 @@ self.installed = None
 log = logging.getLogger("reveries.filesys")
 
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "filesys", "publish")
+CREATE_PATH = os.path.join(PLUGINS_DIR, "filesys", "create")
 
 
 class Filesys(avalon.api.Application):
@@ -45,6 +47,7 @@ def install():
 
     # install pipeline plugins
     pyblish.api.register_plugin_path(PUBLISH_PATH)
+    avalon.api.register_plugin_path(avalon.api.Creator, CREATE_PATH)
 
     self.installed = True
 
@@ -56,9 +59,18 @@ def uninstall():
 
     # uninstall pipeline plugins
     pyblish.api.deregister_plugin_path(PUBLISH_PATH)
+    avalon.api.deregister_plugin_path(avalon.api.Creator, CREATE_PATH)
 
     self.installed = False
 
 
 def ls():
     return []
+
+
+@contextlib.contextmanager
+def maintained_selection():
+    try:
+        yield
+    finally:
+        pass
