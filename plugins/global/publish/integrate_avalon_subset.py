@@ -198,8 +198,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 dst = os.path.abspath(
                     os.path.normpath(os.path.expandvars(dst)))
 
-                self.log.debug("Src: {!r}".format(src))
-                self.log.debug("Dst: {!r}".format(dst))
+                print("Src: {!r}".format(src))
+                print("Dst: {!r}".format(dst))
 
                 if self.is_progressive:
                     if os.path.isfile(dst):
@@ -208,7 +208,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                             and src not in progress_output):
                         continue
 
-                self.log.info("Copying {0}: {1} -> {2}".format(job, src, dst))
+                print("Copying {0}: {1} -> {2}".format(job, src, dst))
                 if src == dst:
                     self.log.debug("Source and destination are the same, "
                                    "will not copy.")
