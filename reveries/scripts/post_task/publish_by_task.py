@@ -65,12 +65,12 @@ def get_output_files(job, frames):
     output_directories = job.OutputDirectories
     output_filenames = job.OutputFileNames
 
-    for dir in output_directories:
-        for file in output_filenames:
-            file = format_padding(file)
-            for frame in frames:
-                path = os.path.join(dir, file % frame).replace("\\", "/")
-                files.append(path)
+    for i, dir in enumerate(output_directories):
+        file = output_filenames[i]
+        file = format_padding(file)
+        for frame in frames:
+            path = os.path.join(dir, file % frame).replace("\\", "/")
+            files.append(path)
 
     return files
 
