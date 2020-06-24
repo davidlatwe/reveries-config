@@ -1,7 +1,7 @@
 
 import os
 import re
-from avalon.vendor.Qt import QtWidgets, QtCore, QtGui, QtCompat
+from avalon.vendor.Qt import QtWidgets, QtCore, QtGui
 from avalon.vendor import qtawesome
 from avalon.tools import models
 from . import delegates
@@ -51,10 +51,9 @@ class SequenceWidget(QtWidgets.QWidget):
             }
         """)
 
-        header = data["view"].header()
-        # Enforce the columns to fit the data (purely cosmetic)
-        QtCompat.setSectionResizeMode(
-            header, QtWidgets.QHeaderView.ResizeToContents)
+        data["view"].setColumnWidth(0, 360)  # fpattern
+        data["view"].setColumnWidth(1, 100)  # name
+        data["view"].setColumnWidth(2, 80)  # frames
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(data["view"])
@@ -96,8 +95,9 @@ class SequenceWidget(QtWidgets.QWidget):
         for path in to_open:
             os.startfile(path)
 
-    def set_stereo(self, vlaue):
-        self.data["model"].set_stereo(vlaue)
+    def set_stereo(self, value):
+        self.data["model"].set_stereo(value)
+        self.data["view"].viewport().update()
 
     def search_channel_name(self, head, tail):
         self.data["model"].search_channel_name(head, tail)

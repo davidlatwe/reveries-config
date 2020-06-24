@@ -46,6 +46,11 @@ class ValidateWorkfileInWorkspace(pyblish.api.InstancePlugin):
     def process(self, context):
 
         current_making = context.data.get("currentMaking")
+
+        if current_making == ":unknown:":
+            self.log.warning("Publish from unknown work scene.")
+            return
+
         if not current_making:
             raise RuntimeError("No workfile collected, this is a bug.")
 

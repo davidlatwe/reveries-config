@@ -22,7 +22,6 @@ class ExtractRender(pyblish.api.InstancePlugin):
 
         staging_dir = instance.context.data["outputDir"]
 
-        hardlinks = list()
         stereo_pairs = instance.data.get("stereo")
         if stereo_pairs is None:
             # Normal render

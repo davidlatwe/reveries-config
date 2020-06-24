@@ -3,7 +3,6 @@ import sys
 import argparse
 import avalon.api
 import pyblish.api
-import pyblish.util
 from reveries import filesys, lib
 
 
