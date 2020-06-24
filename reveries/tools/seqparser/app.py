@@ -105,7 +105,6 @@ class Window(QtWidgets.QDialog):
         data["sequences"]["nTail"].textChanged.connect(self.on_ntail_changed)
 
         data["endDialog"]["accept"].clicked.connect(self.run_callback)
-        data["endDialog"]["accept"].clicked.connect(self.accept)
         data["endDialog"]["cancel"].clicked.connect(self.reject)
 
         self.data = data
@@ -126,9 +125,11 @@ class Window(QtWidgets.QDialog):
 
     def run_callback(self):
         callback = self.data["endDialog"]["callback"]
-        with_keys = self.data["endDialog"]["with_keys"]
         if callback is not None:
+            with_keys = self.data["endDialog"]["with_keys"]
             callback(self.collected(with_keys))
+
+        self.accept()
 
     def open_browser(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(parent=self)

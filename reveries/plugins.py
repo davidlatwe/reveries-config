@@ -141,17 +141,17 @@ class PackageLoader(object):
         return os.path.join(self.package_path, file_name)
 
 
-def message_box_error(title, message):
+def message_box_error(title, message, parent=None):
     """Prompt error message window"""
     from avalon.vendor.Qt import QtWidgets
 
-    QtWidgets.QMessageBox.critical(None,
+    QtWidgets.QMessageBox.critical(parent,
                                    title,
                                    message,
                                    QtWidgets.QMessageBox.Ok)
 
 
-def message_box_warning(title, message, optional=False):
+def message_box_warning(title, message, optional=False, parent=None):
     """Prompt warning dialog with option"""
     from avalon.vendor.Qt import QtWidgets
 
@@ -159,7 +159,7 @@ def message_box_warning(title, message, optional=False):
     if optional:
         opt_btn = QtWidgets.QMessageBox.Cancel
 
-    respond = QtWidgets.QMessageBox.warning(None,
+    respond = QtWidgets.QMessageBox.warning(parent,
                                             title,
                                             message,
                                             QtWidgets.QMessageBox.Ok,
