@@ -13,5 +13,10 @@ class ValidateWorkfileInWorkspace(pyblish.api.ContextPlugin):
 
     def process(self, context):
         current_making = context.data.get("currentMaking", "")
+
+        if current_making == ":unknown:":
+            self.log.warning("Publish from unknown work scene.")
+            return
+
         if not os.path.isfile(current_making):
             raise RuntimeError("Workfile not exists: %s" % current_making)

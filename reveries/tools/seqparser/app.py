@@ -105,30 +105,36 @@ class Window(QtWidgets.QDialog):
         data["sequences"]["nTail"].textChanged.connect(self.on_ntail_changed)
 
         data["endDialog"]["accept"].clicked.connect(self.run_callback)
-        data["endDialog"]["accept"].clicked.connect(self.accept)
         data["endDialog"]["cancel"].clicked.connect(self.reject)
 
         self.data = data
 
         # Defaults
         self.is_single = False
+        self.is_stereo = False
         self.resize(600, 800)
 
     def collected(self, with_keys=None):
         return self.data["sequences"]["view"].collected(with_keys)
 
+    def get_root_path(self):
+        return self.data["rootPath"]["path"].text()
+
     def on_single(self, state):
         self.is_single = bool(state)
-        self.ls_sequences(self.data["rootPath"]["path"].text())
+        self.ls_sequences(self.get_root_path())
 
     def on_stereo(self, state):
+        self.is_stereo = bool(state)
         self.data["sequences"]["view"].set_stereo(bool(state))
 
     def run_callback(self):
         callback = self.data["endDialog"]["callback"]
-        with_keys = self.data["endDialog"]["with_keys"]
         if callback is not None:
+            with_keys = self.data["endDialog"]["with_keys"]
             callback(self.collected(with_keys))
+
+        self.accept()
 
     def open_browser(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(parent=self)
