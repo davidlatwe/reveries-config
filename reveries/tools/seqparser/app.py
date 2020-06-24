@@ -111,16 +111,21 @@ class Window(QtWidgets.QDialog):
 
         # Defaults
         self.is_single = False
+        self.is_stereo = False
         self.resize(600, 800)
 
     def collected(self, with_keys=None):
         return self.data["sequences"]["view"].collected(with_keys)
 
+    def get_root_path(self):
+        return self.data["rootPath"]["path"].text()
+
     def on_single(self, state):
         self.is_single = bool(state)
-        self.ls_sequences(self.data["rootPath"]["path"].text())
+        self.ls_sequences(self.get_root_path())
 
     def on_stereo(self, state):
+        self.is_stereo = bool(state)
         self.data["sequences"]["view"].set_stereo(bool(state))
 
     def run_callback(self):

@@ -31,6 +31,8 @@ def publish(sequences):
     avalon.api.install(filesys)
     pyblish.api.register_target("localhost")
 
+    filesys.new()
+
     with tools_lib.application():
         seqparser_app = app.window
         created = {"_": False}
@@ -39,6 +41,11 @@ def publish(sequences):
 
         # (NOTE) override `window.on_create`, this is a hack !
         def on_create_hack():
+            filesys.put_data("renderCreatorData", {
+                "sequences": sequences,
+                "isStereo": seqparser_app.is_stereo,
+                "stagingDir": seqparser_app.get_root_path(),
+            })
             try:
                 window.on_create()
             except Exception:
@@ -52,10 +59,6 @@ def publish(sequences):
         window.data["Create Button"].clicked.connect(on_create_hack)
         window.data["Subset"].returnPressed.connect(on_create_hack)
 
-        # (NOTE) plugin data passing, this is a hack !
-        window.data["_creatorData"] = sequences
-        creator.window = window
-
         window.setStyleSheet(style.load_stylesheet())
         window.refresh()
         window.exec()
@@ -65,10 +68,8 @@ def publish(sequences):
 
     seqparser_app.hide()
 
-    server = pyblish_qml.api.show(auto_publish=True)
+    server = pyblish_qml.api.show()
     server.wait()
-
-    # Show asset name on Pyblish
 
     context = server.service._context
     if not context.data.get("publishSucceed"):
