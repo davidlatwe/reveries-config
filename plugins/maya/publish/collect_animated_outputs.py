@@ -73,10 +73,11 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
                     continue
 
                 key = (namespace, variant)
-                self.log.info("%s, %s" % key)
 
                 if key not in out_cache:
+                    self.log.info("%s, %s" % key)
                     out_cache[key] = list()
+
                 out_cache[key].append(node)
 
         for (namespace, name), animatables in out_cache.items():
