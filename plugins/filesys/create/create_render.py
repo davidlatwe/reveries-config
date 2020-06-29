@@ -13,6 +13,7 @@ class RenderCreator(avalon.api.Creator):
         from reveries import filesys
 
         creator_data = filesys.pop_data("renderCreatorData")
+        # required keys: "sequences", "isStereo", "stagingDir"
         if not creator_data:
             raise Exception("No render creator data given.")
 
