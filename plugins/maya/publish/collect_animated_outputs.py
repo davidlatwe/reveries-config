@@ -80,7 +80,7 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
 
                 out_cache[key].append(node)
 
-        for (namespace, name), animatables in out_cache.items():
+        for (namespace, name), animatables in sorted(out_cache.items()):
             container = pipeline.get_container_from_namespace(namespace)
             asset_id = cmds.getAttr(container + ".assetId")
 
