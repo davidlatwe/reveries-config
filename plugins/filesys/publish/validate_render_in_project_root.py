@@ -7,6 +7,9 @@ class ValidateRenderInProjectRoot(pyblish.api.InstancePlugin):
     label = "Render In Project Root"
     order = pyblish.api.ValidatorOrder + 0.1
     hosts = ["filesys"]
+    targets = [
+        "seqparser",
+    ]
     families = [
         "reveries.renderlayer"
     ]

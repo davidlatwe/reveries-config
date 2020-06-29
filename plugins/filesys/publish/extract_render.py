@@ -8,7 +8,9 @@ class ExtractRender(pyblish.api.InstancePlugin):
     label = "Extract Render"
     order = pyblish.api.ExtractorOrder
     hosts = ["filesys"]
-
+    targets = [
+        "seqparser",
+    ]
     families = [
         "reveries.renderlayer",
     ]

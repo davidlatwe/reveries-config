@@ -30,6 +30,7 @@ def publish(sequences):
     """
     avalon.api.install(filesys)
     pyblish.api.register_target("localhost")
+    pyblish.api.register_target("seqparser")
 
     filesys.new()
 
