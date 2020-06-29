@@ -67,6 +67,7 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
                 result = lib.ls_duplicated_name(root)
                 duplicated = [n for m in result.values() for n in m]
                 if duplicated:
+                    self.log.info("Duplicate named nodes found, resolving...")
                     # Duplicate it so we could have a unique named new node
                     unique_named = list()
                     for node in duplicated:
