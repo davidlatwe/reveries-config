@@ -78,7 +78,7 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
                         # New nodes will be deleted after the export
                         delete_bin.extend(new_nodes)
 
-                    # Replace duplicat named nodes with unique named
+                    # Replace duplicate named nodes with unique named
                     root = list(set(root) - set(duplicated)) + unique_named
 
                 for node in set(root):
