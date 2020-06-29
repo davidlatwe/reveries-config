@@ -63,7 +63,10 @@ class ExtractAnimation(pyblish.api.InstancePlugin):
         ):
             lib.bake(instance.data["outAnim"],
                      frame_range=(start, end),
-                     shape=False)
+                     shape=False,
+                     # Remove baked from layer so to bake out all keys like
+                     # animLayers being merged.
+                     remove_baked_attr_from_layer=True)
 
             cmds.select(instance.data["outAnim"], replace=True, noExpand=True)
             cmds.file(outpath,

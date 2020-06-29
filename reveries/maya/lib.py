@@ -760,6 +760,7 @@ def bake(nodes,
          simulation=True,
          preserve_outside_keys=False,
          disable_implicit_control=True,
+         remove_baked_attr_from_layer=False,
          shape=True):
     """Bake the given nodes over the time range.
 
@@ -775,6 +776,8 @@ def bake(nodes,
             range.
         disable_implicit_control (bool): When True will disable any
             constraints to the object.
+        remove_baked_attr_from_layer (bool): If true, all baked attribute will
+            be removed from the layer.
         shape (bool): When True also bake attributes on the children shapes.
         step (float): The step size to sample by.
 
@@ -803,13 +806,16 @@ def bake(nodes,
     # Bake it
     with keytangent_default(in_tangent_type='auto',
                             out_tangent_type='auto'):
-        cmds.bakeResults(nodes,
-                         simulation=simulation,
-                         preserveOutsideKeys=preserve_outside_keys,
-                         disableImplicitControl=disable_implicit_control,
-                         shape=shape,
-                         sampleBy=step,
-                         time=(frame_range[0], frame_range[1]))
+        cmds.bakeResults(
+            nodes,
+            simulation=simulation,
+            preserveOutsideKeys=preserve_outside_keys,
+            disableImplicitControl=disable_implicit_control,
+            removeBakedAttributeFromLayer=remove_baked_attr_from_layer,
+            shape=shape,
+            sampleBy=step,
+            time=(frame_range[0], frame_range[1])
+        )
 
 
 def bake_to_world_space(nodes,
@@ -817,6 +823,7 @@ def bake_to_world_space(nodes,
                         simulation=True,
                         preserve_outside_keys=False,
                         disable_implicit_control=True,
+                        remove_baked_attr_from_layer=False,
                         shape=True,
                         step=1.0,
                         duplicate_input_graph=False):
@@ -952,6 +959,7 @@ def bake_to_world_space(nodes,
              simulation=simulation,
              preserve_outside_keys=preserve_outside_keys,
              disable_implicit_control=disable_implicit_control,
+             remove_baked_attr_from_layer=remove_baked_attr_from_layer,
              shape=shape)
 
     return world_space_nodes
