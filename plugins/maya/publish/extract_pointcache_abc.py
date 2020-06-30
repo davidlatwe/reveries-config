@@ -67,6 +67,7 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
                 result = lib.ls_duplicated_name(root)
                 duplicated = [n for m in result.values() for n in m]
                 if duplicated:
+                    self.log.info("Duplicate named nodes found, resolving...")
                     # Duplicate it so we could have a unique named new node
                     unique_named = list()
                     for node in duplicated:
@@ -78,7 +79,7 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
                         # New nodes will be deleted after the export
                         delete_bin.extend(new_nodes)
 
-                    # Replace duplicat named nodes with unique named
+                    # Replace duplicate named nodes with unique named
                     root = list(set(root) - set(duplicated)) + unique_named
 
                 for node in set(root):
@@ -91,21 +92,40 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
                 root = list(set(root))
                 cmds.select(root, replace=True, noExpand=True)
 
-                io.export_alembic(
-                    outpath,
-                    start,
-                    end,
-                    selection=True,
-                    renderableOnly=True,
-                    writeVisibility=True,
-                    writeCreases=True,
-                    worldSpace=True,
-                    eulerFilter=euler_filter,
-                    attr=[
-                        lib.AVALON_ID_ATTR_LONG,
-                    ],
-                    attrPrefix=[
-                        "ai",  # Write out Arnold attributes
-                        "avnlook_",  # Write out lookDev controls
-                    ],
-                )
+                def _export_alembic():
+                    io.export_alembic(
+                        outpath,
+                        start,
+                        end,
+                        selection=True,
+                        renderableOnly=True,
+                        writeVisibility=True,
+                        writeCreases=True,
+                        worldSpace=True,
+                        eulerFilter=euler_filter,
+                        attr=[
+                            lib.AVALON_ID_ATTR_LONG,
+                        ],
+                        attrPrefix=[
+                            "ai",  # Write out Arnold attributes
+                            "avnlook_",  # Write out lookDev controls
+                        ],
+                    )
+
+                auto_retry = 1
+                while auto_retry:
+                    try:
+                        _export_alembic()
+                    except RuntimeError as err:
+                        if auto_retry:
+                            # (NOTE) Auto re-try export
+                            # For unknown reason, some artist may encounter
+                            # runtime error when exporting but re-run the
+                            # publish without any change will resolve.
+                            auto_retry -= 1
+                            self.log.warning(err)
+                            self.log.warning("Retrying...")
+                        else:
+                            raise err
+                    else:
+                        break
