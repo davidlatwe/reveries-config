@@ -36,22 +36,22 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
             # Collect animatable nodes from ControlSet of loaded subset
             out_sets = list()
 
-            for node in cmds.ls(members, type="transform", long=True):
+            for node in cmds.ls(members, type="transform"):
                 try:
-                    container = pipeline.get_container_from_group(node)
+                    # Must be containerized subset group node
+                    pipeline.get_container_from_group(node)
                 except AssertionError:
                     continue
 
-                sets = cmds.ls(cmds.sets(container, query=True),
-                               type="objectSet")
-                out_sets += [s for s in sets if s.endswith(ANIM_SET)]
+                namespace = lib.get_ns(node)
+                out_sets += cmds.ls("%s:*%s" % (namespace, ANIM_SET),
+                                    sets=True)
 
             for node in out_sets:
                 name = node.rsplit(":", 1)[-1][:-len(ANIM_SET)] or "Default"
                 namespace = lib.get_ns(node)
                 animatables = cmds.ls(cmds.sets(node, query=True),
-                                      type="transform",
-                                      long=True)
+                                      type="transform")
 
                 key = (namespace, name)
                 self.log.info("%s, %s" % key)
@@ -64,7 +64,7 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
 
         else:
             # Collect animatable nodes from instance member
-            for node in cmds.ls(members, type="transform", long=True):
+            for node in cmds.ls(members, type="transform"):
                 namespace = lib.get_ns(node)
                 try:
                     # Must be containerized
@@ -73,13 +73,14 @@ class CollectAnimatedOutputs(pyblish.api.InstancePlugin):
                     continue
 
                 key = (namespace, variant)
-                self.log.info("%s, %s" % key)
 
                 if key not in out_cache:
+                    self.log.info("%s, %s" % key)
                     out_cache[key] = list()
+
                 out_cache[key].append(node)
 
-        for (namespace, name), animatables in out_cache.items():
+        for (namespace, name), animatables in sorted(out_cache.items()):
             container = pipeline.get_container_from_namespace(namespace)
             asset_id = cmds.getAttr(container + ".assetId")
 

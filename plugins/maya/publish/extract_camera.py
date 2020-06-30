@@ -137,6 +137,9 @@ class ExtractCamera(pyblish.api.InstancePlugin):
                     cam_transform,
                     frame_range,
                     step=step,
+                    # Remove baked from layer so to bake out all keys like
+                    # animLayers being merged.
+                    remove_baked_attr_from_layer=True,
                     duplicate_input_graph=duplicate_input_graph)[0]
                 delete_bin.append(baked_camera)
 

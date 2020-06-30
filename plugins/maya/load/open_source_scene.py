@@ -121,7 +121,7 @@ class OpenSourceRig(OpenMayaSource, avalon.api.Loader):
 class OpenSourceAnimation(OpenMayaSource, avalon.api.Loader):
 
     families = ["reveries.animation"]
-    representations = ["mayaAscii"]
+    representations = ["mayaAscii", "anim"]
 
 
 class OpenSourcePointCache(OpenMayaSource, avalon.api.Loader):
