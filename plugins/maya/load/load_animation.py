@@ -25,13 +25,11 @@ class AnimationLoader(ImportLoader, avalon.api.Loader):
 
     def process_import(self, context, name, namespace, group, options):
         from maya import cmds, mel
+        from reveries import plugins
 
         representation = context["representation"]
         asset_id = representation["data"]["animatedAssetId"]
         selected = cmds.ls(selection=True, long=True)
-        container = None
-        target_ns = None
-        members = None
 
         # Collect namespace from selected nodes
         namespaces = defaultdict(set)
@@ -47,10 +45,19 @@ class AnimationLoader(ImportLoader, avalon.api.Loader):
             except RuntimeError:
                 continue
 
-            if asset_id == cmds.getAttr(container + ".assetId"):
-                target_ns = ns
-                members = nodes
-                break
+            if asset_id != cmds.getAttr(container + ".assetId"):
+                confirm = plugins.message_box_warning(
+                    "Warning",
+                    "Applying animation to different asset, are you sure ?",
+                    optional=True,
+                )
+                if not confirm:
+                    raise Exception("Operation canceled.")
+
+            target_ns = ns
+            members = nodes
+            break
+
         else:
             raise Exception("No matched asset found.")
 
