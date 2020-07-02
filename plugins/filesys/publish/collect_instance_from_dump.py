@@ -13,7 +13,7 @@ class CollectInstancesFromDump(pyblish.api.ContextPlugin):
     """
 
     label = "Collect Instances From Dump"
-    order = pyblish.api.CollectorOrder - 0.2
+    order = pyblish.api.CollectorOrder - 0.21
     hosts = ["filesys"]
 
     def process(self, context):

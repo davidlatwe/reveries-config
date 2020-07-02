@@ -13,8 +13,10 @@ class CollectInstancesFromFilesys(pyblish.api.ContextPlugin):
     def process(self, context):
         from reveries import filesys
 
-        # (NOTE) Currently workfile collect is not supported.
-        context.data["currentMaking"] = ":unknown:"
+        if not context.data.get("currentMaking"):
+            # (TODO) Currently workfile collect is not supported when
+            #  publish with seqparser.
+            context.data["currentMaking"] = ":unknown:"
 
         for name, data in filesys.iter_instances():
             instance = context.create_instance(name)
