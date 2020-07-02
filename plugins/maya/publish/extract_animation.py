@@ -45,9 +45,10 @@ class ExtractAnimation(pyblish.api.InstancePlugin):
             ):
                 # Save with basename
                 with open(scriptpath, "w") as fp:
-                    fp.write("select -r\n" +
+                    # Allow not existing nodes between assets
+                    fp.write("select -r `ls\n" +
                              "\n".join(cmds.ls(sl=True)) +
-                             ";")
+                             "`;")
 
         context_data = instance.context.data
         start = context_data["startFrame"]

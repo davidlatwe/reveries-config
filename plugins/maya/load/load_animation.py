@@ -23,6 +23,18 @@ class AnimationLoader(ImportLoader, avalon.api.Loader):
         "anim",
     ]
 
+    def _selection_patch(self, path):
+        """"Change script to allow not existing nodes between assets"""
+        with open(path, "r") as script:
+            mel = script.readlines()
+
+        if mel[0] != "select -r `ls\n":
+            self.log.warning("Patching controller selecting mel script...")
+            mel[0] = "select -r `ls\n"
+            mel[-1] = mel[-1].replace(";", "`;")
+            with open(path, "w") as script:
+                script.writelines(mel)
+
     def process_import(self, context, name, namespace, group, options):
         from maya import cmds, mel
         from reveries import plugins
@@ -73,6 +85,7 @@ class AnimationLoader(ImportLoader, avalon.api.Loader):
                 capsule.namespaced(target_ns, new=False),
                 capsule.relative_namespaced()
             ):
+                self._selection_patch(sele_path)
                 mel.eval("source \"%s\"" % sele_path)
 
             targets = cmds.ls(selection=True, long=True)
