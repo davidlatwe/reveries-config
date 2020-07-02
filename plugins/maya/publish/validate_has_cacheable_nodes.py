@@ -17,4 +17,8 @@ class ValidateHasCacheableNodes(pyblish.api.InstancePlugin):
         assert "outCache" in instance.data, "No 'outCache', this is a bug."
 
         if not instance.data["outCache"]:
-            raise Exception("No cacheable nodes in %s" % instance)
+            message = "No cacheable nodes in %s" % instance
+            if instance.data.get("_hasHidden"):
+                message += (", possibly hidden (only visible object can be "
+                            "cached).")
+            raise Exception(message)

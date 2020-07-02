@@ -159,6 +159,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                                                     name])
                 instance[:] = cacheables
                 instance.data["outCache"] = cacheables
+                instance.data["_hasHidden"] = has_hidden
                 instance.data["requireAvalonUUID"] = cacheables
                 instance.data["startFrame"] = start_frame
                 instance.data["endFrame"] = end_frame
@@ -179,15 +180,17 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             instance = backup
 
             # Cacheables from instance member
-            cacheables = lib.pick_cacheable(members)
-            cacheables = lib.get_visible_in_frame_range(cacheables,
+            all_cacheables = lib.pick_cacheable(members)
+            cacheables = lib.get_visible_in_frame_range(all_cacheables,
                                                         int(start_frame),
                                                         int(end_frame))
+            has_hidden = len(all_cacheables) > len(cacheables)
             # Plus locator
             cacheables += self.pick_locators(members)
 
             instance[:] = cacheables
             instance.data["outCache"] = cacheables
+            instance.data["_hasHidden"] = has_hidden
             instance.data["requireAvalonUUID"] = cacheables
             instance.data["startFrame"] = start_frame
             instance.data["endFrame"] = end_frame
