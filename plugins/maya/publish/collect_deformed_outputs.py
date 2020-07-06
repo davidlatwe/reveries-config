@@ -71,6 +71,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
         # Collect cacheable nodes
 
         created = False
+        context = instance.context
         backup = instance
 
         if out_sets:
@@ -106,7 +107,6 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                         members.remove(n)
 
             # Re-Create instances
-            context = backup.context
 
             for k, (has_hidden, cacheables) in out_cache.items():
                 namespace, name = k
