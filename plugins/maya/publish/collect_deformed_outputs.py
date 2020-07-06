@@ -150,7 +150,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             # Nothing left, all in/has OutSet
 
             if not created:
-                cmds.error("No pointcache instance created.")
+                self.log.warning("No pointcache instance created.")
             else:
                 context.remove(backup)
 
@@ -227,9 +227,13 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
     def pick_locators(self, members):
         import maya.cmds as cmds
 
-        return cmds.listRelatives(cmds.ls(members, type="locator"),
-                                  parent=True,
-                                  fullPath=True) or []
+        locators = cmds.listRelatives(cmds.ls(members, type="locator"),
+                                      parent=True,
+                                      fullPath=True) or []
+        if locators:
+            self.log.info("Including locators..")
+
+        return locators
 
     def add_families(self, instance):
 
