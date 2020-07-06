@@ -842,6 +842,9 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
     # (NOTE) There's another *Deep EXR* in both VRay("exr (deep)") and
     #   Arnold("deepexr"), it's not being handled here since it's a rarely
     #   used format.
+    #
+    # (NOTE) Arnold's "deepexr" has been handled below.
+    #
 
     if renderer == "vray":
         from . import vray
@@ -948,6 +951,10 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
             cmds.setAttr("defaultRenderGlobals.imageFilePrefix",
                          current_prefix,
                          type="string")
+
+        filename, ext = os.path.splitext(output_prefix)
+        if ext == ".deepexr":
+            output_prefix = filename + ".exr"
 
     if is_animated and on_frame is not None:
         frame_str = "%%0%dd" % len(padding_str) % on_frame
