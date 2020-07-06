@@ -180,7 +180,8 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             instance = backup
 
             # Cacheables from instance member
-            all_cacheables = lib.pick_cacheable(members)
+            expanded = self.outset_respected_expand(members)
+            all_cacheables = lib.pick_cacheable(expanded, all_descendents=False)
             cacheables = lib.get_visible_in_frame_range(all_cacheables,
                                                         int(start_frame),
                                                         int(end_frame))
@@ -196,6 +197,52 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             instance.data["endFrame"] = end_frame
 
             self.add_families(instance)
+
+    def outset_respected_expand(self, members):
+        from maya import cmds
+        from reveries.maya import pipeline
+
+        expanded = set()
+
+        def walk_hierarchy(parent):
+            for node in cmds.listRelatives(parent,
+                                           children=True,
+                                           path=True,
+                                           type="transform") or []:
+                yield node
+
+                try:
+                    container = pipeline.get_container_from_group(node)
+                except AssertionError:
+                    # Not a subset group node
+                    for n in walk_hierarchy(node):
+                        yield n
+                else:
+                    # Look for OutSet
+                    nodes = cmds.sets(container, query=True)
+                    out_sets = [
+                        s for s in cmds.ls(nodes, type="objectSet")
+                        if s.endswith("OutSet")
+                    ]
+                    if out_sets:
+                        out_set = sorted(out_sets)[0]
+                        if len(out_sets) > 1:
+                            self.log.warning(
+                                "Multiple OutSet found in %s, but only one "
+                                "OutSet will be expanded: %s"
+                                % (container, out_set))
+
+                        for n in cmds.sets(out_set, query=True) or []:
+                            yield n
+                    else:
+                        for n in walk_hierarchy(node):
+                            yield n
+
+        for member in members:
+            for node in walk_hierarchy(member):
+                expanded.add(node)
+
+        return sorted(expanded)
 
     def pick_locators(self, members):
         import maya.cmds as cmds
