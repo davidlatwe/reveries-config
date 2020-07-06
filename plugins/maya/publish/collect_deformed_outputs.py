@@ -3,34 +3,11 @@ import pyblish.api
 
 
 class CollectDeformedOutputs(pyblish.api.InstancePlugin):
-    """從選取的物件中篩選可被 cache 的物件
-
-    !!! 注意: 只有 visible 物件會被 cache
-
-    篩選方法有兩個:
-
-        1. 選取 Subset Group 節點 (紅色包裹圖示的物件)，然後該 Subset
-           帶有 OutSet 或 名字以 OutSet 結尾的 objectSet，這時候只會
-           從那個 objectSet 取得要被 cache 的物件。 這個方法主要是使用
-           在輸出角色 cache的時候，通常只有 Rig 會有 OutSet。
-
-        2. 如果找不到 OutSet (方法 1 失敗)，那就會篩選選取物件的整個階
-           層，從中挑選可以被 cache 的物件。
-
-    如果是使用 OutSet 的方式 (方法 1) 來引導系統的話，Subset 的名字也
-    會受 OutSet 的前綴影響，例如:
-
-             "OutSet" -> "pointcache.Boy_model_01_Default"
-          "SimOutSet" -> "pointcache.Boy_model_01_Sim"
-        "ClothOutSet" -> "pointcache.Boy_model_01_Cloth"
-
-    """
-
     """Collect out geometry data for instance.
 
-    Only visible objects will be cached.
+    * Only visible objects will be cached.
 
-    If the caching source has any objectSet which name is or endswith
+    If the caching subset has any objectSet which name is or endswith
     "OutSet", will create instances from them. For "OutSet" that has
     prefix, will use that prefix as variant of subset.
 
@@ -42,10 +19,13 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
     If no "OutSet", collect deformable nodes directly from instance
     member (selection).
 
+    If subset was nested in hierarchy but has "OutSet", nodes in "OutSet"
+    will be used.
+
     """
 
     order = pyblish.api.CollectorOrder - 0.2999
-    label = "篩選 pointcache 物件"
+    label = "Collect Deformed Outputs"
     hosts = ["maya"]
     families = [
         "reveries.pointcache",
@@ -91,6 +71,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
         # Collect cacheable nodes
 
         created = False
+        context = instance.context
         backup = instance
 
         if out_sets:
@@ -126,7 +107,6 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                         members.remove(n)
 
             # Re-Create instances
-            context = backup.context
 
             for k, (has_hidden, cacheables) in out_cache.items():
                 namespace, name = k
@@ -170,7 +150,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             # Nothing left, all in/has OutSet
 
             if not created:
-                cmds.error("No pointcache instance created.")
+                self.log.warning("No pointcache instance created.")
             else:
                 context.remove(backup)
 
@@ -180,7 +160,8 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             instance = backup
 
             # Cacheables from instance member
-            all_cacheables = lib.pick_cacheable(members)
+            expanded = self.outset_respected_expand(members)
+            all_cacheables = lib.pick_cacheable(expanded, all_descendents=False)
             cacheables = lib.get_visible_in_frame_range(all_cacheables,
                                                         int(start_frame),
                                                         int(end_frame))
@@ -197,12 +178,62 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
             self.add_families(instance)
 
+    def outset_respected_expand(self, members):
+        from maya import cmds
+        from reveries.maya import pipeline
+
+        expanded = set()
+
+        def walk_hierarchy(parent):
+            for node in cmds.listRelatives(parent,
+                                           children=True,
+                                           path=True,
+                                           type="transform") or []:
+                yield node
+
+                try:
+                    container = pipeline.get_container_from_group(node)
+                except AssertionError:
+                    # Not a subset group node
+                    for n in walk_hierarchy(node):
+                        yield n
+                else:
+                    # Look for OutSet
+                    nodes = cmds.sets(container, query=True)
+                    out_sets = [
+                        s for s in cmds.ls(nodes, type="objectSet")
+                        if s.endswith("OutSet")
+                    ]
+                    if out_sets:
+                        out_set = sorted(out_sets)[0]
+                        if len(out_sets) > 1:
+                            self.log.warning(
+                                "Multiple OutSet found in %s, but only one "
+                                "OutSet will be expanded: %s"
+                                % (container, out_set))
+
+                        for n in cmds.sets(out_set, query=True) or []:
+                            yield n
+                    else:
+                        for n in walk_hierarchy(node):
+                            yield n
+
+        for member in members:
+            for node in walk_hierarchy(member):
+                expanded.add(node)
+
+        return sorted(expanded)
+
     def pick_locators(self, members):
         import maya.cmds as cmds
 
-        return cmds.listRelatives(cmds.ls(members, type="locator"),
-                                  parent=True,
-                                  fullPath=True) or []
+        locators = cmds.listRelatives(cmds.ls(members, type="locator"),
+                                      parent=True,
+                                      fullPath=True) or []
+        if locators:
+            self.log.info("Including locators..")
+
+        return locators
 
     def add_families(self, instance):
 

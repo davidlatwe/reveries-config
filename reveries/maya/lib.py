@@ -1934,14 +1934,17 @@ def get_ns(node):
     return (":" + parts[0]) if len(parts) > 1 else ":"
 
 
-def pick_cacheable(nodes):
+def pick_cacheable(nodes, all_descendents=True):
     """Filter out cacheable (deformable) nodes
 
     Args:
         nodes (list): A list of node's long names
+        all_descendents (bool): Whether to look into all descendent nodes
+            automatically, only look for shape if set to False.
+            Default True.
 
     Returns:
-        list: A list of cacheable transfrom node names
+        list: A list of cacheable transform node names
 
     """
     def parenthood(node):
@@ -1954,7 +1957,10 @@ def pick_cacheable(nodes):
     for node in nodes:
         hierarchy.update(parenthood(node))
 
-    nodes += cmds.listRelatives(nodes, allDescendents=True, path=True) or []
+    nodes += cmds.listRelatives(nodes,
+                                allDescendents=all_descendents,
+                                shapes=True,
+                                path=True) or []
     shapes = set(cmds.ls(nodes, noIntermediate=True, type="deformableShape"))
 
     cacheables = set()
