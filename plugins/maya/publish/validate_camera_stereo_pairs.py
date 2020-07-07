@@ -60,7 +60,7 @@ class ValidateCameraStereoPairs(pyblish.api.InstancePlugin):
     def validate_side(self, rig, side):
         from maya import cmds
 
-        camera = cmds.listConnections(rig + ".%sCamera" % side.lower())
+        camera = cmds.listConnections(rig + ".%sCam" % side.lower())
         if not camera:
             self.log.error("Nothing connected to %s side of stereo camera."
                            % side.lower())

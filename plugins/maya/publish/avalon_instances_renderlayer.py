@@ -282,9 +282,9 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
                                               parent=True,
                                               path=True)[0]
 
-        if cmds.isConnected(cam_msg, stereo_rig_trans + ".leftCamera"):
+        if cmds.isConnected(cam_msg, stereo_rig_trans + ".leftCam"):
             return 0
-        elif cmds.isConnected(cam_msg, stereo_rig_trans + ".rightCamera"):
+        elif cmds.isConnected(cam_msg, stereo_rig_trans + ".rightCam"):
             return 1
         else:
             return None
