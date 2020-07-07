@@ -182,7 +182,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
         from maya import cmds
         from reveries.maya import pipeline
 
-        expanded = set()
+        expanded = set(members)
 
         def walk_hierarchy(parent):
             for node in cmds.listRelatives(parent,
