@@ -14,6 +14,11 @@ name = "modeling"
 [[tasks]]
 name = "rigging"
 
+[tasks.options.autoModelUpdate]
+label = "Auto update model"
+default_value = false
+help = "Auto update model to latest version after model publish."
+
 [[tasks]]
 name = "lookdev"
 

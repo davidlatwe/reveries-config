@@ -8,7 +8,7 @@ class AvalonUnlockScene(pyblish.api.ContextPlugin):
     """
 
     label = "Unlock And Save Scene"
-    order = pyblish.api.IntegratorOrder + 0.499
+    order = pyblish.api.IntegratorOrder + 0.3
     hosts = ["maya"]
 
     def process(self, context):
