@@ -222,7 +222,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             for node in walk_hierarchy(member):
                 expanded.add(node)
 
-        return sorted(expanded)
+        return cmds.ls(sorted(expanded), long=True)
 
     def pick_locators(self, members):
         import maya.cmds as cmds
