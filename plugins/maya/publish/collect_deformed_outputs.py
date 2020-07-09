@@ -227,13 +227,17 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
     def pick_locators(self, members):
         import maya.cmds as cmds
 
-        locators = cmds.listRelatives(cmds.ls(members, type="locator"),
+        locator_shapes = cmds.listRelatives(members,
+                                            shapes=True,
+                                            path=True,
+                                            type="locator")
+        locators = cmds.listRelatives(locator_shapes,
                                       parent=True,
-                                      fullPath=True) or []
+                                      fullPath=True)
         if locators:
             self.log.info("Including locators..")
 
-        return locators
+        return locators or []
 
     def add_families(self, instance):
 
