@@ -18,9 +18,21 @@ class ExtractRender(pyblish.api.InstancePlugin):
     def process(self, instance):
         """Extract per renderlayer that has AOVs (Arbitrary Output Variable)
         """
+        import avalon.api
+
         self.log.info("Computing render output path..")
 
-        staging_dir = instance.context.data["outputDir"]
+        context = instance.context
+        staging_dir = context.data["outputDir"]
+
+        repr_root = instance.data.get("reprRoot")
+        if repr_root:
+            # Re-direct output path to custom root path
+            staging_dir = staging_dir.replace(avalon.api.registered_root(),
+                                              repr_root,
+                                              1)
+            context.data["outputDir"] = staging_dir
+            instance.data["repr.renderLayer.reprRoot"] = repr_root
 
         stereo_pairs = instance.data.get("stereo")
         if stereo_pairs is None:

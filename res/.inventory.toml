@@ -3,6 +3,7 @@ schema = "avalon-core:inventory-1.0"
 
 # project settings
 root = "O:"
+renderRoot = ""
 codename = ""
 resolution_width = 1920
 resolution_height = 1080
