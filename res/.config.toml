@@ -5,8 +5,8 @@ name = "maya2018"
 label = "Maya 2018"
 
 [[apps]]
-name = "houdini17"
-label = "Houdini 17.5"
+name = "houdini18"
+label = "Houdini 18"
 
 [[tasks]]
 name = "modeling"
