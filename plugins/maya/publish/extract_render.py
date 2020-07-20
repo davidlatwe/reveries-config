@@ -70,7 +70,7 @@ class ExtractRender(pyblish.api.InstancePlugin):
             "func": self.render,
         }
 
-    def compute_outputs(self, instance, camera, staging_dir, stereo=False):
+    def compute_outputs(self, instance, camera, staging_dir, stereo=None):
         from maya import cmds
         from reveries.maya import utils as maya_utils
 
@@ -144,9 +144,9 @@ class ExtractRender(pyblish.api.InstancePlugin):
         lighting_aovs = aovs.getLightingAOVs()
         fnprefix = maya_utils.get_render_filename_prefix(layer)
 
-        def setext(path, ext):
+        def setext(path, extension):
             path, _ = os.path.splitext(path)
-            return path + "." + ext
+            return path + "." + extension
 
         for aov_node in arnold.get_arnold_aov_nodes(layer):
             aov_name = cmds.getAttr(aov_node + ".name")
