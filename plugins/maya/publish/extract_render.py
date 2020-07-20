@@ -42,7 +42,6 @@ class ExtractRender(pyblish.api.InstancePlugin):
                                                             camera,
                                                             staging_dir)
             instance.data["outputPaths"] = outputs
-            instance.data["repr.renderLayer.sequence"] = sequence
             hardlinks = files
 
         else:
@@ -57,11 +56,13 @@ class ExtractRender(pyblish.api.InstancePlugin):
                                                                 right,
                                                                 staging_dir,
                                                                 stereo="Right")
-
             instance.data["outputPaths"] = [outputs_l, outputs_r]
-            instance.data["repr.renderLayer.sequence"] = sequence
             instance.data["repr.renderLayer.stereo"] = True
             hardlinks = files_l + files_r
+
+        # (NOTE) Save output dir for future hardlink cleanup
+        instance.data["repr.renderLayer.outputDir"] = staging_dir
+        instance.data["repr.renderLayer.sequence"] = sequence
 
         instance.data["repr.renderLayer._stage"] = staging_dir
         instance.data["repr.renderLayer._hardlinks"] = hardlinks
