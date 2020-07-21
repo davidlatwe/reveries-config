@@ -15,7 +15,8 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
     families = ["reveries.model"]
 
     def process(self, instance):
-        import avalon
+        from avalon import io
+        import re
 
         asset_doc = instance.context.data['assetDoc']
         asset_name = asset_doc['name']
@@ -29,24 +30,51 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
             # Auto model update not enabled
             return
 
-        # Get subset data
-        filter = {"type": "subset", "parent": asset_doc["_id"]}
-        subset_data = [subset for subset in avalon.io.find(filter)]
+        model_subset, model_version, _ = instance.data["toDatabase"]
 
-        subsets = [subset['name'] for subset in subset_data]
-        if 'rigDefault' not in subsets:
-            print('There is no rig publish, skip auto process.\n')
+        if model_version["name"] == 1:
+            # First version of model, must not have dependent rig
             return
 
-        # Get latest rig version
-        rig_subset = [subset for subset in subset_data if subset['name'] == 'rigDefault'][0]
-        rig_subset_id = rig_subset['_id']
+        # Query previous version of model
+        previous = io.find_one({"type": "version",
+                                "parent": model_subset["_id"]},
+                               sort=[("name", -1)],
+                               skip=1)  # Get previous version of model
+        if not previous:
+            self.log.warning("Model is now on version %d but has no previous, "
+                             "skip updating rig." % model_version["name"])
+            return
+
+        # Find dependent rig from previous model
+        dependent_rig = list()
+        previous_model = str(previous["_id"])
+        for rig_subset in io.find({"type": "subset",
+                                   "parent": asset_doc["_id"],
+                                   "name": re.compile("rig*")},
+                                  projection={"_id": True}):
+
+            latest_rig = io.find_one({"type": "version",
+                                      "parent": rig_subset["_id"]},
+                                     sort=[("name", -1)],
+                                     projection={"data.dependencies": True})
+            if latest_rig is None:
+                # Not likely to happen, but just in case
+                continue
+
+            if previous_model in latest_rig["data"]["dependencies"]:
+                # Found dependent rig
+                dependent_rig.append(str(latest_rig["_id"]))
+
+        if not dependent_rig:
+            self.log.info("No rig to update, skip auto process.")
+            return
 
         # Submit subprocess
         mayapy_exe = os.path.join(os.path.dirname(sys.executable), 'mayapy.exe')
         cmd = [mayapy_exe, __file__,
                'asset_name={}'.format(str(asset_name)),
-               'rig_subset_id={}'.format(str(rig_subset_id))]
+               'rig_versions={}'.format(",".join(dependent_rig))]
         print('auto rig cmd: {}'.format(cmd))
         out_bytes = subprocess.check_output(cmd, shell=True)
         print(out_bytes)
@@ -54,12 +82,18 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
 
 class LauncherAutoPublish(object):
     def __init__(self):
+        self._init_args()
+
+    def run(self):
         import maya.standalone as standalone
+
         standalone.initialize(name='python')
 
-        self._init_args()
-        self._publish()
         print('Auto publish rigging.')
+        for rig_version in self.rig_versions:
+            self._publish(rig_version)
+
+        standalone.uninitialize()
 
     def _init_args(self):
         self.kargs = {}
@@ -69,22 +103,22 @@ class LauncherAutoPublish(object):
         print('args: {}\n'.format(self.kargs))
 
         self.asset_name = self.kargs.get('asset_name', '')
-        self.rig_subset_id = self.kargs.get('rig_subset_id', '')
+        self.rig_versions = self.kargs.get('rig_versions', '').split(",")
 
-    def _publish(self):
-        import avalon
+    def _publish(self, rig_version):
+        from avalon import api, io
         import pyblish.util
         import maya.cmds as cmds
 
         # Switch task
-        avalon.api.update_current_task(task='rigging', asset=self.asset_name)
+        api.update_current_task(task='rigging', asset=self.asset_name)
 
-        filter = {"type": "version", "parent": avalon.io.ObjectId(self.rig_subset_id)}
-        latest_ver = avalon.io.find_one(filter, sort=[("name", -1)])
+        version_id = io.ObjectId(rig_version)
+        latest_ver = io.find_one({"type": "version", "_id": version_id})
         rig_source = latest_ver['data']['source']
 
         # Get project root and rig source file
-        _proj_root = avalon.Session.copy()['AVALON_PROJECTS']
+        _proj_root = api.Session.copy()['AVALON_PROJECTS']
         rig_source = str(rig_source.format(root=_proj_root)).replace('/', '\\')
         print('rig_source: {}. type: {}'.format(rig_source, type(rig_source)))
 
@@ -92,9 +126,9 @@ class LauncherAutoPublish(object):
         cmds.file(rig_source, open=True, force=True)
 
         # Update model
-        host = avalon.api.registered_host()
+        host = api.registered_host()
         _container = list(host.ls())[0]
-        avalon.pipeline.update(_container)
+        api.update(_container)
         print('Update model done.')
 
         # Save as file
@@ -143,5 +177,6 @@ class LauncherAutoPublish(object):
 
 
 if __name__ == '__main__':
-    LauncherAutoPublish()
+    auto_publish = LauncherAutoPublish()
+    auto_publish.run()
 
