@@ -18,8 +18,8 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
         from avalon import io
         import re
 
-        asset_doc = instance.context.data['assetDoc']
-        asset_name = asset_doc['name']
+        asset_doc = instance.context.data["assetDoc"]
+        asset_name = asset_doc["name"]
 
         # Check asset's rigging task option
         value_path = "task_options.rigging.autoModelUpdate.value"
@@ -110,9 +110,8 @@ class LauncherAutoPublish(object):
         import maya.standalone as standalone
         import pyblish.util
 
-        standalone.initialize(name='python')
+        standalone.initialize(name="python")
 
-        print('Auto publish rigging.')
         for rig_version in self.rig_versions:
             self._publish(rig_version)
 
@@ -129,16 +128,16 @@ class LauncherAutoPublish(object):
         import maya.cmds as cmds
 
         # Switch task
-        api.update_current_task(task='rigging', asset=self.asset_name)
+        api.update_current_task(task="rigging", asset=self.asset_name)
 
         version_id = io.ObjectId(rig_version)
         latest_ver = io.find_one({"type": "version", "_id": version_id})
-        rig_source = latest_ver['data']['source']
+        rig_source = latest_ver["data"]["source"]
 
         # Get project root and rig source file
-        _proj_root = api.Session.copy()['AVALON_PROJECTS']
-        rig_source = str(rig_source.format(root=_proj_root)).replace('/', '\\')
-        print('rig_source: {}. type: {}'.format(rig_source, type(rig_source)))
+        _proj_root = api.Session.copy()["AVALON_PROJECTS"]
+        rig_source = str(rig_source.format(root=_proj_root)).replace("/", "\\")
+        print("rig_source: {}. type: {}".format(rig_source, type(rig_source)))
 
         # Open rig source file
         cmds.file(rig_source, open=True, force=True)
@@ -147,7 +146,7 @@ class LauncherAutoPublish(object):
         host = api.registered_host()
         _container = list(host.ls())[0]
         api.update(_container)
-        print('Update model done.')
+        print("Update model done.")
 
         # Save as file
         _tmp_dir = os.path.join(os.path.dirname(rig_source), "_auto_update")
@@ -155,23 +154,23 @@ class LauncherAutoPublish(object):
             os.mkdir(_tmp_dir)
             os.chmod(_tmp_dir, 777)
 
-        _source_file = (os.path.splitext(os.path.basename(rig_source)))
-        if 'auto_model_update' not in _source_file[0]:
-            _new_file_name = '{}.auto_model_update.001{}'.format(_source_file[0], _source_file[1])
+        basename, ext = os.path.splitext(os.path.basename(rig_source))
+        if "auto_model_update" not in basename:
+            _new_fname = "{}.auto_model_update.001{}".format(basename, ext)
         else:
-            # _new_file_name = r'rigging_v0001.published.auto_model_update.001.published.mb'
-            current_v = re.findall('.auto_model_update.(\d+).', rig_source)[0]
-            new_v = '{:03d}'.format(int(current_v) + 1)
-            _new_file_name = '{}{}'.format(_source_file[0],
-                                           _source_file[1]).replace('.{}.published.'.format(current_v),
-                                                                    '.{}.'.format(new_v))
-        _save_to = os.path.join(_tmp_dir, _new_file_name)
+            current_v = re.findall(".auto_model_update.(\\d+).", rig_source)[0]
+            new_v = "{:03d}".format(int(current_v) + 1)
+            _new_fname = "{}{}".format(basename, ext)
+            _new_fname = _new_fname.replace(".{}.published.".format(current_v),
+                                            ".{}.".format(new_v))
+
+        _save_to = os.path.join(_tmp_dir, _new_fname)
         cmds.file(rename=_save_to)
         cmds.file(force=True, save=True)
-        print('Save to : {}'.format(_save_to))
+        print("Saved to : {}".format(_save_to))
 
         # Publish
-        pyblish.api.register_target('localhost')
+        pyblish.api.register_target("localhost")
 
         # Fix AvalonUUID before validate
         ValidateAvalonUUID = next(p for p in pyblish.api.discover()
@@ -180,7 +179,7 @@ class LauncherAutoPublish(object):
             try:
                 ValidateAvalonUUID.fix_invalid_missing(instance)
             except Exception as e:
-                print('Fix uuid failed: {}.'.format(e))
+                print("Fix uuid failed: {}.".format(e))
 
         context = pyblish.util.collect()
         context.data["comment"] = "Auto update model to latest version."
@@ -193,7 +192,7 @@ class LauncherAutoPublish(object):
         self.contexts.append(context)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     auto_publish = LauncherAutoPublish()
     auto_publish.run()
 
