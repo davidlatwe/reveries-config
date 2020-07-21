@@ -37,18 +37,20 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
             return
 
         # Query previous version of model
-        previous = io.find_one({"type": "version",
-                                "parent": model_subset["_id"]},
-                               sort=[("name", -1)],
-                               skip=1)  # Get previous version of model
+        previous = io.find({"type": "version",
+                            "parent": model_subset["_id"]},
+                           sort=[("name", -1)],
+                           projection={"_id": True},
+                           skip=1)  # Get all previous versions of model
+        previous = set([str(p["_id"]) for p in previous])
         if not previous:
             self.log.warning("Model is now on version %d but has no previous, "
                              "skip updating rig." % model_version["name"])
             return
 
         # Find dependent rig from previous model
-        dependent_rig = list()
-        previous_model = str(previous["_id"])
+        dependent_rigs = list()
+
         for rig_subset in io.find({"type": "subset",
                                    "parent": asset_doc["_id"],
                                    "name": re.compile("rig*")},
@@ -62,30 +64,51 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
                 # Not likely to happen, but just in case
                 continue
 
-            if previous_model in latest_rig["data"]["dependencies"]:
-                # Found dependent rig
-                dependent_rig.append(str(latest_rig["_id"]))
+            # Consider dependent if any dependency matched in model versions
+            dependencies = set(latest_rig["data"]["dependencies"].keys())
+            if dependencies.intersection(previous):
+                dependent_rigs.append(str(latest_rig["_id"]))
 
-        if not dependent_rig:
+        if not dependent_rigs:
             self.log.info("No rig to update, skip auto process.")
             return
 
         # Submit subprocess
-        mayapy_exe = os.path.join(os.path.dirname(sys.executable), 'mayapy.exe')
-        cmd = [mayapy_exe, __file__,
-               'asset_name={}'.format(str(asset_name)),
-               'rig_versions={}'.format(",".join(dependent_rig))]
-        print('auto rig cmd: {}'.format(cmd))
-        out_bytes = subprocess.check_output(cmd, shell=True)
-        print(out_bytes)
+        mayapy_exe = os.path.join(os.path.dirname(sys.executable),
+                                  "mayapy.exe")
+        cmd = [
+            mayapy_exe,
+            __file__,
+            "asset_name={}".format(str(asset_name)),
+            "rig_versions={}".format(",".join(dependent_rigs)),
+        ]
+        print("auto rig cmd: {}".format(cmd))
+        try:
+            out_bytes = subprocess.check_output(cmd, shell=True)
+        except subprocess.CalledProcessError:
+            # Mark failed
+            io.update_many({"_id": model_version["_id"]},
+                           {"$set": {"data.rigAutoUpdateFailed": True}})
+            raise Exception("Model publish success but Rig auto update "
+                            "failed. Please inform rigger or TD.")
+        else:
+            print(out_bytes)
 
 
 class LauncherAutoPublish(object):
     def __init__(self):
-        self._init_args()
+        kwargs = {}
+        for _arg in sys.argv[1:]:
+            _args_data = _arg.split("=")
+            kwargs[_args_data[0]] = _args_data[1]
+
+        self.asset_name = kwargs.get("asset_name", "")
+        self.rig_versions = kwargs.get("rig_versions", "").split(",")
+        self.contexts = list()
 
     def run(self):
         import maya.standalone as standalone
+        import pyblish.util
 
         standalone.initialize(name='python')
 
@@ -93,17 +116,12 @@ class LauncherAutoPublish(object):
         for rig_version in self.rig_versions:
             self._publish(rig_version)
 
+        # Integrate all updated rigs if all extraction succeed
+        for context in self.contexts:
+            context.data["_autoPublishingSkipUnlock"] = True
+            pyblish.util.integrate(context=context)
+
         standalone.uninitialize()
-
-    def _init_args(self):
-        self.kargs = {}
-        for _arg in sys.argv[1:]:
-            _args_data = _arg.split('=')
-            self.kargs[_args_data[0]] = _args_data[1]
-        print('args: {}\n'.format(self.kargs))
-
-        self.asset_name = self.kargs.get('asset_name', '')
-        self.rig_versions = self.kargs.get('rig_versions', '').split(",")
 
     def _publish(self, rig_version):
         from avalon import api, io
@@ -132,7 +150,7 @@ class LauncherAutoPublish(object):
         print('Update model done.')
 
         # Save as file
-        _tmp_dir = os.path.join(os.path.dirname(rig_source), 'tmp')
+        _tmp_dir = os.path.join(os.path.dirname(rig_source), "_auto_update")
         if not os.path.exists(_tmp_dir):
             os.mkdir(_tmp_dir)
             os.chmod(_tmp_dir, 777)
@@ -155,25 +173,24 @@ class LauncherAutoPublish(object):
         # Publish
         pyblish.api.register_target('localhost')
 
-        # Fix AvalonUUID
+        # Fix AvalonUUID before validate
         ValidateAvalonUUID = next(p for p in pyblish.api.discover()
                                   if p.__name__ == "ValidateAvalonUUID")
-        context = pyblish.util.collect()
-        instance = next(i for i in context if i.data["family"] == "reveries.rig")
-        try:
-            ValidateAvalonUUID.fix_invalid_missing(instance)
-        except Exception as e:
-            print('Fix uuid failed: {}.'.format(e))
+        for instance in pyblish.util.collect():
+            try:
+                ValidateAvalonUUID.fix_invalid_missing(instance)
+            except Exception as e:
+                print('Fix uuid failed: {}.'.format(e))
 
         context = pyblish.util.collect()
-        context.data["comment"] = 'Auto update model to latest version.'
-        pyblish.util.validate(context)
-
-        context = pyblish.util.collect()
-        context.data["comment"] = 'Auto update model to latest version.'
+        context.data["comment"] = "Auto update model to latest version."
         context = pyblish.util.validate(context=context)
         context = pyblish.util.extract(context=context)
-        pyblish.util.integrate(context=context)
+
+        if not all(result["success"] for result in context.data["results"]):
+            raise RuntimeError("Atomicity not held, aborting.")
+
+        self.contexts.append(context)
 
 
 if __name__ == '__main__':

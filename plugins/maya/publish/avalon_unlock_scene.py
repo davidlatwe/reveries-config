@@ -16,6 +16,10 @@ class AvalonUnlockScene(pyblish.api.ContextPlugin):
         from avalon import maya
         from reveries.maya import capsule
 
+        if context.data.get("_autoPublishingSkipUnlock"):
+            self.log.info("Auto publishing, skip unlock.")
+            return
+
         maya.unlock()
 
         with capsule.maintained_selection():
