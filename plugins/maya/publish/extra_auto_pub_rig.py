@@ -84,6 +84,7 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
             "model_subset={}".format(str(model_subset["name"])),
             "rig_versions={}".format(json.dumps(dependent_rigs)),
         ]
+
         print("auto rig cmd: {}".format(cmd))
         try:
             out_bytes = subprocess.check_output(cmd, shell=True)
