@@ -17,22 +17,20 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
     def process(self, instance):
         import avalon
 
-        asset_data = instance.context.data['assetDoc']
-        print('asset_data: ', asset_data)
-        asset_id = asset_data['_id']
-        asset_name = asset_data['name']
+        asset_doc = instance.context.data['assetDoc']
+        asset_name = asset_doc['name']
 
-        # Check user setting from db
-        _filter = {"type": "asset", "name": asset_name}
-        latest_ver = avalon.io.find(_filter, projection={"data.task_options": True})
-        for _datas in latest_ver:
-            value = _datas['data'].get('task_options', {}).\
-                get('rigging', {}).get('autoModelUpdate', {}).get('value', False)
-            if not value:
-                return
+        # Check asset's rigging task option
+        value_path = "task_options.rigging.autoModelUpdate.value"
+        value = asset_doc["data"]
+        for entry in value_path.split("."):
+            value = value.get(entry, {})
+        if not value:
+            # Auto model update not enabled
+            return
 
         # Get subset data
-        filter = {"type": "subset", "parent": avalon.io.ObjectId(str(asset_id))}
+        filter = {"type": "subset", "parent": asset_doc["_id"]}
         subset_data = [subset for subset in avalon.io.find(filter)]
 
         subsets = [subset['name'] for subset in subset_data]
