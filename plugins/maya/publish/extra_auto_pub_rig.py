@@ -130,14 +130,12 @@ class LauncherAutoPublish(object):
         # Switch task
         api.update_current_task(task="rigging", asset=self.asset_name)
 
+        # Get project root and rig source file
         version_id = io.ObjectId(rig_version)
         latest_ver = io.find_one({"type": "version", "_id": version_id})
-        rig_source = latest_ver["data"]["source"]
-
-        # Get project root and rig source file
-        _proj_root = api.Session.copy()["AVALON_PROJECTS"]
-        rig_source = str(rig_source.format(root=_proj_root)).replace("/", "\\")
-        print("rig_source: {}. type: {}".format(rig_source, type(rig_source)))
+        root = api.registered_root()
+        rig_source = latest_ver["data"]["source"].format(root=root)
+        print("rig_source: {}".format(rig_source))
 
         # Open rig source file
         cmds.file(rig_source, open=True, force=True)
