@@ -7,6 +7,7 @@ renderRoot = ""
 codename = ""
 resolution_width = 1920
 resolution_height = 1080
+stereo = false
 fps = 30
 fpses = []
 handles = 1

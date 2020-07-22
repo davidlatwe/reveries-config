@@ -1,11 +1,16 @@
 
 import nuke
+import avalon.io
 from . import pipeline
 
 
 def on_task_changed(*args):
-    pipeline.set_global_resolution()
-    pipeline.set_global_timeline()
+    project = avalon.io.find_one({"type": "project"},
+                                 projection={"data": True})
+    pipeline.set_global_resolution(project)
+    pipeline.set_global_timeline(project)
+    if project["data"].get("stereo"):
+        pipeline.set_stereo()
 
 
 def on_save():

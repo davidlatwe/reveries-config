@@ -53,8 +53,8 @@ def lock():
     _ignore_lock["_"] = False
 
 
-def set_global_timeline():
-    start, end, fps = utils.compose_timeline_data()
+def set_global_timeline(project):
+    start, end, fps = utils.compose_timeline_data(project)
     log.info("Setup project timeline: %d-%d @%f FPS"
              "" % (start, end, fps))
 
@@ -64,8 +64,8 @@ def set_global_timeline():
     root["fps"].setValue(fps)
 
 
-def set_global_resolution():
-    width, height = utils.get_resolution_data()
+def set_global_resolution(project):
+    width, height = utils.get_resolution_data(project)
     log.info("Setup project resolution: %dx%d"
              "" % (width, height))
 
@@ -74,3 +74,15 @@ def set_global_resolution():
         if format.width() == width and format.height() == height:
             root["format"].setValue(format.name())
             break
+
+
+def set_stereo():
+    stereo = """
+left #ff0000
+right #00ff00
+"""
+    log.info("Setup stereo views")
+
+    root = nuke.Root()
+    root.knob("views").fromScript(stereo)
+    root.knob("views_colours").setValue(True)
