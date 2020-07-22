@@ -53,7 +53,8 @@ def get_timeline_data(project=None, asset_name=None, current_fps=None):
 
     """
     if project is None:
-        project = avalon.io.find_one({"type": "project"})
+        project = avalon.io.find_one({"type": "project"},
+                                     projection={"data": True})
     asset_name = asset_name or avalon.Session["AVALON_ASSET"]
     asset = avalon.io.find_one({"name": asset_name, "type": "asset"})
 
@@ -122,7 +123,8 @@ def get_resolution_data(project=None, asset_name=None):
 
     """
     if project is None:
-        project = avalon.io.find_one({"type": "project"})
+        project = avalon.io.find_one({"type": "project"},
+                                     projection={"data": True})
     asset_name = asset_name or avalon.Session["AVALON_ASSET"]
     asset = avalon.io.find_one({"name": asset_name, "type": "asset"})
 
