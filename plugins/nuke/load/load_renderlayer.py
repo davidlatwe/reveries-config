@@ -250,7 +250,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         end = version["data"]["endFrame"]
 
         sequences = representation["data"]["sequence"]
-        self.resolve_path(sequences)
+        self.resolve_path(sequences, self.package_path)
 
         with lib.sync_copies(list(read_nodes.values())):
             for aov_name, data in sequences.items():
