@@ -23,7 +23,7 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
         asset_name = asset_doc["name"]
 
         # Check asset's rigging task option
-        value_path = "task_options.rigging.autoModelUpdate.value"
+        value_path = "taskOptions.rigging.autoModelUpdate.value"
         value = asset_doc["data"]
         for entry in value_path.split("."):
             value = value.get(entry, {})
