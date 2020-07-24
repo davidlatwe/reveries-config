@@ -8,13 +8,17 @@ class AvalonUnlockScene(pyblish.api.ContextPlugin):
     """
 
     label = "Unlock And Save Scene"
-    order = pyblish.api.IntegratorOrder + 0.499
+    order = pyblish.api.IntegratorOrder + 0.3
     hosts = ["maya"]
 
     def process(self, context):
         from maya import cmds
         from avalon import maya
         from reveries.maya import capsule
+
+        if context.data.get("_autoPublishingSkipUnlock"):
+            self.log.info("Auto publishing, skip unlock.")
+            return
 
         maya.unlock()
 
