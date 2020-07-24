@@ -10,7 +10,9 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
     """Extract auto publish rig"""
 
     label = "Extract Auto Rig Publish"
+    # This plugin must runs after disk and database integration
     order = pyblish.api.IntegratorOrder + 0.499
+
     hosts = ["maya"]
     families = ["reveries.model"]
 
@@ -31,25 +33,30 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
             # Auto model update not enabled
             return
 
+        # Get subset, version documents from instance which just been
+        # integrated.
         model_subset, model_version, _ = instance.data["toDatabase"]
 
         if model_version["name"] == 1:
-            # First version of model, must not have dependent rig
+            # First version of model, must not have dependent rig.
             return
 
-        # Query previous version of model
+        # Find all previous versions of model, only document id is needed.
         previous = io.find({"type": "version",
                             "parent": model_subset["_id"]},
                            sort=[("name", -1)],
                            projection={"_id": True},
-                           skip=1)  # Get all previous versions of model
+                           skip=1)  # Skip the latest
         previous = set([str(p["_id"]) for p in previous])
         if not previous:
             self.log.warning("Model is now on version %d but has no previous, "
                              "skip updating rig." % model_version["name"])
             return
 
-        # Find dependent rig from previous model
+        # Any latest version of rig may not be using the latest model, so
+        # we iterate through all rig subsets' latest version and compare
+        # the dependency data with all previous model versions to find the
+        # dependent.
         dependent_rigs = dict()
 
         for rig_subset in io.find({"type": "subset",
@@ -89,7 +96,7 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
         try:
             out_bytes = subprocess.check_output(cmd, shell=True)
         except subprocess.CalledProcessError:
-            # Mark failed
+            # Mark failed for future debug.
             io.update_many({"_id": model_version["_id"]},
                            {"$set": {"data.rigAutoUpdateFailed": True}})
             raise Exception("Model publish success but Rig auto update "
@@ -119,7 +126,7 @@ class LauncherAutoPublish(object):
 
         standalone.initialize(name="python")
 
-        # Get project root and rig source file
+        # Get project root path and rig source files.
         jobs = dict()
         root = api.registered_root()
         for rig_version, rig_subset in self.rig_versions.items():
@@ -129,17 +136,20 @@ class LauncherAutoPublish(object):
             rig_source = rig_source.replace("\\", "/")
             if rig_source not in jobs:
                 jobs[rig_source] = list()
+            # One source scene may contains multiple rig subsets.
             jobs[rig_source].append(rig_subset)
 
+        # Run publish process, till extraction
         for source, rig_subsets in jobs.items():
             self._publish(source, rig_subsets)
 
-        # Integrate all updated rigs if all extraction succeed
+        # Run final integration only if all extraction succeed
         for context in self.contexts:
             context.data["_autoPublishingSkipUnlock"] = True
             pyblish.util.integrate(context=context)
 
         standalone.uninitialize()
+        # Bye
 
     def _publish(self, rig_source, rig_subsets):
         from avalon import api
@@ -153,13 +163,21 @@ class LauncherAutoPublish(object):
         # Open rig source file
         cmds.file(rig_source, open=True, force=True)
 
-        # Update model
+        # Update all loaded model which subset name has matched
+        _updated = False
         host = api.registered_host()
         for _container in host.ls():
             if _container["name"] == self.model_subset:
                 api.update(_container)
+                _updated = True
 
-        # Config instances' activities
+        if not _updated:
+            # Not likely to happen, but just in case
+            raise Exception("No matched model subset, this is a bug.")
+
+        # Config rig instances' activities
+        #   Activate rig instances that need to be published, and deactivate
+        #   the rest.
         for instance_set in lib.lsAttr("id", "pyblish.avalon.instance"):
             active = cmds.getAttr(instance_set + ".subset") in rig_subsets
             cmds.setAttr(instance_set + ".active", active)
@@ -169,7 +187,7 @@ class LauncherAutoPublish(object):
         if not os.path.exists(_tmp_dir):
             os.mkdir(_tmp_dir)
             os.chmod(_tmp_dir, 777)
-
+        # Compose a good file name
         basename, ext = os.path.splitext(os.path.basename(rig_source))
         if "auto_model_update" not in basename:
             _new_fname = "{}.auto_model_update.001{}".format(basename, ext)
@@ -205,6 +223,7 @@ class LauncherAutoPublish(object):
         if not all(result["success"] for result in context.data["results"]):
             raise RuntimeError("Atomicity not held, aborting.")
 
+        # Will run integration later..
         self.contexts.append(context)
 
 
