@@ -1,15 +1,11 @@
-import os
-import re
-import sys
-import subprocess
 
 import pyblish.api
 
 
-class ExtraAutoRig(pyblish.api.InstancePlugin):
-    """Extract auto publish rig"""
+class IntegrateAutoRigPublishing(pyblish.api.InstancePlugin):
+    """Auto publishing rig when model being published"""
 
-    label = "Extract Auto Rig Publish"
+    label = "Integrate Auto Rig Publishing"
     # This plugin must runs after disk and database integration
     order = pyblish.api.IntegratorOrder + 0.499
 
@@ -17,9 +13,13 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
     families = ["reveries.model"]
 
     def process(self, instance):
-        from avalon import io
-        import json
+        import os
         import re
+        import sys
+        import json
+        import subprocess
+
+        from avalon import io
 
         asset_doc = instance.context.data["assetDoc"]
         asset_name = asset_doc["name"]
@@ -106,7 +106,9 @@ class ExtraAutoRig(pyblish.api.InstancePlugin):
 
 
 class LauncherAutoPublish(object):
+
     def __init__(self):
+        import sys
         import json
 
         kwargs = {}
@@ -152,10 +154,12 @@ class LauncherAutoPublish(object):
         # Bye
 
     def _publish(self, rig_source, rig_subsets):
-        from avalon import api
-        from reveries.maya import lib
+        import os
+        import re
         import pyblish.util
         import maya.cmds as cmds
+        from avalon import api
+        from reveries.maya import lib
 
         # Switch task
         api.update_current_task(task="rigging", asset=self.asset_name)
