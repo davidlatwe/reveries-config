@@ -49,7 +49,8 @@ def exr_merge(beauty, layers):
         B = shuffle_copy(A, B, name)
         shuffle_nodes.append(B)
 
-    shuffle_nodes[-1]["selected"].setValue(True)
+    if shuffle_nodes:
+        shuffle_nodes[-1]["selected"].setValue(True)
 
     return shuffle_nodes
 
