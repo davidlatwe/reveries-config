@@ -1,5 +1,6 @@
 
 import os
+import json
 from avalon.vendor import clique
 
 
@@ -76,3 +77,39 @@ def ls_sequences(path, min_length=2):
                 "start": start,
                 "end": end,
             }
+
+
+CACHE_FILE_NAME = ".sequences.json"
+
+
+def save_cache(cache,
+               output_dir,
+               padding_string,
+               start,
+               end,
+               is_stereo,
+               is_single,
+               created_by):
+    data = {
+        "cache": cache,
+        "paddingStr": padding_string,
+        "start": start,
+        "end": end,
+        "isStereo": is_stereo,
+        "isSingle": is_single,
+        "createdBy": created_by,
+    }
+    file_path = os.path.join(output_dir, CACHE_FILE_NAME)
+    with open(file_path, "w") as fp:
+        json.dump(data, fp, indent=4, sort_keys=True)
+
+
+def load_cache(dir_path):
+    file_path = os.path.join(dir_path, CACHE_FILE_NAME)
+    if not os.path.isfile(file_path):
+        return
+
+    with open(file_path, "r") as fp:
+        data = json.load(fp)
+
+    return data

@@ -19,6 +19,7 @@ class ExtractRender(pyblish.api.InstancePlugin):
         """Extract per renderlayer that has AOVs (Arbitrary Output Variable)
         """
         import avalon.api
+        from reveries.tools import seqparser
 
         self.log.info("Computing render output path..")
 
@@ -59,6 +60,19 @@ class ExtractRender(pyblish.api.InstancePlugin):
             instance.data["outputPaths"] = [outputs_l, outputs_r]
             instance.data["repr.renderLayer.stereo"] = True
             hardlinks = files_l + files_r
+
+        # Safety net for publishing failed
+        start = int(instance.data["startFrame"])
+        end = int(instance.data["endFrame"])
+        is_single = start == end
+        seqparser.save_cache(sequence,
+                             output_dir=staging_dir,
+                             is_stereo=bool(stereo_pairs),
+                             is_single=is_single,
+                             created_by="maya.render.publish",
+                             start=start,
+                             end=end,
+                             padding_string=None)
 
         # (NOTE) Save output dir for future hardlink cleanup
         instance.data["repr.renderLayer.outputDir"] = staging_dir
@@ -111,6 +125,7 @@ class ExtractRender(pyblish.api.InstancePlugin):
             sequence[aov_name] = {
                 "imageFormat": instance.data["fileExt"],
                 "fpattern": pattern,
+                "paddingStr": padding_str,
                 "focalLength": focal,
                 "resolution": instance.data["resolution"],
                 "cameraUUID": camera_uuid,

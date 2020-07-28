@@ -142,3 +142,36 @@ class StatusLineWidget(QtWidgets.QWidget):
             tools.lib.schedule(job,
                                5000,
                                channel="statusline")
+
+
+class Interrupter(QtWidgets.QProgressDialog):
+
+    def __init__(self, title=None, label=None,
+                 minimum=None, maximum=None, parent=None):
+        super(Interrupter, self).__init__(parent=parent)
+
+        if title:
+            self.setWindowTitle(title)
+        if label:
+            self.setLabelText(label)
+        if minimum:
+            self.setMinimum(minimum)
+        if maximum:
+            self.setMaximum(maximum)
+        self.setAutoClose(False)
+        self.setAutoReset(True)
+        self.setModal(True)
+
+    def __enter__(self):
+        self.show()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def is_canceled(self):
+        return self.wasCanceled()
+
+    def bump(self):
+        current = self.value()
+        self.setValue(current + 1)
