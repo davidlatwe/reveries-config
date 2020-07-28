@@ -326,8 +326,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 raise KeyError("Missing frame range data, this is a bug.")
 
             else:
+                total = len(range(start, end + 1, step))
+                if data.get("isStereo"):
+                    total *= 2
                 version["data"]["progress"] = {
-                    "total": len(range(start, end + 1, step)),
+                    "total": total,
                     "current": self.progress,
                 }
 
