@@ -18,7 +18,7 @@ def get_protected(instance):
 
     protected = dict()
 
-    asset = instance.context.data["assetDoc"]
+    asset = instance.data["assetDoc"]
     subset = io.find_one({"type": "subset",
                           "parent": asset["_id"],
                           "name": instance.data["subset"]})

@@ -21,7 +21,7 @@ class IntegrateAutoRigPublishing(pyblish.api.InstancePlugin):
 
         from avalon import io
 
-        asset_doc = instance.context.data["assetDoc"]
+        asset_doc = instance.data["assetDoc"]
         asset_name = asset_doc["name"]
 
         # Check asset's rigging task option

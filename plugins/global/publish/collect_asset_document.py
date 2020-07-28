@@ -1,32 +1,37 @@
 
 import pyblish.api
-import avalon.api
-import avalon.io
 
 
 class CollectAssetDocument(pyblish.api.ContextPlugin):
-    """從資料庫讀取 Asset 文件"""
+    """Collect asset document from database"""
 
-    """
-
-    keys in context.data:
-        * assetDoc
-
-    """
-
-    label = "取得 Asset 文件"
+    label = "Query Asset Document"
     order = pyblish.api.CollectorOrder - 0.34
 
     def process(self, context):
-
-        # Required environment variables
-        ASSET = avalon.api.Session["AVALON_ASSET"]
+        from avalon import io
 
         project = context.data["projectDoc"]
+        project_id = project["_id"]
 
-        asset = avalon.io.find_one({"type": "asset",
-                                    "name": ASSET,
-                                    "parent": project["_id"]})
-        assert asset is not None, ("Could not find current asset '%s'" % ASSET)
+        _cache = dict()
+        _missing = False
+        for instance in context:
+            name = instance.data["asset"]
 
-        context.data["assetDoc"] = asset
+            if name in _cache:
+                asset = _cache[name]
+            else:
+                asset = io.find_one({"type": "asset",
+                                     "name": name,
+                                     "parent": project_id})
+                _cache[name] = asset
+
+            if asset is None:
+                self.log.error("Asset '%s' not exists in database." % name)
+                _missing = True
+
+            instance.data["assetDoc"] = asset
+
+        if _missing:
+            raise Exception("Asset not exists, see log.")

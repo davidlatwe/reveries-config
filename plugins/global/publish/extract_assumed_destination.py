@@ -37,7 +37,7 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
 
         subset = avalon.io.find_one({
             "type": "subset",
-            "parent": context.data["assetDoc"]["_id"],
+            "parent": instance.data["assetDoc"]["_id"],
             "name": instance.data["subset"],
         })
 
