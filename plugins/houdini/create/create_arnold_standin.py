@@ -20,7 +20,7 @@ class CreateArnoldStandIn(houdini.Creator):
         # For user to confirm that this asset name is on demand, and
         # able to publish even current Avalon session is not in this
         # asset.
-        self.data["assetConfirmed"] = False
+        self.data["overSessionAsset"] = False
 
         self.data["deadlinePriority"] = 80
         self.data["deadlinePool"] = lib.get_deadline_pools()
