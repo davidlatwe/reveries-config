@@ -6,7 +6,7 @@ class CollectAssetDocument(pyblish.api.ContextPlugin):
     """Collect asset document from database"""
 
     label = "Query Asset Document"
-    order = pyblish.api.CollectorOrder - 0.34
+    order = pyblish.api.CollectorOrder + 0.499
 
     def process(self, context):
         from avalon import io
