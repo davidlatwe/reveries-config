@@ -84,7 +84,7 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                     path = _p
                     break
             else:
-                raise FileNotFoundError("Both side not exist in: %s" % path)
+                raise RuntimeError("Both side not exist in: %s" % path)
 
         try:
             data = exrheader.read_exr_header(path)
