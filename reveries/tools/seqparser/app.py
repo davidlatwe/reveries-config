@@ -8,6 +8,7 @@ from avalon import style
 
 from ...lib import pindict
 from ... import plugins
+from .. import widgets as tool_widgets
 from . import widgets, command
 
 
@@ -95,7 +96,7 @@ class Window(QtWidgets.QDialog):
             data["sequences"]["single"].setEnabled(False)
         data["rootPath"]["path"].setReadOnly(True)
 
-        data["rootPath"]["path"].textChanged.connect(self.ls_sequences)
+        data["rootPath"]["path"].textChanged.connect(self.find_sequences)
         data["rootPath"]["find"].clicked.connect(self.open_browser)
 
         data["sequences"]["single"].stateChanged.connect(self.on_single)
@@ -104,7 +105,7 @@ class Window(QtWidgets.QDialog):
         data["sequences"]["nHead"].textChanged.connect(self.on_nhead_changed)
         data["sequences"]["nTail"].textChanged.connect(self.on_ntail_changed)
 
-        data["endDialog"]["accept"].clicked.connect(self.run_callback)
+        data["endDialog"]["accept"].clicked.connect(self.on_accepted)
         data["endDialog"]["cancel"].clicked.connect(self.reject)
 
         self.data = data
@@ -112,6 +113,7 @@ class Window(QtWidgets.QDialog):
         # Defaults
         self.is_single = False
         self.is_stereo = False
+        self.from_cache = False
         self.resize(600, 800)
 
     def collected(self, with_keys=None):
@@ -122,50 +124,127 @@ class Window(QtWidgets.QDialog):
 
     def on_single(self, state):
         self.is_single = bool(state)
-        self.ls_sequences(self.get_root_path())
+        # Skip if from cache
+        if not self.from_cache:
+            self.find_sequences(self.get_root_path())
 
     def on_stereo(self, state):
         self.is_stereo = bool(state)
         self.data["sequences"]["view"].set_stereo(bool(state))
 
-    def run_callback(self):
-        callback = self.data["endDialog"]["callback"]
-        if callback is not None:
-            with_keys = self.data["endDialog"]["with_keys"]
-            callback(self.collected(with_keys))
+    def on_accepted(self):
+        with_keys = self.data["endDialog"]["with_keys"]
+        collected = self.collected(with_keys)
+        # Skip save if loaded from cache
+        if not self.from_cache:
+            command.save_cache(collected,
+                               output_dir=self.get_root_path(),
+                               is_stereo=self.is_stereo,
+                               is_single=self.is_single,
+                               created_by="seqparser",
+                               padding_string=None,
+                               start=None,
+                               end=None)
+        self.run_callback(collected)
 
         self.accept()
+
+    def run_callback(self, collected):
+        callback = self.data["endDialog"]["callback"]
+        if callback is not None:
+            callback(collected)
 
     def open_browser(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(parent=self)
         if path:
             self.data["rootPath"]["path"].setText(path)
 
-    def ls_sequences(self, path):
-        if not os.path.isdir(path):
-            print("Not a valid path.")
+    def find_sequences(self, path):
+        if path and not os.path.isdir(path):
+            message = "Not a valid folder: %s" % path
+            plugins.message_box_error(title="Error",
+                                      message=message)
+            print(message)
             return
 
+        data = command.load_cache(path)
+        if data is None:
+            self.from_cache = False
+            self.ls_sequences(path)
+            return
+
+        self.from_cache = True
+
+        # Process cache data
+        cache = data["cache"]
+        cache_start = data["start"]
+        cache_end = data["end"]
+        cache_padding = data["paddingStr"]
+        is_stereo = data["isStereo"]
+        is_single = data["isSingle"]
+        created_by = data["createdBy"]
+
+        print("Loading sequences from '%s' created cache.." % created_by)
+        sequences = list()
+
+        for name, item in cache.items():
+            item["name"] = name
+
+            if cache_padding is not None:
+                item["paddingStr"] = cache_padding
+            if cache_start is not None:
+                item["start"] = cache_start
+            if cache_end is not None:
+                item["end"] = cache_end
+
+            sequences.append(item)
+
+        self.add_sequences(sequences)
+
+        # Update widget
+        if is_stereo:
+            state = QtCore.Qt.Checked if is_stereo else QtCore.Qt.Unchecked
+            self.data["sequences"]["stereo"].setCheckState(state)
+        if is_single:
+            state = QtCore.Qt.Checked if is_single else QtCore.Qt.Unchecked
+            self.data["sequences"]["single"].setCheckState(state)
+
+    def ls_sequences(self, path):
         min_length = 1 if self.is_single else 2
 
         sequences = list()
         max_sequence = 50
-        for i, item in enumerate(command.ls_sequences(path, min_length)):
-            if i > max_sequence:
-                # Prompt dialog asking continue the process or not
-                respond = plugins.message_box_warning(
-                    title="Warning",
-                    message=("Found over %d sequences, do you wish to "
-                             "continue ?" % max_sequence),
-                    optional=True
-                )
-                if respond:
-                    # Double it
-                    max_sequence += max_sequence
-                else:
+        # Pop up a progress dialog for interruption
+        with tool_widgets.Interrupter(
+                title="Scanning sequences",
+                label=("Progress unknown, this may take a while.\n"
+                       "Press 'Cancel' to stop."),
+                minimum=0,
+                maximum=10,  # Don't know where is the end
+        ) as progress:
+            # (TODO) Run in worker thread
+
+            for i, item in enumerate(command.ls_sequences(path,
+                                                          min_length)):
+                if progress.is_canceled():
                     return
 
-            sequences.append(item)
+                if i > max_sequence:
+                    # Prompt dialog asking continue the process or not
+                    respond = plugins.message_box_warning(
+                        title="Warning",
+                        message=("Found over %d sequences, do you wish to "
+                                 "continue ?" % max_sequence),
+                        optional=True
+                    )
+                    if respond:
+                        # Double it
+                        max_sequence += max_sequence
+                    else:
+                        return
+
+                sequences.append(item)
+                progress.bump()  # Also keep dialog responsive
 
         self.add_sequences(sequences)
 
