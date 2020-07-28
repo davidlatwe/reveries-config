@@ -256,7 +256,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     def get_subset(self, instance, families):
 
-        asset_id = instance.context.data["assetDoc"]["_id"]
+        asset_id = instance.data["assetDoc"]["_id"]
 
         subset = io.find_one({"type": "subset",
                               "parent": asset_id,

@@ -23,7 +23,7 @@ class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
         # Integrate representations' to database
         self.log.info("Integrating representations to database ...")
 
-        asset = context.data["assetDoc"]
+        asset = instance.data["assetDoc"]
         subset, version, representations = instance.data["toDatabase"]
 
         # Write subset if not exists

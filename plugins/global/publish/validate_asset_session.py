@@ -36,7 +36,10 @@ class ValidateAssetSession(pyblish.api.InstancePlugin):
 
         if not asset == task_asset:
 
-            if instance.data.get("assetConfirmed"):
+            if (
+                instance.data.get("overSessionAsset") or
+                instance.data.get("assetConfirmed")  # backward compatibility
+            ):
                 self.log.warning("Publishing asset that is not in current "
                                  "session.")
 
