@@ -90,6 +90,9 @@ def save_cache(cache,
                is_stereo,
                is_single,
                created_by):
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+
     data = {
         "cache": cache,
         "paddingStr": padding_string,
