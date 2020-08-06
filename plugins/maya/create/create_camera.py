@@ -19,4 +19,6 @@ class CameraCreator(avalon.maya.Creator):
         self.data["deadlinePriority"] = 80
         self.data["deadlinePool"] = lib.get_deadline_pools()
 
+        self.data["overSessionAsset"] = False
+
         return put_instance_icon(super(CameraCreator, self).process())
