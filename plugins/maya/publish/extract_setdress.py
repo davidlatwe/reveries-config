@@ -42,6 +42,7 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
                           endFrame=1.0,
                           selection=True,
                           uvWrite=True,
+                          writeUVSets=True,
                           writeVisibility=True,
                           writeCreases=True,
                           attr=[lib.AVALON_ID_ATTR_LONG])

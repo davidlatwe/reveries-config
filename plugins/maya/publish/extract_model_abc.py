@@ -57,6 +57,8 @@ class ExtractModelAsAlembic(pyblish.api.InstancePlugin):
                 renderableOnly=True,
                 writeCreases=True,
                 worldSpace=True,
+                uvWrite=True,
+                writeUVSets=True,
                 attr=[
                     lib.AVALON_ID_ATTR_LONG,
                 ],

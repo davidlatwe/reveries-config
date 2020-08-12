@@ -102,6 +102,8 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
                         writeVisibility=True,
                         writeCreases=True,
                         worldSpace=True,
+                        uvWrite=True,
+                        writeUVSets=True,
                         eulerFilter=euler_filter,
                         attr=[
                             lib.AVALON_ID_ATTR_LONG,
