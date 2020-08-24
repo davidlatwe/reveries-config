@@ -9,12 +9,15 @@ class RepairInvalid(plugins.RepairContextAction):
 
 
 def asset_has_frame_range(context):
-    asset = context.data["assetDoc"]
-    return "edit_in" in asset["data"]
+    def has_edit_in(instance):
+        return "edit_in" in instance.data["assetDoc"]["data"]
+    # (TODO) Shouldn't be refactored like this..
+    #   But sufficed for now. (Moving `assetDoc` from context to instance)
+    return any(has_edit_in(instance) for instance in context)
 
 
 class ValidateTimeline(pyblish.api.InstancePlugin):
-    """Valides the frame ranges and fps.
+    """Validate frame ranges and fps.
 
     * FPS must have same settings with the value defined in project document.
 
@@ -42,12 +45,17 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
         from reveries import utils
         from reveries.maya import pipeline
 
+        # (TODO) Involving turntable is because this plugin used to validate
+        #   dailies turntable playblast or render publishing.
+        #   But we don't do it here now, should be removed.
         asset_name = pipeline.has_turntable()
 
         if asset_name is None and not asset_has_frame_range(context):
             self.log.info("No range been set on this asset, skipping..")
             return True
 
+        # (TODO) Might need to get frame data from instance object, for case
+        #   like publishing multiple shots' camera in one scene.
         scene_start = context.data["startFrame"]
         scene_end = context.data["endFrame"]
         scene_fps = context.data["fps"]

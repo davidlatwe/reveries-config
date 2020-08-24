@@ -211,6 +211,9 @@ def query_by_renderlayer(node, attr, layer):
 def query_by_setuplayer(node, attr, layer):
     """Query attribute without switching renderSetupLayer
 
+    Caveat: The `node` MUST be long name, or the result will be incorrect,
+        since we are matching collection's selection in long name.
+
     Arguments:
         node (str): node long name
         attr (str): node attribute name
@@ -245,7 +248,7 @@ def query_by_setuplayer(node, attr, layer):
     parent_attr = cmds.attributeQuery(attr, node=node, listParent=True) or []
     child_attrs = cmds.attributeQuery(attr, node=node, listChildren=True) or []
 
-    attrs = set([attr])
+    attrs = {attr}
     attrs.update(parent_attr + child_attrs)
 
     enabled_overrides = set()
@@ -273,9 +276,17 @@ def query_by_setuplayer(node, attr, layer):
 
     # The hunt begins...
 
-    def _is_selected_by_patterns(patterns, types=None):
-        """Customized version of `renderSetup.model.selector.ls`"""
+    def _node_in_(selection):
+        """Is `node` being selected or a child of selected
+        If "|cam1" is being selected, "|cam1|camShape1" is also being selected
+        but not "|cam1x|cam1xShape".
+        """
+        return any(node == selected or node.startswith(selected + "|")
+                   for selected in selection)
 
+    def _is_selected_by_patterns(patterns, types=None):
+        """Customized version of `maya.app.renderSetup.model.selector.ls()`
+        """
         if types is None:
             types = []
         included = [t for t in types if not t.startswith("-")]
@@ -301,13 +312,13 @@ def query_by_setuplayer(node, attr, layer):
 
         selection = six_moves.reduce(includer, patterns, set())
 
-        if node in selection:
+        if _node_in_(selection):
             excluded = [t for t in types if t.startswith("-")]
             excluded.extend(rs_selector.getRSExcludes())
             filter = rs_selector.createTypeFilter(excluded)
             selection = itertools.ifilter(filter, selection)
 
-            return node in set(selection)
+            return _node_in_(set(selection))
 
         return False
 
@@ -321,7 +332,7 @@ def query_by_setuplayer(node, attr, layer):
 
         # Static selection
         static = cmds.getAttr(selector + ".staticSelection")
-        if node in static.split():
+        if _node_in_(static.split()):
             return True
 
         # Pattern selection
@@ -363,7 +374,35 @@ def query_by_setuplayer(node, attr, layer):
             return cmds.objExists(node + "." + attr_)
         return False
 
-    # compound value filter
+    # Locate leaf collection and get overrides from there
+
+    in_selection = None
+    overrides = []
+
+    for item in walk_hierarchy(highest_col[0]):
+        try:
+            selector = cmds.listConnections(item + ".selector")[0]
+        except ValueError:
+            # Is an override
+            if in_selection and is_override_by(item):
+                overrides.append(item)
+
+        else:
+            # Is a collection
+            if is_selected_by(selector):
+                if not cmds.getAttr(item + ".selfEnabled"):
+                    # Collection not enabled, not a member
+                    return original_value()
+
+                in_selection = True
+            else:
+                break
+
+    if not overrides:
+        return original_value()
+
+    # Compound value filter
+
     if parent_attr:
         index = cmds.attributeQuery(parent_attr[0],
                                     node=node,
@@ -384,32 +423,6 @@ def query_by_setuplayer(node, attr, layer):
             return filter(value, child_attrs.index(attr_))
         else:
             return value
-
-    # Locate leaf collection and get overrides from there
-
-    in_selection = None
-    overrides = []
-
-    for item in walk_hierarchy(highest_col[0]):
-        try:
-            selector = cmds.listConnections(item + ".selector")[0]
-        except ValueError:
-            # Is an override
-            if in_selection and is_override_by(item):
-                overrides.append(item)
-
-        else:
-            # Is a collection
-            in_selection = False
-            if is_selected_by(selector):
-                if not cmds.getAttr(item + ".selfEnabled"):
-                    # Collection not enabled, not a member
-                    return original_value()
-
-                in_selection = True
-
-    if not overrides:
-        return original_value()
 
     # Collect values from overrides
 

@@ -84,7 +84,9 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                     path = _p
                     break
             else:
-                raise FileNotFoundError("Both side not exist in: %s" % path)
+                message = "Stereo not found in: %s" % path
+                nuke.critical(message)  # This will pop-up a dialog
+                raise RuntimeError(message)
 
         try:
             data = exrheader.read_exr_header(path)
@@ -203,7 +205,22 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
         return nodes
 
+    def _fallback_stage(self, representation, version):
+        """Workaround for sequence integration failed in remote publish"""
+        root = avalon.api.registered_root()
+        root = representation["data"].get("reprRoot", root)
+        work_dir = version["data"]["workDir"].format(root=root)
+        stage_path = work_dir + "/renders"
+
+        message = ("Published path not exists, fallback to stage path:\n"
+                   "    %s\n"
+                   " -> %s" % (self.package_path, stage_path))
+        self.log.warning(message)
+
+        return stage_path
+
     def load(self, context, name=None, namespace=None, options=None):
+        import os
 
         representation = context["representation"]
         version = context["version"]
@@ -219,8 +236,13 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
         start = version["data"]["startFrame"]
         end = version["data"]["endFrame"]
 
+        if os.path.isdir(self.package_path):
+            sequence_root = self.package_path
+        else:
+            sequence_root = self._fallback_stage(representation, version)
+
         nodes = self.build_sequences(sequences,
-                                     self.package_path,
+                                     sequence_root,
                                      group_name=name,
                                      stamp_name=namespace,
                                      start=start,
@@ -234,6 +256,8 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
                                      no_backdrop=True)
 
     def update(self, container, representation):
+        import os
+
         read_nodes = dict()
 
         parents = avalon.io.parenthood(representation)
@@ -241,16 +265,21 @@ class RenderLayerLoader(PackageLoader, avalon.api.Loader):
 
         self.package_path = get_representation_path_(representation, parents)
 
+        sequences = representation["data"]["sequence"]
+        start = version["data"]["startFrame"]
+        end = version["data"]["endFrame"]
+
+        if os.path.isdir(self.package_path):
+            sequence_root = self.package_path
+        else:
+            sequence_root = self._fallback_stage(representation, version)
+
+        self.resolve_path(sequences, sequence_root)
+
         for node in container["_members"]:
             if node.Class() == "Read":
                 data = lib.get_avalon_knob_data(node)
                 read_nodes[data["aov"]] = node
-
-        start = version["data"]["startFrame"]
-        end = version["data"]["endFrame"]
-
-        sequences = representation["data"]["sequence"]
-        self.resolve_path(sequences, self.package_path)
 
         with lib.sync_copies(list(read_nodes.values())):
             for aov_name, data in sequences.items():

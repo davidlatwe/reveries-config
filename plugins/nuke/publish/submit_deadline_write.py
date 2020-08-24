@@ -35,7 +35,6 @@ class SubmitDeadlineWrite(pyblish.api.InstancePlugin):
         username = context.data["user"]
         comment = context.data.get("comment", "")
         project = context.data["projectDoc"]
-        asset = context.data["assetDoc"]["name"]
 
         fpath = context.data["currentMaking"]
         nuke_version = context.data["nukeVersion"]
@@ -44,16 +43,17 @@ class SubmitDeadlineWrite(pyblish.api.InstancePlugin):
         project_code = project["data"].get("codename") or project_id
         fname = os.path.basename(fpath)
 
+        # Instance data
+
+        asset = instance.data["assetDoc"]["name"]
+        subset = instance.data["subset"]
+        version = instance.data["versionNext"]
+
         batch_name = "({projcode}): [{asset}] {filename}".format(
             projcode=project_code,
             asset=asset,
             filename=fname
         )
-
-        # Instance data
-
-        subset = instance.data["subset"]
-        version = instance.data["versionNext"]
 
         write_node = instance[0]
 

@@ -191,7 +191,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
     def fix_invalid_missing(cls, instance):
         from reveries.maya import utils
 
-        asset_id = str(instance.context.data["assetDoc"]["_id"])
+        asset_id = str(instance.data["assetDoc"]["_id"])
         with utils.id_namespace(asset_id):
             for node in cls.get_invalid_missing(instance):
                 if utils.get_id_status(node) == utils.Identifier.Clean:
@@ -211,7 +211,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
             utils.update_id_verifiers(invalid)
         else:
             # Re-assign unique id on duplicated
-            asset_id = str(instance.context.data["assetDoc"]["_id"])
+            asset_id = str(instance.data["assetDoc"]["_id"])
             with utils.id_namespace(asset_id):
                 for node in invalid:
                     # Wipe out invalid Id's verifier so to force Id renew
@@ -228,7 +228,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
         invalid = cls.get_invalid_asset_id(instance)
 
-        asset_id = str(instance.context.data["assetDoc"]["_id"])
+        asset_id = str(instance.data["assetDoc"]["_id"])
         with utils.id_namespace(asset_id):
             for node in invalid:
                 utils.upsert_id(node, namespace_only=True)
@@ -242,7 +242,7 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
         uuids = defaultdict(list)
         group_nodes = cls.ls_subset_groups()
 
-        asset_id = str(instance.context.data["assetDoc"]["_id"])
+        asset_id = str(instance.data["assetDoc"]["_id"])
 
         family = instance.data["family"]
         required_types = set(pipeline.uuid_required_node_types(family))

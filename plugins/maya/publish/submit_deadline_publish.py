@@ -41,7 +41,6 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
         username = context.data["user"]
         comment = context.data.get("comment", "")
         project = context.data["projectDoc"]
-        asset = context.data["assetDoc"]["name"]
 
         fpath = context.data["currentMaking"]
         workspace = context.data["workspaceDir"]
@@ -50,12 +49,6 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
         project_id = str(project["_id"])[-4:].upper()
         project_code = project["data"].get("codename") or project_id
         fname = os.path.basename(fpath)
-
-        batch_name = "({projcode}): [{asset}] {filename}".format(
-            projcode=project_code,
-            asset=asset,
-            filename=fname
-        )
 
         # Instance data
 
@@ -69,8 +62,15 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
             if not instance.data.get("dumpedExtractors"):
                 continue
 
+            asset = instance.data["assetDoc"]["name"]
             subset = instance.data["subset"]
             version = instance.data["versionNext"]
+
+            batch_name = "({projcode}): [{asset}] {filename}".format(
+                projcode=project_code,
+                asset=asset,
+                filename=fname
+            )
 
             deadline_pool = instance.data["deadlinePool"]
             deadline_prio = instance.data["deadlinePriority"]

@@ -18,7 +18,7 @@ def get_protected(instance):
 
     protected = dict()
 
-    asset = instance.context.data["assetDoc"]
+    asset = instance.data["assetDoc"]
     subset = io.find_one({"type": "subset",
                           "parent": asset["_id"],
                           "name": instance.data["subset"]})
@@ -31,6 +31,8 @@ def get_protected(instance):
             repr = io.find_one({"type": "representation",
                                 "parent": version["_id"],
                                 "name": "mayaBinary"})
+            if not repr:
+                continue
 
             lock_list = repr["data"].get("modelProtected")
             if lock_list is None:

@@ -39,7 +39,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         username = context.data["user"]
         comment = context.data.get("comment", "")
         project = context.data["projectDoc"]
-        asset = context.data["assetDoc"]["name"]
+        asset = instance.data["assetDoc"]["name"]
 
         fpath = context.data["currentMaking"]
         houdini_version = context.data["houdiniVersion"]

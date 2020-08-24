@@ -1,4 +1,4 @@
-
+from avalon import io
 import pyblish.api
 
 
@@ -46,6 +46,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
         members = instance[:]
         out_sets = list()
+        asset_name = ''
 
         # Find OutSet from *Subset Group nodes*
         #
@@ -67,6 +68,11 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             if sets:
                 out_sets += sets
                 members.remove(group)
+
+            # Get asset name
+            asset_id = cmds.getAttr('{}.assetId'.format(container))
+            _filter = {"type": "asset", "_id": io.ObjectId(asset_id) }
+            asset_name = io.find_one(_filter).get('name', '')
 
         # Collect cacheable nodes
 
@@ -133,7 +139,6 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance.data.update(backup.data)
 
                 # New subset name
-                #
                 instance.data["subset"] = ".".join(["pointcache",
                                                     namespace,
                                                     name])
@@ -143,6 +148,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance.data["requireAvalonUUID"] = cacheables
                 instance.data["startFrame"] = start_frame
                 instance.data["endFrame"] = end_frame
+                instance.data["asset_name"] = asset_name
 
                 self.add_families(instance)
 
@@ -248,6 +254,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 "Alembic": "reveries.pointcache.abc",
                 "GPUCache": "reveries.pointcache.gpu",
                 "FBXCache": "reveries.pointcache.fbx",
+                "AniUSDData": "reveries.pointcache.usd",
             }[instance.data.pop("extractType")])
 
         else:
@@ -257,5 +264,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 families.append("reveries.pointcache.gpu")
             if instance.data.pop("exportFBXCache"):
                 families.append("reveries.pointcache.fbx")
+            if instance.data.pop("exportAniUSDData"):
+                families.append("reveries.pointcache.usd")
 
         instance.data["families"] = families

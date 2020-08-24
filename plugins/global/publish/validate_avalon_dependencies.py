@@ -41,7 +41,7 @@ class ValidateAvalonDependencies(pyblish.api.InstancePlugin):
             return
 
         dependencies = instance.data["dependencies"]
-        asset_id = instance.context.data["assetDoc"]["_id"]
+        asset_id = instance.data["assetDoc"]["_id"]
         subset = avalon.io.find_one({"type": "subset",
                                      "parent": asset_id,
                                      "name": instance.data["subset"]})

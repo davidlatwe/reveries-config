@@ -53,6 +53,10 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #   \       /
         #    o   __/
         #
+
+        if instance.data.get('published', False):
+            return
+
         context = instance.context
         if not all(result["success"] for result in context.data["results"]):
             self.log.warning("Atomicity not held, aborting.")
@@ -228,8 +232,10 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     def copy_file(self, src, dst):
         file_dir = os.path.dirname(dst)
         if not os.path.isdir(file_dir):
-            os.makedirs(file_dir)
-
+            try:
+                os.makedirs(file_dir)
+            except Exception as e:
+                print 'makedir error: ', e
         try:
             shutil.copy2(src, dst)
         except OSError:
@@ -256,7 +262,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
     def get_subset(self, instance, families):
 
-        asset_id = instance.context.data["assetDoc"]["_id"]
+        asset_id = instance.data["assetDoc"]["_id"]
 
         subset = io.find_one({"type": "subset",
                               "parent": asset_id,
@@ -326,8 +332,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 raise KeyError("Missing frame range data, this is a bug.")
 
             else:
+                total = len(range(start, end + 1, step))
+                if data.get("isStereo"):
+                    total *= 2
                 version["data"]["progress"] = {
-                    "total": len(range(start, end + 1, step)),
+                    "total": total,
                     "current": self.progress,
                 }
 

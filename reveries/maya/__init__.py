@@ -58,6 +58,15 @@ def install():  # pragma: no cover
     avalon.register_plugin_path(avalon.Creator, CREATE_PATH)
     avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
 
+    # Check USD pipeline
+    import avalon.io as avalon_io
+    project = avalon_io.find_one({"name": avalon.Session["AVALON_PROJECT"],
+                                  "type": "project"})
+
+    if project.get('usd_pipeline', False):
+        pyblish.register_plugin_path(os.path.join(PLUGINS_DIR, "usd", "maya", "publish"))
+        avalon.register_plugin_path(avalon.Loader, os.path.join(PLUGINS_DIR, "usd", "global", "load"))
+
     # install callbacks
     log.info("Installing callbacks ... ")
     avalon.on("init", callbacks.on_init)
