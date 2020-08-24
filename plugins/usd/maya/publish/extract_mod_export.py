@@ -44,9 +44,6 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
 
         instance.data["_preflighted"] = True
 
-        # context = instance.context
-        # context.remove(instance)
-
     def export_usd(self):
         from reveries.maya.usd import load_maya_plugin
 

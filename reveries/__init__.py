@@ -57,9 +57,12 @@ def install():  # pragma: no cover
 
     # Check usd pipeline
     project = io.find_one({"type": "project"})
+
     if project.get('usd_pipeline', False):
         avalon.register_plugin_path(
-            avalon.Loader, os.path.join(PLUGINS_DIR, "usd", "global", "load"))
+            avalon.Loader,
+            os.path.join(PLUGINS_DIR, "usd", "global", "load")
+        )
 
     # Remove pyblish-base default plugins
     pyblish.deregister_plugin_path(PYBLISH_DEFAULT)

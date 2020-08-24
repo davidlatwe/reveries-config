@@ -200,35 +200,27 @@ label = "USD (Animation)"
 icon = "list"
 
 [[families]]
-name = "reveries.env.layer"
-label = "USD (Environment Layer)"
-icon = "list"
-
-[[families]]
-name = "reveries.env"
-label = "USD (Environment)"
-icon = "list"
-
-[[families]]
 name = "reveries.look.pre_prim"
 label = "Look PrePrim USD"
 icon = "paint-brush"
 hideFilter = true
 
 [[families]]
-name = "reveries.look.usd"
-label = "Look USD"
-icon = "paint-brush"
-hideFilter = true
+name = "reveries.camera.usd"
+label = "USD (Camera)"
+icon = "list"
 
 [[families]]
-name = "reveries.model.usd"
-label = "Model USD"
-icon = "cubes"
-hideFilter = true
+name = "reveries.layout.usd"
+label = "USD (Layout)"
+icon = "list"
 
 [[families]]
-name = "reveries.pointcache.usd"
-label = "Pointcache USD"
-icon = "diamond"
-hideFilter = true
+name = "reveries.setdress.usd"
+label = "USD (Setdress)"
+icon = "list"
+
+[[families]]
+name = "reveries.setdress.layer_prim"
+label = "USD (Setdress Layer)"
+icon = "list"

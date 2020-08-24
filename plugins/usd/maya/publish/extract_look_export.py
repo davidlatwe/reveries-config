@@ -23,7 +23,8 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
 
         # Check renderer from db
         self.renderer = instance.data.get('renderer', None)
-        assert self.renderer, "There is no renderer setting in db. Please check with TD."
+        assert self.renderer, \
+            "There is no renderer setting in db. Please check with TD."
 
         asset_doc = instance.data["assetDoc"]
         self.asset_name = asset_doc["name"]
@@ -97,7 +98,8 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         ).format(self.renderer))
 
         if not os.path.exists(py_file):
-            assert False, "Cannot found look exporter py file: {}".format(py_file)
+            assert False, \
+                "Cannot found look exporter py file: {}".format(py_file)
         looks_export = imp.load_source('looks_export', py_file)
 
         cmds.select(root_node)
@@ -109,6 +111,3 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         publish_instance.run(instance)
 
         instance.data["_preflighted"] = True
-
-        # context = instance.context
-        # context.remove(instance)

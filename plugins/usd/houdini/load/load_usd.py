@@ -1,7 +1,7 @@
 import os
 
 import avalon.api
-from reveries.plugins import PackageLoader
+from reveries.houdini.plugins import HoudiniBaseLoader
 
 
 def env_embedded_path(path):
@@ -21,7 +21,7 @@ def env_embedded_path(path):
     return path
 
 
-class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
+class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
     """Load the model"""
 
     label = "Load USD"
@@ -36,9 +36,11 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
         "reveries.pointcache",
         "reveries.look.asset_prim",
         "reveries.ani.ani_prim",
-        "reveries.env.layer",
-        "reveries.env",
-        "reveries.layout"
+        "reveries.setdress.layer_prim",
+        "reveries.setdress.usd",
+        "reveries.layout.usd",
+        "reveries.camera.usd",
+        "reveries.camera"
     ]
 
     representations = [
@@ -54,10 +56,9 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
 
         return env_embedded_path(entry_path)
 
-    def load(self, context, name, namespace, data):
+    def load(self, context, name=None, namespace=None, data=None):
         import hou
 
-        # print(context)
         root = context["project"]["data"]["root"]
         proj_name = context["project"]["name"]
 
@@ -70,15 +71,18 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
             # Check publish folder exists
             directory = self.package_path
             if not os.path.exists(str(directory)):
-                hou.ui.displayMessage("Publish folder not exists:\n{}".format(directory),
-                                      severity=hou.severityType.Warning)
+                hou.ui.displayMessage(
+                    "Publish folder not exists:\n{}".format(directory),
+                    severity=hou.severityType.Warning
+                )
                 return
 
             # Check usd file already published
             files = os.listdir(directory)
             if not files:
-                hou.ui.displayMessage("Can't found usd file in publish folder:\n{}".format(directory),
-                                      severity=hou.severityType.Warning)
+                hou.ui.displayMessage(
+                    "Can't found usd file in publish folder:\n{}".format(directory),
+                    severity=hou.severityType.Warning)
                 return
             usd_file = os.path.join(directory, files[0]).replace("\\", "/")
 
@@ -120,11 +124,14 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
         # Check selective node
         node = hou.selectedNodes()
         if not node:
-            node = stage.createNode("subnet_usd", 'subnet_usd')
+            node = stage.createNode("subnet_usd_2", 'subnet_usd')
         else:
-            node = node[0]
+            node_type = node[0].type().name()
+            if node_type == "subnet_usd_2":
+                node = node[0]
+            else:
+                node = stage.createNode("subnet_usd_2", 'subnet_usd')
 
         update_node(node, usd_info)
-
-        self.log.info("Current node: {}".format(node))
-        self.log.info("Add done.\nInfo: {}\n".format(usd_info))
+        self.log.info('Current node: {}'.format(node))
+        self.log.info('Add done.\nInfo: {}\n'.format(usd_info))

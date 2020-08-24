@@ -5,15 +5,19 @@ import pyblish.api
 
 class ExtractLayoutPrim(pyblish.api.InstancePlugin):
 
-    order = pyblish.api.ExtractorOrder + 0.22
+    order = pyblish.api.ExtractorOrder + 0.496
     label = "Extract Layout USD Export"
-    hosts = ["houdini"]
+    hosts = ["maya"]
     families = [
         "reveries.layout.usd",
     ]
 
     def process(self, instance):
         from reveries import utils
+
+        context_data = instance.context.data
+        start = context_data["startFrame"]
+        end = context_data["endFrame"]
 
         staging_dir = utils.stage_dir()
         filename = "lay_prim.usda"
@@ -28,9 +32,8 @@ class ExtractLayoutPrim(pyblish.api.InstancePlugin):
         instance.data["subsetGroup"] = "Layout"
         instance.data["step_type"] = "lay_prim"
 
-        # TODO: Add frame range information
-        # data["startFrame"] = int(node.evalParm("f1"))
-        # data["endFrame"] = int(node.evalParm("f2"))
+        instance.data["startFrame"] = start
+        instance.data["endFrame"] = end
 
         self.shot_name = instance.data['asset']
 
@@ -46,4 +49,4 @@ class ExtractLayoutPrim(pyblish.api.InstancePlugin):
     def _write_json_file(self, usd_path=None, json_path=None):
         from reveries.common.usd.pipeline import lay_json_export
 
-        lay_json_export.export(usd_path, json_path, host="houdini")
+        lay_json_export.export(usd_path, json_path, host="maya")

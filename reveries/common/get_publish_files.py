@@ -7,7 +7,8 @@ def get_files(subset_id, version=None, key=''):
     Get publish files from subset id.
 
     :param subset_id: (str) Subset id
-    :param version: (int) Get publish file by version, default will get the latest version.
+    :param version: (int) Get publish file by version,
+        default will get the latest version.
     :param key: (str) Get publish file from key value. eg. key='entryFileName'
     :return:
     """
@@ -30,7 +31,10 @@ def get_files(subset_id, version=None, key=''):
         return {}
 
     # Get representation data
-    _filter = {"type": "representation", "parent": io.ObjectId(version_data['_id'])}
+    _filter = {
+        "type": "representation",
+        "parent": io.ObjectId(version_data['_id'])
+    }
     representation_data = io.find(_filter)
 
     # Get asset
@@ -63,9 +67,11 @@ def get_files(subset_id, version=None, key=''):
             if files_data:
                 if isinstance(files_data, (list)):
                     for _path in files_data:
-                        _pub_file[representation_name].append(os.path.join(_dir, _path).replace('\\', '/'))
+                        _pub_file[representation_name].append(
+                            os.path.join(_dir, _path).replace('\\', '/'))
                 else:  # if isinstance(files_data, (str, unicode)):  # unicode
-                    _pub_file[representation_name] = os.path.join(_dir, files_data).replace('\\', '/')
+                    _pub_file[representation_name] = \
+                        os.path.join(_dir, files_data).replace('\\', '/')
 
             return _pub_file
 
@@ -76,6 +82,7 @@ def get_files(subset_id, version=None, key=''):
                 _pub_file[representation_name].append(_file_path)
         else:
             print('No files found in publish dir: {}.'.format(_dir))
-            # TODO: Texture publish files has different format, will add it later
+            # TODO: Texture publish files has different format,
+            #  will add it later
 
     return _pub_file

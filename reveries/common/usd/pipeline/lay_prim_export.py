@@ -1,7 +1,8 @@
 from avalon import io
+from reveries.common import get_publish_files
 
 
-def build(file_path, shot_name):
+def build(output_path, shot_name):
     from pxr import Usd, Sdf, UsdGeom
     from reveries import common
 
@@ -23,9 +24,9 @@ def build(file_path, shot_name):
     UsdGeom.Xform.Define(stage, _instance_path)
 
     _usd_paths = []
-    env_prim_files = _get_env_prim_files(shot_name)
-    if env_prim_files:
-        for _path in env_prim_files:
+    setdress_prim_files = _get_setdress_prim_files(shot_name)
+    if setdress_prim_files:
+        for _path in setdress_prim_files:
             _usd_paths.append(Sdf.Reference(_path))
 
         asset_prim = stage.GetPrimAtPath(_instance_path)
@@ -36,37 +37,48 @@ def build(file_path, shot_name):
     UsdGeom.Xform.Define(stage, _instance_path)
 
     _usd_paths = []
-    cam_prim_files = _get_camera_prim_files(shot_name)
-    if cam_prim_files:
-        for _path in cam_prim_files:
-            _usd_paths.append(Sdf.Reference(_path))
+    cam_prim_file = _get_camera_prim_files(shot_name)
+    if cam_prim_file:
         camera_prim = stage.GetPrimAtPath(_instance_path)
-        camera_prim.GetReferences().SetReferences(_usd_paths)
+        camera_prim.GetReferences().AddReference(
+            assetPath=cam_prim_file,
+            primPath="/ROOT/Camera"
+        )
 
-    stage.GetRootLayer().Export(file_path)
+    stage.GetRootLayer().Export(output_path)
     # print(stage.GetRootLayer().ExportToString())
 
 
 def _get_camera_prim_files(shot_name):
-    return []
-
-
-def _get_env_prim_files(shot_name):
-    from reveries.common import get_publish_files
-
     _filter = {"type": "asset", "name": shot_name}
     shot_data = io.find_one(_filter)
 
     _filter = {
         "parent": shot_data["_id"],
-        "step_type": "env_prim",
+        "name": "camPrim",
         "type": "subset"
     }
-    env_prim_subsets = [s for s in io.find(_filter)]
+    subset_data = io.find_one(_filter)
+    usd_file = get_publish_files.get_files(
+        subset_data["_id"], key='entryFileName').get('USD', '')
+    return usd_file
 
-    env_prim_files = []
-    for _subset in env_prim_subsets:
-        usd_file = get_publish_files.get_files(_subset["_id"], key='entryFileName').get('USD', '')
-        env_prim_files.append(usd_file)
 
-    return env_prim_files
+def _get_setdress_prim_files(shot_name):
+    _filter = {"type": "asset", "name": shot_name}
+    shot_data = io.find_one(_filter)
+
+    _filter = {
+        "parent": shot_data["_id"],
+        "step_type": "setdress_prim",
+        "type": "subset"
+    }
+    setdress_prim_subsets = [s for s in io.find(_filter)]
+
+    setdress_prim_files = []
+    for _subset in setdress_prim_subsets:
+        usd_file = get_publish_files.get_files(
+            _subset["_id"], key='entryFileName').get('USD', '')
+        setdress_prim_files.append(usd_file)
+
+    return setdress_prim_files

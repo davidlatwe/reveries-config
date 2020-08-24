@@ -2,15 +2,17 @@ from avalon import houdini
 from reveries import lib
 
 
-class CreateLayoutLayerUSD(houdini.Creator):
-    """Publish environment layer USD"""
+class CreateSetDressLayerUSD(houdini.Creator):
+    """Publish SetDress layer USD"""
 
-    label = "Environment Layer (USD)"
-    family = "reveries.env.layer"
+    label = "SetDress Layer (USD)"
+    family = "reveries.setdress.layer"
     icon = "building"
 
+    hosts = ["houdini"]
+
     def __init__(self, *args, **kwargs):
-        super(CreateLayoutLayerUSD, self).__init__(*args, **kwargs)
+        super(CreateSetDressLayerUSD, self).__init__(*args, **kwargs)
 
         # Set node type to create for output
         self.data.update({"node_type": "usd"})
@@ -18,8 +20,10 @@ class CreateLayoutLayerUSD(houdini.Creator):
         self.data["deadlinePriority"] = 80
         self.data["deadlinePool"] = lib.get_deadline_pools()
 
+        self.data["family"] = "reveries.setdress.layer_prim"
+
     def process(self):
-        instance = super(CreateLayoutLayerUSD, self).process()
+        instance = super(CreateSetDressLayerUSD, self).process()
         file_path = "$HIP/pyblish/%s/%s_prim.usda" % (self.name, self.name)
 
         parms = {

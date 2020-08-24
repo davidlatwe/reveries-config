@@ -26,13 +26,14 @@ def get_frame_range(shot_name):
 
     # Get frame range from project
     if not frame_in and not frame_out:
-        print("Get frame range from shotgun failed.")
+        print("Get frame range from project data.")
 
         _filter = {"type": "project"}
         project_data = io.find_one(_filter)
         frame_in = project_data["data"]["edit_in"]
         frame_out = project_data["data"]["edit_out"]
 
+    print("frame range: {}-{}.".format(frame_in, frame_out))
     return [frame_in, frame_out]
 
 

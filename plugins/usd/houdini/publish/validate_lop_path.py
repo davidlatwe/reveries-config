@@ -1,5 +1,3 @@
-import avalon
-
 import pyblish.api
 
 
@@ -11,8 +9,8 @@ class ValidateLOPPath(pyblish.api.InstancePlugin):
     label = "Validate LOP Path"
     hosts = ["houdini"]
     families = [
-        "reveries.env",
-        "reveries.env.layer"
+        "reveries.setdress.usd",
+        "reveries.setdress.layer_prim"
     ]
 
     def process(self, instance):

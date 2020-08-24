@@ -15,9 +15,13 @@ class ValidateRenderer(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        project = avalon.io.find_one({"name": avalon.api.Session["AVALON_PROJECT"],
-                                      "type": "project"})
+        project = avalon.io.find_one({
+            "name": avalon.api.Session["AVALON_PROJECT"],
+            "type": "project"
+        })
         renderer = project.get('renderer', None)
-        instance.data["renderer"] = renderer.lower() if isinstance(renderer, (str, unicode)) else renderer
+        instance.data["renderer"] = renderer.lower() \
+            if isinstance(renderer, (str, unicode)) else renderer
 
-        assert renderer, "There is no renderer setting in db. Please check with TD."
+        assert renderer, \
+            "There is no renderer setting in db. Please check with TD."

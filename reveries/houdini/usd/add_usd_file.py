@@ -2,6 +2,18 @@ import re
 
 
 def update_node(node, usd_info):
+    ex_num = node.parm("add_parm").eval()
+    add_parm = node.parm("add_parm")
+    add_parm.set(ex_num + 1)
+    current_num = ex_num + 1
+
+    node.parm("ex_asset_info_{}1".format(current_num)).set(usd_info["asset_name"])
+    node.parm("ex_asset_info_{}2".format(current_num)).set(usd_info["subset_name"])
+
+    node.parm("ex_file_path_{}".format(current_num)).set(usd_info["file_path"])
+
+
+def update_node_1026(node, usd_info):
     import hou
 
     # Get information

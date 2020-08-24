@@ -1,4 +1,3 @@
-import os
 from avalon import io, api
 
 import get_publish_files
@@ -14,6 +13,9 @@ class PathResolver(object):
 
         self.asset_id = ''
         self.subset_id = ''
+        self.current_version_id = ''
+        self.current_representation_id = ''
+
         self.subset_data = {}
         self.latest_version_name = ''
 
@@ -52,30 +54,19 @@ class PathResolver(object):
             self.current_version_name = _silo_tmp[1].split('/')[4]
             self.representation_name = _silo_tmp[1].split('/')[5]
 
-            # pub_dir = publish_template_path.format(**{
-            #     "root": api.registered_root(),
-            #     "project": project["name"],
-            #     "silo": self.silo_name,
-            #     "asset": self.asset_name,
-            #     "subset": self.subset_name,
-            #     "version": self.current_version_name,
-            #     "representation": self.representation_name,
-            # })
-
-        # print('_silo_name: ', self.silo_name)
-
     def is_publish_file(self):
         return self.is_publish
 
-    def _get_asset_id(self):
+    def get_asset_id(self):
         _filter = {"type": "asset",
                    "name": self.asset_name}
         asset_data = io.find_one(_filter)
         self.asset_id = asset_data["_id"]
 
+        return self.asset_id
+
     def get_subset_id(self):
-        if not self.asset_id:
-            self._get_asset_id()
+        self.get_asset_id()
 
         _filter = {"type": "subset",
                    "name": self.subset_name,
@@ -84,9 +75,36 @@ class PathResolver(object):
         self.subset_id = self.subset_data["_id"]
         return self.subset_id
 
-    def _get_version_id(self):
-        if not self.subset_id:
-            self.get_subset_id()
+    def get_version_id(self):
+        self.get_subset_id()
+
+        version_num = int(self.current_version_name.replace("v", ""))
+
+        _filter = {
+            "type": "version",
+            "parent": self.subset_id,
+            "name": version_num
+        }
+        version_data = io.find_one(_filter)
+        self.current_version_id = version_data["_id"]
+
+        return self.current_version_id
+
+    def get_representation_id(self):
+        current_version_id = self.get_version_id()
+
+        _filter = {
+            "type": "representation",
+            "parent": current_version_id,
+            "name": self.representation_name
+        }
+        rep_data = io.find_one(_filter)
+        self.current_representation_id = rep_data["_id"]
+
+        return self.current_representation_id
+
+    def _get_latest_version_id(self):
+        self.get_subset_id()
 
         _filter = {
             "type": "version",
@@ -98,7 +116,7 @@ class PathResolver(object):
         return version_data
 
     def is_latest_version(self):
-        self._get_version_id()
+        self._get_latest_version_id()
 
         if self.latest_version_name == self.current_version_name:
             return True
@@ -106,14 +124,13 @@ class PathResolver(object):
         return False
 
     def get_latest_version_name(self):
-        if not self.latest_version_name:
-            self._get_version_id()
+        # if not self.latest_version_name:
+        self._get_latest_version_id()
 
         return self.latest_version_name
 
     def get_latest_file(self):
-        if not self.subset_id:
-            self.get_subset_id()
+        self.get_subset_id()
 
         publish_files = get_publish_files.get_files(self.subset_id)
         if self.representation_name in list(publish_files.keys()):
@@ -152,5 +169,5 @@ class PathResolver(object):
 
 
 if __name__ == "__main__":
-    file_path = r'Q:/199909_AvalonPlay/Avalon/PropBox/BoxB/publish/assetPrim/v006/USD/asset_prim.usda'
+    file_path = r'/.../BoxB/publish/assetPrim/v006/USD/asset_prim.usda'
     resolver = PathResolver(file_path=file_path)

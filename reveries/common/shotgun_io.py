@@ -11,14 +11,17 @@ import shotgun_api3
 
 
 class ShotgunIO(object):
-    def __init__(self, server='https://moonshine.shotgunstudio.com/', login='artist', password='Artist1234',
+    def __init__(self, server='https://moonshine.shotgunstudio.com/',
+                 login='artist', password='Artist1234',
                  sg_show_name=None, db_show_name=None):
         self.sg_project = None
 
         if not sg_show_name and not db_show_name:
             return
 
-        self.shotgun = shotgun_api3.Shotgun(server, login=login, password=password)
+        self.shotgun = shotgun_api3.Shotgun(
+            server, login=login, password=password
+        )
 
         if sg_show_name:
             self._get_current_project(sg_show_name)
@@ -41,7 +44,9 @@ class ShotgunIO(object):
                 self.sg_project = self.shotgun.find_one('Project', filters)
 
     def _get_current_project(self, sg_show_name):
-        self.sg_project = self.shotgun.find_one('Project', [['name', 'is', sg_show_name]])
+        self.sg_project = self.shotgun.find_one(
+            'Project', [['name', 'is', sg_show_name]]
+        )
 
     def get_assets(self, fields=[], filters=[]):
         fields += ['id', 'code', 'name', 'sg_asset_type']  # , 'tags'
@@ -144,13 +149,16 @@ def test2():
 
     print('Done')
 
-    # set_asset = shotgun_io.get_assets(fields=['tags', 'assets'], filters=[['sg_asset_type', 'is', 'Set']])
+    # set_asset = shotgun_io.get_assets(
+    #     fields=['tags', 'assets'],
+    #     filters=[['sg_asset_type', 'is', 'Set']])
     # pprint(set_asset)
 
     def _check_tag(tag_context):
         if tag_context:
             for _context in tag_context:
-                if _context.get('name', '').lower() in ['USD_SetGroup', 'usd_setgroup']:
+                if _context.get('name', '').lower() in \
+                        ['USD_SetGroup', 'usd_setgroup']:
                     return True
 
         return False
@@ -165,6 +173,3 @@ def test2():
     #         # print('sub_assets: ', sub_assets)
     #         asset_data[set_name] = sub_assets
     # print('asset_data: ', asset_data)
-
-
-# test2()

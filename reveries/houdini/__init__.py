@@ -28,14 +28,20 @@ def install():
     avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
 
     # Check USD pipeline
-    project = io.find_one({"type": "project"})
+    project = io.find_one({"name": avalon.Session["AVALON_PROJECT"], "type": "project"})
+
     if project.get('usd_pipeline', False):
-        pyblish.register_plugin_path(
-            os.path.join(PLUGINS_DIR, "usd", "houdini", "publish"))
+        # pyblish.register_plugin_path(os.path.join(PLUGINS_DIR, "usd", "houdini", "publish"))
         avalon.register_plugin_path(
             avalon.Loader,
             os.path.join(PLUGINS_DIR, "usd", "houdini", "load")
         )
+        avalon.register_plugin_path(
+            avalon.Creator,
+            os.path.join(PLUGINS_DIR, "usd", "houdini", "create")
+        )
+        pyblish.register_plugin_path(
+            os.path.join(PLUGINS_DIR, "usd", "houdini", "publish"))
 
     # install callbacks
     print("Installing callbacks ... ")

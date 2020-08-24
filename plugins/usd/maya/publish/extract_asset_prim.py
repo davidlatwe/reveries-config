@@ -40,4 +40,4 @@ class ExtractAssetPrimUSDExport(pyblish.api.InstancePlugin):
         output_path = os.path.join(staging_dir, file_name)
         asset_prim_export.export(asset_name, output_path)
 
-        print 'Export asset prim usd done.'
+        self.log.info('Export asset prim usd done.')

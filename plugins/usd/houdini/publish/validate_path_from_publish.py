@@ -1,5 +1,4 @@
 import os
-import avalon
 import traceback
 
 import pyblish.api
@@ -13,8 +12,8 @@ class ValidatePathFromPublish(pyblish.api.InstancePlugin):
     label = "Validate Path From Publish"
     hosts = ["houdini"]
     families = [
-        "reveries.env",
-        "reveries.env.layer"
+        "reveries.setdress.usd",
+        "reveries.setdress.layer_prim"
     ]
 
     def process(self, instance):
@@ -43,7 +42,8 @@ class ValidatePathFromPublish(pyblish.api.InstancePlugin):
             lop_path = node.parm("loppath").eval()
             _paths = '<br>'.join(check_obj.not_publish)
             raise ValueError(
-                "Below path not from publish, please double check your usd reference/sublayer: <br>"
+                "Below path not from publish, "
+                "please double check your usd reference/sublayer: <br>"
                 "{node_name} - {lop_path}: <br>"
                 "{paths}".format(
                     node_name=node.name(),

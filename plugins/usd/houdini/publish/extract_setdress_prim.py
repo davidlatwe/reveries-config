@@ -6,16 +6,16 @@ import traceback
 import subprocess
 
 import pyblish.api
-from avalon import io, api
+from avalon import io
 
 
-class ExtractEnvironment(pyblish.api.InstancePlugin):
+class ExtractSetDress(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ExtractorOrder + 0.21
-    label = "Extract Environment USD Export"
+    label = "Extract SetDress USD Export"
     hosts = ["houdini"]
     families = [
-        "reveries.env",
+        "reveries.setdress.usd",
     ]
 
     def process(self, instance):
@@ -31,10 +31,11 @@ class ExtractEnvironment(pyblish.api.InstancePlugin):
             context.data["comment"] = "Auto update"
 
             staging_dir = utils.stage_dir()
-            filename = 'env_prim.usda'
+            filename = 'setdress_prim.usda'
 
             final_output = os.path.join(staging_dir, filename)
-            tmp_file_path = self._copy_previous_file_to_tmp(staging_dir, instance).replace('\\', '/')
+            tmp_file_path = self._copy_previous_file_to_tmp(
+                staging_dir, instance).replace('\\', '/')
 
         else:
             ropnode = instance[0]
@@ -43,7 +44,8 @@ class ExtractEnvironment(pyblish.api.InstancePlugin):
             final_output = ropnode.evalParm("lopoutput")
             # Set custom staging dir
             staging_dir, filename = os.path.split(final_output)
-            tmp_file_path = os.path.join(staging_dir, "env_prim_tmp.usda").replace('\\', '/')
+            tmp_file_path = os.path.join(
+                staging_dir, "setdress_prim_tmp.usda").replace('\\', '/')
 
             # Export temp usd file
             try:
@@ -55,61 +57,72 @@ class ExtractEnvironment(pyblish.api.InstancePlugin):
                 traceback.print_exc()
                 raise RuntimeError("Render failed: {0}".format(exc))
 
-        # Set publish file name
-        json_file_name = 'env.json'
+        # Set usd/json file name
+        json_file_name = 'setdress.json'
         json_file_path = os.path.join(staging_dir, json_file_name)
 
         instance.data["repr.USD._stage"] = staging_dir
         instance.data["repr.USD._files"] = [filename, json_file_name]
         instance.data["repr.USD.entryFileName"] = filename
-        # instance.data["step"] = "Layout"
+
         instance.data["subsetGroup"] = "Layout"
-        instance.data["step_type"] = "env_prim"
+        instance.data["step_type"] = "setdress_prim"
 
         # Update reference/sublayer to latest version
-        update_reference_path.update(usd_file=tmp_file_path, output_path=final_output)
+        update_reference_path.update(
+            usd_file=tmp_file_path, output_path=final_output)
 
         # Write json file
         self._write_json_file(usd_path=final_output, json_path=json_file_path)
 
-        # Export Alembic Cache
-        self.export_gpu_cache(final_output)
+        # ==== Export GPU/Alembic Cache ==== #
+        self._export_gpu_cache(final_output)
 
-        # Export GPU Cache
+        # Set GPU file name
+        gpu_file_name = 'setdress_gpu.abc'
+        gpu_file_path = os.path.join(staging_dir, gpu_file_name)
 
-        # Publish instance
+        gpu_ma_file_name = 'setdress_gpu.ma'
+        gpu_ma_file_path = os.path.join(staging_dir, gpu_ma_file_name)
+
+        if os.path.exists(gpu_file_path) and os.path.exists(gpu_ma_file_path):
+            instance.data["repr.GPUCache._stage"] = staging_dir
+            instance.data["repr.GPUCache._hardlinks"] = [
+                gpu_ma_file_name,
+                gpu_file_name
+            ]
+            instance.data["repr.GPUCache.entryFileName"] = gpu_ma_file_name
+        else:
+            self.log.info("Setdressing gpu cahce export failed.")
+
+        # Set Alembic file name
+        alembic_file_name = 'setdress_alembic.abc'
+        alembic_file_path = os.path.join(staging_dir, alembic_file_name)
+
+        if os.path.exists(alembic_file_path):
+            instance.data["repr.Alembic._stage"] = staging_dir
+            instance.data["repr.Alembic._files"] = [alembic_file_name]
+            instance.data["repr.Alembic.entryFileName"] = alembic_file_name
+        else:
+            self.log.info("Setdressing alembic cahce export failed.")
+
+        # ==== Publish instance ==== #
         self._publish_instance(instance)
 
-    def export_gpu_cache(self, final_output):
-        print("\nExport GPU... ...")
-        maya_path = r'C:\Program Files\Autodesk\Maya2020\bin'
-        mayapy_exe = os.path.join(maya_path, "mayapy.exe")
-        # py_file = r'F:\usd\test\usd_avalon\reveries-config\reveries\maya\usd\env_gpu_export.py'
+    def _export_gpu_cache(self, usd_file):
+        usdenv_bat = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..\\..\\..\\usd\\template\\usdToCache.bat"
+            )
+        )
+        cmd = [usdenv_bat, __file__, usd_file]
 
-        # cmd = [
-        #     mayapy_exe,
-        #     __file__,
-        #     "usd_file={}".format(str(final_output)),
-        # ]
-        usdenv_bat = r'F:\usd\test\usd_avalon\reveries-config\plugins\usd\template\usdenvgpu_maya.bat'
-        cmd = [usdenv_bat]
-
-        out_bytes = subprocess.check_output(cmd, shell=True)
-        # out, err = p.communicate()
-        print("out: ", out_bytes)
-
-
-        # print("Export gpu cmd: {}".format(cmd))
-        # try:
-        #     out_bytes = subprocess.check_output(cmd, shell=True)
-        # except subprocess.CalledProcessError:
-        #     print(out_bytes)
-        #     # Mark failed for future debug.
-        #     # io.update_many({"_id": model_version["_id"]},
-        #     #                {"$set": {"data.rigAutoUpdateFailed": True}})
-        #     raise Exception("Env gpu export failed.")
-        # else:
-        #     print(out_bytes)
+        try:
+            out_bytes = subprocess.check_output(cmd, shell=True)
+            self.log.info("out: ", out_bytes)
+        except Exception as e:
+            self.log.info("Export GPU/Alembic cache failed: {}".format(e))
 
     def _copy_previous_file_to_tmp(self, staging_dir, instance):
         from reveries.common import get_publish_files
@@ -118,18 +131,20 @@ class ExtractEnvironment(pyblish.api.InstancePlugin):
         if not previous_subset_id:
             previous_subset_id = self.__get_previous_subset_id(instance)
 
-        usd_file = get_publish_files.get_files(previous_subset_id, key='entryFileName').get('USD', '')
+        usd_file = get_publish_files.get_files(
+            previous_subset_id, key='entryFileName').get('USD', '')
         if not usd_file:
             self.log.error("Missing usd file in publish folder")
-            raise ValueError("Auto update subset {} failed.".format(instance.data["subset"]))
+            raise ValueError(
+                "Auto update subset {} failed.".format(instance.data["subset"]))
 
         # Copy previous usd file to tmp folder
-        tmp_file_path = os.path.join(staging_dir, "env_prim_tmp.usda")
+        tmp_file_path = os.path.join(staging_dir, "setdress_prim_tmp.usda")
         try:
             shutil.copy2(usd_file, tmp_file_path)
         except OSError:
             msg = "An unexpected error occurred."
-            print(msg)
+            self.log.info(msg)
             raise OSError(msg)
 
         return tmp_file_path
@@ -166,7 +181,7 @@ class ExtractEnvironment(pyblish.api.InstancePlugin):
         # === Publish instance === #
         from reveries.common.publish import publish_instance
 
-        # publish_instance.run(instance)
+        publish_instance.run(instance)
 
         instance.data["_preflighted"] = True
 
@@ -180,24 +195,26 @@ class LauncherAutoEnvCacheExport(object):
             kwargs[_args_data[0]] = _args_data[1]
 
         self.usd_path = kwargs.get("usd_path", "").replace('\\', '/')
-        print("usd_path: ", self.usd_path)
         self.contexts = list()
 
     def run(self):
         import maya.standalone as standalone
-        from reveries.common.usd.pipeline.env_gpu_export import EnvUSDToGPUExport
+        from reveries.common.usd.pipeline.\
+            setdress_cache_export import SetdressUSDToCacheExport
 
         standalone.initialize(name="python")
+        try:
+            exporter = SetdressUSDToCacheExport(self.usd_path)
+            exporter.export()
 
-        exporter = EnvUSDToGPUExport(self.usd_path)
-        exporter.export()
-
-        print("USD to ENV Done!!")
+            print("USD to ENV Done!!")
+        except Exception as e:
+            print("USD to ENV Failed: {}".format(e))
 
         standalone.uninitialize()
         # Bye
 
 
 if __name__ == "__main__":
-    auto_publish = LauncherAutoEncGPUExport()
+    auto_publish = LauncherAutoEnvCacheExport()
     auto_publish.run()

@@ -37,8 +37,9 @@ class OpenInUSD(PackageLoader, avalon.api.Loader):
         "reveries.pointcache",
         "reveries.look.asset_prim",
         "reveries.ani.ani_prim",
-        "reveries.env.layer",
-        "reveries.env"
+        "reveries.setdress.layer_prim",
+        "reveries.setdress.usd",
+        "reveries.layout.usd"
     ]
 
     representations = [
@@ -64,7 +65,7 @@ class OpenInUSD(PackageLoader, avalon.api.Loader):
             directory = self.package_path
             files = os.listdir(directory)
             if not files:
-                print('No usd file found in : {}'.format(directory))
+                self.log.info('No usd file found in : {}'.format(directory))
                 return
 
             usd_file = os.path.join(directory, files[0])
@@ -72,16 +73,24 @@ class OpenInUSD(PackageLoader, avalon.api.Loader):
         self._open_usdview(usd_file)
 
     def _open_usdview(self, usd_file):
-        # usd_file = r'F:\usd\test\data\OCEAN\Props\BallTwo\publish\modelDefault\v001\mod_BallTwo.usda'
-        print('usd_file: {}'.format(usd_file))
+        self.log.info('usd_file: {}'.format(usd_file))
 
-        usdview_bat = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), "..\\..\\..\\usd\\template\\usdview.bat"))
+        usdview_bat = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..\\..\\..\\usd\\template\\usdview.bat"
+            )
+        )
 
         if not os.path.exists(usdview_bat):
-            print('usdview.bat file not exists.')
+            self.log.info('usdview.bat file not exists.')
             return
 
         cmd = [usdview_bat, usd_file]
-        print('open usdview cmd: {}'.format(cmd))
-        subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.log.info('open usdview cmd: {}'.format(cmd))
+        subprocess.Popen(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )

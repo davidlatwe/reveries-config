@@ -4,13 +4,13 @@ import traceback
 import pyblish.api
 
 
-class ExtractEnvironmentLayer(pyblish.api.InstancePlugin):
+class ExtractSetDressLayer(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ExtractorOrder + 0.2
-    label = "Extract Environment Layer USD Export"
+    label = "Extract SetDress Layer USD Export"
     hosts = ["houdini"]
     families = [
-        "reveries.env.layer",
+        "reveries.setdress.layer_prim",
     ]
 
     def process(self, instance):
@@ -28,7 +28,7 @@ class ExtractEnvironmentLayer(pyblish.api.InstancePlugin):
         instance.data["repr.USD.entryFileName"] = filename
         # instance.data["step"] = "Layout"
         instance.data["subsetGroup"] = "Layout"
-        instance.data["step_type"] = "env_layer_prim"
+        instance.data["step_type"] = "setdress_layer_prim"
 
         try:
             ropnode.render()
