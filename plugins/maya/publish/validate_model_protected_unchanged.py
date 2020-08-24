@@ -31,6 +31,8 @@ def get_protected(instance):
             repr = io.find_one({"type": "representation",
                                 "parent": version["_id"],
                                 "name": "mayaBinary"})
+            if not repr:
+                continue
 
             lock_list = repr["data"].get("modelProtected")
             if lock_list is None:
