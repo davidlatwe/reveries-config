@@ -11,7 +11,7 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
     Because plug-in will add 'MOD' group under 'ROOT'.
     """
 
-    order = pyblish.api.ExtractorOrder
+    order = pyblish.api.ExtractorOrder + 0.2
     hosts = ["maya"]
     label = "Extract Model USD Export"
     families = [
