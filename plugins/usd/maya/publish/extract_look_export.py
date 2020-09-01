@@ -21,7 +21,7 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
 
         from reveries import utils
 
-        asset_doc = instance.context.data["assetDoc"]
+        asset_doc = instance.data["assetDoc"]
         self.asset_name = asset_doc["name"]
 
         self.files_info = {

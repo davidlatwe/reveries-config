@@ -21,10 +21,7 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
     def process(self, instance):
         from reveries import utils
 
-        # print('data: ', instance.data)
-        # print('data subset: ', instance.data["subset"])
-
-        asset_doc = instance.context.data["assetDoc"]
+        asset_doc = instance.data["assetDoc"]
         self.asset_name = asset_doc["name"]
 
         self.files_info = {
@@ -32,7 +29,6 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         }
 
         self.staging_dir = utils.stage_dir()
-        # subset_name = instance.data["subset"]
 
         # Update information in instance data
         instance.data["repr.USD._stage"] = self.staging_dir

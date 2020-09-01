@@ -1,4 +1,4 @@
-
+from avalon import io
 import pyblish.api
 
 
@@ -23,7 +23,11 @@ class ValidateMODGroup(pyblish.api.InstancePlugin):
 
             # Add avalon uuid
             node = r'|ROOT|MOD'
-            asset_id = str(instance.context.data["assetDoc"]["_id"])
+            asset_name = instance.data['asset']
+            # Get asset id
+            _filter = {"type": "asset", "name": asset_name}
+            asset_id = str(io.find_one(_filter)['_id'])
+
             with utils.id_namespace(asset_id):
                 if utils.get_id_status(node) == utils.Identifier.Clean:
                     utils.upsert_id(node, namespace_only=True)

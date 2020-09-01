@@ -25,7 +25,7 @@ class ExtractAniShotUSDExport(pyblish.api.InstancePlugin):
         from reveries import utils
         from reveries.usd.utils import load_maya_plugin
 
-        asset_doc = instance.context.data["assetDoc"]
+        asset_doc = instance.data["assetDoc"]
         self.shot_name = asset_doc["name"]
 
         self.frame_in = instance.data.get('startFrame', '')

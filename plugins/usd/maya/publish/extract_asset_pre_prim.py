@@ -24,7 +24,7 @@ class ExtractAssetPrePrimUSDExport(pyblish.api.InstancePlugin):
         from reveries.usd.utils import load_maya_plugin
         from reveries.usd.utils.asset_pre_prim_export import prim_export
 
-        asset_doc = instance.context.data["assetDoc"]
+        asset_doc = instance.data["assetDoc"]
         asset_name = asset_doc["name"]
         staging_dir = utils.stage_dir()
         # subset_name = instance.data["subset"]
