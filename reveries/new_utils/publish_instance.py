@@ -21,7 +21,7 @@ class PublishInstance(object):
         # Integrate representations' to database
         print("Integrating representations to database ...")
 
-        asset = context.data["assetDoc"]
+        asset = instance.data["assetDoc"]
         subset, version, representations = instance.data["toDatabase"]
 
         # Write subset if not exists
@@ -341,7 +341,7 @@ class IntegrateAvalonSubset(object):
 
     def get_subset(self, instance, families):
 
-        asset_id = instance.context.data["assetDoc"]["_id"]
+        asset_id = instance.data["assetDoc"]["_id"]
 
         subset = io.find_one({"type": "subset",
                               "parent": asset_id,

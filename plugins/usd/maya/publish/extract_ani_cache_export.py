@@ -23,7 +23,7 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         from reveries import utils
         from reveries.usd.utils import load_maya_plugin
 
-        # asset_doc = instance.context.data["assetDoc"]
+        # asset_doc = instance.data["assetDoc"]
         self.out_cache = instance.data.get("outCache")
         self.start_frame = instance.data.get("startFrame")
         self.end_frame = instance.data.get("endFrame")

@@ -220,5 +220,5 @@ hideFilter = true
 [[families]]
 name = "reveries.pointcache.usd"
 label = "Pointcache USD"
-icon = "diamond
+icon = "diamond"
 hideFilter = true

@@ -35,11 +35,13 @@ class CollectLookDevUSDOutputs(pyblish.api.InstancePlugin):
         return subset_data
 
     def process(self, instance):
-        asset_doc = instance.context.data["assetDoc"]
-        asset_name = asset_doc["name"]
+        # asset_doc = instance.data["assetDoc"]
+        # asset_name = asset_doc["name"]
 
-        filter = {"type": "asset", "name": asset_name}
-        asset_data = io.find_one(filter)
+        asset_name = instance.data['asset']
+
+        _filter = {"type": "asset", "name": asset_name}
+        asset_data = io.find_one(_filter)
         self.asset_id = asset_data['_id']
 
         # Create new instance
