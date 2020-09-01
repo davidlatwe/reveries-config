@@ -12,7 +12,7 @@ class ExtractAssetPrePrimUSDExport(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ExtractorOrder + 0.21
+    order = pyblish.api.ExtractorOrder + 0.22
     hosts = ["maya"]
     label = "Extract PrePrim USD Export"
     families = [

@@ -10,7 +10,7 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
 
     """
 
-    order = pyblish.api.ExtractorOrder + 0.2
+    order = pyblish.api.ExtractorOrder + 0.21
     hosts = ["maya"]
     label = "Extract LookDev USD Export"
     families = [
