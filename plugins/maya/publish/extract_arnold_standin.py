@@ -21,6 +21,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
         from reveries import utils
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
+        repr_root = instance.data.get("reprRoot")
 
         start = int(instance.data["startFrame"])
         end = int(instance.data["endFrame"])
@@ -42,6 +43,13 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                 pattern % i for i in range(start, end + 1, step)]
         else:
             instance.data["repr.Ass._hardlinks"] = [firstfile]
+
+        if repr_root:
+            # Re-direct output path to custom root path
+            staging_dir = staging_dir.replace(avalon.api.registered_root(),
+                                              repr_root,
+                                              1)
+            instance.data["repr.Ass.reprRoot"] = repr_root
 
         instance.data["repr.Ass._stage"] = staging_dir
         instance.data["repr.Ass.entryFileName"] = firstfile
