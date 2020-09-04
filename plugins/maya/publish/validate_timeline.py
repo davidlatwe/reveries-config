@@ -33,7 +33,8 @@ class ValidateTimeline(pyblish.api.InstancePlugin):
         "reveries.animation",
         "reveries.pointcache",
         "reveries.camera",
-        "reveries.atomscrowd",
+        # "reveries.atomscrowd",
+        # opt-out atoms since atomscrowd instance can set it's own range
     ]
     actions = [
         pyblish.api.Category("Fix It"),

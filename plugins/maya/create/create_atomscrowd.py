@@ -16,7 +16,7 @@ class AtomsCrowdCreator(avalon.maya.Creator):
         scene_start = cmds.playbackOptions(query=True, minTime=True)
         scene_end = cmds.playbackOptions(query=True, maxTime=True)
 
-        self.data["useCustomRange"] = False
+        self.data["useCustomRange"] = True
         self.data["startFrame"] = scene_start
         self.data["endFrame"] = scene_end
 

@@ -17,7 +17,7 @@ class CollectAtomsCrowdFrameRange(pyblish.api.InstancePlugin):
         if instance.data.get("useCustomRange"):
             self.log.info("Using custom cache frame range.")
         else:
-            self.log.info("Using scene wide cache frame range.")
+            self.log.warning("Using scene wide cache frame range.")
             instance.data["startFrame"] = instance.context.data["startFrame"]
             instance.data["endFrame"] = instance.context.data["endFrame"]
 
