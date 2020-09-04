@@ -6,8 +6,8 @@ from avalon import io, api
 
 def _get_variant_data(asset_name, prim_type='default'):
     """
-    Get variant data
-    :param asset_name: Asset name. eg.'HanMaleA'
+    Get variant data from asset name
+    :param asset_name: str. Asset name. eg.'HanMaleA'
     :return:
     variant_data = {
         'lookDefault': [
@@ -25,20 +25,20 @@ def _get_variant_data(asset_name, prim_type='default'):
     """
     from reveries.new_utils import get_publish_files
 
-    filter = {"type": "asset", "name": asset_name}
-    asset_data = io.find_one(filter)
+    _filter = {"type": "asset", "name": asset_name}
+    asset_data = io.find_one(_filter)
     asset_id = asset_data['_id']
 
     # Get lookdev subset without lookProxy subset
     variant_key = []  # ['lookDefault', 'lookClothesB']
-    filter = {
+    _filter = {
         "type": "subset",
         "parent": io.ObjectId(str(asset_id)),
         "name": re.compile("look*")
     }
     # subset_data = []
-    subset_data = [subset for subset in io.find(filter)]
-    for subset in io.find(filter):
+    subset_data = [subset for subset in io.find(_filter)]
+    for subset in io.find(_filter):
         regex = re.compile("^.*?(?<!Proxy)$")
         _subset_name = subset['name']
         if regex.search(_subset_name):
@@ -59,16 +59,16 @@ def _get_variant_data(asset_name, prim_type='default'):
 def _get_geom_usd(asset_name):
     from reveries.new_utils import get_publish_files
 
-    filter = {"type": "asset", "name": asset_name}
-    asset_data = io.find_one(filter)
+    _filter = {"type": "asset", "name": asset_name}
+    asset_data = io.find_one(_filter)
     asset_id = asset_data['_id']
 
-    filter = {
+    _filter = {
         "type": "subset",
         "parent": io.ObjectId(str(asset_id)),
         "name": 'modelDefault'
     }
-    model_data = io.find_one(filter)
+    model_data = io.find_one(_filter)
 
     files = get_publish_files.get_files(model_data['_id']).get('USD', [])
 
@@ -110,19 +110,13 @@ def prim_export(asset_name, output_path, prim_type='default'):
                 usd_file_paths = variant_data.get('lookDefaultProxy', [])
         else:
             usd_file_paths = variant_data.get(_key, [])
-        # print _key, usd_file_paths
         variants.AddVariant(_key)
         variants.SetVariantSelection(_key)
 
         #
         with variants.GetVariantEditContext():
             # Add step variants
-            variant_define = UsdGeom.Xform.Define(stage, "/ROOT/{}".format(prim_name))
-            if prim_type == 'proxy':
-                variant_define.CreatePurposeAttr('proxy')
-            else:
-                variant_define.CreatePurposeAttr('render')
-
+            UsdGeom.Xform.Define(stage, "/ROOT/{}".format(prim_name))
             _prim = stage.GetPrimAtPath("/ROOT/{}".format(prim_name))
             _usd_paths = [
                 Sdf.Reference(geom_file_path)
@@ -135,8 +129,8 @@ def prim_export(asset_name, output_path, prim_type='default'):
     variants.SetVariantSelection(default_key)
 
     # Set default prim
-    rootPrim = stage.GetPrimAtPath('/ROOT')
-    stage.SetDefaultPrim(rootPrim)
+    root_prim = stage.GetPrimAtPath('/ROOT')
+    stage.SetDefaultPrim(root_prim)
 
     # print(stage.GetRootLayer().ExportToString())
     stage.GetRootLayer().Export(output_path)
