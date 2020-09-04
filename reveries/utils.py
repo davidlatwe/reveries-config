@@ -432,7 +432,11 @@ class AssetGraber(object):
         self._collection = self._database[self.project]
         self._connected = True
 
-        self.that_project = self._find_one({"type": "project"})
+        that_project = self._find_one({"type": "project"})
+        if that_project is None:
+            raise Exception("Project '%s' not exists." % self.project)
+
+        self.that_project = that_project
 
     def _insert_one(self, item):
         assert isinstance(item, dict), "item must be of type <dict>"
