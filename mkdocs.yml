@@ -18,6 +18,7 @@ nav:
     - Overview: publish_overview.md
     - Maya:
       - Overview: publish_maya.md
+      - XGen: publish_maya_xgen.md
       - Render: publish_maya_render.md
     - Houdini: publish_houdini.md
     - Nuke:
