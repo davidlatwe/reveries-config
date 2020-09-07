@@ -2,7 +2,7 @@
 * Model
 * Rig
 * Look
-* XGen
+* [XGen](publish_maya_xgen.md)
 * Set Dressing
 * Camera
 * Animation Curves
