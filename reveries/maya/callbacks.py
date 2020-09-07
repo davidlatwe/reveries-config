@@ -28,8 +28,8 @@ def _pop_sceneinventory():
             optional=True
         )
         if respond:
-            import avalon.tools.cbsceneinventory as tool
-            tool.show(parent=parent)
+            import avalon.tools.sceneinventory as tool
+            tool.show(hierarchy=True, parent=parent)
 
 
 def on_task_changed(_, *args):

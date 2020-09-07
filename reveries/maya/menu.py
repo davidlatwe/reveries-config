@@ -40,10 +40,18 @@ def install():
     def publish_in_deadline(*args):
         _publish_via_targets(["default", "deadline"])
 
+    def hierarchy_inventory(*args):
+        from avalon.maya import pipeline
+        import avalon.tools.sceneinventory as tool
+        tool.show(hierarchy=True, parent=pipeline.get_main_window())
+
     def deferred():
         cmds.menuItem("Publish___",  # Publish...
                       edit=True,
                       command=publish_in_local)
+        cmds.menuItem("Manage___",  # Manage...
+                      edit=True,
+                      command=hierarchy_inventory)
 
         # Append to Avalon's menu
         cmds.menuItem(divider=True, parent=self._menu)
