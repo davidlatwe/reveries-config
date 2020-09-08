@@ -20,7 +20,7 @@ class PointCacheCreator(avalon.maya.Creator):
         # Build pipeline render settings
 
         self.data["exportAlembic"] = True
-        self.data["exportGPUCache"] = True
+        self.data["exportGPUCache"] = False
         self.data["exportFBXCache"] = False
 
         self.data["staticCache"] = False
@@ -30,6 +30,6 @@ class PointCacheCreator(avalon.maya.Creator):
         self.data["deadlinePool"] = lib.get_deadline_pools()
 
         # Apply Euler filter to rotations for Alembic
-        self.data["eulerFilter"] = False
+        self.data["eulerFilter"] = True
 
         return put_instance_icon(super(PointCacheCreator, self).process())
