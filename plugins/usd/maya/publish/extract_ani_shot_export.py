@@ -1,8 +1,5 @@
 import os
-import contextlib
 import pyblish.api
-# import avalon.api
-from avalon import io, api
 
 
 class ExtractAniShotUSDExport(pyblish.api.InstancePlugin):
@@ -23,7 +20,7 @@ class ExtractAniShotUSDExport(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         from reveries import utils
-        from reveries.usd.utils import load_maya_plugin
+        from reveries.maya.usd import load_maya_plugin
 
         asset_doc = instance.data["assetDoc"]
         self.shot_name = asset_doc["name"]
@@ -48,8 +45,7 @@ class ExtractAniShotUSDExport(pyblish.api.InstancePlugin):
         print 'Export ani shot usd done.'
 
     def _export_usd(self, output_path):
-        from reveries.usd.utils import ani_shot_export
-        # output_path = r'Q:\199909_AvalonPlay\Avalon\Shot\sh0100\work\animating\maya\scenes\usd\ani_shot.usda'
+        from reveries.maya.usd import ani_shot_export
 
         builder = ani_shot_export.AniUsdBuilder(shot_name=self.shot_name,
                                                 frame_in=self.frame_in,

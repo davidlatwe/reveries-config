@@ -1,5 +1,4 @@
 import os
-import contextlib
 import pyblish.api
 
 
@@ -49,8 +48,7 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         # context.remove(instance)
 
     def export_usd(self):
-        import maya.cmds as cmds
-        from reveries.usd.utils import load_maya_plugin
+        from reveries.maya.usd import load_maya_plugin
 
         load_maya_plugin()
 
@@ -62,7 +60,7 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
 
     def _export_geom(self, outpath):
         import maya.cmds as cmds
-        from reveries.usd.utils.maya_export import MayaUsdExporter
+        from reveries.maya.usd.maya_export import MayaUsdExporter
 
         cmds.select('ROOT')
 

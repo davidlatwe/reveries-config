@@ -1,6 +1,8 @@
 import os
-import contextlib
+import imp
+
 import pyblish.api
+import avalon
 
 
 class ExtractLookUSDExport(pyblish.api.InstancePlugin):
@@ -18,8 +20,11 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-
         from reveries import utils
+
+        # Check renderer from db
+        self.renderer = instance.data.get('renderer', None)
+        assert self.renderer, "There is no renderer setting in db. Please check with TD."
 
         asset_doc = instance.data["assetDoc"]
         self.asset_name = asset_doc["name"]
@@ -27,11 +32,9 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         self.files_info = {
             'assign': 'assign.usda',
             'look': 'look.usda',
-            # 'prim': 'mod_{}.usda'.format(self.asset_name)
         }
 
         self.staging_dir = utils.stage_dir()
-        # subset_name = instance.data["subset"]
 
         # Update information in instance data
         instance.data["repr.USD._stage"] = self.staging_dir
@@ -44,7 +47,7 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         self._publish_instance(instance)
 
     def export_usd(self):
-        from reveries.usd.utils import load_maya_plugin
+        from reveries.maya.usd import load_maya_plugin
 
         load_maya_plugin()
 
@@ -60,8 +63,7 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
 
     def _export_assign(self, outpath):
         import maya.cmds as cmds
-
-        from reveries.usd.utils import assign_export
+        from reveries.maya.usd import assign_export
 
         cmds.select('ROOT')
         sel = cmds.ls(sl=True)[0]
@@ -70,7 +72,14 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
     def _export_looks(self, outpath):
         import maya.cmds as cmds
 
-        from reveries.usd.utils import looks_export
+        # Get look exporter python file
+        py_file = os.path.abspath(os.path.join(
+            os.path.dirname(__file__),
+            "..\\..\\..\\..\\reveries\\maya\\usd\\{}\\looks_export.py").format(self.renderer))
+
+        if not os.path.exists(py_file):
+            assert False, "Cannot found look exporter py file: {}".format(py_file)
+        looks_export = imp.load_source('looks_export', py_file)
 
         cmds.select('ROOT')
         looks_export.export(file_path=outpath)

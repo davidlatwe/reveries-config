@@ -60,18 +60,16 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
         :return:
         """
         import hou
-        from reveries.usd.houdini_utils.add_usd_file import update_node
+        from reveries.houdini.usd.add_usd_file import update_node
 
         stage = hou.node("/stage/")
-        # node = stage.createNode("subnet_usd","subnet_usd_tt")
 
+        # Check selective node
         node = hou.selectedNodes()
         if not node:
             node = stage.createNode("subnet_usd", 'subnet_usd')
         else:
             node = node[0]
-
-        # node = hou.node("/stage/subnet_usd_tt")
 
         update_node(node, usd_info)
         print 'Current node: {}'.format(node)

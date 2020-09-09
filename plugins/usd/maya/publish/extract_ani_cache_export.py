@@ -21,9 +21,8 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         from reveries import utils
-        from reveries.usd.utils import load_maya_plugin
+        from reveries.maya.usd import load_maya_plugin
 
-        # asset_doc = instance.data["assetDoc"]
         self.out_cache = instance.data.get("outCache")
         self.start_frame = instance.data.get("startFrame")
         self.end_frame = instance.data.get("endFrame")
@@ -79,7 +78,7 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
 
     def _export_source(self, outpath):
         import maya.cmds as cmds
-        from reveries.usd.utils.maya_export import MayaUsdExporter
+        from reveries.maya.usd.maya_export import MayaUsdExporter
 
         # cmds.select(self.out_cache)
         cmds.select(self.mod_long_name)  # r'HanMaleA_rig_02:HanMaleA_model_01_:MOD'
@@ -90,7 +89,7 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         exporter.export()
 
     def _export_authored_data(self, outpath):
-        from reveries.usd.utils import ani_cache_export
+        from reveries.maya.usd import ani_cache_export
 
         # Check has proxy group
         has_proxy = self._check_has_proxy()
