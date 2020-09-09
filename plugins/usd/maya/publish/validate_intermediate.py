@@ -1,4 +1,5 @@
 import pyblish.api
+from reveries import plugins
 
 
 class ValidateIntermediateUSD(pyblish.api.InstancePlugin):
@@ -14,7 +15,19 @@ class ValidateIntermediateUSD(pyblish.api.InstancePlugin):
         "reveries.model"
     ]
 
+    actions = [
+        pyblish.api.Category("Select"),
+        plugins.MayaSelectInvalidInstanceAction,
+    ]
+
     def process(self, instance):
+        invalid = self.get_invalid(instance)
+
+        if invalid:
+            raise Exception("Below mesh has intermediate shape, please delete it:<br>{}".format(invalid))
+
+    @classmethod
+    def get_invalid(cls, instance):
         import pymel.core as pm
 
         invalid = []
@@ -24,5 +37,4 @@ class ValidateIntermediateUSD(pyblish.api.InstancePlugin):
                 if _shape.getAttr('intermediateObject'):
                     invalid.append(_shape.name())
 
-        if invalid:
-            raise Exception("Below mesh has intermediate shape, please delete it:<br>{}".format(invalid))
+        return invalid
