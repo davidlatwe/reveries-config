@@ -1,5 +1,4 @@
 import os
-# import contextlib
 import pyblish.api
 
 
@@ -21,13 +20,12 @@ class ExtractAssetPrePrimUSDExport(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         from reveries import utils
-        from reveries.usd.utils import load_maya_plugin
-        from reveries.usd.utils.asset_pre_prim_export import prim_export
+        from reveries.maya.usd import load_maya_plugin
+        from reveries.maya.usd.asset_pre_prim_export import prim_export
 
         asset_doc = instance.data["assetDoc"]
         asset_name = asset_doc["name"]
         staging_dir = utils.stage_dir()
-        # subset_name = instance.data["subset"]
 
         # Check lookdev type. proxy or render.
         prim_type = instance.data["subset_type"]
