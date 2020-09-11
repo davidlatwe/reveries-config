@@ -69,11 +69,6 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 out_sets += sets
                 members.remove(group)
 
-            # Get asset name
-            asset_id = cmds.getAttr('{}.assetId'.format(container))
-            _filter = {"type": "asset", "_id": io.ObjectId(asset_id) }
-            asset_name = io.find_one(_filter).get('name', '')
-
         # Collect cacheable nodes
 
         created = False
@@ -148,7 +143,6 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance.data["requireAvalonUUID"] = cacheables
                 instance.data["startFrame"] = start_frame
                 instance.data["endFrame"] = end_frame
-                instance.data["asset_name"] = asset_name
 
                 self.add_families(instance)
 

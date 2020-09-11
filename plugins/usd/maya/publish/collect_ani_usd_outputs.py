@@ -1,6 +1,5 @@
 
 import pyblish.api
-from avalon import io
 
 
 class CollectAniUSDOutputs(pyblish.api.InstancePlugin):
@@ -19,13 +18,6 @@ class CollectAniUSDOutputs(pyblish.api.InstancePlugin):
                 _exists = True
                 break
         return _exists
-
-    def subset_exists(self, subset_name):
-        filter = {"type": "subset",
-                  "name": subset_name}
-        subset_data = io.find_one(filter)
-
-        return subset_data
 
     def process(self, instance):
         # Create new instance

@@ -58,7 +58,7 @@ class AniUsdBuilder(object):
         self.stage.SetEndTimeCode(self.frame_out)
 
         # Create shot prim
-        shot_define = UsdGeom.Xform.Define(self.stage, "/shot")
+        shot_define = UsdGeom.Xform.Define(self.stage, "/ROOT")
         self.stage.GetRootLayer().documentation = "Animation shot usd for {}".format(self.shot_name)
 
         # Add shot variants
@@ -67,11 +67,8 @@ class AniUsdBuilder(object):
         variants.SetVariantSelection(self.shot_name)
 
         with variants.GetVariantEditContext():
-            # Add ani_shot.usd reference
-            _prim = self.stage.GetPrimAtPath('/shot')
-
             # Add step variants
-            asset_define = UsdGeom.Xform.Define(self.stage, "/shot/asset")
+            asset_define = UsdGeom.Xform.Define(self.stage, "/ROOT/asset")
             step_variants = asset_define.GetPrim().GetVariantSets().AddVariantSet("step")
             step_variants.AddVariant('ani')
             step_variants.SetVariantSelection('ani')
@@ -79,15 +76,18 @@ class AniUsdBuilder(object):
             # Add asset type prim
             with step_variants.GetVariantEditContext():
                 for _asset_type in self.asset_usd_dict.keys():
-                    UsdGeom.Xform.Define(self.stage, "/shot/asset/{}".format(_asset_type))
+                    UsdGeom.Xform.Define(self.stage, "/ROOT/asset/{}".format(_asset_type))
                     if _asset_type in self.asset_usd_dict.keys():
                         for _asset_name, _usd_path in self.asset_usd_dict[_asset_type].items():
-                            _instance_path = "/shot/asset/{}/{}".format(_asset_type, _asset_name)
+                            _instance_path = "/ROOT/asset/{}/{}".format(_asset_type, _asset_name)
                             UsdGeom.Xform.Define(self.stage, _instance_path)
 
                             # Add usd reference
                             _prim = self.stage.GetPrimAtPath(_instance_path)
                             _prim.GetReferences().SetReferences([Sdf.Reference(_usd_path)])
+
+        root_prim = self.stage.GetPrimAtPath('/ROOT')
+        self.stage.SetDefaultPrim(root_prim)
 
     def export(self, save_path):
         self.stage.GetRootLayer().Export(save_path)
