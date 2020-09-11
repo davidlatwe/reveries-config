@@ -78,7 +78,7 @@ def _get_geom_usd(asset_name):
 def prim_export(asset_name, output_path, prim_type='default'):
     # Get variant data
     variant_data, variant_key = _get_variant_data(asset_name, prim_type=prim_type)
-    assert variant_data, "No variant found from publish."
+    assert variant_data, "Can't found look usd file from publish."
 
     # Check prim name
     if prim_type == 'proxy':

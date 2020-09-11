@@ -2,14 +2,27 @@ import os
 from avalon import io, api
 
 
-def get_files(subset_id, key=None):
+def get_files(subset_id, version=None, key=None):
+    """
+    Get publish files from subset id.
+
+    :param subset_id: (str) Subset id
+    :param version: (int) Get publish file by version, default will get the latest version.
+    :param key: (str) Get publish file from key value. eg. key='entryFileName'
+    :return:
+    """
     assert subset_id, "Please provide subset id."
 
     _filter = {"type": "subset", "_id": io.ObjectId(subset_id)}
     subset_data = io.find_one(_filter)
 
     # Get latest version
-    _filter = {"type": "version", "parent": io.ObjectId(subset_id)}
+    _filter = {
+        "type": "version",
+        "parent": io.ObjectId(subset_id)
+    }
+    if version:
+        _filter["name"] = int(version)
     version_data = io.find_one(_filter, sort=[("name", -1)])
 
     if not version_data:

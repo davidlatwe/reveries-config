@@ -46,7 +46,7 @@ def update_node(node, usd_info):
 
     # Prim name setting option
     _prim_name = 'ref_{0}_{1}'.format(asset_name_lower, num)
-    update_label_py = "hou.phm().update_label(kwargs);"
+    update_label_py = "hou.phm().update_label(kwargs, \"{}\");".format(top_parm_name)
     prim_name_parm = hou.StringParmTemplate(
         "prim_name_{}".format(parm_suffix), "Reference Prim Name", 1, default_value=(_prim_name,),
         disable_when=disable_py,

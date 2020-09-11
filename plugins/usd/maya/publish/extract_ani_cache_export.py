@@ -4,11 +4,7 @@ from avalon import io, api
 
 
 class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
-    """Produce a stripped down Maya file from instance
-
-    This plug-in takes into account only nodes relevant to models
-    and discards anything else, especially deformers along with
-    their intermediate nodes.
+    """Publish animation usd file.
 
     """
 
@@ -27,6 +23,7 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         self.start_frame = instance.data.get("startFrame")
         self.end_frame = instance.data.get("endFrame")
         self.mod_long_name = instance.data.get("mod_long_name")
+        self.mod_root_path = instance.data.get("mod_root_path")
         self.asset_name = instance.data.get("asset_name")
 
         if not self.out_cache:
@@ -60,7 +57,7 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
 
     def export_usd(self):
         # Get MOD group long neme
-        self.mod_long_name, self.mod_root_path = self._get_mod_long_name(self.out_cache[0])
+        # self.mod_long_name, self.mod_root_path = self._get_mod_long_name(self.out_cache[0])
 
         # === Export source.usd === #
         self.source_outpath = os.path.join(self.staging_dir, self.files_info['source'])
@@ -80,13 +77,14 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         import maya.cmds as cmds
         from reveries.maya.usd.maya_export import MayaUsdExporter
 
-        # cmds.select(self.out_cache)
-        cmds.select(self.mod_long_name)  # r'HanMaleA_rig_02:HanMaleA_model_01_:MOD'
+        cmds.select(self.mod_long_name)  # r'HanMaleA_rig_02:HanMaleA_model_01_:Geometry'
 
         exporter = MayaUsdExporter(export_path=outpath, export_selected=True)
         exporter.mergeTransformAndShape = True
         exporter.animation = True
         exporter.export()
+
+        cmds.select(cl=True)
 
     def _export_authored_data(self, outpath):
         from reveries.maya.usd import ani_cache_export
@@ -94,11 +92,12 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         # Check has proxy group
         has_proxy = self._check_has_proxy()
 
-        ani_cache_export.export(self.source_outpath,
-                                outpath,
-                                mod_root_path=self.mod_root_path,
-                                asset_name=self.asset_name,
-                                has_proxy=has_proxy)
+        ani_cache_export.export(
+            self.source_outpath, outpath,
+            mod_root_path=self.mod_root_path,  # r'/rigDefault/ROOT/Group/Geometry/modelDefault/ROOT'
+            asset_name=self.asset_name,
+            has_proxy=has_proxy
+        )
 
     def _export_ani(self, outpath):
         from pxr import Usd, UsdGeom
@@ -138,27 +137,6 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         stage.SetEndTimeCode(self.end_frame)
 
         stage.GetRootLayer().Export(outpath)
-
-    def _get_mod_long_name(self, geom):
-        import maya.cmds as cmds
-
-        cmds.listRelatives(geom, allDescendents=True)
-        geom_long = cmds.ls(geom, long=True)
-        if not geom_long:
-            self.log.warning('Get MOD group failed.')
-            return ''
-        parents = geom_long[0].split("|")[1:-1]
-        parents_long_named = ["|".join(parents[:i]) for i in xrange(1, 1 + len(parents))]
-        mod_long_name = [_p for _p in parents_long_named if _p.endswith(':MOD')]
-
-        # Get mod root path
-        mod_root_path = ''
-        parents_without_ns = [parents[i].split(':')[-1] for i in xrange(0, len(parents))]
-        for item in ["|".join(parents_without_ns[:i]) for i in xrange(1, 1 + len(parents_without_ns))]:
-            if item.endswith('MOD'):
-                mod_root_path = '|{}'.format(item).replace('|MOD', '').replace('|', '/')
-
-        return mod_long_name[0] if mod_long_name else '', mod_root_path
 
     def _check_has_proxy(self):
         import maya.cmds as cmds

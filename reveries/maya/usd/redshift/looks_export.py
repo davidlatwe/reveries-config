@@ -556,12 +556,12 @@ class RedshiftShadersToUSD:
                 'outColor': {'name': 'outColor', 'type': Sdf.ValueTypeNames.Color3f, 'convert': MayaArrayToVector},
                 'color': {'name': 'color', 'type': Sdf.ValueTypeNames.Color3f, 'convert': MayaArrayToVector},
                 'temperature': {'name': 'temperature', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
-                'colorMode': {'name': 'colorMode', 'type': Sdf.ValueTypeNames.Int, 'convert': IntToString},
+                'colorMode': {'name': 'colorMode', 'type': Sdf.ValueTypeNames.Token, 'convert': IntToString},
                 'intensity': {'name': 'intensity', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'doublesided': {'name': 'doublesided', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
                 'applyExposureCompensation': {'name': 'applyExposureCompensation', 'type': Sdf.ValueTypeNames.Int,
                                               'convert': Same},
-                'alphaMode': {'name': 'alphaMode', 'type': Sdf.ValueTypeNames.Int, 'convert': IntToString},
+                'alphaMode': {'name': 'alphaMode', 'type': Sdf.ValueTypeNames.Token, 'convert': IntToString},
                 'alpha': {'name': 'alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'transparentShadows': {'name': 'transparentShadows', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
                 'reflectScale': {'name': 'reflectScale', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
@@ -1370,9 +1370,8 @@ def export(file_path=None):
 
     shadingGroups = getShadingGroups(cmds.ls(sl=True)[0])
     tmp = RedshiftShadersToUSD(shadingGroups=shadingGroups, filename=file_path)
+
+    # print(tmp.stage.GetRootLayer().ExportToString())
+
     tmp.Save()
     del tmp
-
-
-def test():
-    print 'Renderer: Redshift.'

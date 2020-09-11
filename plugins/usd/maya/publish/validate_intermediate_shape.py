@@ -9,7 +9,7 @@ class ValidateIntermediateUSD(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ValidatorOrder
 
-    label = "Validate Intermediate Value"
+    label = "Validate Intermediate Shape"
     hosts = ["maya"]
     families = [
         "reveries.model"

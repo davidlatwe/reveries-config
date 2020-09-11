@@ -98,12 +98,12 @@ class AnimationExtractor(object):
 #         print(e)
 
 
-def _update_prim_path(stage, layer, source_path, destination_path, asset_name=None, has_proxy=False):
+def _update_prim_path(stage, layer, mod_root_path, destination_path, asset_name=None, has_proxy=False):
     from pxr import Sdf, UsdGeom
 
     temp_layer = Sdf.Layer.CreateAnonymous()
-    Sdf.CopySpec(layer, source_path, temp_layer, '/temp')
-    stage.RemovePrim(source_path)
+    Sdf.CopySpec(layer, mod_root_path, temp_layer, '/temp')
+    stage.RemovePrim(mod_root_path)
     UsdGeom.Xform.Define(stage, destination_path)
     Sdf.CopySpec(temp_layer, '/temp', layer, destination_path)
     temp_layer.Clear()
@@ -127,6 +127,17 @@ def _update_prim_path(stage, layer, source_path, destination_path, asset_name=No
 
 
 def export(source_file_path, output_path, mod_root_path='', asset_name='', has_proxy=False):
+    """
+    Export animation point cache usd file.
+
+    :param source_file_path: (str) Source animation usd file path.
+    :param output_path     : (str) Output path.
+    :param mod_root_path   : (str) The hierarchy of 'MOD' group in usd source file.
+        Most time is "/rigDefault/ROOT/Group/Geometry/modelDefault/ROOT"
+    :param asset_name      : (str) Asset name
+    :param has_proxy       : (bool) Has proxyPrim or not.
+    :return:
+    """
 
     authored_tmp_path = os.path.join(os.path.dirname(output_path), 'authored_data_tmp.usda')
     pe = AnimationExtractor(source_file_path)
@@ -136,33 +147,17 @@ def export(source_file_path, output_path, mod_root_path='', asset_name='', has_p
     stage = Usd.Stage.Open(authored_tmp_path)
     root_layer = stage.GetRootLayer()
 
-    source_path = mod_root_path  # r'/rigDefault/ROOT/Group/Geometry/modelDefault/ROOT'
-    _update_prim_path(stage, root_layer, source_path, '/ROOT/modelDefault',
+    # Check 'MOD' exists
+    destination_path = '/ROOT/modelDefault/MOD'
+    for prim in stage.TraverseAll():
+        if '/ROOT/MOD/' in str(prim.GetPath()):
+            destination_path = '/ROOT/modelDefault'
+            break
+
+    # Export usd
+    _update_prim_path(stage, root_layer, mod_root_path, destination_path,
                       asset_name=asset_name,
                       has_proxy=has_proxy)
     root_layer.Export(output_path)
 
     print('Done.')
-
-# if __name__ == '__main__':
-#
-#     file_path = 'F:/usd/test/data/OCEAN/Shots/Seq1Sh0100/publish/BallTwo/v001/source.usda'
-#     file_dir = os.path.dirname(file_path)
-#     authored_path = os.path.join(file_dir, 'authored_data_tmp.usda')
-#     # file_path = 'F:/usd/test/data/hanSoldier_data/hanSoldierA_v002.usda'
-#     pe = AnimationExtractor(file_path)
-#     pe.export(authored_path)
-#
-#     # Fix hierarchy
-#     fix_path = os.path.join(file_dir, 'authored_data.usda')
-#     stage = Usd.Stage.Open(authored_path)
-#     root_layer = stage.GetRootLayer()
-#
-#     # source_path = r'/rigDefault/ROOT/Group/Geometry/modelDefault/ROOT'
-#     source_path = r'/BallA_master/ROOT'
-#     source_path = r'/BallTwo_master/ROOT'
-#
-#     update_prim_path(stage, root_layer, source_path, '/ROOT')
-#     root_layer.Export(fix_path)
-#
-#     print('Done.')
