@@ -24,7 +24,7 @@ class ValidateAniUSDOutputs(pyblish.api.InstancePlugin):
         # Check asset exists
         asset_data = self._check_asset_exists(container)
         if not asset_data:
-            raise Exception("Can't found asset: {} in this show.".format(container.split('_')[0]))
+            raise Exception("Can't found asset: {} in this show.".format(container))
 
         asset_id = asset_data['_id']
         asset_name = asset_data.get('name', '')

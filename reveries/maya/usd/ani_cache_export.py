@@ -159,5 +159,3 @@ def export(source_file_path, output_path, mod_root_path='', asset_name='', has_p
                       asset_name=asset_name,
                       has_proxy=has_proxy)
     root_layer.Export(output_path)
-
-    print('Done.')

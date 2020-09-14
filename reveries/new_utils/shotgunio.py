@@ -68,9 +68,10 @@ class ShotgunIO(object):
     """
     def __init__(self, server='https://moonshine.shotgunstudio.com/', login='artist', password='Artist1234',
                  show_name=None):
-        super(ShotgunIO, self).__init__()
         if not show_name:
             return
+
+        self.sg_project = None
 
         self.shotgun = shotgun_api3.Shotgun(server, login=login, password=password)
 
@@ -84,12 +85,12 @@ class ShotgunIO(object):
         fields += ['id', 'code', 'name', 'sg_asset_type']  # , 'tags'
         filters += [
             ['project', 'is', self.sg_project],
-            ['sg_asset_type', 'is', 'Set'],
+            # ['sg_asset_type', 'is', 'Set'],
             # ['code', 'is', 'BillboardGroup'],
-            # ['tags', 'is', {'name': 'USD_SetGroup', 'type': 'Tag'}],
         ]
 
         assets = self.shotgun.find('Asset', filters, fields)
+        return assets
 
 
 def test():
@@ -130,5 +131,9 @@ def test():
 
 # test()
 
+from pprint import pprint
 show_name = 'ChimelongPreshow'
-shotgun_io = ShotgunIO(show_name)
+shotgun_io = ShotgunIO(show_name=show_name)
+
+set_asset = shotgun_io.get_assets(fields=['tags'], filters=[['sg_asset_type', 'is', 'Set']])
+pprint(set_asset)
