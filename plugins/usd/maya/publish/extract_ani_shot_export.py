@@ -19,14 +19,16 @@ class ExtractAniShotUSDExport(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        import maya.cmds as cmds
+
         from reveries import utils
         from reveries.maya.usd import load_maya_plugin
 
         asset_doc = instance.data["assetDoc"]
         self.shot_name = asset_doc["name"]
 
-        self.frame_in = instance.data.get('startFrame', '')
-        self.frame_out = instance.data('endFrame', '')
+        self.frame_in = instance.data.get('startFrame', cmds.playbackOptions(query=True, ast=True))
+        self.frame_out = instance.data('endFrame', cmds.playbackOptions(query=True, aet=True))
 
         staging_dir = utils.stage_dir()
 
@@ -42,12 +44,12 @@ class ExtractAniShotUSDExport(pyblish.api.InstancePlugin):
         output_path = os.path.join(staging_dir, file_name)
         self._export_usd(output_path)
 
-        print 'Export ani shot usd done.'
-
     def _export_usd(self, output_path):
         from reveries.maya.usd import ani_shot_export
+        print '\nStart export ani shot usd...'
 
         builder = ani_shot_export.AniUsdBuilder(shot_name=self.shot_name,
                                                 frame_in=self.frame_in,
                                                 frame_out=self.frame_out)
         builder.export(output_path)
+        print 'Export ani shot usd done.\n'

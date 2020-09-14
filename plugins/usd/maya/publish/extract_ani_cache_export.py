@@ -56,22 +56,23 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         self._publish_instance(instance)
 
     def export_usd(self):
-        # Get MOD group long neme
-        # self.mod_long_name, self.mod_root_path = self._get_mod_long_name(self.out_cache[0])
+        print 'start frame: {}\nend_frame: {}'.format(self.start_frame, self.end_frame)
 
         # === Export source.usd === #
         self.source_outpath = os.path.join(self.staging_dir, self.files_info['source'])
         self._export_source(self.source_outpath)
+        print 'source.usda done.'
 
         # === Export authored_data.usda === #
         outpath = os.path.join(self.staging_dir, self.files_info['authored_data'])
         self._export_authored_data(outpath)
+        print 'authored_data.usda done'
 
         # === Export ani.usda === #
         outpath = os.path.join(self.staging_dir, self.files_info['ani'])
         self._export_ani(outpath)
 
-        print 'Export ani cache usd done.'
+        print 'Export ani_cache_prim.usda done.'
 
     def _export_source(self, outpath):
         import maya.cmds as cmds
@@ -79,7 +80,9 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
 
         cmds.select(self.mod_long_name)  # r'HanMaleA_rig_02:HanMaleA_model_01_:Geometry'
 
-        exporter = MayaUsdExporter(export_path=outpath, export_selected=True)
+        exporter = MayaUsdExporter(export_path=outpath,
+                                   frame_range=[self.start_frame, self.end_frame],
+                                   export_selected=True)
         exporter.mergeTransformAndShape = True
         exporter.animation = True
         exporter.export()
