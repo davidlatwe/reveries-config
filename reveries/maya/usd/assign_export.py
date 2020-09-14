@@ -43,6 +43,14 @@ def export(dagObject, merge=False, scopeName='Looks', purpose='all', assetVersio
     if not dagObject or not outPath:
         return
 
+    # Check root node is top node
+    parent_node = cmds.listRelatives(dagObject, allParents=True)
+    if parent_node:
+        cmds.select(dagObject)
+        cmds.parent(w=True)
+        cmds.select(cl=True)
+
+    # Start export
     shapeChildren = cmds.listRelatives(dagObject, ad=True, f=True, typ='shape')
 
     if stripNS is True:
@@ -78,7 +86,6 @@ def export(dagObject, merge=False, scopeName='Looks', purpose='all', assetVersio
         shaders, indices = mesh.getConnectedShaders(0)
         prim = stage.OverridePrim(procPathNamespace(path))
         # prim = UsdGeom.Xform.Define(stage, procPathNamespace(path))
-        print prim
 
         root = stage.GetPrimAtPath('/').GetAllChildren()[0]
         scope = stage.OverridePrim(root.GetPath().AppendChild(scopeName))
@@ -123,6 +130,11 @@ def export(dagObject, merge=False, scopeName='Looks', purpose='all', assetVersio
         if prim.GetTypeName() in skip_type:
             continue
         prim.SetActive(_checkActive(str(prim.GetPath())))
+
+    # print(stage.GetRootLayer().ExportToString())
     stage.GetRootLayer().Export(outPath)
+
+    if parent_node:
+        cmds.parent(dagObject, parent_node)
 
     return True
