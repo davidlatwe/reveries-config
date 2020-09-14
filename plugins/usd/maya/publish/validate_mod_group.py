@@ -77,7 +77,7 @@ class ValidateMODGroup(pyblish.api.InstancePlugin):
                     if not pub_usd_files:
                         is_invalid = True
                         msg = \
-                            "The model version({version}) you're using doesn't publish usd file.<br>" \
+                            "The model version( you're using {version} ) didn't publish usd file.<br>" \
                             "Please update your reference after model usd publish.".format(
                                 version="v{:03d}".format(int(version)))
                         break

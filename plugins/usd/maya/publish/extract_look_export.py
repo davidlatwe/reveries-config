@@ -47,29 +47,47 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         self._publish_instance(instance)
 
     def export_usd(self):
+        import pymel.core as pm
         from reveries.maya.usd import load_maya_plugin
 
         load_maya_plugin()
 
+        # === Check model is reference or not === #
+        root_node = 'ROOT'
+        all_ref = pm.listReferences()
+        if all_ref:
+            for ref in all_ref:
+                _path = ref.unresolvedPath()
+                if '/publish/modelDefault/' in _path:
+                    ns = ref.namespace
+                    root_node = '{}:ROOT'.format(ns)
+
         # === Export assign.usd === #
         outpath = os.path.join(self.staging_dir, self.files_info['assign'])
-        self._export_assign(outpath)
+        self._export_assign(outpath, root_node)
 
         # === Export look.usd === #
         outpath = os.path.join(self.staging_dir, self.files_info['look'])
-        self._export_looks(outpath)
+        self._export_looks(outpath, root_node)
 
         print 'Export assign/look usd done.'
 
-    def _export_assign(self, outpath):
+    def _export_assign(self, outpath, root_node):
+        """
+        Export assign.usd file
+        :param outpath: (str) Output file path
+        :param root_node: (str) The name of "ROOT" node. Default is "ROOT". When the model is reference, the root name
+            is "<namespace>:ROOT", eg BoxB_model_01_:ROOT
+        :return:
+        """
         import maya.cmds as cmds
         from reveries.maya.usd import assign_export
 
-        cmds.select('ROOT')
+        cmds.select(root_node)
         sel = cmds.ls(sl=True)[0]
         assign_export.export(sel, merge=True, outPath=outpath)
 
-    def _export_looks(self, outpath):
+    def _export_looks(self, outpath, root_node):
         import maya.cmds as cmds
 
         # Get look exporter python file
@@ -81,7 +99,7 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
             assert False, "Cannot found look exporter py file: {}".format(py_file)
         looks_export = imp.load_source('looks_export', py_file)
 
-        cmds.select('ROOT')
+        cmds.select(root_node)
         looks_export.export(file_path=outpath)
 
     def _publish_instance(self, instance):
