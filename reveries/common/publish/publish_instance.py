@@ -87,8 +87,7 @@ class PublishInstance(object):
         """
         # Write version
         #
-        print("Registering version {} to database ..."
-                      "".format(version["name"]))
+        print("Registering version {} to database ...".format(version["name"]))
 
         if "pregeneratedVersionId" in instance.data:
             version["_id"] = instance.data["pregeneratedVersionId"]
@@ -96,9 +95,8 @@ class PublishInstance(object):
         version_id = io.insert_one(version).inserted_id
 
         # Write representations
-        #
-        print("Registering {} representations ..."
-                      "".format(len(representations)))
+        print("Registering {} representations ...".format(len(representations)))
+
         for representation in representations:
             representation["parent"] = version_id
 

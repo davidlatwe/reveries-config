@@ -23,7 +23,7 @@ def _get_variant_data(asset_name, prim_type='default'):
     }
     variant_key = ['lookDefault', 'lookClothesB']
     """
-    from reveries.new_utils import get_publish_files
+    from reveries.common import get_publish_files
 
     _filter = {"type": "asset", "name": asset_name}
     asset_data = io.find_one(_filter)
@@ -57,7 +57,7 @@ def _get_variant_data(asset_name, prim_type='default'):
 
 
 def _get_geom_usd(asset_name):
-    from reveries.new_utils import get_publish_files
+    from reveries.common import get_publish_files
 
     _filter = {"type": "asset", "name": asset_name}
     asset_data = io.find_one(_filter)

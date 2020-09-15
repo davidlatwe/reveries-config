@@ -3,8 +3,8 @@
 from avalon import io
 
 from pxr import Usd, Sdf, UsdGeom
-from reveries import new_utils as utils
-from reveries.new_utils import get_publish_files
+from reveries import common as utils
+from reveries.common import get_publish_files
 
 
 class AniUsdBuilder(object):

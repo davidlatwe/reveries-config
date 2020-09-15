@@ -45,7 +45,7 @@ class ValidateAniUSDOutputs(pyblish.api.InstancePlugin):
         instance.data["mod_root_path"] = mod_root_path  # r'/rigDefault/ROOT/Group/Geometry/modelDefault/ROOT'
 
     def _check_model_geom_exists(self, asset_id):
-        from reveries.new_utils import get_publish_files
+        from reveries.common import get_publish_files
 
         # Get asset prim usd file
         _filter = {

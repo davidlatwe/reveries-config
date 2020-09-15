@@ -3,7 +3,7 @@ from avalon import io, api
 
 def export(asset_name, output_path):
     from pxr import Usd, UsdGeom
-    from reveries.new_utils import get_publish_files
+    from reveries.common import get_publish_files
 
     subsets = ['renderPrim', 'proxyPrim']
     usd_files = {}

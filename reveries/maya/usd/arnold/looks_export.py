@@ -1291,7 +1291,7 @@ class RedshiftShadersToUSD:
 
     def post_Ramp(self, mayaShader, usdShader, usdShadingGroup):
         import maya.cmds as cmds
-        from reveries.new_utils.maya_shader_export.ramp import RampSampler
+        from reveries.common.maya_shader_export.ramp import RampSampler
 
         ramper = RampSampler(mayaShader)
 
