@@ -104,7 +104,7 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
 
     def _export_ani(self, outpath):
         from pxr import Usd, UsdGeom
-        from reveries.new_utils import get_publish_files
+        from reveries.common import get_publish_files
 
         # Get asset id
         _filter = {"type": "asset", "name": self.asset_name}
@@ -154,7 +154,7 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
 
     def _publish_instance(self, instance):
         # === Publish instance === #
-        from reveries.new_utils import publish_instance
+        from reveries.common.publish import publish_instance
         publish_instance.run(instance)
 
         instance.data["published"] = True

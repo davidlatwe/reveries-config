@@ -36,7 +36,7 @@ class ValidateMODGroup(pyblish.api.InstancePlugin):
 
     def _look_family_check(self, instance):
         import pymel.core as pm
-        from reveries.new_utils.get_publish_files import get_files
+        from reveries.common.get_publish_files import get_files
 
         asset_name = instance.data['asset']
 

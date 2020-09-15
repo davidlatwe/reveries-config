@@ -46,7 +46,8 @@ class ExtractAssetPrePrimUSDExport(pyblish.api.InstancePlugin):
 
     def _publish_instance(self, instance):
         # === Publish instance === #
-        from reveries.new_utils import publish_instance
+        from reveries.common.publish import publish_instance
+
         publish_instance.run(instance)
 
         instance.data["published"] = True
