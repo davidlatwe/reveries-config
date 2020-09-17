@@ -22,7 +22,6 @@ class ValidateIntermediateUSD(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         invalid = self.get_invalid(instance)
-
         if invalid:
             raise Exception("Below mesh has intermediate shape, please delete it:<br>{}".format(invalid))
 
@@ -32,9 +31,10 @@ class ValidateIntermediateUSD(pyblish.api.InstancePlugin):
 
         invalid = []
 
-        for _shape in pm.ls(type="mesh"):
+        for _shape in pm.ls(type="mesh", long=True):
             if _shape.hasAttr('intermediateObject'):
                 if _shape.getAttr('intermediateObject'):
                     invalid.append(_shape.name())
 
+        print('intermediate shape: ', invalid)
         return invalid

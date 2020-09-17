@@ -1,23 +1,103 @@
+import sys
 import getpass
+import subprocess
 
-from avalon import io, api
+from avalon import io, api, style
+from avalon.tools import lib as tools_lib
+# from avalon.vendor.Qt import QtWidgets
 
+from reveries.common.widgets.messagebox import MessageBoxWindow
+from reveries.common.publish import publish_subset, \
+    publish_version, \
+    publish_representation, \
+    publish_asset
 from .utils import get_set_assets
+# from .core import BuildSetGroupUSD
+
+
+module = sys.modules[__name__]
+module.window = None
+
+
+def _show_msg_widget(msg_type=None):
+    try:
+        module.window.close()
+        del module.window
+    except (RuntimeError, AttributeError):
+        pass
+
+    with tools_lib.application():
+        window = MessageBoxWindow(
+            msg_type=msg_type,
+            window_title='Update USD Set Group Log',
+            text='Update log as below:',
+            info_text='All done',
+            detail_text='All good.'
+        )
+        window.setStyleSheet(style.load_stylesheet())
+        window.show()
+
+        module.window = window
 
 
 def build():
-    set_data = get_set_assets()
+    from avalon.vendor.Qt import QtWidgets
+
+    result, set_data = get_set_assets()
+    if not result:
+        msg_type = QtWidgets.QMessageBox.Critical
+        _show_msg_widget(msg_type=msg_type)
+
     if set_data:
         # Check set already in db:
         for set_name, chilren in set_data.items():
-            print(set_name, chilren)
             _filter = {"type": "asset", "name": set_name}
-            set_data = io.find_one(_filter)
-            if not set_data:
+            _set_data = io.find_one(_filter)
+            if not _set_data:
                 print('set {} not in db'.format(set_name))
+                publish_asset.publish(set_name, 'Set')
     print('set_data: ', set_data)
     print('\n\n')
 
+    # Submit usd subprocess
+    usdenv_bat = r'F:\usd\test\usd_avalon\reveries-config\reveries\tools\usd_set_group\usdenv.bat'
+    usd_file = r'F:\usd\test\usd_avalon\reveries-config\reveries\tools\usd_set_group\core.py'
+    set_data = {
+        'BillboardGroup': {
+            'BillboardA': r'Q:\199909_AvalonPlay\Avalon\PropBox\BoxB\publish\assetPrim\v002\USD\asset_prim.usda',
+            'BillboardB': r'Q:\199909_AvalonPlay\Avalon\PropBox\BoxB\publish\assetPrim\v002\USD\asset_prim.usda'
+        }
+    }
+    save_path = r'C:/Users/rebeccalin209/Desktop/aa.usda'
+    cmd = [usdenv_bat, usd_file, str(set_data), save_path]
+
+    print('open usdenv cmd: {}\n\n'.format(cmd))
+
+    # p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # out, err = p.communicate()
+    # print('out: ', out)
+
+    # # Show message widgets
+    # try:
+    #     module.window.close()
+    #     del module.window
+    # except (RuntimeError, AttributeError):
+    #     pass
+    #
+    # with tools_lib.application():
+    #     window = MessageBoxWindow(
+    #         window_title='Update USD Set Group Log',
+    #         text='Update log as below:',
+    #         info_text='All done',
+    #         detail_text='All good.'
+    #     )
+    #     window.setStyleSheet(style.load_stylesheet())
+    #     window.show()
+    #
+    #     module.window = window
+
+
+def _publish():
     #
     asset_name = 'BoxB'
     asset_data = io.find_one({
@@ -25,59 +105,18 @@ def build():
         "name": asset_name
     })
 
-    # Publish subset
+    # === Publish subset === #
     subset_name = 'setDefault'
-    subset_context = {
-        'name': subset_name,
-        'parent': asset_data['_id'],
-        'type': 'subset',
-        'data': {
-            'families': ['reveries.model'],
-            'subsetGroup': ''
-        },
-        'schema': 'avalon-core:subset-3.0'}
-    print('subset_context: ', subset_context)
+    families = ['reveries.model']
+    subset_id = publish_subset.publish(asset_data['_id'], subset_name, families)
 
-    _filter = {"parent": asset_data['_id'], "name": subset_name}
-    subset_data = io.find_one(_filter)
-    if subset_data is None:
-        subset_id = io.insert_one(subset_context).inserted_id
-    else:
-        subset_id = subset_data['_id']
+    # === Publish version === #
+    version_id = publish_version.publish(subset_id)
 
-    # Publish version
-    version_context = {
-        'name': 2,
-        'parent': subset_id,
-        'type': 'version',
-        'locations': ['http://127.0.0.1'],
-        'data': {
-            'comment': 'pp',
-            'source': r'{root}/199909_AvalonPlay/Avalon/PropBox/BoxB/work/modeling/maya/scenes/_published/modeling_v0007.published.mb',
-            'task': 'modeling',
-            'workDir': r'{root}/199909_AvalonPlay/Avalon/PropBox/BoxB/work/modeling/maya',
-            'author': getpass.getuser(),
-            'time': api.time(),
-            'dependencies': {},
-            'dependents': {}
-        },
-        'schema': 'avalon-core:version-3.0'
-    }
-    version_id = io.insert_one(version_context).inserted_id
-    print('version id: ', version_id)
-
-    # Publish representation
-    representations_context = {
-        'data': {
-            'entryFileName': 'geom.usda'
-        },
-        'type': 'representation',
-        'name': 'USD',
-        'parent': version_id,
-        'schema': 'avalon-core:representation-2.0'
-    }
-    reps_id = io.insert_one(representations_context).inserted_id
-    print('reps_id :', reps_id)
+    # === Publish representation === #
+    name = 'USD'
+    reps_data = {'entryFileName': 'geom.usda'}
+    reps_id = publish_representation.publish(version_id, name, data=reps_data)
 
 
 def cli():

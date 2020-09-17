@@ -26,8 +26,14 @@ def _checkActive(path):
 
     maya_path = path.replace('/', '|')
     if cmds.objExists(maya_path):
-        v = cmds.getAttr('{}.v'.format(maya_path))
-        return v
+        # if maya_path.hasAttr('intermediateObject'):
+        if cmds.attributeQuery('intermediateObject', node=maya_path, ex=True):
+            # if maya_path.getAttr('intermediateObject'):
+            if cmds.getAttr('{}.intermediateObject'.format(maya_path)):
+                print 'maya_path: ', maya_path
+                return False
+
+        return cmds.getAttr('{}.v'.format(maya_path))
     else:
         return True
 

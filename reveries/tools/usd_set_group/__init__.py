@@ -1,10 +1,12 @@
 from .app import (
     build,
-    cli
+    cli,
+    _show_msg_widget
 )
 
 
 __all__ = [
     "build",
-    "cli"
+    "cli",
+    "_show_msg_widget"
 ]
