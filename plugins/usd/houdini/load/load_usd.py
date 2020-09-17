@@ -1,5 +1,4 @@
 import os
-import subprocess
 
 import avalon.api
 from reveries.plugins import PackageLoader
@@ -27,11 +26,20 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
     ]
 
     def load(self, context, name, namespace, data):
-        directory = self.package_path
-        files = os.listdir(directory)
+        import hou
 
+        # Check publish folder exists
+        directory = self.package_path
+        if not os.path.exists(str(directory)):
+            hou.ui.displayMessage("Publish folder not exists:\n{}".format(directory),
+                                  severity=hou.severityType.Warning)
+            return
+
+        # Check usd file already published
+        files = os.listdir(directory)
         if not files:
-            print('No usd file found in : {}'.format(directory))
+            hou.ui.displayMessage("Can't found usd file in publish folder:\n{}".format(directory),
+                                  severity=hou.severityType.Warning)
             return
 
         usd_file = os.path.join(directory, files[0])
