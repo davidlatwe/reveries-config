@@ -5,6 +5,23 @@ import avalon.api
 from reveries.plugins import PackageLoader
 
 
+def env_embedded_path(path):
+    """Embed environment var `$AVALON_PROJECTS` and `$AVALON_PROJECT` into path
+
+    This will ensure reference or cache path resolvable when project root
+    moves to other place.
+
+    """
+    path = path.replace(
+        avalon.api.registered_root(), "$AVALON_PROJECTS", 1
+    )
+    path = path.replace(
+        avalon.Session["AVALON_PROJECT"], "$AVALON_PROJECT", 1
+    )
+
+    return path
+
+
 class OpenInUSD(PackageLoader, avalon.api.Loader):
     """Load the model"""
 
@@ -26,16 +43,30 @@ class OpenInUSD(PackageLoader, avalon.api.Loader):
         "USD",
     ]
 
-    def load(self, context, name, namespace, data):
-        directory = self.package_path
-        # print('directory:', self.package_path)
-        files = os.listdir(directory)
-        # print('files:', files)
-        if not files:
-            print('No usd file found in : {}'.format(directory))
-            return
+    def _file_path(self, representation):
+        file_name = representation["data"]["entryFileName"]
+        entry_path = os.path.join(self.package_path, file_name)
 
-        usd_file = os.path.join(directory, files[0])
+        if not os.path.isfile(entry_path):
+            raise IOError("File Not Found: {!r}".format(entry_path))
+
+        return env_embedded_path(entry_path)
+
+    def load(self, context, name, namespace, data):
+        # Get usd file
+        representation = context["representation"]
+        entry_path = self._file_path(representation)
+        usd_file = os.path.expandvars(entry_path).replace("\\", "/")
+
+        if not usd_file:
+            directory = self.package_path
+            files = os.listdir(directory)
+            if not files:
+                print('No usd file found in : {}'.format(directory))
+                return
+
+            usd_file = os.path.join(directory, files[0])
+
         self._open_usdview(usd_file)
 
     def _open_usdview(self, usd_file):

@@ -1,122 +1,151 @@
+import os
+import uuid
 import sys
 import getpass
 import subprocess
 
-from avalon import io, api, style
-from avalon.tools import lib as tools_lib
-# from avalon.vendor.Qt import QtWidgets
+from avalon import io, style
+from avalon.vendor.Qt import QtWidgets
 
 from reveries.common.widgets.messagebox import MessageBoxWindow
-from reveries.common.publish import publish_subset, \
-    publish_version, \
-    publish_representation, \
-    publish_asset
-from .utils import get_set_assets
-# from .core import BuildSetGroupUSD
 
+from . import utils
+from .widget import ValidateWidget, USDSetProgressBarWidget
 
 module = sys.modules[__name__]
 module.window = None
 
 
-def _show_msg_widget(msg_type=None):
-    try:
-        module.window.close()
-        del module.window
-    except (RuntimeError, AttributeError):
-        pass
-
-    with tools_lib.application():
-        window = MessageBoxWindow(
-            msg_type=msg_type,
-            window_title='Update USD Set Group Log',
-            text='Update log as below:',
-            info_text='All done',
-            detail_text='All good.'
-        )
-        window.setStyleSheet(style.load_stylesheet())
-        window.show()
-
-        module.window = window
-
-
 def build():
-    from avalon.vendor.Qt import QtWidgets
+    app = QtWidgets.QApplication(sys.argv)
 
-    result, set_data = get_set_assets()
-    if not result:
-        msg_type = QtWidgets.QMessageBox.Critical
-        _show_msg_widget(msg_type=msg_type)
+    # Get set group data from shotgun
+    asset_getter = utils.GetSetAssets()
+    set_data = asset_getter.get_assets()
+    if not set_data:
+        msg_window = MessageBoxWindow(
+            msg_type=QtWidgets.QMessageBox.Critical,
+            text=asset_getter.error_msg)
+        msg_window.show()
+        app.exec_()
+        return
 
-    if set_data:
-        # Check set already in db:
-        for set_name, chilren in set_data.items():
-            _filter = {"type": "asset", "name": set_name}
-            _set_data = io.find_one(_filter)
-            if not _set_data:
-                print('set {} not in db'.format(set_name))
-                publish_asset.publish(set_name, 'Set')
-    print('set_data: ', set_data)
-    print('\n\n')
+    # === Validation for set asset === #
+    progressbar_win = USDSetProgressBarWidget()
+    progressbar_win.show()
 
-    # Submit usd subprocess
-    usdenv_bat = r'F:\usd\test\usd_avalon\reveries-config\reveries\tools\usd_set_group\usdenv.bat'
-    usd_file = r'F:\usd\test\usd_avalon\reveries-config\reveries\tools\usd_set_group\core.py'
-    set_data = {
-        'BillboardGroup': {
-            'BillboardA': r'Q:\199909_AvalonPlay\Avalon\PropBox\BoxB\publish\assetPrim\v002\USD\asset_prim.usda',
-            'BillboardB': r'Q:\199909_AvalonPlay\Avalon\PropBox\BoxB\publish\assetPrim\v002\USD\asset_prim.usda'
-        }
-    }
-    save_path = r'C:/Users/rebeccalin209/Desktop/aa.usda'
-    cmd = [usdenv_bat, usd_file, str(set_data), save_path]
+    app.processEvents()
 
-    print('open usdenv cmd: {}\n\n'.format(cmd))
+    validate_obj = utils.ValidateSetAsset(set_data)
+    validate_data = validate_obj.validate(progressbar_obj=progressbar_win)
+    validate_result = validate_obj.validate_result
+    progressbar_win.close()
 
-    # p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    # out, err = p.communicate()
-    # print('out: ', out)
+    # Get setGroup name which need to publish
+    pub_set_name = list(validate_data.keys())
+    if not validate_result:
+        print('Show validate widget...')
 
-    # # Show message widgets
-    # try:
-    #     module.window.close()
-    #     del module.window
-    # except (RuntimeError, AttributeError):
-    #     pass
-    #
-    # with tools_lib.application():
-    #     window = MessageBoxWindow(
-    #         window_title='Update USD Set Group Log',
-    #         text='Update log as below:',
-    #         info_text='All done',
-    #         detail_text='All good.'
-    #     )
-    #     window.setStyleSheet(style.load_stylesheet())
-    #     window.show()
-    #
-    #     module.window = window
+        window = ValidateWidget(validate_data=validate_data)
+        window.show()
+        app.exec_()
+        if window.skip_pub:
+            return
 
+        # Update publish set name data
+        pub_set_name = window.get_pub_set()
 
-def _publish():
-    #
-    asset_name = 'BoxB'
-    asset_data = io.find_one({
-        "type": "asset",
-        "name": asset_name
-    })
+    # === Generate usd command line === #
+    usd_cmds = {}
+    usdenv_bat = os.path.abspath(os.path.join(os.path.dirname(__file__), "usdenv.bat"))
+    usd_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "core.py"))
 
-    # === Publish subset === #
-    subset_name = 'setDefault'
-    families = ['reveries.model']
-    subset_id = publish_subset.publish(asset_data['_id'], subset_name, families)
+    for set_name, _data in validate_data.items():
+        _pub_data = {set_name: _data}
+        if set_name in pub_set_name:
+            tmp_dir = r'C:/Users/{}/tmp/{}'.format(getpass.getuser(), str(uuid.uuid4())[:4])
+            usd_save_path = os.path.join(tmp_dir, 'asset_prim.usda').replace("\\", "/")
+            json_save_path = os.path.join(tmp_dir, 'subAsset_data.json').replace("\\", "/")
 
-    # === Publish version === #
-    version_id = publish_version.publish(subset_id)
+            cmd = [usdenv_bat, usd_file, str(_pub_data), usd_save_path, json_save_path]
+            usd_cmds[set_name] = {
+                'cmd': cmd,
+                'usd_file': usd_save_path,
+                'json_file': json_save_path
+            }
 
-    # === Publish representation === #
-    name = 'USD'
-    reps_data = {'entryFileName': 'geom.usda'}
-    reps_id = publish_representation.publish(version_id, name, data=reps_data)
+    # === Submit usd subprocess === #
+    i = 0
+    progressbar_win = USDSetProgressBarWidget()
+    progressbar_win.setBarRange(i, len(list(usd_cmds.keys())))
+    progressbar_win.show()
+
+    app.processEvents()
+
+    usd_done = {}
+    for set_name, info in usd_cmds.items():
+        cmd = info.get('cmd', [])
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        print('out: ', set_name, out)
+
+        if 'Set USD Done' in str(out):
+            _tmp = {
+                set_name: {
+                    'usd_file': info.get('usd_file', ''),
+                    'json_file': info.get('json_file', '')
+                }
+            }
+            usd_done.setdefault('done', dict()).update(_tmp)
+        else:
+            usd_done.setdefault('failed', list()).append(set_name)
+
+        i += 1
+        progressbar_win.progressbar.setValue(i)
+
+    progressbar_win.close()
+
+    print('usd_done: {}\n'.format(usd_done))
+
+    # === Publish === #
+    pub_msg = ''
+    pub_msg_text = 'All publish done'
+    pub_msg_type = QtWidgets.QMessageBox.Information
+    set_group_publisher = utils.PublishSetGroup()
+    for set_name, info in usd_done.get('done', {}).items():
+        publish_files = [
+            info.get('usd_file', ''),
+            info.get('json_file', '')
+        ]
+
+        _pub_result = set_group_publisher.publish(set_name, publish_files)
+        if _pub_result:
+            _msg = '{} publish to v{:03}.<br>'.format(set_name, set_group_publisher.version_name)
+            pub_msg += _msg
+        else:
+            pub_msg_type = QtWidgets.QMessageBox.Warning
+            pub_msg_text = 'Some setGroup publish failed.'
+            pub_msg += '{} publish failed.<br>'.format(set_name)
+
+    if usd_done.get('failed', []):
+        pub_msg_type = QtWidgets.QMessageBox.Warning
+        pub_msg_text = 'Some setGroup publish failed.'
+        pub_msg += '<br>Below setGroup publish failed: <br> {}'.format('<br>'.join(usd_done.get('failed', [])))
+
+    if not usd_done:
+        pub_msg_type = QtWidgets.QMessageBox.Critical
+        pub_msg_text = 'SetGroup publish failed.'
+        print('usd_cmds:', usd_cmds)
+
+    # Show message widgets
+    window = MessageBoxWindow(
+        msg_type=pub_msg_type,
+        window_title='SetGroup Publish Done',
+        text=pub_msg_text,
+        info_text=pub_msg)
+    window.setStyleSheet(style.load_stylesheet())
+    window.show()
+    app.exec_()
 
 
 def cli():

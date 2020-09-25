@@ -5,7 +5,7 @@ sys.path.append(r'Q:\Resource\python_modules')
 # sys.path.insert(0, r'C:\Python27')
 # sys.path.insert(0, r'C:\Python27\Scripts')
 
-# from pprint import pprint
+from pprint import pprint
 
 import shotgun_api3
 
@@ -26,12 +26,19 @@ class ShotgunIO(object):
             self._get_shotgun_show_name_from_db(db_show_name)
 
     def _get_shotgun_show_name_from_db(self, db_show_name):
-        fields = ['cached_display_name', 'tank_name']
+        # fields = ['cached_display_name', 'tank_name']
         filters = [
             ['tank_name', 'is', db_show_name]
         ]
 
-        self.sg_project = self.shotgun.find_one('Project', filters, fields)
+        self.sg_project = self.shotgun.find_one('Project', filters)
+
+        # Double check show name
+        if not self.sg_project:
+            _name = db_show_name.split('_')
+            if _name:
+                filters = [['name', 'is', _name[1]]]
+                self.sg_project = self.shotgun.find_one('Project', filters)
 
     def _get_current_project(self, sg_show_name):
         self.sg_project = self.shotgun.find_one('Project', [['name', 'is', sg_show_name]])
@@ -90,18 +97,33 @@ def test():
     print('Done')
 
 
-# test()
+def test2():
+    # from avalon import io
 
-# from avalon import io
+    show_name = 'ChimelongPreshow'
+    # db_show_name = r'201912_ChimelongPreshow'
+    shotgun_io = ShotgunIO(sg_show_name=show_name)
 
-# show_name = 'ChimelongPreshow'
-# db_show_name = r'201912_ChimelongPreshow'
-# shotgun_io = ShotgunIO(sg_show_name=show_name)
+    set_asset = shotgun_io.get_assets(fields=['tags', 'assets'], filters=[['sg_asset_type', 'is', 'Set']])
+    # pprint(set_asset)
 
-# set_asset = shotgun_io.get_assets(fields=['tags', 'assets'], filters=[['sg_asset_type', 'is', 'Set']])
-# pprint(set_asset)
 
-#
+    def _check_tag(tag_context):
+        if tag_context:
+            for _context in tag_context:
+                if _context.get('name', '').lower() in ['USD_SetGroup', 'usd_setgroup']:
+                    return True
 
-# set_asset = shotgun_io.get_assets(fields=['tags', 'assets'], filters=[['sg_asset_type', 'is', 'Set']])
-# pprint(set_asset)
+        return False
+
+
+    # Filter tag context
+    asset_data = {}
+    for _asset_info in set_asset:
+        if _check_tag(_asset_info.get('tags', [])):
+            # pprint(_asset_info)
+            set_name = _asset_info['code']
+            sub_assets = [s['name'] for s in _asset_info.get('assets', [])]
+            # print('sub_assets: ', sub_assets)
+            asset_data[set_name] = sub_assets
+    print('asset_data: ', asset_data)
