@@ -1,4 +1,5 @@
 from avalon.vendor.Qt import QtWidgets
+from avalon import style
 
 
 class MessageBoxWindow(QtWidgets.QMessageBox):
@@ -6,19 +7,24 @@ class MessageBoxWindow(QtWidgets.QMessageBox):
                  text=None, info_text=None, detail_text=None):
         super(MessageBoxWindow, self).__init__(parent=parent)
 
+        self.setStyleSheet(style.load_stylesheet())
+
         msg_type = msg_type or QtWidgets.QMessageBox.Information
         window_title = window_title or "MessageBox"
         text = text or "This is a message box"
-        info_text = info_text or "This is additional information"
-        detail_text = detail_text or "The details are as follows:"
+        info_text = info_text
+        detail_text = detail_text
 
         self.setIcon(msg_type)
 
         self.setText(text)
-        self.setInformativeText(info_text)
         self.setWindowTitle(window_title)
 
-        self.setDetailedText(detail_text)
+        if info_text:
+            self.setInformativeText(info_text)
+
+        if detail_text:
+            self.setDetailedText(detail_text)
 
         self.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
 

@@ -4,6 +4,23 @@ import avalon.api
 from reveries.plugins import PackageLoader
 
 
+def env_embedded_path(path):
+    """Embed environment var `$AVALON_PROJECTS` and `$AVALON_PROJECT` into path
+
+    This will ensure reference or cache path resolvable when project root
+    moves to other place.
+
+    """
+    path = path.replace(
+        avalon.api.registered_root(), "$AVALON_PROJECTS", 1
+    )
+    path = path.replace(
+        avalon.Session["AVALON_PROJECT"], "$AVALON_PROJECT", 1
+    )
+
+    return path
+
+
 class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
     """Load the model"""
 
@@ -25,24 +42,39 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
         "USD",
     ]
 
+    def _file_path(self, representation):
+        file_name = representation["data"]["entryFileName"]
+        entry_path = os.path.join(self.package_path, file_name)
+
+        if not os.path.isfile(entry_path):
+            raise IOError("File Not Found: {!r}".format(entry_path))
+
+        return env_embedded_path(entry_path)
+
     def load(self, context, name, namespace, data):
         import hou
 
-        # Check publish folder exists
-        directory = self.package_path
-        if not os.path.exists(str(directory)):
-            hou.ui.displayMessage("Publish folder not exists:\n{}".format(directory),
-                                  severity=hou.severityType.Warning)
-            return
+        # Get usd file
+        representation = context["representation"]
+        entry_path = self._file_path(representation)
+        usd_file = os.path.expandvars(entry_path).replace("\\", "/")
 
-        # Check usd file already published
-        files = os.listdir(directory)
-        if not files:
-            hou.ui.displayMessage("Can't found usd file in publish folder:\n{}".format(directory),
-                                  severity=hou.severityType.Warning)
-            return
+        if not usd_file:
+            # Check publish folder exists
+            directory = self.package_path
+            if not os.path.exists(str(directory)):
+                hou.ui.displayMessage("Publish folder not exists:\n{}".format(directory),
+                                      severity=hou.severityType.Warning)
+                return
 
-        usd_file = os.path.join(directory, files[0])
+            # Check usd file already published
+            files = os.listdir(directory)
+            if not files:
+                hou.ui.displayMessage("Can't found usd file in publish folder:\n{}".format(directory),
+                                      severity=hou.severityType.Warning)
+                return
+            usd_file = os.path.join(directory, files[0]).replace("\\", "/")
+
         asset_name = context['asset']['name']
         subset_data = context['subset']
 
