@@ -36,8 +36,11 @@ def publish(version_id, name, publish_files, delete_source=False, **kwargs):
     if reps_id:
         pub_dir = _create_folder(version_id, name)
         for _files in publish_files:
-            dst = os.path.join(pub_dir, os.path.basename(_files))
-            _copy_file(_files, dst)
+            if os.path.isfile(_files):
+                dst = os.path.join(pub_dir, os.path.basename(_files))
+                _copy_file(_files, dst)
+            else:
+                return False
 
         if delete_source:
             for _files in publish_files:

@@ -75,9 +75,10 @@ def build():
             }
 
     # === Submit usd subprocess === #
-    i = 0
+    i = 1
     progressbar_win = USDSetProgressBarWidget()
-    progressbar_win.setBarRange(i, len(list(usd_cmds.keys())))
+    progressbar_win.setBarRange(i, len(list(usd_cmds.keys()))+1)
+    progressbar_win.progressbar.setValue(i)
     progressbar_win.show()
 
     app.processEvents()
