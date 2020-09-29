@@ -39,11 +39,11 @@ class BuildSetGroupUSD(object):
         # UsdGeom.Xform.Define(self.stage, "/ROOT/asset/Set")
 
         for set_name, child_data in self.set_data.items():
-            UsdGeom.Xform.Define(self.stage, "/ROOT/asset/Set/{}".format(set_name))
+            UsdGeom.Xform.Define(self.stage, "/ROOT/Set/{}".format(set_name))
             for child_name, _info in child_data.items():
                 if child_name in ['status', 'status_log']:
                     continue
-                _child_path = "/ROOT/asset/Set/{}/{}".format(set_name, child_name)
+                _child_path = "/ROOT/Set/{}/{}".format(set_name, child_name)
                 UsdGeom.Xform.Define(self.stage, _child_path)
 
                 # Add usd reference
@@ -85,6 +85,12 @@ class WriteSubAssetJson(object):
         self._write_json()
 
     def _write_json(self):
+        dict_keys = list(self.set_data.keys())
+
+        for del_key in ['status', 'status_log']:
+            if del_key in dict_keys:
+                del self.set_data[del_key]
+
         with open(self.save_path, 'w') as f:
             json.dump(self.set_data, f, ensure_ascii=False, indent=4)
 
