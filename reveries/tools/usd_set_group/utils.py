@@ -156,8 +156,12 @@ class ValidateSetAsset(object):
                     with open(json_file) as json_file:
                         subAsset_data = json.load(json_file)
 
-                    pub_children = list(subAsset_data[set_name].keys())
-                    if pub_children.sort() == sub_assets.sort():
+                    pub_children = list(subAsset_data.get(set_name, {}).keys())
+
+                    pub_children.sort()
+                    sub_assets.sort()
+
+                    if pub_children == sub_assets:
                         self.validate_result = False
                         validate_data[set_name]['status'] = False
                         validate_data[set_name]['status_log'] = 'SubAssets are same with previous version.'
