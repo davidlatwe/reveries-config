@@ -59,7 +59,7 @@ class ValidateWidget(QtWidgets.QDialog):
 
     def _init_ui(self):
         self.setWindowIcon(qtawesome.icon("fa.group", color="#1590fb"))
-        self.setWindowTitle('USD Set Group Validate')
+        self.setWindowTitle('USD Set Group Validation')
 
         self.tree = QtWidgets.QTreeWidget()
         self.tree.setColumnCount(2)
@@ -69,7 +69,7 @@ class ValidateWidget(QtWidgets.QDialog):
         self.tree.headerItem().setTextAlignment(0, QtCore.Qt.AlignCenter)
         self.tree.headerItem().setTextAlignment(1, QtCore.Qt.AlignCenter)
 
-        self.tree.setHeaderLabels(['Sub Asset Name', 'Validation Context'])
+        self.tree.setHeaderLabels(['SubAsset Name', 'Validation Context'])
 
         index_color = 0
         for set_name, subset_info in self.validate_data.items():

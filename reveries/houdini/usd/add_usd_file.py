@@ -44,6 +44,13 @@ def update_node(node, usd_info):
         disable_when='{ file_path_# != "" }'
     )
 
+    # Primitive path setting option
+    _prim_path = '/ROOT'
+    prim_path_parm = hou.StringParmTemplate(
+        "prim_path_{}".format(parm_suffix), "Primitive Path", 1, default_value=(_prim_path,),
+        disable_when=disable_py)
+    prim_path_parm.setConditional(hou.parmCondType.HideWhen, "{ file_type_" + parm_suffix + " == \"sublayer\"}")
+
     # Prim name setting option
     _prim_name = 'ref_{0}_{1}'.format(asset_name_lower, num)
     update_label_py = "hou.phm().update_label(kwargs, \"{}\");".format(top_parm_name)
@@ -99,6 +106,7 @@ def update_node(node, usd_info):
     parm_parm.addParmTemplate(enable_parm)
     parm_parm.addParmTemplate(asset_parm)
     parm_parm.addParmTemplate(path_parm)
+    parm_parm.addParmTemplate(prim_path_parm)
     parm_parm.addParmTemplate(prim_name_parm)
     parm_parm.addParmTemplate(ver_parm)
     parm_parm.addParmTemplate(type_parm)

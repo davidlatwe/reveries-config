@@ -34,6 +34,8 @@ def install():
     if project.get('usd_pipeline', False):
         # pyblish.register_plugin_path(os.path.join(PLUGINS_DIR, "usd", "houdini", "publish"))
         avalon.register_plugin_path(avalon.Loader, os.path.join(PLUGINS_DIR, "usd", "houdini", "load"))
+        # avalon.register_plugin_path(avalon.Creator, os.path.join(PLUGINS_DIR, "usd", "houdini", "create"))
+        # pyblish.register_plugin_path(os.path.join(PLUGINS_DIR, "usd", "houdini", "publish"))
 
     # install callbacks
     print("Installing callbacks ... ")
