@@ -173,6 +173,7 @@ class CollectRenderlayers(pyblish.api.ContextPlugin):
             "deadlinePool",
             "deadlineFramesPerTask",
             "deadlineSuspendJob",
+            "renderRoot",
         ]
 
         for attr in attributes:

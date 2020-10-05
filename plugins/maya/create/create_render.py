@@ -35,6 +35,8 @@ class RenderCreator(avalon.maya.Creator):
         self.data["deadlineFramesPerTask"] = 1
         self.data["deadlineSuspendJob"] = False
 
+        self.data["renderRoot"] = ""
+
     def process(self):
         from maya import cmds
 

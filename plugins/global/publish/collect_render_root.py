@@ -13,6 +13,9 @@ class CollectRenderRoot(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         project = instance.context.data["projectDoc"]
-        render_root = project["data"].get("renderRoot")
+        project_render_root = project["data"].get("renderRoot")
+        instance_render_root = instance.data.get("renderRoot").strip()
+        render_root = instance_render_root or project_render_root
         if render_root:
             instance.data["reprRoot"] = render_root
+            self.log.info("Render output root: %s" % render_root)
