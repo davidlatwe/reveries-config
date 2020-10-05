@@ -28,6 +28,7 @@ class ArnoldStandInCreator(avalon.maya.Creator):
         self.data["staticCache"] = True
         self.data["expandProcedurals"] = True
 
+        self.data["deadlineFramesPerTask"] = 1
         self.data["deadlinePriority"] = 80
         self.data["deadlinePool"] = lib.get_deadline_pools()
 
