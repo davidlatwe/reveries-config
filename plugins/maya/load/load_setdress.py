@@ -146,6 +146,8 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
             origin_sub_matrix, origin_hidden, origin_inherits = origin
 
             _tag = transform
+            abc = None
+            alembic = None
             if _tag == "<alembic>":
                 abc = transform = is_hidden
                 alembic = sub_matrix
@@ -182,14 +184,15 @@ class SetDressLoader(HierarchicalLoader, avalon.api.Loader):
                 self.log.warning("Input connection preserved on %s",
                                  transform)
             elif _tag == "<alembic>":
-                self.set_attr(abc + ".speed", alembic[0])
-                self.set_attr(abc + ".offset", alembic[1])
-                self.set_attr(abc + ".cycleType", alembic[2])
+                pass
             else:
                 with self.keep_scale_pivot(transform):
                     cmds.xform(transform, objectSpace=True, matrix=sub_matrix)
 
             if _tag == "<alembic>":
+                self.set_attr(abc + ".speed", alembic[0])
+                self.set_attr(abc + ".offset", alembic[1])
+                self.set_attr(abc + ".cycleType", alembic[2])
                 continue
 
             # Updating inheritsTransform
