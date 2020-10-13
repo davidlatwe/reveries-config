@@ -196,7 +196,17 @@ icon = "list"
 
 [[families]]
 name = "reveries.ani.ani_prim"
-label = "USD (Ani)"
+label = "USD (Animation)"
+icon = "list"
+
+[[families]]
+name = "reveries.env.layer"
+label = "USD (Environment Layer)"
+icon = "list"
+
+[[families]]
+name = "reveries.env"
+label = "USD (Environment)"
 icon = "list"
 
 [[families]]

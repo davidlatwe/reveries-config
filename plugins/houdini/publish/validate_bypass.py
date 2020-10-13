@@ -23,7 +23,8 @@ class ValidateBypassed(pyblish.api.InstancePlugin):
 
     @classmethod
     def get_invalid(cls, instance):
-
-        rop = instance[0]
-        if rop.isBypassed():
-            return [rop]
+        if len(instance):
+            rop = instance[0]
+            if rop:
+                if rop.isBypassed():
+                    return [rop]

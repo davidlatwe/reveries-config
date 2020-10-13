@@ -60,12 +60,11 @@ def get_files(subset_id, version=None, key=''):
 
         if key:
             files_data = _rep.get('data', {}).get(key, '')
-
             if files_data:
                 if isinstance(files_data, (list)):
                     for _path in files_data:
                         _pub_file[representation_name].append(os.path.join(_dir, _path).replace('\\', '/'))
-                if isinstance(files_data, (str)):  # unicode
+                if isinstance(files_data, (str, unicode)):  # unicode
                     _pub_file[representation_name] = os.path.join(_dir, files_data).replace('\\', '/')
 
             return _pub_file

@@ -4,21 +4,22 @@ import pyblish.api
 
 
 class ValidateLOPPath(pyblish.api.InstancePlugin):
-    """Validate renderer setting exists in db."""
+    """Validate already setting LOP Path."""
 
-    order = pyblish.api.ValidatorOrder
+    order = pyblish.api.ValidatorOrder + 0.2
 
     label = "Validate LOP Path"
     hosts = ["houdini"]
     families = [
-        "reveries.layout",
-        "reveries.layout.layer"
+        "reveries.env",
+        "reveries.env.layer"
     ]
 
     def process(self, instance):
+        if instance.data.get("autoUpdate", False):
+            return
+
         node = instance[0]
         lop_path = node.parm("loppath").eval()
         if not lop_path:
             raise ValueError("{} LOP Path does not exist.".format(node))
-
-        print('instance: ', instance[:])

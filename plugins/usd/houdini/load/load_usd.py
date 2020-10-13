@@ -35,7 +35,9 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
         "reveries.model",
         "reveries.pointcache",
         "reveries.look.asset_prim",
-        "reveries.ani.ani_prim"
+        "reveries.ani.ani_prim",
+        "reveries.env.layer",
+        "reveries.env"
     ]
 
     representations = [
@@ -53,6 +55,10 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
 
     def load(self, context, name, namespace, data):
         import hou
+
+        # print(context)
+        root = context["project"]["data"]["root"]
+        proj_name = context["project"]["name"]
 
         # Get usd file
         representation = context["representation"]
@@ -74,6 +80,12 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
                                       severity=hou.severityType.Warning)
                 return
             usd_file = os.path.join(directory, files[0]).replace("\\", "/")
+
+        # Update os environ
+        project_root = r'{}/{}'.format(root, proj_name)
+        if "PROJECT_ROOT" not in os.environ.keys():
+            os.environ["PROJECT_ROOT"] = project_root
+        usd_file = usd_file.replace(project_root, "$PROJECT_ROOT")
 
         asset_name = context['asset']['name']
         subset_data = context['subset']

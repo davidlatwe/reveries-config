@@ -1,14 +1,16 @@
 import os
+import traceback
+
 import pyblish.api
 
 
-class ExtractLayoutLayer(pyblish.api.InstancePlugin):
+class ExtractEnvironmentLayer(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ExtractorOrder + 0.2
-    label = "Extract Layout Layer"
+    label = "Extract Environment Layer USD Export"
     hosts = ["houdini"]
     families = [
-        "reveries.layout.layer",
+        "reveries.env.layer",
     ]
 
     def process(self, instance):
@@ -24,6 +26,9 @@ class ExtractLayoutLayer(pyblish.api.InstancePlugin):
         instance.data["repr.USD._stage"] = staging_dir
         instance.data["repr.USD._files"] = [filename]
         instance.data["repr.USD.entryFileName"] = filename
+        # instance.data["step"] = "Layout"
+        instance.data["subsetGroup"] = "Layout"
+        instance.data["step_type"] = "env_layer_prim"
 
         try:
             ropnode.render()
@@ -33,7 +38,6 @@ class ExtractLayoutLayer(pyblish.api.InstancePlugin):
             # The hou.Error is not inherited from a Python Exception class,
             # so we explicitly capture the houdini error, otherwise pyblish
             # will remain hanging.
-            import traceback
             traceback.print_exc()
             raise RuntimeError("Render failed: {0}".format(exc))
 

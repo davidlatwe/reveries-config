@@ -36,7 +36,9 @@ class OpenInUSD(PackageLoader, avalon.api.Loader):
         "reveries.model",
         "reveries.pointcache",
         "reveries.look.asset_prim",
-        "reveries.ani.ani_prim"
+        "reveries.ani.ani_prim",
+        "reveries.env.layer",
+        "reveries.env"
     ]
 
     representations = [

@@ -3,10 +3,10 @@ from reveries import lib
 
 
 class CreateLayoutUSD(houdini.Creator):
-    """Publish layout layer USD"""
+    """Publish environment layer USD"""
 
-    label = "Layout (USD)"
-    family = "reveries.layout"
+    label = "Environment (USD)"
+    family = "reveries.env"
     icon = "building"
 
     def __init__(self, *args, **kwargs):
@@ -23,12 +23,13 @@ class CreateLayoutUSD(houdini.Creator):
 
     def process(self):
         instance = super(CreateLayoutUSD, self).process()
-        file_path = "$HIP/pyblish/{}/lay_prim.usda".format(self.name)
+        file_path = "$HIP/pyblish/{}/env_prim.usda".format(self.name)
 
         parms = {
             "lopoutput": file_path,
             "defaultprim": "ROOT",
-            "enableoutputprocessor_simplerelativepaths": False
+            "enableoutputprocessor_simplerelativepaths": False,
+            "savestyle": "flattenalllayers"
         }
 
         instance.setParms(parms)

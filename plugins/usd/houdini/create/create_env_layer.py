@@ -3,10 +3,10 @@ from reveries import lib
 
 
 class CreateLayoutLayerUSD(houdini.Creator):
-    """Publish layout layer USD"""
+    """Publish environment layer USD"""
 
-    label = "Layout Layer (USD)"
-    family = "reveries.layout.layer"
+    label = "Environment Layer (USD)"
+    family = "reveries.env.layer"
     icon = "building"
 
     def __init__(self, *args, **kwargs):

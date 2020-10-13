@@ -359,6 +359,8 @@ class IntegrateAvalonSubset(object):
                     "subsetGroup": instance.data.get("subsetGroup", ""),
                 },
                 "parent": asset_id,
+                # "step": instance.data.get("step", ""),
+                "step_type": instance.data.get("step_type", "")
             }
 
         return subset
