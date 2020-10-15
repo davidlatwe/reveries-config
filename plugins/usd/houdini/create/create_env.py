@@ -13,7 +13,7 @@ class CreateLayoutUSD(houdini.Creator):
         super(CreateLayoutUSD, self).__init__(*args, **kwargs)
 
         # Remove the `active`, we are checking the `bypass` flag of the nodes
-        self.data.pop("active", None)
+        # self.data.pop("active", None)
 
         # Set node type to create for output
         self.data.update({"node_type": "usd"})

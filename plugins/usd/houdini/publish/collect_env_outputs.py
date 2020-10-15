@@ -50,18 +50,19 @@ class CollectEnvironmentLayerOutputs(pyblish.api.InstancePlugin):
         backup = instance
 
         _family = instance.data["family"]
-        if len(context) == 1 and _family == "reveries.env.layer":
+        if _family == "reveries.env.layer":
             print('1111')
-            self._create_envPrim_subset(context, backup, layer_instance=instance)
-            self._create_layPrim(context, backup)
-        elif len(context) == 1 and _family == "reveries.env":
+            created = self._create_envPrim_subset(context, backup, layer_instance=instance)
+            self._create_layPrim(context, backup, force=created)
+        elif _family == "reveries.env":
             print('222222')
-            self._create_layPrim(context, backup)
-        else:
-            print('333333')
-            self._create_layPrim(context, backup)
+            self._create_layPrim(context, backup, force=True)
+        # else:
+        #     print('333333')
+        #     self._create_layPrim(context, backup, force=True)
 
     def _create_envPrim_subset(self, context, backup, layer_instance=None):
+        _create = False
         all_env_subset_data = self._get_all_envPrim_subset()
         for env_subset_data in all_env_subset_data:
             if self.__need_autoUpdate(layer_instance, env_subset_data):
@@ -79,7 +80,9 @@ class CollectEnvironmentLayerOutputs(pyblish.api.InstancePlugin):
                     env_instance.data["autoUpdate"] = True
                     env_instance.data["previous_id"] = env_subset_data["_id"]
 
-        # TODO: Support different subset name of env_prim.usd
+                    _create = True
+
+        return _create
 
     def __need_autoUpdate(self, layer_instance, env_subset_data):
         """
@@ -113,11 +116,11 @@ class CollectEnvironmentLayerOutputs(pyblish.api.InstancePlugin):
 
         return False
 
-    def _create_layPrim(self, context, backup):
+    def _create_layPrim(self, context, backup, force=False):
+
         return
 
-        # === Generate asset prim usd === #
-        if self.ins_exists(context, "envDefault"):
+        def __create():
             name = "layPrim"
             if not self.ins_exists(context, name):
                 instance = context.create_instance(name)
@@ -144,3 +147,7 @@ class CollectEnvironmentLayerOutputs(pyblish.api.InstancePlugin):
                     version_data = io.find_one(_filter, sort=[("name", -1)])
                     if version_data:
                         instance.data["versionPin"] = version_data["name"]
+
+        if force:
+            __create()
+            return

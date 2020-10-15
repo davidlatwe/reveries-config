@@ -51,7 +51,7 @@ name = "compositing"
 # To re-implement {user} into path, better work file management tool is required.
 work = "{root}/{project}/Avalon/{silo}/{asset}/work/{task}/{app}"
 publish = "{root}/{project}/Avalon/{silo}/{asset}/publish/{subset}/v{version:0>3}/{representation}"
-
+shotgun_shot_name = "{seq_name}{shot_name}"
 
 [[groups]]
 name = "Trash Bin"

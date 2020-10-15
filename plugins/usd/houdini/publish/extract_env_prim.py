@@ -1,7 +1,9 @@
 import os
+import sys
 import json
 import shutil
 import traceback
+import subprocess
 
 import pyblish.api
 from avalon import io, api
@@ -53,7 +55,7 @@ class ExtractEnvironment(pyblish.api.InstancePlugin):
                 traceback.print_exc()
                 raise RuntimeError("Render failed: {0}".format(exc))
 
-        # Set json file name
+        # Set publish file name
         json_file_name = 'env.json'
         json_file_path = os.path.join(staging_dir, json_file_name)
 
@@ -70,8 +72,44 @@ class ExtractEnvironment(pyblish.api.InstancePlugin):
         # Write json file
         self._write_json_file(usd_path=final_output, json_path=json_file_path)
 
+        # Export Alembic Cache
+        self.export_gpu_cache(final_output)
+
+        # Export GPU Cache
+
         # Publish instance
         self._publish_instance(instance)
+
+    def export_gpu_cache(self, final_output):
+        print("\nExport GPU... ...")
+        maya_path = r'C:\Program Files\Autodesk\Maya2020\bin'
+        mayapy_exe = os.path.join(maya_path, "mayapy.exe")
+        # py_file = r'F:\usd\test\usd_avalon\reveries-config\reveries\maya\usd\env_gpu_export.py'
+
+        # cmd = [
+        #     mayapy_exe,
+        #     __file__,
+        #     "usd_file={}".format(str(final_output)),
+        # ]
+        usdenv_bat = r'F:\usd\test\usd_avalon\reveries-config\plugins\usd\template\usdenvgpu_maya.bat'
+        cmd = [usdenv_bat]
+
+        out_bytes = subprocess.check_output(cmd, shell=True)
+        # out, err = p.communicate()
+        print("out: ", out_bytes)
+
+
+        # print("Export gpu cmd: {}".format(cmd))
+        # try:
+        #     out_bytes = subprocess.check_output(cmd, shell=True)
+        # except subprocess.CalledProcessError:
+        #     print(out_bytes)
+        #     # Mark failed for future debug.
+        #     # io.update_many({"_id": model_version["_id"]},
+        #     #                {"$set": {"data.rigAutoUpdateFailed": True}})
+        #     raise Exception("Env gpu export failed.")
+        # else:
+        #     print(out_bytes)
 
     def _copy_previous_file_to_tmp(self, staging_dir, instance):
         from reveries.common import get_publish_files
@@ -128,6 +166,38 @@ class ExtractEnvironment(pyblish.api.InstancePlugin):
         # === Publish instance === #
         from reveries.common.publish import publish_instance
 
-        publish_instance.run(instance)
+        # publish_instance.run(instance)
 
         instance.data["published"] = True
+
+
+class LauncherAutoEnvCacheExport(object):
+
+    def __init__(self):
+        kwargs = {}
+        for _arg in sys.argv[1:]:
+            _args_data = _arg.split("=")
+            kwargs[_args_data[0]] = _args_data[1]
+
+        self.usd_path = kwargs.get("usd_path", "").replace('\\', '/')
+        print("usd_path: ", self.usd_path)
+        self.contexts = list()
+
+    def run(self):
+        import maya.standalone as standalone
+        from reveries.common.usd.pipeline.env_gpu_export import EnvUSDToGPUExport
+
+        standalone.initialize(name="python")
+
+        exporter = EnvUSDToGPUExport(self.usd_path)
+        exporter.export()
+
+        print("USD to ENV Done!!")
+
+        standalone.uninitialize()
+        # Bye
+
+
+if __name__ == "__main__":
+    auto_publish = LauncherAutoEncGPUExport()
+    auto_publish.run()

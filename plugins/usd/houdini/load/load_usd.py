@@ -37,7 +37,8 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
         "reveries.look.asset_prim",
         "reveries.ani.ani_prim",
         "reveries.env.layer",
-        "reveries.env"
+        "reveries.env",
+        "reveries.layout"
     ]
 
     representations = [
