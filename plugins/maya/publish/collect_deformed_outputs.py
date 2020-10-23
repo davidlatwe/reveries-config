@@ -1,4 +1,4 @@
-
+from avalon import io
 import pyblish.api
 
 
@@ -46,6 +46,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
         members = instance[:]
         out_sets = list()
+        asset_name = ''
 
         # Find OutSet from *Subset Group nodes*
         #
@@ -133,7 +134,6 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance.data.update(backup.data)
 
                 # New subset name
-                #
                 instance.data["subset"] = ".".join(["pointcache",
                                                     namespace,
                                                     name])
@@ -248,6 +248,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 "Alembic": "reveries.pointcache.abc",
                 "GPUCache": "reveries.pointcache.gpu",
                 "FBXCache": "reveries.pointcache.fbx",
+                "AniUSDData": "reveries.pointcache.usd",
             }[instance.data.pop("extractType")])
 
         else:
@@ -257,5 +258,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 families.append("reveries.pointcache.gpu")
             if instance.data.pop("exportFBXCache"):
                 families.append("reveries.pointcache.fbx")
+            if instance.data.pop("exportAniUSDData"):
+                families.append("reveries.pointcache.usd")
 
         instance.data["families"] = families

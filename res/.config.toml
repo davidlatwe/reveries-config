@@ -51,13 +51,19 @@ name = "compositing"
 # To re-implement {user} into path, better work file management tool is required.
 work = "{root}/{project}/Avalon/{silo}/{asset}/work/{task}/{app}"
 publish = "{root}/{project}/Avalon/{silo}/{asset}/publish/{subset}/v{version:0>3}/{representation}"
-
+shotgun_shot_name = "{seq_name}{shot_name}"
 
 [[groups]]
 name = "Trash Bin"
 icon = "trash-o"
 color = "#C4CEDC"
 order = -99
+
+[[groups]]
+name = "USD"
+icon = "file-text-o"
+color = "#C4CEDC"
+order = -80
 
 [[groups]]
 name = "Renders"
@@ -182,3 +188,47 @@ icon = "share-square-o"
 name = "reveries.vdbcache"
 label = "VDB Cache"
 icon = "qrcode"
+
+[[families]]
+name = "reveries.look.asset_prim"
+label = "USD (Asset)"
+icon = "list"
+
+[[families]]
+name = "reveries.ani.ani_prim"
+label = "USD (Animation)"
+icon = "list"
+
+[[families]]
+name = "reveries.env.layer"
+label = "USD (Environment Layer)"
+icon = "list"
+
+[[families]]
+name = "reveries.env"
+label = "USD (Environment)"
+icon = "list"
+
+[[families]]
+name = "reveries.look.pre_prim"
+label = "Look PrePrim USD"
+icon = "paint-brush"
+hideFilter = true
+
+[[families]]
+name = "reveries.look.usd"
+label = "Look USD"
+icon = "paint-brush"
+hideFilter = true
+
+[[families]]
+name = "reveries.model.usd"
+label = "Model USD"
+icon = "cubes"
+hideFilter = true
+
+[[families]]
+name = "reveries.pointcache.usd"
+label = "Pointcache USD"
+icon = "diamond"
+hideFilter = true

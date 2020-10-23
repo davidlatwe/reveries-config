@@ -13,6 +13,8 @@ class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
     targets = ["localhost"]
 
     def process(self, instance):
+        if instance.data.get("_preflighted", False):
+            return
 
         context = instance.context
 

@@ -2,7 +2,7 @@
 import os
 import sys
 import logging
-import avalon.api as avalon
+from avalon import api as avalon
 import pyblish_qml.settings
 from pyblish import api as pyblish
 from maya import mel, cmds
@@ -48,6 +48,7 @@ def _override_deferred():
 
 
 def install():  # pragma: no cover
+    from avalon import io
     from . import menu, callbacks
 
     # install pipeline menu
@@ -57,6 +58,12 @@ def install():  # pragma: no cover
     avalon.register_plugin_path(avalon.Loader, LOAD_PATH)
     avalon.register_plugin_path(avalon.Creator, CREATE_PATH)
     avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
+
+    # Check USD pipeline
+    project = io.find_one({"type": "project"})
+    if project.get('usd_pipeline', False):
+        pyblish.register_plugin_path(
+            os.path.join(PLUGINS_DIR, "usd", "maya", "publish"))
 
     # install callbacks
     log.info("Installing callbacks ... ")

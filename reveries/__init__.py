@@ -47,11 +47,20 @@ __all__ = [
 
 
 def install():  # pragma: no cover
+    from avalon import io
+
     print("Registering global plug-ins..")
     pyblish.register_plugin_path(PUBLISH_PATH)
     avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
     avalon.register_plugin_path(avalon.Loader, LOADER_PATH)
     avalon.register_plugin_path(avalon.Loader, DEV_LOADER_PATH)
+
+    # Check usd pipeline
+    project = io.find_one({"type": "project"})
+    if project.get('usd_pipeline', False):
+        avalon.register_plugin_path(
+            avalon.Loader, os.path.join(PLUGINS_DIR, "usd", "global", "load"))
+
     # Remove pyblish-base default plugins
     pyblish.deregister_plugin_path(PYBLISH_DEFAULT)
 

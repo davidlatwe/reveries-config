@@ -1,36 +1,121 @@
-
 import os
 import shutil
-
 import errno
-import pyblish.api
+
 from avalon import api, io
 from avalon.vendor import filelink
 
 
-class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
-    """公開檔案並發佈至網路硬碟"""
+class PublishInstance(object):
+    def __init__(self):
+        pass
 
-    """Write to files and metadata, Resolve any dependency issues
+    def publish(self, instance):
 
-    This plug-in exposes your data to others by encapsulating it
-    into a new version.
+        context = instance.context
 
-    This plug-in resolves any paths which, if not updated might break
-    the published file.
+        if not all(result["success"] for result in context.data["results"]):
+            print("Atomicity not held, aborting.")
+            return
 
-    The order of families is important, when working with lookdev you want to
-    first publish the texture, update the texture paths in the nodes and then
-    publish the shading network. Same goes for file dependent assets.
+        # Integrate representations' to database
+        print("Integrating representations to database ...")
 
-    (NOTE) No database write happens here, only file transfer.
+        asset = instance.data["assetDoc"]
+        subset, version, representations = instance.data["toDatabase"]
 
-    """
+        # Write subset if not exists
+        filter = {"parent": asset["_id"], "name": subset["name"]}
+        if io.find_one(filter) is None:
+            io.insert_one(subset)
 
-    label = "上傳 Subset"
-    order = pyblish.api.IntegratorOrder
+        # Write version if not exists
+        filter = {"parent": subset["_id"], "name": version["name"]}
+        existed_version = io.find_one(filter)
 
-    targets = ["localhost"]
+        if existed_version is None:
+            # Write version and representations to database
+            version_id = self.write_database(instance,
+                                             version,
+                                             representations)
+            instance.data["insertedVersionId"] = version_id
+
+            # Update dependent
+            self.update_dependent(instance, version_id)
+
+        else:
+            if context.data.get("_progressivePublishing"):
+                if instance.data.get("_progressiveOutput") is None:
+                    pass  # Not given any output, no progress change
+
+                else:
+                    print("Update version publish progress.")
+                    # Update version document "data.time"
+                    filter_ = {"_id": existed_version["_id"]}
+                    update = {"$set": {"data.time": context.data["time"]}}
+                    if "progress" in version["data"]:
+                        # Update version document "progress.current"
+                        progress = version["data"]["progress"]["current"]
+                        update["$inc"] = {"data.progress.current": progress}
+                    else:
+                        pass  # progress == -1, no progress update needed.
+                    io.update_many(filter_, update)
+
+            else:
+                print("Version existed, representation file has been "
+                              "overwritten.")
+                # Update version document "data.time"
+                filter_ = {"_id": existed_version["_id"]}
+                update = {"$set": {"data.time": context.data["time"]}}
+                io.update_many(filter_, update)
+
+                # Update representation documents "data"
+                for representation in representations:
+                    filter_ = {
+                        "name": representation["name"],
+                        "parent": existed_version["_id"],
+                    }
+                    update = {"$set": {"data": representation["data"]}}
+                    io.update_many(filter_, update)
+
+    def write_database(self, instance, version, representations):
+        """Write version and representations to database
+
+        Should write version documents until files collecting passed
+        without error.
+
+        """
+        # Write version
+        #
+        print("Registering version {} to database ...".format(version["name"]))
+
+        if "pregeneratedVersionId" in instance.data:
+            version["_id"] = instance.data["pregeneratedVersionId"]
+
+        version_id = io.insert_one(version).inserted_id
+
+        # Write representations
+        print("Registering {} representations ...".format(len(representations)))
+
+        for representation in representations:
+            representation["parent"] = version_id
+
+        io.insert_many(representations)
+
+        return version_id
+
+    def update_dependent(self, instance, version_id):
+
+        version_id = str(version_id)
+        field = "data.dependents." + version_id
+
+        for version_id_, data in instance.data["dependencies"].items():
+            filter_ = {"_id": io.ObjectId(version_id_)}
+            update = {"$set": {field: {"count": data["count"]}}}
+            io.update_many(filter_, update)
+
+
+class IntegrateAvalonSubset(object):
 
     def __init__(self, *args, **kwargs):
         super(IntegrateAvalonSubset, self).__init__(*args, **kwargs)
@@ -53,13 +138,9 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #   \       /
         #    o   __/
         #
-
-        if instance.data.get("_preflighted", False):
-            return
-
         context = instance.context
         if not all(result["success"] for result in context.data["results"]):
-            self.log.warning("Atomicity not held, aborting.")
+            print("Atomicity not held, aborting.")
             return
 
         # Assemble data and create version, representations
@@ -68,8 +149,10 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         instance.data["toDatabase"] = (subset, version, representations)
 
         # Integrate representations' files to shareable space
-        self.log.info("Integrating representations to shareable space ...")
+        print("Integrating representations to shareable space ...")
         self.integrate()
+
+        return instance
 
     def register(self, instance):
         context = instance.context
@@ -193,10 +276,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             transfers = self.transfers[job]
 
             for src, dst in transfers:
-                # normpath
-                # self.log.debug("Src. Before: {!r}".format(src))
-                # self.log.debug("Dst. Before: {!r}".format(dst))
-
                 src = os.path.abspath(
                     os.path.normpath(os.path.expandvars(src)))
                 dst = os.path.abspath(
@@ -213,13 +292,13 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                       "          -> {2}".format(job, src, dst))
 
                 if src == dst:
-                    self.log.debug("Source and destination are the same, "
+                    print("Source and destination are the same, "
                                    "will not copy.")
                     continue
 
                 if dst in transfered:
                     # (TODO) Should not implement like this. This is a hot-fix.
-                    self.log.warning("File transfered: %s" % dst)
+                    print("File transfered: %s" % dst)
                     continue
 
                 if job == "files":
@@ -232,20 +311,18 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
     def copy_file(self, src, dst):
         file_dir = os.path.dirname(dst)
         if not os.path.isdir(file_dir):
-            try:
-                os.makedirs(file_dir)
-            except Exception as e:
-                self.log.warning("Makedir error: %s" % e)
+            os.makedirs(file_dir)
+
         try:
             shutil.copy2(src, dst)
         except OSError:
             msg = "An unexpected error occurred."
-            self.log.critical(msg)
+            print(msg)
             raise OSError(msg)
 
     def hardlink_file(self, src, dst):
         if os.path.isfile(dst):
-            self.log.warning("File exists, skip creating hardlink: %s" % dst)
+            print("File exists, skip creating hardlink: %s" % dst)
             return
 
         dirname = os.path.dirname(dst)
@@ -255,7 +332,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             if e.errno == errno.EEXIST:
                 pass
             else:
-                self.log.critical("An unexpected error occurred.")
+                print("An unexpected error occurred.")
                 raise
 
         filelink.create(src, dst, filelink.HARDLINK)
@@ -270,7 +347,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
 
         if subset is None:
             subset_name = instance.data["subset"]
-            self.log.info("Subset '%s' not found, creating.." % subset_name)
+            print("Subset '%s' not found, creating.." % subset_name)
 
             subset = {
                 "_id": io.ObjectId(),  # Pre-generate subset id
@@ -282,6 +359,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                     "subsetGroup": instance.data.get("subsetGroup", ""),
                 },
                 "parent": asset_id,
+                # "step": instance.data.get("step", ""),
+                "step_type": instance.data.get("step_type", "")
             }
 
         return subset
@@ -332,11 +411,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 raise KeyError("Missing frame range data, this is a bug.")
 
             else:
-                total = len(range(start, end + 1, step))
-                if data.get("isStereo"):
-                    total *= 2
                 version["data"]["progress"] = {
-                    "total": total,
+                    "total": len(range(start, end + 1, step)),
                     "current": self.progress,
                 }
 
@@ -386,3 +462,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 version_data[key] = instance.data[key]
 
         return version_data
+
+
+def run(instance):
+    integrater = IntegrateAvalonSubset()
+    instance = integrater.process(instance)
+
+    publisher = PublishInstance()
+    publisher.publish(instance)

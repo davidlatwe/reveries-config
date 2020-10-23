@@ -20,11 +20,22 @@ INVENTORY_PATH = os.path.join(PLUGINS_DIR, "houdini", "inventory")
 
 
 def install():
+    from avalon import io
 
     pyblish.register_plugin_path(PUBLISH_PATH)
     avalon.register_plugin_path(avalon.Loader, LOAD_PATH)
     avalon.register_plugin_path(avalon.Creator, CREATE_PATH)
     avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
+
+    # Check USD pipeline
+    project = io.find_one({"type": "project"})
+    if project.get('usd_pipeline', False):
+        pyblish.register_plugin_path(
+            os.path.join(PLUGINS_DIR, "usd", "houdini", "publish"))
+        avalon.register_plugin_path(
+            avalon.Loader,
+            os.path.join(PLUGINS_DIR, "usd", "houdini", "load")
+        )
 
     # install callbacks
     print("Installing callbacks ... ")
