@@ -536,13 +536,57 @@ def parse_objects(map_attr):
 
     if address[1] == "glRenderer":
         subtype = "GLRenderer"
-    else:
+
+    elif len(address) > 2:
         # primitive, generator
         subtype = xg.getActive(palette,
                                description,
                                str(address[1].capitalize()))
+    else:
+        # Custom attribute, `address` can not provide enough clue to
+        # get active object.
+        subtype = None
 
-    if len(address) < 4:
+    # Attribute lookup
+    #
+    if len(address) == 2:
+        # Custom attribute
+        # Example: descriptionShape.RootColor
+
+        attr = address[1]
+        attr_indx = 0
+
+        # (TODO) custom attribute can be coming from other place,
+        #   "Renderer" object is current known use case in production.
+        #
+        # (NOTE) Some XGen API may help for future works..
+        #   * Get XGen object type names:
+        #       xg.xgGlobal.PrimitiveTypes()
+        #       xg.xgGlobal.RendererTypes()
+        #       xg.xgGlobal.GeneratorTypes()
+        #       xg.xgGlobal.FXModuleTypes()
+        #       xg.xgGlobal.PreviewerTypes
+        #       xg.xgGlobal.GeomTypes()
+        #   * Get active object by type:
+        #       xg.getActive(palette, description, "Primitive")
+        #       xg.getActive(palette, description, "Renderer")
+        #       xg.getActive(palette, description, "Generator")
+        #       xg.getActive(palette, description, "Previewer")
+        #   * List current active objects
+        #       xg.objects(palette, description)
+        #
+        subtype = xg.getActive(palette, description, "Renderer")
+
+        for custom_attr in xg.customAttrs(palette, description, subtype):
+            if custom_attr.startswith("custom__"):  # e.g. Arnold's
+                continue
+            if custom_attr.endswith("_" + attr):
+                attr = custom_attr
+                break
+
+        return palette, description, subtype, attr, attr_indx
+
+    elif len(address) == 3:
         # Example: descriptionShape.generator.mask
 
         attr = address[2]
