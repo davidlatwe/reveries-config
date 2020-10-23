@@ -1,8 +1,7 @@
 import os
-import imp
+import imp  # TODO: Deprecated, use importlib
 
 import pyblish.api
-import avalon
 
 
 class ExtractLookUSDExport(pyblish.api.InstancePlugin):
@@ -70,14 +69,15 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         outpath = os.path.join(self.staging_dir, self.files_info['look'])
         self._export_looks(outpath, root_node)
 
-        print 'Export assign/look usd done.'
+        self.log.info('Export assign/look usd done.')
 
     def _export_assign(self, outpath, root_node):
         """
         Export assign.usd file
         :param outpath: (str) Output file path
-        :param root_node: (str) The name of "ROOT" node. Default is "ROOT". When the model is reference, the root name
-            is "<namespace>:ROOT", eg BoxB_model_01_:ROOT
+        :param root_node: (str) The name of "ROOT" node. Default is "ROOT".
+            When the model is reference, the root name is "<namespace>:ROOT",
+            e.g. BoxB_model_01_:ROOT
         :return:
         """
         import maya.cmds as cmds
@@ -93,7 +93,8 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         # Get look exporter python file
         py_file = os.path.abspath(os.path.join(
             os.path.dirname(__file__),
-            "..\\..\\..\\..\\reveries\\maya\\usd\\{}\\looks_export.py").format(self.renderer))
+            "..\\..\\..\\..\\reveries\\maya\\usd\\{}\\looks_export.py"
+        ).format(self.renderer))
 
         if not os.path.exists(py_file):
             assert False, "Cannot found look exporter py file: {}".format(py_file)

@@ -125,5 +125,6 @@ class HoudiniUSDLoader(PackageLoader, avalon.api.Loader):
             node = node[0]
 
         update_node(node, usd_info)
-        print 'Current node: {}'.format(node)
-        print 'Add done.\nInfo: {}\n'.format(usd_info)
+
+        self.log.info("Current node: {}".format(node))
+        self.log.info("Add done.\nInfo: {}\n".format(usd_info))

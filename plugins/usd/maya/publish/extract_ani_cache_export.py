@@ -56,32 +56,37 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         self._publish_instance(instance)
 
     def export_usd(self):
-        print 'start frame: {}\nend_frame: {}'.format(self.start_frame, self.end_frame)
+        self.log.info('start frame: %s\n'
+                      'end frame: %s' % (self.start_frame, self.end_frame))
 
         # === Export source.usd === #
-        self.source_outpath = os.path.join(self.staging_dir, self.files_info['source'])
+        self.source_outpath = os.path.join(self.staging_dir,
+                                           self.files_info['source'])
         self._export_source(self.source_outpath)
-        print 'source.usda done.'
+        self.log.info('source.usda done.')
 
         # === Export authored_data.usda === #
-        outpath = os.path.join(self.staging_dir, self.files_info['authored_data'])
+        outpath = os.path.join(self.staging_dir,
+                               self.files_info['authored_data'])
         self._export_authored_data(outpath)
-        print 'authored_data.usda done'
+        self.log.info('authored_data.usda done')
 
         # === Export ani.usda === #
         outpath = os.path.join(self.staging_dir, self.files_info['ani'])
         self._export_ani(outpath)
 
-        print 'Export ani_cache_prim.usda done.'
+        self.log.info('Export ani_cache_prim.usda done.')
 
     def _export_source(self, outpath):
         import maya.cmds as cmds
         from reveries.maya.usd.maya_export import MayaUsdExporter
 
-        cmds.select(self.mod_long_name)  # r'HanMaleA_rig_02:HanMaleA_model_01_:Geometry'
+        # r'HanMaleA_rig_02:HanMaleA_model_01_:Geometry'
+        cmds.select(self.mod_long_name)
 
+        frame_range = [self.start_frame, self.end_frame]
         exporter = MayaUsdExporter(export_path=outpath,
-                                   frame_range=[self.start_frame, self.end_frame],
+                                   frame_range=frame_range,
                                    export_selected=True)
         exporter.mergeTransformAndShape = True
         exporter.animation = True
@@ -97,7 +102,8 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
 
         ani_cache_export.export(
             self.source_outpath, outpath,
-            mod_root_path=self.mod_root_path,  # r'/rigDefault/ROOT/Group/Geometry/modelDefault/ROOT'
+            # r'/rigDefault/ROOT/Group/Geometry/modelDefault/ROOT'
+            mod_root_path=self.mod_root_path,
             asset_name=self.asset_name,
             has_proxy=has_proxy
         )
@@ -118,7 +124,8 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
             "parent": asset_id
         }
         assetprim_data = io.find_one(_filter)
-        asset_prim_usd_files = get_publish_files.get_files(assetprim_data['_id']).get('USD', [])
+        publish_files = get_publish_files.get_files(assetprim_data['_id'])
+        asset_prim_usd_files = publish_files.get('USD', [])
 
         if asset_prim_usd_files:
             asset_prim_usd = asset_prim_usd_files[0]
@@ -144,7 +151,10 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
     def _check_has_proxy(self):
         import maya.cmds as cmds
 
-        ts_children = cmds.listRelatives(self.mod_long_name, ad=True, f=True, typ='transform')
+        ts_children = cmds.listRelatives(self.mod_long_name,
+                                         allDescendents=True,
+                                         fullPath=True,
+                                         type='transform')
 
         for _cache in self.out_cache + ts_children:
             if 'proxy_geo' in _cache:

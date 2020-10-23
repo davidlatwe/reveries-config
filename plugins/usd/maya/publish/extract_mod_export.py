@@ -56,7 +56,7 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         outpath = os.path.join(self.staging_dir, self.files_info['geom'])
         self._export_geom(outpath)
 
-        print 'Export geom usd done.'
+        self.log.info('Export geom usd done.')
 
     def _export_geom(self, outpath):
         import maya.cmds as cmds

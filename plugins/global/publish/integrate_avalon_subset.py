@@ -235,7 +235,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             try:
                 os.makedirs(file_dir)
             except Exception as e:
-                print 'makedir error: ', e
+                self.log.warning("Makedir error: %s" % e)
         try:
             shutil.copy2(src, dst)
         except OSError:
