@@ -1,4 +1,4 @@
-import os
+
 import avalon.api
 from reveries.maya.plugins import ImportLoader
 
@@ -40,6 +40,7 @@ class ArnoldVolumeLoader(ImportLoader, avalon.api.Loader):
 
     def is_sequence(self, path):
         """single vdb or vdb sequence"""
+        import os
         expanded_dir = os.path.dirname(os.path.expandvars(path))
         vdbs = [f for f in os.listdir(expanded_dir) if f.endswith(".vdb")]
         return len(vdbs) > 1
