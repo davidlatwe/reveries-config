@@ -42,7 +42,7 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         from reveries.common.publish import publish_instance
         publish_instance.run(instance)
 
-        instance.data["published"] = True
+        instance.data["_preflighted"] = True
 
         # context = instance.context
         # context.remove(instance)

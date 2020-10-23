@@ -54,7 +54,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
         #    o   __/
         #
 
-        if instance.data.get('published', False):
+        if instance.data.get("_preflighted", False):
             return
 
         context = instance.context

@@ -50,7 +50,7 @@ class ExtractAssetPrePrimUSDExport(pyblish.api.InstancePlugin):
 
         publish_instance.run(instance)
 
-        instance.data["published"] = True
+        instance.data["_preflighted"] = True
 
         # context = instance.context
         # context.remove(instance)

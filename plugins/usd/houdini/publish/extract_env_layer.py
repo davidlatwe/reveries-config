@@ -47,4 +47,4 @@ class ExtractEnvironmentLayer(pyblish.api.InstancePlugin):
 
         publish_instance.run(instance)
 
-        instance.data["published"] = True
+        instance.data["_preflighted"] = True
