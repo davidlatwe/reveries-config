@@ -2,6 +2,7 @@
 import os
 import sys
 import logging
+from avalon import io
 import avalon.api as avalon
 import pyblish_qml.settings
 from pyblish import api as pyblish
@@ -59,13 +60,10 @@ def install():  # pragma: no cover
     avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
 
     # Check USD pipeline
-    import avalon.io as avalon_io
-    project = avalon_io.find_one({"name": avalon.Session["AVALON_PROJECT"],
-                                  "type": "project"})
-
+    project = io.find_one({"type": "project"})
     if project.get('usd_pipeline', False):
-        pyblish.register_plugin_path(os.path.join(PLUGINS_DIR, "usd", "maya", "publish"))
-        avalon.register_plugin_path(avalon.Loader, os.path.join(PLUGINS_DIR, "usd", "global", "load"))
+        pyblish.register_plugin_path(
+            os.path.join(PLUGINS_DIR, "usd", "maya", "publish"))
 
     # install callbacks
     log.info("Installing callbacks ... ")

@@ -1,7 +1,7 @@
 import os
 import sys
 from pyblish import api as pyblish
-from avalon import api as avalon
+from avalon import api as avalon, io
 
 from .version import version, version_info, __version__
 
@@ -54,12 +54,10 @@ def install():  # pragma: no cover
     avalon.register_plugin_path(avalon.Loader, DEV_LOADER_PATH)
 
     # Check usd pipeline
-    import avalon.io as avalon_io
-    project = avalon_io.find_one({"name": avalon.Session["AVALON_PROJECT"],
-                                  "type": "project"})
-
+    project = io.find_one({"type": "project"})
     if project.get('usd_pipeline', False):
-        avalon.register_plugin_path(avalon.Loader, os.path.join(PLUGINS_DIR, "usd", "global", "load"))
+        avalon.register_plugin_path(
+            avalon.Loader, os.path.join(PLUGINS_DIR, "usd", "global", "load"))
 
     # Remove pyblish-base default plugins
     pyblish.deregister_plugin_path(PYBLISH_DEFAULT)
