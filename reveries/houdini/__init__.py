@@ -5,7 +5,7 @@ import logging
 from pyblish import api as pyblish
 import pyblish_qml.settings
 
-from avalon import api as avalon, io
+from avalon import api as avalon
 
 from . import callbacks
 from .. import PLUGINS_DIR
@@ -20,6 +20,7 @@ INVENTORY_PATH = os.path.join(PLUGINS_DIR, "houdini", "inventory")
 
 
 def install():
+    from avalon import io
 
     pyblish.register_plugin_path(PUBLISH_PATH)
     avalon.register_plugin_path(avalon.Loader, LOAD_PATH)

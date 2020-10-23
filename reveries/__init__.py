@@ -1,7 +1,7 @@
 import os
 import sys
 from pyblish import api as pyblish
-from avalon import api as avalon, io
+from avalon import api as avalon
 
 from .version import version, version_info, __version__
 
@@ -47,6 +47,8 @@ __all__ = [
 
 
 def install():  # pragma: no cover
+    from avalon import io
+
     print("Registering global plug-ins..")
     pyblish.register_plugin_path(PUBLISH_PATH)
     avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)

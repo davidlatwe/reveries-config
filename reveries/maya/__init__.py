@@ -2,8 +2,7 @@
 import os
 import sys
 import logging
-from avalon import io
-import avalon.api as avalon
+from avalon import api as avalon
 import pyblish_qml.settings
 from pyblish import api as pyblish
 from maya import mel, cmds
@@ -49,6 +48,7 @@ def _override_deferred():
 
 
 def install():  # pragma: no cover
+    from avalon import io
     from . import menu, callbacks
 
     # install pipeline menu
