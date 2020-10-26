@@ -207,6 +207,10 @@ with open({!r}, "w") as flag:
     flag.write("")
 """.format(PYMEL_MOCK_FLAG))
 
+        cmds.menuItem("Show/Hide Avalon Container Nodes",
+                      parent="System",
+                      command=interactive.toggle_container_visibility)
+
     # Allow time for uninstallation to finish.
     maya.utils.executeDeferred(
         lambda: QtCore.QTimer.singleShot(100, deferred)

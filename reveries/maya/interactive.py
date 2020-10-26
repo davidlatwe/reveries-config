@@ -5,6 +5,10 @@ import logging
 from maya import cmds, mel
 
 from avalon import api, io
+from avalon.maya.pipeline import (
+    AVALON_CONTAINER_ID,
+    AVALON_CONTAINERS,
+)
 
 from .vendor import capture
 from . import lib, pipeline, xgen, utils
@@ -13,6 +17,27 @@ from ..utils import get_representation_path_
 
 
 log = logging.getLogger(__name__)
+
+
+def toggle_container_visibility(*args):
+    # Maya 2019+
+    attr_exists = cmds.attributeQuery("hiddenInOutliner",
+                                      node=AVALON_CONTAINERS,
+                                      exists=True)
+    if not attr_exists:
+        return
+
+    current = cmds.getAttr(AVALON_CONTAINERS + ".hiddenInOutliner")
+    cmds.setAttr(AVALON_CONTAINERS + ".hiddenInOutliner", not current)
+
+    for node in lib.lsAttrs({"id": AVALON_CONTAINER_ID}):
+        current = cmds.getAttr(node + ".hiddenInOutliner")
+        cmds.setAttr(node + ".hiddenInOutliner", not current)
+
+    # Refresh outliner editor
+    for editor in cmds.lsUI(editors=True):
+        if cmds.outlinerEditor(editor, exists=True):
+            cmds.outlinerEditor(editor, edit=True, refresh=True)
 
 
 def active_view_snapshot(*args):

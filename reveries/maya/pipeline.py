@@ -401,7 +401,6 @@ def subset_containerising(name,
                              nodes=nodes,
                              context=context,
                              loader=cls_name)
-    cmds.setAttr(container + ".hiddenInOutliner", False)
     # Add additional data
     for key, value in {
         "containerId": container_id,
