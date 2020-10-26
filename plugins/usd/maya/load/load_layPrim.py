@@ -65,8 +65,7 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
                                  options, layPrim_data)
 
         # === Reference Camera === #
-        self._reference_camera(context, name, namespace,
-                               options, layPrim_data)
+        self._reference_camera(context, name, namespace, options)
 
         # === Update frame range === #
         frame_in, frame_out = get_frame_range(shot_name)
@@ -119,12 +118,11 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
                 else:
                     self.log.info("{} no GPU published.".format(subset_name))
 
-    def _reference_camera(self, context, name, namespace,
-                          options, layPrim_data):
+    def _reference_camera(self, context, name, namespace, options):
         from maya import cmds
 
         update_camera = options.get("update_camera", True)
-        self.log.info("update_camera: ", update_camera)
+        self.log.info("update_camera: {}".format(update_camera))
 
         _filter = {
             "type": "subset",
@@ -158,7 +156,6 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
                                file_path=abc_file)
 
         con_node_name = container.get("objectName", None)
-
         if con_node_name:
             resolver_obj = path_resolver.PathResolver(file_path=abc_file)
             version_id = resolver_obj.get_version_id()
@@ -258,7 +255,7 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
             for plugin_name in PLUGIN_NAMES:
                 cmds.loadPlugin(plugin_name, quiet=True)
         except Exception as e:
-            self.log.info("Load plugin failed: ", e)
+            self.log.info("Load plugin failed: {}".format(e))
 
     def _get_namespace(self, context):
         from reveries.maya.pipeline import unique_root_namespace

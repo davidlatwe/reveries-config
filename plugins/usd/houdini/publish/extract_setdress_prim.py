@@ -120,7 +120,7 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
 
         try:
             out_bytes = subprocess.check_output(cmd, shell=True)
-            self.log.info("out: ", out_bytes)
+            self.log.info("out: {}".format(out_bytes))
         except Exception as e:
             self.log.info("Export GPU/Alembic cache failed: {}".format(e))
 
