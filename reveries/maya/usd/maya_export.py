@@ -70,6 +70,10 @@ class MayaUsdExporter(object):
     def usd_export_cmd(self):
         import maya.cmds as cmds
 
+        if not self.animation:
+            current_frame = cmds.currentTime(q=True)
+            self.frameRange = [current_frame, current_frame]
+
         # Make sure that you have selected something in Maya before exporting
         cmds.usdExport(
             file=self.file_path,
