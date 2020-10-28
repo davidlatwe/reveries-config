@@ -1,6 +1,4 @@
 import os
-import sys
-import json
 
 
 class SetdressUSDToCacheExport(object):
@@ -24,7 +22,12 @@ class SetdressUSDToCacheExport(object):
         import maya.cmds as cmds
 
         try:
-            PLUGIN_NAMES = ["pxrUsd", "pxrUsdPreviewSurface", "gpuCache", "AbcExport"]
+            PLUGIN_NAMES = [
+                "pxrUsd",
+                "pxrUsdPreviewSurface",
+                "gpuCache",
+                "AbcExport"
+            ]
             for plugin_name in PLUGIN_NAMES:
                 cmds.loadPlugin(plugin_name, quiet=True)
         except Exception as e:
@@ -36,7 +39,9 @@ class SetdressUSDToCacheExport(object):
             self.usd_path,
             i=True,
             type="pxrUsdImport",
-            options=";shadingMode=displayColor;readAnimData=0;useAsAnimationCache=0;assemblyRep=Collapsed;startTime=0;endTime=0;useCustomFrameRange=0"
+            options=";shadingMode=displayColor;readAnimData=0;"
+                    "useAsAnimationCache=0;assemblyRep=Collapsed;startTime=0;"
+                    "endTime=0;useCustomFrameRange=0"
         )
 
     def _export_gpu(self):
@@ -57,22 +62,22 @@ class SetdressUSDToCacheExport(object):
         ma_path = os.path.join(self.output_dir, "setdress_gpu.ma")
         self._wrap_gpu(ma_path, [("setdress_gpu.abc", "ROOT")])
 
-        print("GPU path: {}".format(os.path.join(self.output_dir, "setdress_gpu.abc")))
+        print("GPU path: {}".format(
+            os.path.join(self.output_dir, "setdress_gpu.abc")))
 
     def _wrap_gpu(self, wrapper_path, gpu_files):
         """Wrapping GPU caches into a MayaAscii file
 
-        (NOTE) The file path of `gpu_files` should be a relative path, relative to
-            `wrapper_path`.
+        (NOTE) The file path of `gpu_files` should be a relative path,
+            relative to `wrapper_path`.
 
             For example:
                 ```python
 
-                wrapper_path = ".../publish/pointcache/v001/GPUCache/pointcache.ma"
+                wrapper_path = ".../pointcache/v001/GPUCache/pointcache.ma"
                 gpu_files = [("Peter_01/pointcache.abc", "Peter_01"), ...]
 
                 ```
-
         Args:
             wrapper_path (str): MayaAscii file path
             gpu_files (list): A list of tuple of .abc file path and cached
@@ -104,14 +109,14 @@ class SetdressUSDToCacheExport(object):
         output_path = os.path.join(self.output_dir, "setdress_alembic.abc")
         cmds.AbcExport(
             j="-frameRange 101 101 "
-              "-stripNamespaces -worldSpace -writeVisibility -eulerFilter -dataFormat ogawa "
+              "-stripNamespaces -worldSpace -writeVisibility "
+              "-eulerFilter -dataFormat ogawa "
               "-root {root_node} "
               "-file {output_path}".format(
                 output_path=output_path,
                 root_node=self.root_node
-            )
+                )
         )
-
         print("Alembic path: {}".format(output_path))
 
     def export(self):
@@ -124,7 +129,6 @@ class SetdressUSDToCacheExport(object):
             self._export_gpu()
 
         print("Running GPU Export Done.")
-
         # Bye
 
 

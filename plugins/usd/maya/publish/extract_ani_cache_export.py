@@ -22,8 +22,8 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         self.out_cache = instance.data.get("outCache")
         self.start_frame = instance.data.get("startFrame")
         self.end_frame = instance.data.get("endFrame")
-        self.mod_long_name = instance.data.get("mod_long_name")
-        self.mod_root_path = instance.data.get("mod_root_path")
+        self.export_node = instance.data.get("export_node")
+        self.root_usd_path = instance.data.get("root_usd_path")
         self.asset_name = instance.data.get("asset_name")
 
         if not self.out_cache:
@@ -82,7 +82,7 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         from reveries.maya.usd.maya_export import MayaUsdExporter
 
         # r'HanMaleA_rig_02:HanMaleA_model_01_:Geometry'
-        cmds.select(self.mod_long_name)
+        cmds.select(self.export_node)
 
         frame_range = [self.start_frame, self.end_frame]
         exporter = MayaUsdExporter(export_path=outpath,
@@ -103,7 +103,7 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         ani_cache_export.export(
             self.source_outpath, outpath,
             # r'/rigDefault/ROOT/Group/Geometry/modelDefault/ROOT'
-            mod_root_path=self.mod_root_path,
+            root_usd_path=self.root_usd_path,
             asset_name=self.asset_name,
             has_proxy=has_proxy
         )
@@ -151,13 +151,13 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
     def _check_has_proxy(self):
         import maya.cmds as cmds
 
-        ts_children = cmds.listRelatives(self.mod_long_name,
+        ts_children = cmds.listRelatives(self.export_node,
                                          allDescendents=True,
                                          fullPath=True,
                                          type='transform')
 
         for _cache in self.out_cache + ts_children:
-            if 'proxy_geo' in _cache:
+            if '_proxy' in _cache:
                 return True
 
         return False
@@ -168,7 +168,3 @@ class ExtractAniCacheUSDExport(pyblish.api.InstancePlugin):
         publish_instance.run(instance)
 
         instance.data["_preflighted"] = True
-
-        # context = instance.context
-        # context.remove(instance)
-

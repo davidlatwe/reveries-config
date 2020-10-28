@@ -19,6 +19,9 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
         from reveries import utils
         from reveries.maya import utils as maya_utils
 
+        asset_doc = instance.data["assetDoc"]
+        self.shot_name = asset_doc["name"]
+
         camera = cmds.ls(instance, type="camera", long=True)[0]
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
@@ -44,6 +47,30 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
         self._export_usd(camera, usd_outpath)
 
         self._publish_instance(instance)
+
+        # Update task information
+        self._check_task_data_exists(instance)
+
+    def _check_task_data_exists(self, instance):
+        _filter = {'type': 'asset', 'name': self.shot_name}
+        shot_data = io.find_one(_filter)
+
+        subset_filter = {
+            'type': 'subset',
+            'name': instance.data["subset"],
+            'parent': shot_data['_id']
+        }
+
+        subset_data = [s for s in io.find(subset_filter)]
+
+        if subset_data:
+            subset_data = subset_data[0]
+
+            if not subset_data["data"].get("task", ""):
+                update = {
+                    "data.task": self._get_task_name()
+                }
+                io.update_many(subset_filter, update={"$set": update})
 
     def _get_task_name(self):
         current_task = api.Session["AVALON_TASK"]  # layout/animation

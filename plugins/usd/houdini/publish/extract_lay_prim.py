@@ -26,7 +26,7 @@ class ExtractLayoutPrim(pyblish.api.InstancePlugin):
         instance.data["repr.USD._files"] = [filename, json_file_name]
         instance.data["repr.USD.entryFileName"] = filename
         instance.data["subsetGroup"] = "Layout"
-        instance.data["step_type"] = "lay_prim"
+        # instance.data["step_type"] = "lay_prim"
 
         # TODO: Add frame range information
         # data["startFrame"] = int(node.evalParm("f1"))

@@ -1,8 +1,5 @@
-import os
-import json
-
 import pyblish.api
-from avalon import io, api
+from avalon import io
 
 
 class CollectSetDressLayerOutputs(pyblish.api.InstancePlugin):
@@ -12,7 +9,6 @@ class CollectSetDressLayerOutputs(pyblish.api.InstancePlugin):
     hosts = ["houdini"]
     families = [
         "reveries.setdress.layer_prim",
-        "reveries.setdress.usd"
     ]
 
     def ins_exists(self, context, name):
@@ -24,19 +20,13 @@ class CollectSetDressLayerOutputs(pyblish.api.InstancePlugin):
         return _exists
 
     def subset_exists(self, subset_name):
-        _filter = {"type": "subset",
-                  "name": subset_name,
-                  "parent": self.shot_id}
-        subset_data = io.find_one(_filter)
-        return subset_data
-
-    def _get_all_setdressPrim_subset(self):
         _filter = {
             "type": "subset",
-            "step_type": 'setdress_prim',
+            "name": subset_name,
             "parent": self.shot_id
         }
-        return [s for s in io.find(_filter)]
+        subset_data = io.find_one(_filter)
+        return subset_data
 
     def process(self, instance):
         shot_name = instance.data['asset']
@@ -49,104 +39,62 @@ class CollectSetDressLayerOutputs(pyblish.api.InstancePlugin):
         context = instance.context
         backup = instance
 
-        _family = instance.data["family"]
-        if _family == "reveries.setdress.layer_prim":
-            created = self._create_setdressPrim_subset(
-                context,
-                backup,
-                layer_instance=instance
-            )
-            self._create_layPrim(context, backup, force=created)
-        elif _family == "reveries.setdress.usd":
-            self._create_layPrim(context, backup, force=True)
+        self._create_setdressPrim(context, backup)
+        self._create_layPrim(context, backup)
+        self._create_finalPrim(context, backup)
 
-    def _create_setdressPrim_subset(self, context, backup, layer_instance=None):
-        _create = False
-        all_setdress_subset_data = self._get_all_setdressPrim_subset()
-        for setdress_subset_data in all_setdress_subset_data:
-            if self.__need_autoUpdate(layer_instance, setdress_subset_data):
-                # === Generate setdress prim usd === #
-                # name = "setdressDefault"
-                name = setdress_subset_data["name"]
+    def _create_setdressPrim(self, context, backup):
+        # === Generate setdressPrim usd === #
+        name = "setdressPrim"
+        if not self.ins_exists(context, name):
+            _instance = context.create_instance(name)
+            _instance.data.update(backup.data)
 
-                if not self.ins_exists(context, name):
-                    _instance = context.create_instance(name)
-                    _instance.data.update(backup.data)
+            _instance.data["family"] = "reveries.setdress.usd"
+            _instance.data["subset"] = name
+            _instance.data["subsetGroup"] = "Layout"
+            _instance.data["autoUpdate"] = True
 
-                    _instance.data["family"] = "reveries.setdress.usd"
-                    _instance.data["subset"] = name
-                    _instance.data["subsetGroup"] = "Layout"
-                    _instance.data["autoUpdate"] = True
-                    _instance.data["previous_id"] = setdress_subset_data["_id"]
+    def _create_layPrim(self, context, backup):
+        name = "layPrim"
+        if not self.ins_exists(context, name):
+            instance = context.create_instance(name)
+            instance.data.update(backup.data)
 
-                    _create = True
+            instance.data["family"] = "reveries.layout.usd"
+            instance.data["subset"] = name
+            instance.data["subsetGroup"] = "Layout"
 
-        return _create
+            # === Set versionPin === #
+            self._check_version_pin(instance, name)
 
-    def __need_autoUpdate(self, layer_instance, setdress_subset_data):
-        """
-        Auto update when previous setdressPrim's subset
-        version has this layer inside.
-        :return:
-        """
-        from reveries.common import get_publish_files
+    def _create_finalPrim(self, context, backup):
+        name = "finalPrim"
+        if not self.ins_exists(context, name) and not self.subset_exists(name):
+            instance = context.create_instance(name)
+            instance.data.update(backup.data)
 
-        # Get publish file from subset id
-        setdress_subset_id = setdress_subset_data["_id"]
-        file = get_publish_files.get_files(
-            setdress_subset_id,
-            key='entryFileName').get('USD', '')
-        if not file:
-            return False
+            instance.data["family"] = "reveries.final.usd"
+            instance.data["subset"] = name
 
-        # Get json file path
-        publish_dir = os.path.dirname(file)
-        json_path = os.path.join(publish_dir, 'setdress.json')
-        if not os.path.exists(json_path):
-            return False
+            # === Set versionPin === #
+            self._check_version_pin(instance, name)
 
-        # Check layer name in json file
-        with open(json_path) as json_file:
-            setdress_data = json.load(json_file)
+    def _check_version_pin(self, instance, subset_name):
+        # Get subset id
+        _filter = {
+            "type": "subset",
+            "parent": self.shot_id,
+            "name": subset_name  # "camPrim"/"layPrim"/"finalPrim"
+        }
+        subset_data = io.find_one(_filter)
 
-        if not setdress_data:
-            return False
-
-        layer_subset_name = layer_instance.data["subset"]
-        if layer_subset_name in list(setdress_data.get("Shot", {}).keys()):
-            return True
-
-        return False
-
-    def _create_layPrim(self, context, backup, force=False):
-        def __create():
-            name = "layPrim"
-            if not self.ins_exists(context, name):
-                instance = context.create_instance(name)
-                instance.data.update(backup.data)
-
-                instance.data["family"] = "reveries.layout.usd"
-                instance.data["subset"] = "layPrim"
-                instance.data["subsetGroup"] = "Layout"
-
-                # === Set versionPin === #
-                # Get subset id
-                _filter = {
-                    "type": "subset",
-                    "parent": self.shot_id,
-                    "name": name
-                }
-                subset_data = io.find_one(_filter)
-                if subset_data:
-                    # Get version name
-                    _filter = {
-                        "type": "version",
-                        "parent": subset_data['_id'],
-                    }
-                    version_data = io.find_one(_filter, sort=[("name", -1)])
-                    if version_data:
-                        instance.data["versionPin"] = version_data["name"]
-
-        if force:
-            __create()
-            return
+        if subset_data:
+            # Get version name
+            _filter = {
+                "type": "version",
+                "parent": subset_data['_id'],
+            }
+            version_data = io.find_one(_filter, sort=[("name", -1)])
+            if version_data:
+                instance.data["versionPin"] = version_data["name"]

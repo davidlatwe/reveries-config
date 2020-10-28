@@ -16,34 +16,39 @@ def build(output_path, shot_name):
     # Create shot prim
     root_define = UsdGeom.Xform.Define(stage, "/ROOT")
     root_prim = stage.GetPrimAtPath('/ROOT')
+    root_layer = stage.GetRootLayer()
+
     stage.SetDefaultPrim(root_prim)
     stage.GetRootLayer().documentation = "Layout usd for {}".format(shot_name)
 
     # Add "Asset" prim
-    _instance_path = "/ROOT/Asset"
-    UsdGeom.Xform.Define(stage, _instance_path)
+    # _instance_path = "/ROOT/Asset"
+    # UsdGeom.Xform.Define(stage, _instance_path)
 
-    _usd_paths = []
+    # _usd_paths = []
     setdress_prim_files = _get_setdress_prim_files(shot_name)
     if setdress_prim_files:
-        for _path in setdress_prim_files:
-            _usd_paths.append(Sdf.Reference(_path))
-
-        asset_prim = stage.GetPrimAtPath(_instance_path)
-        asset_prim.GetReferences().SetReferences(_usd_paths)
+        for _file in setdress_prim_files:
+            root_layer.subLayerPaths.append(_file)
+        # for _path in setdress_prim_files:
+        #     _usd_paths.append(Sdf.Reference(_path))
+        #
+        # asset_prim = stage.GetPrimAtPath(_instance_path)
+        # asset_prim.GetReferences().SetReferences(_usd_paths)
 
     # Add "Camera" prim
-    _instance_path = "/ROOT/Camera"
-    UsdGeom.Xform.Define(stage, _instance_path)
-
-    _usd_paths = []
+    # _instance_path = "/ROOT/Camera"
+    # UsdGeom.Xform.Define(stage, _instance_path)
+    #
+    # _usd_paths = []
     cam_prim_file = _get_camera_prim_files(shot_name)
     if cam_prim_file:
-        camera_prim = stage.GetPrimAtPath(_instance_path)
-        camera_prim.GetReferences().AddReference(
-            assetPath=cam_prim_file,
-            primPath="/ROOT/Camera"
-        )
+        root_layer.subLayerPaths.append(cam_prim_file)
+        # camera_prim = stage.GetPrimAtPath(_instance_path)
+        # camera_prim.GetReferences().AddReference(
+        #     assetPath=cam_prim_file,
+        #     primPath="/ROOT/Camera"
+        # )
 
     stage.GetRootLayer().Export(output_path)
     # print(stage.GetRootLayer().ExportToString())
@@ -70,7 +75,8 @@ def _get_setdress_prim_files(shot_name):
 
     _filter = {
         "parent": shot_data["_id"],
-        "step_type": "setdress_prim",
+        "data.families": "reveries.setdress.usd",
+        # "step_type": "setdress_prim",
         "type": "subset"
     }
     setdress_prim_subsets = [s for s in io.find(_filter)]

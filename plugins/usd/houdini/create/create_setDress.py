@@ -23,13 +23,13 @@ class CreateSetDressUSD(houdini.Creator):
         self.data["deadlinePriority"] = 80
         self.data["deadlinePool"] = lib.get_deadline_pools()
 
-        self.data["family"] = "reveries.setdress.usd"
+        self.data["family"] = "reveries.setdress.layer_prim"
 
     def process(self):
         import hou
 
         instance = super(CreateSetDressUSD, self).process()
-        file_path = "$HIP/pyblish/{}/setdress_prim.usda".format(self.name)
+        file_path = "$HIP/pyblish/{0}/{0}_prim.usda".format(self.name)
 
         parms = {
             "lopoutput": file_path,

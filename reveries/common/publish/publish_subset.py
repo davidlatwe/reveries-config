@@ -19,7 +19,6 @@ def publish(asset_id, subset_name, families):
             'subsetGroup': ''
         },
         'schema': 'avalon-core:subset-3.0'}
-    # print('subset_context: ', subset_context)
 
     _filter = {"parent": asset_id, "name": subset_name}
     subset_data = io.find_one(_filter)

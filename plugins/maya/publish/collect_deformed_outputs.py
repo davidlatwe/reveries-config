@@ -46,7 +46,6 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
         members = instance[:]
         out_sets = list()
-        asset_name = ''
 
         # Find OutSet from *Subset Group nodes*
         #

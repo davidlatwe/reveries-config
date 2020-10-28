@@ -9,14 +9,10 @@ class ValidateLOPPath(pyblish.api.InstancePlugin):
     label = "Validate LOP Path"
     hosts = ["houdini"]
     families = [
-        "reveries.setdress.usd",
         "reveries.setdress.layer_prim"
     ]
 
     def process(self, instance):
-        if instance.data.get("autoUpdate", False):
-            return
-
         node = instance[0]
         lop_path = node.parm("loppath").eval()
         if not lop_path:

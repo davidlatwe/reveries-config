@@ -13,10 +13,7 @@ class CollectAssetPrimUSDOutputs(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        # asset_doc = instance.data["assetDoc"]
-
         # Get asset id
-        # asset_name = asset_doc["name"]
         asset_name = instance.data['asset']
         _filter = {"type": "asset", "name": asset_name}
         asset_data = io.find_one(_filter)
