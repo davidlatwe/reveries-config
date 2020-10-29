@@ -101,7 +101,9 @@ class XGenLegacyLoader(MayaBaseLoader, avalon.api.Loader):
             xgen_path = os.path.join(self.package_path, file)
             xgen_path = xgen_path.replace("\\", "/")
             palette_node = xgen.import_palette(xgen_path,
-                                               wrapPatches=True)
+                                               wrapPatches=True,
+                                               wrapGuides=True,
+                                               grooming=True)
             palette_nodes.append(palette_node)
 
             # Set xgDataPath

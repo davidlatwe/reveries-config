@@ -145,7 +145,15 @@ def get_all_asset_nodes():
         #        always gets all loaded subsets.
         group = container.get("subsetGroup")
         if not group:
-            continue
+            if container["loader"] == "XGenLegacyLoader":
+                members = cmds.sets(container["objectName"], query=True)
+                palette = cmds.ls(members, type="xgmPalette")
+                if palette:
+                    group = palette[0]
+                else:
+                    continue
+            else:
+                continue
 
         for node in cmds.listRelatives(group,
                                        allDescendents=True,

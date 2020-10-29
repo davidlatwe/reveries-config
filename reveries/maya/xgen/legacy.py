@@ -844,13 +844,24 @@ def export_palette(palette, out_path):
     xg.exportPalette(str(palette), str(out_path))
 
 
-def import_palette(xgen_path, deltas=None, namespace="", wrapPatches=True):
+def import_palette(xgen_path,
+                   deltas=None,
+                   namespace="",
+                   wrapPatches=True,
+                   wrapGuides=True,
+                   grooming=False,
+                   validator=None,
+                   validatePath=True):
     xgen_path = xgen_path.replace("\\", "/")
     deltas = deltas or []
     return xg.importPalette(str(xgen_path),
                             deltas,
                             str(namespace),
-                            bool(wrapPatches))
+                            bool(wrapPatches),
+                            wrapGuides=wrapGuides,
+                            grooming=grooming,
+                            validator=validator,
+                            validatePath=validatePath)
 
 
 def export_grooming(description, groom, out_dir):
@@ -890,7 +901,7 @@ def export_grooming(description, groom, out_dir):
     for key in groom_attrs:
         settings[key] = pmc.getAttr(groom + "." + key)
 
-    json_path = out_dir + "groomSettings.json"
+    json_path = out_dir + "/groomSettings.json"
     with open(json_path, "w") as fp:
         json.dump(settings, fp, indent=4)
 
@@ -926,7 +937,7 @@ def import_grooming(description, groom, groom_dir):
     # (NOTE) Currently only grab [density] setting, ["length", "width"] will
     #        messed up imported grooming's map attribute
 
-    json_path = groom_dir + "groomSettings.json"
+    json_path = groom_dir + "/groomSettings.json"
     settings = {}
     with open(json_path) as fp:
         settings = json.load(fp)
