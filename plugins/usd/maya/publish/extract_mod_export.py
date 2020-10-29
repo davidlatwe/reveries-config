@@ -19,6 +19,11 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         from reveries import utils
+        from reveries.common import skip_instance
+
+        context = instance.context
+        if skip_instance(context, ['reveries.xgen']):
+            return
 
         asset_doc = instance.data["assetDoc"]
         self.asset_name = asset_doc["name"]

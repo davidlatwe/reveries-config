@@ -35,10 +35,13 @@ class CollectLookDevUSDOutputs(pyblish.api.InstancePlugin):
         return subset_data
 
     def process(self, instance):
-        # asset_doc = instance.data["assetDoc"]
-        # asset_name = asset_doc["name"]
+        from reveries.common import skip_instance
 
         asset_name = instance.data['asset']
+        context = instance.context
+
+        if skip_instance(context, ['reveries.xgen']):
+            return
 
         _filter = {"type": "asset", "name": asset_name}
         asset_data = io.find_one(_filter)
