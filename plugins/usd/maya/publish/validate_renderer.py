@@ -15,6 +15,12 @@ class ValidateRenderer(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from reveries.common import skip_instance
+
+        context = instance.context
+        if skip_instance(context, ['reveries.xgen']):
+            return
+
         project = avalon.io.find_one({
             "name": avalon.api.Session["AVALON_PROJECT"],
             "type": "project"

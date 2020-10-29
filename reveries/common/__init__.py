@@ -1,6 +1,24 @@
 from avalon import io
 
 
+def skip_instance(context, family_name):
+    """
+    Skip process if instance exists.
+    :param context: (obj) Instance context
+    :param family_name: (str/list) F
+    :return: bool
+    """
+    if not isinstance(family_name, list):
+        family_name = [family_name]
+
+    _exists = False
+    for instance in context:
+        if instance.data["family"] in family_name:
+            _exists = True
+            break
+    return _exists
+
+
 def get_frame_range(shot_name):
     assert shot_name, "Please provide shot name."
 

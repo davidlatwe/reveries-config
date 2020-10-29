@@ -24,8 +24,13 @@ class ValidateMODGroup(pyblish.api.InstancePlugin):
         return _exists
 
     def process(self, instance):
+        from reveries.common import skip_instance
+
         _family = str(instance.data["family"])
         context = instance.context
+
+        if skip_instance(context, ['reveries.xgen']):
+            return
 
         if _family in ['reveries.model']:
             self._model_family_check(instance)
