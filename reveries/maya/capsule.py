@@ -105,16 +105,23 @@ def assign_shader(meshes, shadingEngine, on_object=True):
     all_shaded = list(all_shaded)
     all_nodes = list(all_nodes)
 
+    def _assign(_all_nodes, _shadingEngine):
+        try:
+            cmds.sets(_all_nodes, edit=True, forceElement=_shadingEngine)
+        except RuntimeError as err:
+            raise RuntimeError("Shader assignment failed, renderPartition "
+                               "connection break ? (%s)" % str(err).strip())
+
     try:
         if on_object:
             group_ids = cmds.listConnections(all_nodes, type="groupId")
-            cmds.sets(all_nodes, edit=True, forceElement=shadingEngine)
+            _assign(all_nodes, shadingEngine)
             # Delete unused groupId node
             for group_id in cmds.ls(group_ids):
                 if not cmds.listConnections(group_id):
                     cmds.delete(group_id)
         else:
-            cmds.sets(all_shaded, edit=True, forceElement=shadingEngine)
+            _assign(all_shaded, shadingEngine)
 
         yield
 
