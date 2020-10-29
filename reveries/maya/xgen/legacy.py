@@ -907,6 +907,8 @@ def export_grooming(description, groom, out_dir):
 
 
 def import_grooming(description, groom, groom_dir):
+    # activate description (important, or groom may not bind)
+    xg.igActivateDescription(description)
     # bind groom to geo
     pmc.mel.igBindFromXGen(description)
     # set groom density and sampling method
