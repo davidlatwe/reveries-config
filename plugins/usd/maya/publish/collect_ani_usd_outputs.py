@@ -20,6 +20,9 @@ class CollectAniUSDOutputs(pyblish.api.InstancePlugin):
         return _exists
 
     def process(self, instance):
+        if instance.data.get("isDummy"):
+            return
+
         # Create new instance
         context = instance.context
         backup = instance
