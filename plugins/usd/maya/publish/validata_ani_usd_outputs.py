@@ -16,6 +16,8 @@ class ValidateAniUSDOutputs(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         from reveries.maya import pipeline
+        if instance.data.get("isDummy"):
+            return
 
         self.out_cache = instance.data.get("outCache")
         top_group = self.out_cache[0].split('|')[1]
