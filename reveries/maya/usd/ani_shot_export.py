@@ -127,9 +127,12 @@ class AniUsdBuilder(object):
             "type": "subset"
         }
         subset_data = io.find_one(_filter)
-        usd_file = get_publish_files.get_files(
-            subset_data["_id"], key='entryFileName').get('USD', '')
-        return usd_file
+        if subset_data:
+            usd_file = get_publish_files.get_files(
+                subset_data["_id"], key='entryFileName').get('USD', '')
+            return usd_file
+
+        return None
 
     def export(self, save_path):
         self.stage.GetRootLayer().Export(save_path)
