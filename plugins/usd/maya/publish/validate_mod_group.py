@@ -58,15 +58,20 @@ class ValidateMODGroup(pyblish.api.InstancePlugin):
                     version = None
 
                     # Get current version from reference path
-                    path_ver = re.findall("/publish/modelDefault/v(\S+)/", _path)
+                    path_ver = re.findall(
+                        "/publish/modelDefault/v(\S+)/",
+                        _path
+                    )
                     if path_ver:
                         version = int(path_ver[0].split('/')[0])
 
                     if not version:
                         is_invalid = True
-                        msg = "Can't get version name from model reference. Please check below thing:<br>" \
+                        msg = "Can't get version name from model reference. " \
+                              "Please check below thing:<br>" \
                               "- Check your model reference from publish.<br>" \
-                              "- Check the version used has already published model usd."
+                              "- Check the version used has already " \
+                              "published model usd."
                         break
                         # self.log.error(msg)
                         # raise Exception("MOD group check failed.")
@@ -75,18 +80,23 @@ class ValidateMODGroup(pyblish.api.InstancePlugin):
                     _filter = {"type": "asset", "name": asset_name}
                     asset_data = io.find_one(_filter)
 
-                    _filter = {"type": "subset", "name": 'modelDefault', "parent": asset_data['_id']}
+                    _filter = {
+                        "type": "subset",
+                        "name": 'modelDefault',
+                        "parent": asset_data['_id']
+                    }
                     subset_data = io.find_one(_filter)
 
-                    pub_usd_files = get_files(subset_data['_id'], version=version).get('USD', [])
+                    pub_usd_files = get_files(
+                        subset_data['_id'], version=version).get('USD', [])
                     if not pub_usd_files:
                         is_invalid = True
-                        msg = \
-                            "The model version( you're using {version} ) didn't publish usd file.<br>" \
-                            "Please update your reference after model usd publish.".format(
+                        msg = "The model version( you're using {version} ) " \
+                              "didn't publish usd file.<br>" \
+                              "Please update your reference after " \
+                              "model usd publish.".format(
                                 version="v{:03d}".format(int(version)))
                         break
-                        # raise Exception("MOD group check failed.")
 
             if is_invalid:
                 self.log.error(msg)

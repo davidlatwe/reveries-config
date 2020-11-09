@@ -28,7 +28,7 @@ class ExtractSetDressLayer(pyblish.api.InstancePlugin):
         instance.data["repr.USD.entryFileName"] = filename
         # instance.data["step"] = "Layout"
         instance.data["subsetGroup"] = "Layout"
-        instance.data["step_type"] = "setdress_layer_prim"
+        # instance.data["step_type"] = "setdress_layer"
 
         try:
             ropnode.render()

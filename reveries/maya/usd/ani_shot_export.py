@@ -22,15 +22,16 @@ class AniUsdBuilder(object):
         """
         Get shot data.
         asset_usd_dict = {
-            'character': {
-                u'HanMaleA_rig_02': u'Q:/199909_AvalonPlay/Avalon/Shot/sh0100/publish/usd.HanMaleA_rig_02.Default/v002/USD/ani_prim.usda'
+            'Char': {
+                u'BoxC_rig_01_': u'/.../v003/USD/ani_cache_prim.usda'
             },
             'props': {
             }
         }
         """
         if not self.frame_in or not self.frame_out:
-            self.frame_in, self.frame_out = utils.get_frame_range(self.shot_name)
+            self.frame_in, self.frame_out = \
+                utils.get_frame_range(self.shot_name)
 
         # Get shot id
         _filter = {"type": "asset", "name": self.shot_name}
@@ -46,7 +47,9 @@ class AniUsdBuilder(object):
                 ns = subset_name.split('.')[1]
                 asset_type = utils.check_asset_type_from_ns(ns)
                 subset_id = asset_data['_id']
-                files = get_publish_files.get_files(subset_id, key='entryFileName').get('USD', '')
+                files = get_publish_files.get_files(
+                    subset_id,
+                    key='entryFileName').get('USD', '')
                 self.asset_usd_dict.setdefault(asset_type, dict())[ns] = files
 
         from pprint import pprint
@@ -57,38 +60,80 @@ class AniUsdBuilder(object):
         self.stage.SetStartTimeCode(self.frame_in)
         self.stage.SetEndTimeCode(self.frame_out)
 
-        # Create shot prim
+        # Create ani prim
         shot_define = UsdGeom.Xform.Define(self.stage, "/ROOT")
-        self.stage.GetRootLayer().documentation = "Animation shot usd for {}".format(self.shot_name)
+        self.stage.GetRootLayer().documentation = \
+            "Animation shot usd for {}".format(self.shot_name)
 
-        # Add shot variants
-        variants = shot_define.GetPrim().GetVariantSets().AddVariantSet("shot")
-        variants.AddVariant(self.shot_name)
-        variants.SetVariantSelection(self.shot_name)
+        for _asset_type in self.asset_usd_dict.keys():
+            UsdGeom.Xform.Define(
+                self.stage,
+                "/ROOT/Asset/{}".format(_asset_type)
+            )
+            if _asset_type in self.asset_usd_dict.keys():
+                for _asset_name, _usd_path in \
+                        self.asset_usd_dict[_asset_type].items():
+                    _instance_path = "/ROOT/Asset/{}/{}".format(
+                        _asset_type, _asset_name)
+                    UsdGeom.Xform.Define(self.stage, _instance_path)
 
-        with variants.GetVariantEditContext():
-            # Add step variants
-            asset_define = UsdGeom.Xform.Define(self.stage, "/ROOT/asset")
-            step_variants = asset_define.GetPrim().GetVariantSets().AddVariantSet("step")
-            step_variants.AddVariant('ani')
-            step_variants.SetVariantSelection('ani')
+                    # Add usd reference
+                    _prim = self.stage.GetPrimAtPath(_instance_path)
+                    _prim.GetReferences().SetReferences(
+                        [Sdf.Reference(_usd_path)]
+                    )
 
-            # Add asset type prim
-            with step_variants.GetVariantEditContext():
-                for _asset_type in self.asset_usd_dict.keys():
-                    UsdGeom.Xform.Define(self.stage, "/ROOT/asset/{}".format(_asset_type))
-                    if _asset_type in self.asset_usd_dict.keys():
-                        for _asset_name, _usd_path in self.asset_usd_dict[_asset_type].items():
-                            _instance_path = "/ROOT/asset/{}/{}".format(_asset_type, _asset_name)
-                            UsdGeom.Xform.Define(self.stage, _instance_path)
-
-                            # Add usd reference
-                            _prim = self.stage.GetPrimAtPath(_instance_path)
-                            _prim.GetReferences().SetReferences([Sdf.Reference(_usd_path)])
+        # Add camera sublayer
+        root_layer = self.stage.GetRootLayer()
+        cam_prim_file = self._get_camera_prim_files(self.shot_name)
+        if cam_prim_file:
+            root_layer.subLayerPaths.append(cam_prim_file)
 
         root_prim = self.stage.GetPrimAtPath('/ROOT')
         self.stage.SetDefaultPrim(root_prim)
 
+        # Override camera variant set
+        ani_cam_subset_name = self._get_ani_cam_subset_name(self.shot_name)
+        if ani_cam_subset_name:
+            over_xform_prim = self.stage.OverridePrim("/ROOT/Camera")
+            variants = over_xform_prim.GetVariantSets(). \
+                AddVariantSet("camera_subset")
+            variants.SetVariantSelection(ani_cam_subset_name)
+
+    def _get_ani_cam_subset_name(self, shot_name):
+        _filter = {'type': 'asset', 'name': shot_name}
+        shot_data = io.find_one(_filter)
+
+        _filter = {
+            'type': 'subset',
+            'data.task': 'animation',
+            'data.families': 'reveries.camera',
+            'parent': shot_data['_id']
+        }
+        subset_data = io.find_one(_filter)
+
+        if subset_data:
+            return subset_data.get("name", None)
+        else:
+            return None
+
+    def _get_camera_prim_files(self, shot_name):
+        _filter = {"type": "asset", "name": shot_name}
+        shot_data = io.find_one(_filter)
+
+        _filter = {
+            "parent": shot_data["_id"],
+            "name": "camPrim",
+            "type": "subset"
+        }
+        subset_data = io.find_one(_filter)
+        if subset_data:
+            usd_file = get_publish_files.get_files(
+                subset_data["_id"], key='entryFileName').get('USD', '')
+            return usd_file
+
+        return None
+
     def export(self, save_path):
         self.stage.GetRootLayer().Export(save_path)
-        # self.stage.GetRootLayer().ExportToString()
+        # print self.stage.GetRootLayer().ExportToString()

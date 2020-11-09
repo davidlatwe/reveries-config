@@ -12,16 +12,12 @@ class ValidatePathFromPublish(pyblish.api.InstancePlugin):
     label = "Validate Path From Publish"
     hosts = ["houdini"]
     families = [
-        "reveries.setdress.usd",
         "reveries.setdress.layer_prim"
     ]
 
     def process(self, instance):
         import hou
         from reveries.common.usd import check_path_from_publish
-
-        if instance.data.get("autoUpdate", False):
-            return
 
         node = instance[0]
 
@@ -50,4 +46,3 @@ class ValidatePathFromPublish(pyblish.api.InstancePlugin):
                     lop_path=lop_path,
                     paths=_paths)
             )
-

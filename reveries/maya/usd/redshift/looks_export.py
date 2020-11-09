@@ -43,10 +43,30 @@ def keepNamespace(name):
     return name.replace(':', '_')
 
 
+def getShadingGroups(root):
+    import maya.api.OpenMaya as om
+    import maya.cmds as cmds
+
+    children_meshs = cmds.listRelatives(root,
+                                        ad=True, typ='surfaceShape', f=True)
+    mesh_list = om.MSelectionList()
+    for mesh in children_meshs:
+        mesh_list.add(mesh)
+    shadingGroup_list = []
+    for i in range(mesh_list.length()):
+        mesh = om.MFnMesh(mesh_list.getDagPath(i))
+        shadingGroups = [om.MFnDependencyNode(x).name()
+                         for x in mesh.getConnectedShaders(0)[0]]
+        shadingGroup_list += shadingGroups
+    shadingGroup_list = list(set(shadingGroup_list))
+
+    return shadingGroup_list
+
+
 class RedshiftShadersToUSD:
 
-    def __init__(self, shadingGroups=None, scopeName='Looks', filename=None, assetVersion=None, assetName='None',
-                 stripNS=True):
+    def __init__(self, shadingGroups=None, scopeName='Looks', filename=None,
+                 assetVersion=None, assetName='None', stripNS=True):
         import maya.cmds as cmds
 
         if shadingGroups == None or type(shadingGroups) is not list:
@@ -55,7 +75,8 @@ class RedshiftShadersToUSD:
         if len(shadingGroups) == 0:
             return
 
-        if False in [(cmds.nodeType(shadingGroup) == 'shadingEngine') for shadingGroup in shadingGroups]:
+        if False in [(cmds.nodeType(shadingGroup) == 'shadingEngine')
+                     for shadingGroup in shadingGroups]:
             return
 
         if stripNS is True:
@@ -1143,35 +1164,67 @@ class RedshiftShadersToUSD:
         # self.stage.SetDefaultPrim(scopeRoot)
 
         for shadingGroup in self.shadingGroups:
-            surfaceShaders = cmds.listConnections(shadingGroup + '.surfaceShader')
+            surfaceShaders = cmds.listConnections(
+                shadingGroup + '.surfaceShader')
             if surfaceShaders:
                 surfaceShader = surfaceShaders[0]
                 self._check_usd_preview(surfaceShader, shadingGroup)
 
-            usdShadingGroup = UsdShade.Material.Define(self.stage, self.scope.GetPath().AppendChild(
-                self.procNamespace(shadingGroup)))
-            usdShaderCollector = UsdShade.Shader.Define(self.stage, usdShadingGroup.GetPath().AppendChild(
-                self.procNamespace(shadingGroup)))
+            usdShadingGroup = UsdShade.Material.Define(
+                self.stage,
+                self.scope.GetPath().AppendChild(
+                    self.procNamespace(shadingGroup)
+                )
+            )
+            usdShaderCollector = UsdShade.Shader.Define(
+                self.stage,
+                usdShadingGroup.GetPath().AppendChild(
+                    self.procNamespace(shadingGroup)
+                )
+            )
             usdShaderCollector.CreateIdAttr('redshift_usd_material')
             usdShaderCollector.CreateOutput('Shader', Sdf.ValueTypeNames.Token)
-            usdShadingGroup.CreateOutput('Redshift:surface', Sdf.ValueTypeNames.Token).ConnectToSource(
-                usdShaderCollector, 'Shader')
+            usdShadingGroup.CreateOutput(
+                'Redshift:surface',
+                Sdf.ValueTypeNames.Token).\
+                ConnectToSource(usdShaderCollector, 'Shader')
 
-            # surfaceShaders = cmds.listConnections(shadingGroup + '.surfaceShader')
             if surfaceShaders:
                 surfaceShader = surfaceShaders[0]
-                usdShaderCollector.CreateInput('Surface', Sdf.ValueTypeNames.Color3f)
-                source_attr = cmds.listConnections(shadingGroup + '.surfaceShader', p=True)[0].split('.')[-1]
-                self.rebuildShader(source_shader=surfaceShader, usd_target=usdShaderCollector, source_attr=source_attr,
-                                   target_attr='Surface', usdShadingGroup=usdShadingGroup)
+                usdShaderCollector.CreateInput(
+                    'Surface',
+                    Sdf.ValueTypeNames.Color3f
+                )
+                source_attr = cmds.listConnections(
+                    shadingGroup + '.surfaceShader',
+                    p=True)[0].split('.')[-1]
+                self.rebuildShader(
+                    source_shader=surfaceShader,
+                    usd_target=usdShaderCollector,
+                    source_attr=source_attr,
+                    target_attr='Surface',
+                    usdShadingGroup=usdShadingGroup
+                )
 
-            displacementShaders = cmds.listConnections(shadingGroup + '.displacementShader')
+            displacementShaders = cmds.listConnections(
+                shadingGroup + '.displacementShader'
+            )
             if displacementShaders:
                 displacementShader = displacementShaders[0]
-                usdShaderCollector.CreateInput('Displacement', Sdf.ValueTypeNames.Float3)
-                source_attr = cmds.listConnections(shadingGroup + '.displacementShader', p=True)[0].split('.')[-1]
-                self.rebuildShader(source_shader=displacementShader, usd_target=usdShaderCollector,
-                                   source_attr=source_attr, target_attr='Displacement', usdShadingGroup=usdShadingGroup)
+                usdShaderCollector.CreateInput(
+                    'Displacement',
+                    Sdf.ValueTypeNames.Float3
+                )
+                source_attr = cmds.listConnections(
+                    shadingGroup + '.displacementShader',
+                    p=True)[0].split('.')[-1]
+                self.rebuildShader(
+                    source_shader=displacementShader,
+                    usd_target=usdShaderCollector,
+                    source_attr=source_attr,
+                    target_attr='Displacement',
+                    usdShadingGroup=usdShadingGroup
+                )
 
     def _Color(self, r, g, b):
         # for this tutorial, the colors i got are not in linear space.
@@ -1183,54 +1236,76 @@ class RedshiftShadersToUSD:
 
         if cmds.attributeQuery('usd_preview', node=source_shader, ex=True):
             if cmds.getAttr('{}.usd_preview'.format(source_shader)):
-                material = UsdShade.Material.Define(self.stage, self.scope.GetPath().AppendChild(
-                    self.procNamespace(shadingGroup)))
-                # stInput = material.CreateInput('frame:stPrimvarName', Sdf.ValueTypeNames.Token)
-                # stInput.Set('st')
-
-                pbrShader = UsdShade.Shader.Define(self.stage, material.GetPath().AppendChild(
-                    self.procNamespace(source_shader)))
+                material = UsdShade.Material.Define(
+                    self.stage,
+                    self.scope.GetPath().AppendChild(
+                        self.procNamespace(shadingGroup)
+                    )
+                )
+                pbrShader = UsdShade.Shader.Define(
+                    self.stage,
+                    material.GetPath().AppendChild(
+                        self.procNamespace(source_shader)))
                 pbrShader.CreateIdAttr("UsdPreviewSurface")
 
                 # Get color
                 color = cmds.getAttr("{}.color".format(source_shader))[0]
-                # pbrShader.CreateInput('diffuseColor', Sdf.ValueTypeNames.Color3f).Set((color[0], color[1], color[2]))
 
                 r, g, b = self._Color(color[0], color[1], color[2])
-                pbrShader.CreateInput('diffuseColor', Sdf.ValueTypeNames.Color3f).Set((r, g, b))
+                pbrShader.CreateInput(
+                    'diffuseColor',
+                    Sdf.ValueTypeNames.Color3f).Set((r, g, b))
 
-                material.CreateSurfaceOutput().ConnectToSource(pbrShader, "surface")
+                material.CreateSurfaceOutput().ConnectToSource(
+                    pbrShader, "surface")
 
                 return True
         return False
 
-    def rebuildShader(self, source_shader, usd_target, source_attr, target_attr, usdShadingGroup):
+    def rebuildShader(self, source_shader, usd_target, source_attr,
+                      target_attr, usdShadingGroup):
         import maya.cmds as cmds
 
         nodeType = cmds.nodeType(source_shader)
 
-        # Creating the Shader
-        if nodeType in self.translator.keys():  # Check nodeType if in translator dictionary
+        # Creating the Shader. Check nodeType if in translator dictionary
+        if nodeType in self.translator.keys():
             attr_table = self.translator[nodeType]
-            if self.procNamespace(source_shader) not in [x.GetName() for x in
-                                                         usdShadingGroup.GetPrim().GetAllChildren()]:
-                usdShader = UsdShade.Shader.Define(self.stage, usdShadingGroup.GetPath().AppendChild(
-                    self.procNamespace(source_shader)))
-                usdShader.CreateIdAttr(self.translator[nodeType]['info:id']['name'])
+            if self.procNamespace(source_shader) not in \
+                    [x.GetName() for x in
+                     usdShadingGroup.GetPrim().GetAllChildren()]:
+                usdShader = UsdShade.Shader.Define(
+                    self.stage,
+                    usdShadingGroup.GetPath().AppendChild(
+                        self.procNamespace(source_shader)
+                    )
+                )
+                usdShader.CreateIdAttr(
+                    self.translator[nodeType]['info:id']['name']
+                )
             else:
-                usdShader = UsdShade.Shader.Get(self.stage, usdShadingGroup.GetPath().AppendChild(
-                    self.procNamespace(source_shader)))
-
-            if source_attr in attr_table.keys():  # Check connection input if in translator dictionary
-                if attr_table[source_attr]['name'] not in [x.GetBaseName() for x in usdShader.GetOutputs()]:
-                    usdShaderOutput = usdShader.CreateOutput(attr_table[source_attr]['name'],
-                                                             attr_table[source_attr]['type'])
+                usdShader = UsdShade.Shader.Get(
+                    self.stage,
+                    usdShadingGroup.GetPath().AppendChild(
+                        self.procNamespace(source_shader)
+                    )
+                )
+            # Check connection input if in translator dictionary
+            if source_attr in attr_table.keys():
+                if attr_table[source_attr]['name'] not in \
+                        [x.GetBaseName() for x in usdShader.GetOutputs()]:
+                    usdShaderOutput = usdShader.CreateOutput(
+                        attr_table[source_attr]['name'],
+                        attr_table[source_attr]['type']
+                    )
 
                 else:
-                    usdShaderOutput = usdShader.GetOutput(attr_table[source_attr]['name'])
+                    usdShaderOutput = usdShader.GetOutput(
+                        attr_table[source_attr]['name'])
 
                 # Connect
-                usd_target.GetInput(target_attr).ConnectToSource(usdShaderOutput)
+                usd_target.GetInput(target_attr).\
+                    ConnectToSource(usdShaderOutput)
             else:
                 return
 
@@ -1240,20 +1315,29 @@ class RedshiftShadersToUSD:
                     if nodeType == 'file' and attr == 'fileTextureName':
                         _value = self._get_fileTextureName(source_shader)
                     else:
-                        _value = cmds.getAttr('{}.{}'.format(source_shader, attr), x=True)
-                    usdShader.CreateInput(attr_table[attr]['name'], attr_table[attr]['type']).Set(
-                        attr_table[attr]['convert'](_value))
+                        _value = cmds.getAttr(
+                            '{}.{}'.format(source_shader, attr),
+                            x=True
+                        )
+                    usdShader.CreateInput(
+                        attr_table[attr]['name'],
+                        attr_table[attr]['type']).\
+                        Set(attr_table[attr]['convert'](_value))
 
-            if attr_table['post_proc'](source_shader, usdShader, usdShadingGroup):
+            if attr_table['post_proc'](
+                    source_shader, usdShader, usdShadingGroup):
                 if cmds.listConnections(source_shader, d=False, c=True, p=True):
-                    connections = iter(cmds.listConnections(source_shader, d=False, c=True, p=True))
-                    for connectDest, connectSource in zip(connections, connections):
+                    connections = iter(cmds.listConnections(
+                        source_shader, d=False, c=True, p=True))
+                    for connectDest, connectSource in \
+                            zip(connections, connections):
                         connectSourceNode = connectSource.split('.')[0]
                         connectSourceAttr = connectSource.split('.')[-1]
                         # connectDestNode = connectDest.split('.')[0]
                         connectDestAttr = connectDest.split('.')[-1]
                         if connectDestAttr in attr_table.keys():
-                            self.rebuildShader(source_shader=connectSourceNode, usd_target=usdShader,
+                            self.rebuildShader(source_shader=connectSourceNode,
+                                               usd_target=usdShader,
                                                source_attr=connectSourceAttr,
                                                target_attr=attr_table[connectDestAttr]['name'],
                                                usdShadingGroup=usdShadingGroup)
@@ -1264,10 +1348,16 @@ class RedshiftShadersToUSD:
     def _get_fileTextureName(self, node):
         import maya.cmds as cmds
 
-        if cmds.attributeQuery('computedFileTextureNamePattern', node=node, exists=True):
-            texture_pattern = cmds.getAttr('{}.computedFileTextureNamePattern'.format(node))
+        if cmds.attributeQuery(
+                'computedFileTextureNamePattern',
+                node=node,
+                exists=True
+        ):
+            texture_pattern = cmds.getAttr(
+                '{}.computedFileTextureNamePattern'.format(node))
 
-            patterns = ["<udim>", "<tile>", "u<u>_v<v>", "<f>", "<frame0", "<uvtile>"]
+            patterns = [
+                "<udim>", "<tile>", "u<u>_v<v>", "<f>", "<frame0", "<uvtile>"]
             lower = texture_pattern.lower()
             if any(pattern in lower for pattern in patterns):
                 return texture_pattern
@@ -1282,18 +1372,32 @@ class RedshiftShadersToUSD:
     def post_displacemenShader(self, mayaShader, usdShader, usdShadingGroup):
         import maya.cmds as cmds
 
-        if cmds.listConnections(mayaShader + '.displacement', s=True, d=False, p=True):
+        if cmds.listConnections(mayaShader + '.displacement',
+                                s=True, d=False, p=True):
             connectSourceNode, source_attr = \
-            cmds.listConnections(mayaShader + '.displacement', s=True, d=False, p=True)[0].split('.')
+            cmds.listConnections(mayaShader + '.displacement',
+                                 s=True, d=False, p=True)[0].split('.')
             usdShader.CreateInput('scale', Sdf.ValueTypeNames.Float)
-            self.rebuildShader(source_shader=connectSourceNode, usd_target=usdShader, source_attr=source_attr,
-                               target_attr='scale', usdShadingGroup=usdShadingGroup)
-        elif cmds.listConnections(mayaShader + '.vectorDisplacement', s=True, d=False, p=True):
+            self.rebuildShader(
+                source_shader=connectSourceNode,
+                usd_target=usdShader,
+                source_attr=source_attr,
+                target_attr='scale',
+                usdShadingGroup=usdShadingGroup
+            )
+        elif cmds.listConnections(mayaShader + '.vectorDisplacement',
+                                  s=True, d=False, p=True):
             connectSourceNode, source_attr = \
-            cmds.listConnections(mayaShader + '.vectorDisplacement', s=True, d=False, p=True)[0].split('.')
+            cmds.listConnections(mayaShader + '.vectorDisplacement',
+                                 s=True, d=False, p=True)[0].split('.')
             usdShader.CreateInput('texMap', Sdf.ValueTypeNames.Color3f)
-            self.rebuildShader(source_shader=connectSourceNode, usd_target=usdShader, source_attr=source_attr,
-                               target_attr='texMap', usdShadingGroup=usdShadingGroup)
+            self.rebuildShader(
+                source_shader=connectSourceNode,
+                usd_target=usdShader,
+                source_attr=source_attr,
+                target_attr='texMap',
+                usdShadingGroup=usdShadingGroup
+            )
         return False
 
     def post_Ramp(self, mayaShader, usdShader, usdShadingGroup):
@@ -1303,12 +1407,18 @@ class RedshiftShadersToUSD:
         ramper = RampSampler(mayaShader)
 
         _node_type = str(cmds.getAttr('{}.type'.format(mayaShader)))
-        usdShader.CreateInput('inputMapping', Sdf.ValueTypeNames.Token).Set(_node_type)
+        usdShader.CreateInput('inputMapping', Sdf.ValueTypeNames.Token).Set(
+            _node_type)
 
-        usdShader.CreateInput('ramp_basis', Sdf.ValueTypeNames.String).Set(ramper.get_basis_name())
-        usdShader.CreateInput('ramp', Sdf.ValueTypeNames.Int).Set(ramper.get_key_number())
-        usdShader.CreateInput('ramp_keys', Sdf.ValueTypeNames.FloatArray).Set(ramper.get_keys_list())
-        usdShader.CreateInput('ramp_values', Sdf.ValueTypeNames.Float3Array).Set(ramper.get_color_list())
+        usdShader.CreateInput('ramp_basis', Sdf.ValueTypeNames.String).Set(
+            ramper.get_basis_name())
+        usdShader.CreateInput('ramp', Sdf.ValueTypeNames.Int).Set(
+            ramper.get_key_number())
+        usdShader.CreateInput('ramp_keys', Sdf.ValueTypeNames.FloatArray).Set(
+            ramper.get_keys_list())
+        usdShader.CreateInput(
+            'ramp_values', Sdf.ValueTypeNames.Float3Array).Set(
+            ramper.get_color_list())
 
         self._uv_coord(mayaShader, usdShader)
 
@@ -1318,12 +1428,18 @@ class RedshiftShadersToUSD:
         connections = cmds.listConnections(mayaShader + '.uvCoord')
         if connections and cmds.nodeType(connections[0]) == 'place2dTexture':
             uv_coord = connections[0]
-            usdShader.CreateInput('mirrorU', Sdf.ValueTypeNames.Int).Set(cmds.getAttr(uv_coord + '.mirrorU'))
-            usdShader.CreateInput('mirrorV', Sdf.ValueTypeNames.Int).Set(cmds.getAttr(uv_coord + '.mirrorV'))
-            usdShader.CreateInput('wrapU', Sdf.ValueTypeNames.Int).Set(cmds.getAttr(uv_coord + '.wrapU'))
-            usdShader.CreateInput('wrapV', Sdf.ValueTypeNames.Int).Set(cmds.getAttr(uv_coord + '.wrapV'))
-            usdShader.CreateInput('rotate', Sdf.ValueTypeNames.Float).Set(cmds.getAttr(uv_coord + '.rotateUV'))
-            usdShader.CreateInput('offset', Sdf.ValueTypeNames.Float2).Set(cmds.getAttr(uv_coord + '.offset')[0])
+            usdShader.CreateInput('mirrorU', Sdf.ValueTypeNames.Int).Set(
+                cmds.getAttr(uv_coord + '.mirrorU'))
+            usdShader.CreateInput('mirrorV', Sdf.ValueTypeNames.Int).Set(
+                cmds.getAttr(uv_coord + '.mirrorV'))
+            usdShader.CreateInput('wrapU', Sdf.ValueTypeNames.Int).Set(
+                cmds.getAttr(uv_coord + '.wrapU'))
+            usdShader.CreateInput('wrapV', Sdf.ValueTypeNames.Int).Set(
+                cmds.getAttr(uv_coord + '.wrapV'))
+            usdShader.CreateInput('rotate', Sdf.ValueTypeNames.Float).Set(
+                cmds.getAttr(uv_coord + '.rotateUV'))
+            usdShader.CreateInput('offset', Sdf.ValueTypeNames.Float2).Set(
+                cmds.getAttr(uv_coord + '.offset')[0])
 
     def post_TextureSampler(self, mayaShader, usdShader, usdShadingGroup):
         import maya.cmds as cmds
@@ -1354,31 +1470,14 @@ class RedshiftShadersToUSD:
         self.stage.Export(self.filename)
 
 
-def getShadingGroups(root):
-    import maya.api.OpenMaya as om
-    import maya.cmds as cmds
-
-    children_meshs = cmds.listRelatives(root, ad=True, typ='surfaceShape', f=True)
-    mesh_list = om.MSelectionList()
-    for mesh in children_meshs:
-        mesh_list.add(mesh)
-    shadingGroup_list = []
-    for i in range(mesh_list.length()):
-        mesh = om.MFnMesh(mesh_list.getDagPath(i))
-        shadingGroups = [om.MFnDependencyNode(x).name() for x in mesh.getConnectedShaders(0)[0]]
-        shadingGroup_list += shadingGroups
-    shadingGroup_list = list(set(shadingGroup_list))
-
-    return shadingGroup_list
-
-
 def export(file_path=None):
     import maya.cmds as cmds
 
     shadingGroups = getShadingGroups(cmds.ls(sl=True)[0])
-    tmp = RedshiftShadersToUSD(shadingGroups=shadingGroups, filename=file_path)
-
+    exporter = RedshiftShadersToUSD(
+        shadingGroups=shadingGroups,
+        filename=file_path
+    )
     # print(tmp.stage.GetRootLayer().ExportToString())
-
-    tmp.Save()
-    del tmp
+    exporter.Save()
+    del exporter

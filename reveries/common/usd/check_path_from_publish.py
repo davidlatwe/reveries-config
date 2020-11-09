@@ -16,7 +16,8 @@ class CheckPath(object):
 
         source_stage = Usd.Stage.Open(file_path)
         root_layer = source_stage.GetRootLayer()
-        layers = [s.replace('\\', '/') for s in root_layer.GetExternalReferences() if s]
+        layers = [s.replace('\\', '/')
+                  for s in root_layer.GetExternalReferences() if s]
         print('layers: {}\n'.format(layers))
 
         for _path in layers:

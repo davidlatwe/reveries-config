@@ -5,7 +5,8 @@ from reveries.common.path_resolver import PathResolver
 def update(usd_file=None, output_path=None):
     source_stage = Usd.Stage.Open(usd_file)
     root_layer = source_stage.GetRootLayer()
-    layers = [s.replace('\\', '/') for s in root_layer.GetExternalReferences() if s]
+    layers = [s.replace('\\', '/')
+              for s in root_layer.GetExternalReferences() if s]
 
     for prim in source_stage.Traverse():
 
@@ -26,7 +27,8 @@ def update(usd_file=None, output_path=None):
                     latest_file_path = _path_resolver.get_latest_file()
                     if latest_file_path != current_path:
                         if isinstance(latest_file_path, list):
-                            latest_file_path = [s for s in latest_file_path if s.endswith(".usda")][0]
+                            latest_file_path = [s for s in latest_file_path
+                                                if s.endswith(".usda")][0]
 
                         update_prim = source_stage.GetPrimAtPath(_prim_path)
                         update_prim.GetReferences().SetReferences(

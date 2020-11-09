@@ -1,4 +1,4 @@
-from pxr import Usd, Sdf, UsdGeom
+from pxr import Usd
 from reveries.common import path_resolver
 
 
@@ -33,7 +33,8 @@ class GetAssetInfo(object):
     def _get_data(self):
         source_stage = Usd.Stage.Open(self.usd_file)
         root_layer = source_stage.GetRootLayer()
-        layers = [s.replace('\\', '/') for s in root_layer.GetExternalReferences() if s]
+        layers = [s.replace('\\', '/')
+                  for s in root_layer.GetExternalReferences() if s]
 
         resolver_obj = path_resolver.PathResolver()
         for _path in layers:
@@ -42,6 +43,7 @@ class GetAssetInfo(object):
             if silo_name in ['Shot']:
                 subset_name = resolver_obj.get_subset_name()
                 subset_id = str(resolver_obj.get_subset_id())
+                subset_data = resolver_obj.subset_data
                 version_id = str(resolver_obj.get_version_id())
                 representation_id = str(resolver_obj.get_representation_id())
                 version_name = resolver_obj.current_version_name  # v002
@@ -53,11 +55,12 @@ class GetAssetInfo(object):
                         'version_id': version_id,
                         'representation_id': representation_id,
                         'type': 'subset',
-                        'step': resolver_obj.subset_data.get(
-                            'data', {}).get('subsetGroup'),
+                        'step': subset_data.get('data', {}).get(
+                            'subsetGroup', ''),
                         'usd_file_path': _path,
-                        'step_type': resolver_obj.subset_data.get(
-                            'step_type', '')
+                        'families': subset_data.get('data', {}).get(
+                            'families', []),
+                        # 'step_type': subset_data.get('step_type', '')
                     }
                 }
                 self.asset_info.setdefault(silo_name, dict()).update(_tmp)

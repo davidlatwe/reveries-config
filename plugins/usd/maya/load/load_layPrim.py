@@ -80,7 +80,7 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
         from maya import cmds
 
         for subset_name, data in layPrim_data.get("Shot", {}).items():
-            if data.get("step_type", "") in ["setdress_prim"]:
+            if "reveries.setdress.usd" in data.get("families", []):
                 subset_id = data["subset_id"]
                 version_name = data["version_name"]
                 version_num = int(version_name.replace("v", ""))

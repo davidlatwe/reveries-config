@@ -14,7 +14,9 @@ class USDSetdressLoader(ReferenceLoader, avalon.api.Loader):
 
     hosts = ["maya"]
 
-    families = ["reveries.setdress.usd"]
+    families = [
+        "reveries.setdress.usd"
+    ]
 
     representations = [
         "GPUCache",

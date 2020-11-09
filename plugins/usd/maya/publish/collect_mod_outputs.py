@@ -44,7 +44,8 @@ class CollectMODUSDOutputs(pyblish.api.InstancePlugin):
         context = instance.context
         backup = instance
 
-        # Create proxyPrim/renderPrim when only publish model if these 2 subset already published.
+        # Create proxyPrim/renderPrim when only publish model
+        # if these 2 subset already published.
         if len(context) != 1:
             return
 
@@ -53,7 +54,7 @@ class CollectMODUSDOutputs(pyblish.api.InstancePlugin):
         subset_types = []
 
         if self.subset_exists('proxyPrim'):
-             subset_types.append('proxy')
+            subset_types.append('proxy')
 
         if self.subset_exists('renderPrim'):
             subset_types.append('render')

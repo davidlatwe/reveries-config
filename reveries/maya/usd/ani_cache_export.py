@@ -8,12 +8,15 @@ class AnimationExtractor(object):
     """
     Export point cache only.
     """
-    def __init__(self, source_path=None, shot_time=None):
+    def __init__(self, source_path=None, shot_time=None,
+                 root_usd_path=None, has_proxy=None):
         self.source_path = source_path
         self.shot_time = shot_time
 
         self.source_stage = None
         self.override_stage = None
+        self.root_usd_path = root_usd_path
+        self.has_proxy = has_proxy
 
         self.process()
 
@@ -28,29 +31,60 @@ class AnimationExtractor(object):
             self.override_stage.SetStartTimeCode(self.shot_time[0])
             self.override_stage.SetEndTimeCode(self.shot_time[1])
 
+    def _check_prim_path(self, prim):
+        def _check_mod_exists(key):
+            """
+            Check MOD group exists or not.
+            :param key: modelDefault/modelDefaultProxy
+            :return:
+            """
+            destination_path = '/ROOT/{}/MOD'.format(key)
+            for prim in self.source_stage.TraverseAll():
+                if '/ROOT/MOD/' in str(prim.GetPath()):
+                    destination_path = '/ROOT/{}'.format(key)
+                    break
+            return destination_path
+
+        if self.has_proxy and "_proxy" in str(prim.GetPath()):
+            prim_path = str(prim.GetPath()).replace(
+                self.root_usd_path, _check_mod_exists("modelDefaultProxy"))
+        else:
+            prim_path = str(prim.GetPath()).replace(
+                self.root_usd_path, _check_mod_exists("modelDefault"))
+
+        return prim_path
+
     def process(self):
         self._open_stage()
         self._create_stage()
         for prim in self.source_stage.Traverse():
             # print prim, prim.GetTypeName(), prim.IsActive()
+            # print prim.GetPath()
 
             if prim.GetTypeName() == 'Mesh' and prim.IsActive():
                 # print prim
                 mesh = UsdGeom.Mesh(prim)
                 points = mesh.GetPointsAttr()
 
-                over_mesh_prim = self.override_stage.OverridePrim(prim.GetPath())
+                prim_path = self._check_prim_path(prim)
+
+                over_mesh_prim = self.override_stage.OverridePrim(prim_path)
                 over_mesh = UsdGeom.Mesh(over_mesh_prim)
                 over_points = over_mesh.CreatePointsAttr()
 
                 for time_sample in points.GetTimeSamples():
-                    over_points.Set(points.Get(time_sample), time=Usd.TimeCode(time_sample))
+                    over_points.Set(
+                        points.Get(time_sample),
+                        time=Usd.TimeCode(time_sample)
+                    )
 
             if prim.GetTypeName() == 'Xform' and prim.IsActive():
                 xform = UsdGeom.Xform(prim)
                 if xform.GetTimeSamples():
+                    prim_path = self._check_prim_path(prim)
+
                     xform_order = xform.GetXformOpOrderAttr()
-                    over_xform_prim = self.override_stage.OverridePrim(prim.GetPath())
+                    over_xform_prim = self.override_stage.OverridePrim(prim_path)
                     over_xform = UsdGeom.Xform(over_xform_prim)
 
                     xform_op_names = []
@@ -98,20 +132,23 @@ class AnimationExtractor(object):
 #         print(e)
 
 
-def _update_prim_path(stage, layer, mod_root_path, destination_path, asset_name=None, has_proxy=False):
+def _update_prim_path(stage, layer, root_usd_path, destination_path,
+                      asset_name=None, has_proxy=False):
     from pxr import Sdf, UsdGeom
 
     temp_layer = Sdf.Layer.CreateAnonymous()
-    Sdf.CopySpec(layer, mod_root_path, temp_layer, '/temp')
-    stage.RemovePrim(mod_root_path)
+    Sdf.CopySpec(layer, root_usd_path, temp_layer, '/temp')
+    stage.RemovePrim(root_usd_path)
     UsdGeom.Xform.Define(stage, destination_path)
     Sdf.CopySpec(temp_layer, '/temp', layer, destination_path)
     temp_layer.Clear()
 
     # For proxy
     if has_proxy:
-        source_path = '/ROOT/modelDefault/MOD/{}_proxy_geo_grp'.format(asset_name)
-        tag_path = '/ROOT/modelDefaultProxy/MOD/{}_proxy_geo_grp'.format(asset_name)
+        source_path = '/ROOT/modelDefault/MOD/{}_proxy_geo_grp'.format(
+            asset_name)
+        tag_path = '/ROOT/modelDefaultProxy/MOD/{}_proxy_geo_grp'.format(
+            asset_name)
 
         temp_layer = Sdf.Layer.CreateAnonymous()
         Sdf.CopySpec(layer, source_path, temp_layer, '/temp')
@@ -126,36 +163,44 @@ def _update_prim_path(stage, layer, mod_root_path, destination_path, asset_name=
         print(e)
 
 
-def export(source_file_path, output_path, mod_root_path='', asset_name='', has_proxy=False):
+def export(source_file_path, output_path, root_usd_path='',
+           asset_name='', has_proxy=False):
     """
     Export animation point cache usd file.
 
     :param source_file_path: (str) Source animation usd file path.
-    :param output_path     : (str) Output path.
-    :param mod_root_path   : (str) The hierarchy of 'MOD' group in usd source file.
+    :param output_path: (str) Output path.
+    :param root_usd_path: (str) The hierarchy of 'MOD' group in usd source file.
         Most time is "/rigDefault/ROOT/Group/Geometry/modelDefault/ROOT"
-    :param asset_name      : (str) Asset name
-    :param has_proxy       : (bool) Has proxyPrim or not.
+    :param asset_name: (str) Asset name
+    :param has_proxy: (bool) Has proxyPrim or not.
     :return:
     """
 
-    authored_tmp_path = os.path.join(os.path.dirname(output_path), 'authored_data_tmp.usda')
-    pe = AnimationExtractor(source_file_path)
-    pe.export(authored_tmp_path)
+    # authored_tmp_path = os.path.join(
+    #     os.path.dirname(output_path),
+    #     'authored_data.usda'
+    # )
+    pe = AnimationExtractor(
+        source_file_path,
+        root_usd_path=root_usd_path,
+        has_proxy=has_proxy
+    )
+    pe.export(output_path)
 
-    # Fix hierarchy
-    stage = Usd.Stage.Open(authored_tmp_path)
-    root_layer = stage.GetRootLayer()
-
-    # Check 'MOD' exists
-    destination_path = '/ROOT/modelDefault/MOD'
-    for prim in stage.TraverseAll():
-        if '/ROOT/MOD/' in str(prim.GetPath()):
-            destination_path = '/ROOT/modelDefault'
-            break
-
-    # Export usd
-    _update_prim_path(stage, root_layer, mod_root_path, destination_path,
-                      asset_name=asset_name,
-                      has_proxy=has_proxy)
-    root_layer.Export(output_path)
+    # # Fix hierarchy
+    # stage = Usd.Stage.Open(authored_tmp_path)
+    # root_layer = stage.GetRootLayer()
+    #
+    # # Check 'MOD' exists
+    # destination_path = '/ROOT/modelDefault/MOD'
+    # for prim in stage.TraverseAll():
+    #     if '/ROOT/MOD/' in str(prim.GetPath()):
+    #         destination_path = '/ROOT/modelDefault'
+    #         break
+    #
+    # # Export usd
+    # _update_prim_path(stage, root_layer, root_usd_path, destination_path,
+    #                   asset_name=asset_name,
+    #                   has_proxy=has_proxy)
+    # root_layer.Export(output_path)
