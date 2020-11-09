@@ -70,7 +70,8 @@ class CollectSetDressLayerOutputs(pyblish.api.InstancePlugin):
 
     def _create_finalPrim(self, context, backup):
         name = "finalPrim"
-        if not self.ins_exists(context, name) and not self.subset_exists(name):
+        if not self.ins_exists(context, name):
+            #  and not self.subset_exists(name)
             instance = context.create_instance(name)
             instance.data.update(backup.data)
 

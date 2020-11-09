@@ -30,7 +30,6 @@ class ExtractCameraPrimUSDExport(pyblish.api.InstancePlugin):
         json_name = 'camera.json'
         json_output_path = os.path.join(staging_dir, json_name)
 
-
         # Update information in instance data
         instance.data["repr.USD._stage"] = staging_dir
         instance.data["repr.USD._files"] = [usd_name, json_name]
@@ -40,6 +39,7 @@ class ExtractCameraPrimUSDExport(pyblish.api.InstancePlugin):
         instance.data["endFrame"] = end
 
         # Export cam_prim.usd
+        self.log.info("Export camPrim for {}".format(shot_name))
         cam_prim_export.export(shot_name, usd_output_path)
 
         self._export_json(usd_output_path, json_output_path)

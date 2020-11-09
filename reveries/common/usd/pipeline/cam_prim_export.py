@@ -46,7 +46,7 @@ def get_camera_subsets(shot_name):
 
 def export(shot_name, output_path):
     from reveries.common import get_frame_range
-    variant_data = get_camera_subsets("SEQ01_SEQ01_Sh0100")
+    variant_data = get_camera_subsets(shot_name)
     variant_key = variant_data.keys()
 
     stage = Usd.Stage.CreateInMemory()

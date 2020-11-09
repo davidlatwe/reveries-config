@@ -46,9 +46,10 @@ class FinalUsdBuilder(object):
                 "name": "{}Prim".format(step_key)
             }
             prim_data = io.find_one(_filter)
-            self.usd_dict[step_key] = get_publish_files.get_files(
-                prim_data["_id"],
-                key="entryFileName").get("USD", "")
+            if prim_data:
+                self.usd_dict[step_key] = get_publish_files.get_files(
+                    prim_data["_id"],
+                    key="entryFileName").get("USD", "")
 
         from pprint import pprint
         pprint(self.usd_dict)
@@ -85,11 +86,12 @@ class FinalUsdBuilder(object):
             self._set_step_variants("final", step_variants, asset_prim)
 
         # Add camera sublayer
-        root_layer = self.stage.GetRootLayer()
-        root_layer.subLayerPaths.append(self.usd_dict['cam'])
+        if "cam" in self.usd_dict.keys():
+            root_layer = self.stage.GetRootLayer()
+            root_layer.subLayerPaths.append(self.usd_dict["cam"])
 
         # Set default prim to ROOT
-        root_prim = self.stage.GetPrimAtPath('/ROOT')
+        root_prim = self.stage.GetPrimAtPath("/ROOT")
         self.stage.SetDefaultPrim(root_prim)
 
     def _set_step_variants(self, step_name, step_variants, asset_prim):
@@ -111,10 +113,11 @@ class FinalUsdBuilder(object):
 
         for _key in step_usd_key:
             with step_variants.GetVariantEditContext():
-                asset_prim.GetReferences().AddReference(
-                    assetPath=self.usd_dict[_key],
-                    primPath="/ROOT/Asset"
-                )
+                if _key in self.usd_dict.keys():
+                    asset_prim.GetReferences().AddReference(
+                        assetPath=self.usd_dict[_key],
+                        primPath="/ROOT/Asset"
+                    )
 
     def export(self, save_path):
         self.stage.GetRootLayer().Export(save_path)

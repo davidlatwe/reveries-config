@@ -39,6 +39,8 @@ class ExtractLayoutPrim(pyblish.api.InstancePlugin):
         # Write json file
         self._write_json_file(usd_path=file_path, json_path=json_file_path)
 
+        self._publish_instance(instance)
+
     def _build(self, file_path):
         from reveries.common.usd.pipeline import lay_prim_export
         lay_prim_export.build(file_path, self.shot_name)
@@ -47,3 +49,10 @@ class ExtractLayoutPrim(pyblish.api.InstancePlugin):
         from reveries.common.usd.pipeline import lay_json_export
 
         lay_json_export.export(usd_path, json_path, host="houdini")
+
+    def _publish_instance(self, instance):
+        # === Publish instance === #
+        from reveries.common.publish import publish_instance
+        publish_instance.run(instance)
+
+        instance.data["_preflighted"] = True
