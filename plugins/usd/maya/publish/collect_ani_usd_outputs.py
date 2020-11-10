@@ -1,5 +1,6 @@
 from avalon import io
 import pyblish.api
+from reveries.common.task_check import task_check
 
 
 class CollectAniUSDOutputs(pyblish.api.InstancePlugin):
@@ -8,7 +9,7 @@ class CollectAniUSDOutputs(pyblish.api.InstancePlugin):
     label = "Collect Ani USD Outputs"
     hosts = ["maya"]
     families = [
-        "reveries.pointcache.usd",
+        "reveries.pointcache.usd" if task_check(task_name="animating") else ""
     ]
 
     def ins_exists(self, context, name):
