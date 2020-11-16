@@ -1,7 +1,7 @@
 import re
 from pxr import Usd, Sdf, UsdGeom
 
-from avalon import io, api
+from avalon import io
 
 
 def _get_variant_data(asset_name, prim_type='default'):
@@ -11,14 +11,14 @@ def _get_variant_data(asset_name, prim_type='default'):
     :return:
     variant_data = {
         'lookDefault': [
-            r'F:\usd\test\data\OCEAN\Character\HanMaleA\publish\modelDefault\v003\geom.usda',
-            r'F:\usd\test\data\OCEAN\Character\HanMaleA\publish\lookDefault\v002\assign.usda',
-            r'F:\usd\test\data\OCEAN\Character\HanMaleA\publish\lookDefault\v002\look.usda'
+            r'\...\publish\modelDefault\v003\geom.usda',
+            r'\...\publish\lookDefault\v002\assign.usda',
+            r'\...\publish\lookDefault\v002\look.usda'
         ],
         'lookClothesB': [
-            r'F:\usd\test\data\OCEAN\Character\HanMaleA\publish\modelDefault\v003\geom.usda',
-            r'F:\usd\test\data\OCEAN\Character\HanMaleA\publish\lookClothesB\v002\assign.usda',
-            r'F:\usd\test\data\OCEAN\Character\HanMaleA\publish\lookClothesB\v002\look.usda'
+            r'\...\publish\modelDefault\v003\geom.usda',
+            r'\...\publish\lookClothesB\v002\assign.usda',
+            r'\...\publish\lookClothesB\v002\look.usda'
         ]
     }
     variant_key = ['lookDefault', 'lookClothesB']
@@ -77,7 +77,9 @@ def _get_geom_usd(asset_name):
 
 def prim_export(asset_name, output_path, prim_type='default'):
     # Get variant data
-    variant_data, variant_key = _get_variant_data(asset_name, prim_type=prim_type)
+    variant_data, variant_key = _get_variant_data(
+        asset_name, prim_type=prim_type
+    )
     assert variant_data, "Can't found look usd file from publish."
 
     # Check prim name
@@ -93,7 +95,8 @@ def prim_export(asset_name, output_path, prim_type='default'):
     stage = Usd.Stage.CreateInMemory()
     root_define = UsdGeom.Xform.Define(stage, "/ROOT")
 
-    variants = root_define.GetPrim().GetVariantSets().AddVariantSet("appearance")
+    variants = root_define.GetPrim().\
+        GetVariantSets().AddVariantSet("appearance")
 
     # Get default look option name
     default_key = ''

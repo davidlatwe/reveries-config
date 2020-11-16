@@ -23,7 +23,7 @@ class AniUsdBuilder(object):
         Get shot data.
         asset_usd_dict = {
             'Char': {
-                u'BoxC_rig_01_': u'/.../v003/USD/ani_cache_prim.usda'
+                u'BoxC_rig_01_': u'/.../v003/USD/pointcache_prim.usda'
             },
             'props': {
             }

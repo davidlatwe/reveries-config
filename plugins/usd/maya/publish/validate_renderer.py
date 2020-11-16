@@ -26,8 +26,7 @@ class ValidateRenderer(pyblish.api.InstancePlugin):
             "type": "project"
         })
         renderer = project.get('renderer', None)
-        instance.data["renderer"] = renderer.lower() \
-            if isinstance(renderer, (str, unicode)) else renderer
+        instance.data["renderer"] = str(renderer.lower()) if renderer else None
 
         assert renderer, \
             "There is no renderer setting in db. Please check with TD."

@@ -359,7 +359,6 @@ class IntegrateAvalonSubset(object):
                     "subsetGroup": instance.data.get("subsetGroup", ""),
                 },
                 "parent": asset_id,
-                # "step_type": instance.data.get("step_type", "")
             }
 
             if instance.data.get("task", None):
@@ -367,6 +366,10 @@ class IntegrateAvalonSubset(object):
 
             if instance.data.get("step_type", None):
                 subset["step_type"] = instance.data["step_type"]
+
+            if instance.data.get("parent_pointcache_name", None):
+                subset["data"]["parent_pointcache_name"] = \
+                    instance.data["parent_pointcache_name"]
 
         return subset
 

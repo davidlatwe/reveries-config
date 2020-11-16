@@ -63,7 +63,8 @@ class CollectCameraPrimUSDOutputs(pyblish.api.InstancePlugin):
                 self._check_version_pin(instance, name)
 
         # Create aniPrim
-        if api.Session["AVALON_TASK"].lower() in ["animation", "animating", "ani"]:
+        if api.Session["AVALON_TASK"].lower() in \
+                ["animation", "animating", "ani"]:
             name = 'aniPrim'
             if not self.ins_exists(context, name) and \
                     not self.subset_exists(name):

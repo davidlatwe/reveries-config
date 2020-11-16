@@ -30,7 +30,6 @@ def _checkActive(path):
         if cmds.attributeQuery('intermediateObject', node=maya_path, ex=True):
             # if maya_path.getAttr('intermediateObject'):
             if cmds.getAttr('{}.intermediateObject'.format(maya_path)):
-                print 'maya_path: ', maya_path
                 return False
 
         return cmds.getAttr('{}.v'.format(maya_path))
@@ -38,7 +37,8 @@ def _checkActive(path):
         return True
 
 
-def export(dagObject, merge=False, scopeName='Looks', purpose='all', assetVersion=None, assetName=None, stripNS=True,
+def export(dagObject, merge=False, scopeName='Looks', purpose='all',
+           assetVersion=None, assetName=None, stripNS=True,
            transformAssign=False, outPath=''):
     """
     transformAssign not works when face-assign

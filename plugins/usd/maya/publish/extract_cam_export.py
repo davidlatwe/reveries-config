@@ -4,7 +4,7 @@ from avalon import io, api
 
 
 class ExtractCameraUSD(pyblish.api.InstancePlugin):
-    """Bake and export camera into mayaAscii, Alembic and FBX format
+    """Export camera USD.
     """
 
     order = pyblish.api.ExtractorOrder + 0.494

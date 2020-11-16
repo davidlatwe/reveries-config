@@ -5,6 +5,9 @@ import pyblish.api
 
 
 class ExtractCameraPrimUSDExport(pyblish.api.InstancePlugin):
+    """
+    Export cam_prim USD.
+    """
 
     order = pyblish.api.ExtractorOrder + 0.495
     hosts = ["maya"]

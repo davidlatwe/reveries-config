@@ -21,17 +21,17 @@ class CollectLookDevUSDOutputs(pyblish.api.InstancePlugin):
         return _exists
 
     def subset_exists(self, subset_name):
-        filter = {"type": "subset",
-                  "name": subset_name,
-                  "parent": self.asset_id}
-        subset_data = io.find_one(filter)
+        _filter = {"type": "subset",
+                   "name": subset_name,
+                   "parent": self.asset_id}
+        subset_data = io.find_one(_filter)
         return subset_data
 
     def proxy_prim_exists(self):
-        filter = {"type": "subset",
-                  "name": 'proxyPrim',
-                  "parent": self.asset_id}
-        subset_data = io.find_one(filter)
+        _filter = {"type": "subset",
+                   "name": 'proxyPrim',
+                   "parent": self.asset_id}
+        subset_data = io.find_one(_filter)
         return subset_data
 
     def process(self, instance):
@@ -83,4 +83,3 @@ class CollectLookDevUSDOutputs(pyblish.api.InstancePlugin):
 
             instance.data["family"] = "reveries.look.asset_prim"
             instance.data["subset"] = name
-

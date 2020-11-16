@@ -6,9 +6,9 @@ class MayaUsdExporter(object):
 
     def __init__(self, export_path=None, frame_range=[], export_selected=True):
         """
-        :param export_path:                 `str`           absolute path for export dir or file
-        :param frame_range:                 `list`          list with 2 elements, first and last frame
-        :param export_selected:             `bool`          Selection export True/False
+        :param export_path:(str) absolute path for export dir or file
+        :param frame_range:(list) list with 2 elements, first and last frame
+        :param export_selected:(bool) Selection export True/False
         """
         import maya.cmds as cmds
 

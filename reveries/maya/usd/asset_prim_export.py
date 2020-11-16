@@ -1,4 +1,4 @@
-from avalon import io, api
+from avalon import io
 
 
 def export(asset_name, output_path):
@@ -23,7 +23,8 @@ def export(asset_name, output_path):
         subset_data = io.find_one(_filter)
         if subset_data:
             subset_id = subset_data['_id']
-            usd_files[subset_name] = get_publish_files.get_files(subset_id).get('USD', [])
+            usd_files[subset_name] = \
+                get_publish_files.get_files(subset_id).get('USD', [])
 
         if subset_data and subset_name == 'proxyPrim':
             has_proxy = True

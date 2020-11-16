@@ -1,6 +1,6 @@
 import os
 import contextlib
-import imp  # TODO: Deprecated, use importlib
+import importlib
 
 import pyblish.api
 
@@ -110,8 +110,10 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         if not os.path.exists(py_file):
             assert False, \
                 "Cannot found look exporter py file: {}".format(py_file)
-        looks_export = imp.load_source('looks_export', py_file)
 
+        looks_export = importlib.import_module(
+            "reveries.maya.usd.{}.looks_export".format(self.renderer)
+        )
         file_node_attrs = self._get_file_node_attrs(instance)
 
         with contextlib.nested(
