@@ -6,8 +6,6 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
     """Publish model usd
 
     This plug-in will publish geom.usd file.
-    We need to running this plugin before 'Extract Model(mb)/(abc)'.
-    Because plug-in will add 'MOD' group under 'ROOT'.
     """
 
     order = pyblish.api.ExtractorOrder + 0.2
@@ -40,14 +38,6 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         instance.data["repr.USD.entryFileName"] = self.files_info['geom']
 
         self.export_usd()
-        self._publish_instance(instance)
-
-    def _publish_instance(self, instance):
-        # === Publish instance === #
-        from reveries.common.publish import publish_instance
-        publish_instance.run(instance)
-
-        instance.data["_preflighted"] = True
 
     def export_usd(self):
         from reveries.maya.usd import load_maya_plugin

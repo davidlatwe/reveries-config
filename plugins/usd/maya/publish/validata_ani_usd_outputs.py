@@ -4,11 +4,11 @@ import pyblish.api
 
 
 class ValidateAniUSDOutputs(pyblish.api.InstancePlugin):
-    """Validate renderer setting exists in db."""
+    """Validate asset already published usd."""
 
     order = pyblish.api.ValidatorOrder + 0.49
 
-    label = "Validate Ani USD Outputs"
+    label = "Validate USD PointCache Outputs"
     hosts = ["maya"]
     families = [
         "reveries.pointcache.usd"

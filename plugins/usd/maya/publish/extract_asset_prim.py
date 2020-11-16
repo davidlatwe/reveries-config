@@ -3,15 +3,10 @@ import pyblish.api
 
 
 class ExtractAssetPrimUSDExport(pyblish.api.InstancePlugin):
-    """Produce a stripped down Maya file from instance
-
-    This plug-in takes into account only nodes relevant to models
-    and discards anything else, especially deformers along with
-    their intermediate nodes.
-
+    """Publish asset_prim.usda
     """
 
-    order = pyblish.api.ExtractorOrder + 0.23
+    order = pyblish.api.IntegratorOrder + 0.132
     hosts = ["maya"]
     label = "Extract Asset Prim USD Export"
     families = [
@@ -41,3 +36,13 @@ class ExtractAssetPrimUSDExport(pyblish.api.InstancePlugin):
         asset_prim_export.export(asset_name, output_path)
 
         self.log.info('Export asset prim usd done.')
+
+        self._publish_instance(instance)
+
+    def _publish_instance(self, instance):
+        # === Publish instance === #
+        from reveries.common.publish import publish_instance
+
+        publish_instance.run(instance)
+
+        instance.data["_preflighted"] = True
