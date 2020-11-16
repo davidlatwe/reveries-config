@@ -8,7 +8,7 @@ import pyblish.api
 class ExtractLookUSDExport(pyblish.api.InstancePlugin):
     """Publish look/assign usd file
 
-    This plug-in takes will publish look.usd and assign.usd
+    This plug-in will publish look.usd and assign.usd
 
     """
 
@@ -50,7 +50,6 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         ]
 
         self.export_usd(instance)
-        self._publish_instance(instance)
 
     def export_usd(self, instance):
         import pymel.core as pm
@@ -151,10 +150,3 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
                     file_node_attrs[attr] = value.replace(_tag, root_path)
 
         return file_node_attrs
-
-    def _publish_instance(self, instance):
-        # === Publish instance === #
-        from reveries.common.publish import publish_instance
-        publish_instance.run(instance)
-
-        instance.data["_preflighted"] = True

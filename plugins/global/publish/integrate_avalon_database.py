@@ -2,6 +2,12 @@
 import pyblish.api
 from avalon import io
 
+# Below family will publish after this plugin
+SKIP_FAMILY = [
+    "reveries.look.asset_prim",
+    "reveries.look.pre_prim"
+]
+
 
 class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
     """寫入本次發佈的相關資料至資料庫
@@ -14,6 +20,8 @@ class IntegrateAvalonDatabase(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         if instance.data.get("_preflighted", False):
+            return
+        if instance.data.get("family") in SKIP_FAMILY:
             return
 
         context = instance.context
