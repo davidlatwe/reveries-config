@@ -12,7 +12,16 @@ class CollectRenderRoot(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        render_root = instance.data.get("reprRoot")
+        import os
+
+        env_render_root = os.getenv("AVALON_RENDER_ROOT_OVERRIDE")
+        if env_render_root:
+            self.log.info("Render output root override from environment.")
+            instance.data["reprRoot"] = env_render_root
+            render_root = env_render_root
+        else:
+            render_root = instance.data.get("reprRoot")
+
         if render_root:
             self.log.info("Pre-defined render output root: %s" % render_root)
             return
