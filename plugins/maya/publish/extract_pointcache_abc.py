@@ -57,77 +57,57 @@ class ExtractPointCacheABC(pyblish.api.InstancePlugin):
             capsule.evaluation("off"),
             capsule.maintained_selection(),
         ):
-            # Selection may change if there are duplicate named nodes and
-            # require instancing them to resolve
+            # (monument): We once needed to cleanup leaf name duplicated
+            #   nodes with `lib.ls_duplicated_name`, and somehow now we
+            #   don't. Just putting notes here in case we bump into
+            #   alembic export runtime error again.
 
-            with capsule.delete_after() as delete_bin:
+            for node in set(root):
+                # (NOTE) If a descendent is instanced, it will appear only
+                #        once on the list returned.
+                root += cmds.listRelatives(node,
+                                           allDescendents=True,
+                                           fullPath=True,
+                                           noIntermediate=True) or []
+            root = list(set(root))
+            cmds.select(root, replace=True, noExpand=True)
 
-                # (NOTE) We need to check any duplicate named nodes, or
-                #        error will raised during Alembic export.
-                result = lib.ls_duplicated_name(root)
-                duplicated = [n for m in result.values() for n in m]
-                if duplicated:
-                    self.log.info("Duplicate named nodes found, resolving...")
-                    # Duplicate it so we could have a unique named new node
-                    unique_named = list()
-                    for node in duplicated:
-                        new_nodes = cmds.duplicate(node,
-                                                   inputConnections=True,
-                                                   renameChildren=True)
-                        new_nodes = cmds.ls(new_nodes, long=True)
-                        unique_named.append(new_nodes[0])
-                        # New nodes will be deleted after the export
-                        delete_bin.extend(new_nodes)
+            def _export_alembic():
+                io.export_alembic(
+                    outpath,
+                    start,
+                    end,
+                    selection=True,
+                    renderableOnly=True,
+                    writeVisibility=True,
+                    writeCreases=True,
+                    worldSpace=True,
+                    uvWrite=True,
+                    writeUVSets=True,
+                    eulerFilter=euler_filter,
+                    attr=[
+                        lib.AVALON_ID_ATTR_LONG,
+                    ],
+                    attrPrefix=[
+                        "ai",  # Write out Arnold attributes
+                        "avnlook_",  # Write out lookDev controls
+                    ],
+                )
 
-                    # Replace duplicate named nodes with unique named
-                    root = list(set(root) - set(duplicated)) + unique_named
-
-                for node in set(root):
-                    # (NOTE) If a descendent is instanced, it will appear only
-                    #        once on the list returned.
-                    root += cmds.listRelatives(node,
-                                               allDescendents=True,
-                                               fullPath=True,
-                                               noIntermediate=True) or []
-                root = list(set(root))
-                cmds.select(root, replace=True, noExpand=True)
-
-                def _export_alembic():
-                    io.export_alembic(
-                        outpath,
-                        start,
-                        end,
-                        selection=True,
-                        renderableOnly=True,
-                        writeVisibility=True,
-                        writeCreases=True,
-                        worldSpace=True,
-                        uvWrite=True,
-                        writeUVSets=True,
-                        eulerFilter=euler_filter,
-                        attr=[
-                            lib.AVALON_ID_ATTR_LONG,
-                        ],
-                        attrPrefix=[
-                            "ai",  # Write out Arnold attributes
-                            "avnlook_",  # Write out lookDev controls
-                        ],
-                    )
-
-                auto_retry = 1
-                while auto_retry:
-                    try:
-                        _export_alembic()
-                    except RuntimeError as err:
-                        if auto_retry:
-                            # (NOTE) Auto re-try export
-                            # For unknown reason, some artist may encounter
-                            # runtime error when exporting but re-run the
-                            # publish without any change will resolve.
-                            auto_retry -= 1
-                            self.log.warning(err)
-                            self.log.warning("Retrying...")
-                        else:
-                            raise err
+            auto_retry = 1
+            while auto_retry:
+                try:
+                    _export_alembic()
+                except RuntimeError as err:
+                    if auto_retry:
+                        # (NOTE) Auto re-try export
+                        # For unknown reason, some artist may encounter
+                        # runtime error when exporting but re-run the
+                        # publish without any change will resolve.
+                        auto_retry -= 1
+                        self.log.warning(err)
+                        self.log.warning("Retrying...")
                     else:
-                        break
+                        raise err
+                else:
+                    break
