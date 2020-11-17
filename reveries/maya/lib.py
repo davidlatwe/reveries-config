@@ -907,7 +907,8 @@ def bake_to_world_space(nodes,
                                        renameChildren=True)
             if duplicate_input_graph:
                 # Remove upstream animCurves for scaleConstraint later
-                cmds.delete(cmds.ls(new_nodes, type="animCurve"))
+                exclude = ("animCurve", "constraint")
+                cmds.delete(cmds.ls(new_nodes, type=exclude))
 
             new_node = new_nodes[0]
 
