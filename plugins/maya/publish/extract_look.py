@@ -164,7 +164,9 @@ class ExtractLook(pyblish.api.InstancePlugin):
             # (TODO) This should be improved. see issue #65
             from reveries.maya import arnold
         except RuntimeError as e:
-            self.log.debug(e)
+            # self.log.debug(e)
+            # TODO: error message may cause unicode decode error
+            pass
         else:
             ai_sets = dict()
             for objset in cmds.ls(type="objectSet"):
@@ -225,7 +227,9 @@ class ExtractLook(pyblish.api.InstancePlugin):
         try:
             from reveries.maya import vray
         except RuntimeError as e:
-            self.log.debug(e)
+            # self.log.debug(e)
+            # TODO: error message may cause unicode decode error
+            pass
         else:
             for node in surfaces:
                 # - shape
