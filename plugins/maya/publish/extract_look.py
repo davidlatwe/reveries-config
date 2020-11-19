@@ -45,11 +45,17 @@ class ExtractLook(pyblish.api.InstancePlugin):
         instance.data["repr.LookDev.entryFileName"] = filename
         instance.data["repr.LookDev.linkFname"] = linkfile
 
+        by_name = instance.data.get("byNodeName", False)
+        _get_id = (maya_utils.get_wildcard_path if by_name
+                   else maya_utils.get_id)
+
         # Serialise shaders relationships
         #
-        self.log.info("Serialising shaders..")
+        self.log.info("Serialising shaders.."
+                      + ("(by name)" if by_name else ""))
 
-        shader_by_id = lib.serialise_shaders(instance.data["dagMembers"])
+        shader_by_id = lib.serialise_shaders(instance.data["dagMembers"],
+                                             by_name=by_name)
         assert shader_by_id, "The map of shader relationship is empty."
 
         # Extract shaders
@@ -100,7 +106,7 @@ class ExtractLook(pyblish.api.InstancePlugin):
         self.log.info("Serialising 'avnlook_' prefixed attributes..")
         avnlook_anim = dict()
         for node in cmds.ls(instance.data["dagMembers"], type="transform"):
-            id = maya_utils.get_id(node)
+            id = _get_id(node)
             user_attrs = cmds.listAttr(node, userDefined=True) or []
             for attr in user_attrs:
                 if not attr.startswith("avnlook_"):
@@ -119,6 +125,7 @@ class ExtractLook(pyblish.api.InstancePlugin):
         # UV Chooser
         uv_chooser = dict()
         for chooser in cmds.ls(instance, type="uvChooser"):
+            # shading nodes must have id
             chooser_id = maya_utils.get_id(chooser)
 
             for src in cmds.listConnections(chooser + ".uvSets",
@@ -127,7 +134,7 @@ class ExtractLook(pyblish.api.InstancePlugin):
                                             plugs=True) or []:
                 geo, attr = src.split(".", 1)
                 geo = cmds.listRelatives(geo, parent=True, path=True)[0]
-                geo_attr = maya_utils.get_id(geo) + "." + attr
+                geo_attr = _get_id(geo) + "." + attr
 
                 if chooser_id not in uv_chooser:
                     uv_chooser[chooser_id] = list()
@@ -153,8 +160,7 @@ class ExtractLook(pyblish.api.InstancePlugin):
                 node, edges = member.split(".")
                 if node not in instance.data["dagMembers"]:
                     continue
-                # We have validated Avalon UUID, so there must be a valid ID.
-                id = maya_utils.get_id(node)
+                id = _get_id(node)
                 crease_sets[level].append(id + "." + edges)
 
         # Arnold attributes
@@ -186,8 +192,7 @@ class ExtractLook(pyblish.api.InstancePlugin):
             transforms = cmds.ls(cmds.listRelatives(surfaces, parent=True),
                                  long=True)
             for node in transforms:
-                # There must be a valid ID
-                id = maya_utils.get_id(node)
+                id = _get_id(node)
 
                 attrs = dict()
 
@@ -245,6 +250,7 @@ class ExtractLook(pyblish.api.InstancePlugin):
                         vray_attrs[parent[0]] = values
 
         relationships = {
+            "byNodeName": by_name,
             "shaderById": shader_by_id,
             "avnlookAttrs": avnlook_anim,
             "uvChooser": uv_chooser,

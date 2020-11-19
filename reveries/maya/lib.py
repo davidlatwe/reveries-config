@@ -1028,7 +1028,7 @@ def shaders_by_meshes(meshes):
     return list(set(assigned))
 
 
-def serialise_shaders(nodes):
+def serialise_shaders(nodes, by_name=False):
     """Generate a shader set dictionary
 
     Arguments:
@@ -1059,6 +1059,8 @@ def serialise_shaders(nodes):
     """
     from . import utils  # Avoid circular import
 
+    _get_id = utils.get_wildcard_path if by_name else utils.get_id
+
     valid_nodes = cmds.ls(
         nodes,
         long=True,
@@ -1080,7 +1082,7 @@ def serialise_shaders(nodes):
         except IndexError:
             continue
 
-        id_ = utils.get_id(transform)
+        id_ = _get_id(transform)
 
         if id_ is None:
             continue
@@ -1128,7 +1130,7 @@ def serialise_shaders(nodes):
                 # Ignore nodes which were not in the query list
                 continue
 
-            id_ = utils.get_id(transform)
+            id_ = _get_id(transform)
 
             if id_ is None:
                 continue
@@ -1148,7 +1150,8 @@ def apply_shaders(relationships,
                   namespace=None,
                   target_namespaces=None,
                   nodes=None,
-                  auto_fix_on_renderlayer_adjustment_fail=True):
+                  auto_fix_on_renderlayer_adjustment_fail=True,
+                  by_name=False):
     """Given a dictionary of `relationships`, apply shaders to surfaces
 
     Arguments:
@@ -1189,7 +1192,8 @@ def apply_shaders(relationships,
 
             _map = ls_nodes_by_id(set(face_map.keys()),
                                   target_namespace,
-                                  nodes)
+                                  nodes,
+                                  by_name)
 
             for id, nodes_ in _map.items():
                 surface_cache[id].update(nodes_)
@@ -1248,14 +1252,16 @@ def apply_shaders(relationships,
 def connect_uv_chooser(relationships,
                        namespace=None,
                        target_namespaces=None,
-                       nodes=None):
+                       nodes=None,
+                       by_name=False):
     """Given a dictionary of `relationships`, connect mesh UV Set to UV Chooser
     """
     namespace = namespace or ""
     target_namespaces = target_namespaces or [None]
 
     choosers = ls_nodes_by_id(set(relationships.keys()),
-                              namespace + ":")
+                              namespace + ":",
+                              by_name=by_name)
 
     for chooser_id, members in relationships.items():
 
@@ -1274,7 +1280,8 @@ def connect_uv_chooser(relationships,
 
             _map = ls_nodes_by_id(set(set_map.keys()),
                                   target_namespace,
-                                  nodes)
+                                  nodes,
+                                  by_name)
 
             for id, nodes_ in _map.items():
                 surface_cache[id].update(nodes_)
@@ -1291,7 +1298,8 @@ def connect_uv_chooser(relationships,
 def apply_crease_edges(relationships,
                        namespace=None,
                        target_namespaces=None,
-                       nodes=None):
+                       nodes=None,
+                       by_name=False):
     """Given a dictionary of `relationships`, apply crease value to edges
 
     Arguments:
@@ -1331,7 +1339,8 @@ def apply_crease_edges(relationships,
 
             _map = ls_nodes_by_id(set(edge_map.keys()),
                                   target_namespace,
-                                  nodes)
+                                  nodes,
+                                  by_name)
 
             for id, nodes_ in _map.items():
                 surface_cache[id].update(nodes_)
@@ -1494,7 +1503,7 @@ def ls_avalon_nodes(namespace=None):
         return set(nodes)
 
 
-def ls_nodes_by_id(ids, namespace=None, nodes=None):
+def ls_nodes_by_id(ids, namespace=None, nodes=None, by_name=False):
     """Listing AvalonID matched nodes from scene
 
     If `namespace` given, only matching AvalonID under this namespace.
@@ -1517,14 +1526,23 @@ def ls_nodes_by_id(ids, namespace=None, nodes=None):
         return (id == AVALON_NAMESPACE_WRAPPER_ID and
                 cmds.nodeType(node) == "objectSet")
 
-    if nodes:
-        all_nodes = nodes
+    _get_id = (utils.get_wildcard_path if by_name
+               else utils.get_id_loosely)
+
+    if by_name:
+        if nodes:
+            all_nodes = cmds.ls(nodes, long=True, typ="transform")
+        else:
+            all_nodes = cmds.ls(namespace + ":*", long=True, typ="transform")
     else:
-        all_nodes = ls_avalon_nodes(namespace)
+        if nodes:
+            all_nodes = nodes
+        else:
+            all_nodes = ls_avalon_nodes(namespace)
 
     id_map = defaultdict(set)
     for node in all_nodes:
-        id = utils.get_id_loosely(node)
+        id = _get_id(node)
 
         if id is None:
             continue
@@ -1534,7 +1552,7 @@ def ls_nodes_by_id(ids, namespace=None, nodes=None):
 
         elif is_namespace_wrapper(id, node):
             for member in cmds.sets(node, query=True, nodesOnly=True) or []:
-                id = utils.get_id_loosely(member)
+                id = _get_id(member)
                 if id is not None and id in ids:
                     id_map[id].add(member)
 

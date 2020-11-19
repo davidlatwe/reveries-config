@@ -23,4 +23,5 @@ class LookCreator(avalon.maya.Creator):
         renderlayer = cmds.editRenderLayerGlobals(query=True,
                                                   currentRenderLayer=True)
         self.data["renderlayer"] = renderlayer
+        self.data["byNodeName"] = False
         return put_instance_icon(super(LookCreator, self).process())

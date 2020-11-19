@@ -80,7 +80,8 @@ def update_full_scene():
 def apply_ai_attrs(relationships,
                    namespace=None,
                    target_namespaces=None,
-                   nodes=None):
+                   nodes=None,
+                   by_name=False):
     """Given a dictionary of `relationships`, apply ai attributes to nodes
 
     Arguments:
@@ -100,7 +101,7 @@ def apply_ai_attrs(relationships,
 
     surfaces = defaultdict(set)
     for target_namespace in target_namespaces:
-        _map = lib.ls_nodes_by_id(ids, target_namespace, nodes)
+        _map = lib.ls_nodes_by_id(ids, target_namespace, nodes, by_name)
         for id, nodes in _map.items():
             surfaces[id].update(nodes)
 

@@ -40,7 +40,7 @@ class ValidateAvalonUUIDProvided(pyblish.api.InstancePlugin):
         from maya import cmds
         from reveries.maya.utils import Identifier, get_id_status
 
-        if instance.data.get("isDummy"):
+        if any(instance.data.get(k) for k in ["isDummy", "byNodeName"]):
             return []
 
         invalid = list()

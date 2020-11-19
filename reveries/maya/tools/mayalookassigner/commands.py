@@ -51,7 +51,12 @@ def group_from_namespace(namespace):
 
 
 def get_asset_id(node):
-    return utils.get_id_namespace_loosely(node)
+    try:
+        return utils.get_id_namespace_loosely(node)
+    except Exception as e:
+        import traceback
+        print("# get_asset_id failed: %s" % node)
+        traceback.print_exc()
 
 
 def list_descendents(nodes):
@@ -77,12 +82,19 @@ def list_descendents(nodes):
             return result
 
 
+def get_session_asset_id():
+    doc = io.find_one({"type": "asset", "name": api.Session["AVALON_ASSET"]},
+                      projection={"_id": True})
+    return str(doc["_id"])
+
+
 def get_selected_asset_nodes():
 
     def get_member(node):
         return set(cmds.ls(cmds.sets(node, query=True), type="transform"))
 
     nodes = list()
+    session_asset_id = None
 
     selection = cmds.ls(selection=True)
     hierarchy = list_descendents(selection)
@@ -97,7 +109,7 @@ def get_selected_asset_nodes():
 
         asset_id = get_asset_id(node)
         if asset_id is None:
-            continue
+            session_asset_id = session_asset_id or get_session_asset_id()
 
         for container, members in containers.items():
             if node in members:
@@ -110,7 +122,7 @@ def get_selected_asset_nodes():
 
         nodes.append({
             "node": node,
-            "assetId": asset_id,
+            "assetId": asset_id or session_asset_id,
             "subset": subset,
             "namespace": namespace,
         })
@@ -124,6 +136,7 @@ def get_all_asset_nodes():
     host = api.registered_host()
 
     nodes = list()
+    session_asset_id = None
 
     for container in host.ls():
         # We only interested in surface assets !
@@ -162,11 +175,11 @@ def get_all_asset_nodes():
 
             asset_id = get_asset_id(node)
             if asset_id is None:
-                continue
+                session_asset_id = session_asset_id or get_session_asset_id()
 
             nodes.append({
                 "node": node,
-                "assetId": asset_id,
+                "assetId": asset_id or session_asset_id,
                 "subset": subset,
                 "namespace": namespace,
             })
@@ -231,6 +244,9 @@ def create_items(nodes, by_selection=False):
 
             namespace_nodes[namespace].add(node["node"])
 
+        for k in namespace_nodes:
+            namespace_nodes[k] = list(namespace_nodes[k])
+
         namespaces = list(subsets.keys())
 
         if by_selection:
@@ -241,7 +257,7 @@ def create_items(nodes, by_selection=False):
                 for group in group_from_namespace(namespace):
                     if group is not None:
                         selection.add(group)
-                namespace_selection[namespace] = selection
+                namespace_selection[namespace] = list(selection)
 
         asset_view_items.append({"label": asset["name"],
                                  "asset": asset,
@@ -406,37 +422,44 @@ def assign_look(nodes, look, via_uv):
     with open(relationship) as f:
         relationships = json.load(f)
 
+    by_name = relationships.get("byNodeName", False)
+
     # Assign
     #
     if via_uv:
-        _look_via_uv(look, relationships, nodes)
+        _look_via_uv(look, relationships, nodes, by_name)
     else:
         _apply_shaders(look,
                        relationships["shaderById"],
-                       nodes)
+                       nodes,
+                       by_name)
         _connect_uv_chooser(look,
                             relationships.get("uvChooser"),
-                            nodes)
+                            nodes,
+                            by_name)
         _apply_crease_edges(look,
                             relationships["creaseSets"],
-                            nodes)
+                            nodes,
+                            by_name)
 
         arnold_attrs = relationships.get("arnoldAttrs",
                                          relationships.get("alSmoothSets"))
         _apply_ai_attrs(look,
                         arnold_attrs,
-                        nodes)
+                        nodes,
+                        by_name)
 
 
-def _apply_shaders(look, relationship, nodes):
+def _apply_shaders(look, relationship, nodes, by_name=False):
     namespace = look["namespace"][1:]
 
     lib.apply_shaders(relationship,
                       namespace,
-                      nodes=nodes)
+                      nodes=nodes,
+                      by_name=by_name)
 
 
-def _connect_uv_chooser(look, relationship, nodes):
+def _connect_uv_chooser(look, relationship, nodes, by_name=False):
     if not relationship:
         return
 
@@ -444,19 +467,21 @@ def _connect_uv_chooser(look, relationship, nodes):
 
     lib.connect_uv_chooser(relationship,
                            namespace,
-                           nodes=nodes)
+                           nodes=nodes,
+                           by_name=by_name)
 
 
-def _apply_crease_edges(look, relationship, nodes):
+def _apply_crease_edges(look, relationship, nodes, by_name=False):
     namespace = look["namespace"][1:]
 
     crease_sets = lib.apply_crease_edges(relationship,
                                          namespace,
-                                         nodes=nodes)
+                                         nodes=nodes,
+                                         by_name=by_name)
     cmds.sets(crease_sets, forceElement=look["objectName"])
 
 
-def _apply_ai_attrs(look, relationship, nodes):
+def _apply_ai_attrs(look, relationship, nodes, by_name=False):
     namespace = look["namespace"][1:]
 
     if relationship is not None:
@@ -469,10 +494,11 @@ def _apply_ai_attrs(look, relationship, nodes):
                 relationship,
                 namespace,
                 nodes=nodes,
+                by_name=by_name,
             )
 
 
-def _look_via_uv(look, relationships, nodes):
+def _look_via_uv(look, relationships, nodes, by_name=False):
     """Assign looks via namespaces and using UV hash as hint
 
     In some cases, a setdress liked subset may assembled from a numbers of
@@ -532,7 +558,7 @@ def _look_via_uv(look, relationships, nodes):
             same_uv_ids = id_via_uv[uv_hash]
             shader_by_id[shader] += [".".join([i, faces]) for i in same_uv_ids]
 
-    _apply_shaders(look, shader_by_id, nodes)
+    _apply_shaders(look, shader_by_id, nodes, by_name)
 
     # Apply crease edges
     #
@@ -551,7 +577,7 @@ def _look_via_uv(look, relationships, nodes):
             same_uv_ids = id_via_uv[uv_hash]
             crease_by_id[level] += [".".join([i, edges]) for i in same_uv_ids]
 
-    _apply_crease_edges(look, crease_by_id, nodes)
+    _apply_crease_edges(look, crease_by_id, nodes, by_name)
 
     # COnnect UV Choosers
     #
@@ -572,7 +598,8 @@ def _look_via_uv(look, relationships, nodes):
 
     _connect_uv_chooser(look,
                         uv_chooser,
-                        nodes)
+                        nodes,
+                        by_name)
 
     # Apply Arnold attributes
     #
@@ -593,7 +620,7 @@ def _look_via_uv(look, relationships, nodes):
         for i in same_uv_ids:
             ai_attrs_by_id[i] = attrs
 
-    _apply_ai_attrs(look, ai_attrs_by_id, nodes)
+    _apply_ai_attrs(look, ai_attrs_by_id, nodes, by_name)
 
 
 def remove_look(nodes, asset_ids):

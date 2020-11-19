@@ -723,37 +723,55 @@ def get_id_status(node):
     return _identifier.status(node)
 
 
+def _get_full_address(node):
+    # AvalonID may have imprinted on shape node if it's coming
+    # from alembic which published by Houdini.
+    attr_name = "%s." + lib.AVALON_ID_ATTR_LONG
+    full_address = ""
+    shapes = cmds.listRelatives(node,
+                                path=True,
+                                shapes=True,
+                                noIntermediate=True) or []
+    if len(shapes) > 1:
+        for n in shapes + [node]:
+            try:
+                full_address = cmds.getAttr(attr_name % n)
+            except ValueError:
+                pass
+            else:
+                break
+    else:
+        try:
+            full_address = cmds.getAttr(attr_name % node)
+        except ValueError:
+            pass
+
+    if isinstance(full_address, list):
+        # Shouldn't be stringArray type, this is human bug
+        full_address = full_address[0]
+
+    return full_address
+
+
 def get_id_loosely(node):
     id = get_id(node)
 
     if id is None:
-        try:
-            # AvalonID may have imprinted on shape node if it's coming
-            # from alembic which published by Houdini.
-            full_address = cmds.getAttr(node + "." + lib.AVALON_ID_ATTR_LONG)
-        except ValueError:
-            pass
-        else:
-            id = full_address.split(":")[-1]
+        full_address = _get_full_address(node)
+        id = full_address.split(":")[-1]
 
     return id
 
 
 def get_id_namespace_loosely(node):
-    id_namespace = get_id_namespace(node)
+    id_namespace_ = get_id_namespace(node)
 
-    if id_namespace is None:
-        try:
-            # AvalonID may have imprinted on shape node if it's coming
-            # from alembic which published by Houdini.
-            full_address = cmds.getAttr(node + "." + lib.AVALON_ID_ATTR_LONG)
-        except ValueError:
-            pass
-        else:
-            if _identifier.ID_SEP in full_address:
-                id_namespace = full_address.split(_identifier.ID_SEP)[0]
+    if id_namespace_ is None:
+        full_address = _get_full_address(node)
+        if _identifier.ID_SEP in full_address:
+            id_namespace_ = full_address.split(_identifier.ID_SEP)[0]
 
-    return id_namespace
+    return id_namespace_
 
 
 def update_id_verifiers(nodes):
@@ -764,6 +782,21 @@ def generate_container_id():
     hasher = hashlib.sha1()
     hasher.update(os.urandom(40))
     return "CON" + hasher.hexdigest()
+
+
+def get_wildcard_path(path):
+    """Replace namespaces with wildcard
+
+    Change "|foo:bar|foo:nah" into "|*:foo|*nah"
+
+    """
+    wildcarded = list()
+    for part in path.split("|"):
+        namespaces, leaf = ([""] + part.rsplit(":", 1))[-2:]
+        w = "*:" * len(namespaces.split(":")) + leaf
+        wildcarded.append(w if leaf else "")
+
+    return "|".join(wildcarded)
 
 
 def get_renderer_by_layer(layer=None):
