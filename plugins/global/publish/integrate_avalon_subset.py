@@ -258,7 +258,12 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 self.log.critical("An unexpected error occurred.")
                 raise
 
-        filelink.create(src, dst, filelink.HARDLINK)
+        try:
+            filelink.create(src, dst, filelink.HARDLINK)
+        except OSError:
+            msg = "An unexpected error occurred."
+            self.log.critical(msg)
+            raise OSError(msg)
 
     def get_subset(self, instance, families):
 
