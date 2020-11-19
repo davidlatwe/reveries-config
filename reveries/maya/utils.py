@@ -915,7 +915,7 @@ def compose_render_filename(layer, renderpass="", camera="", on_frame=None):
     else:
         # Not VRay
 
-        current_prefix = prefix
+        current_prefix = cmds.getAttr("defaultRenderGlobals.imageFilePrefix")
         prefix = prefix or scene_name
 
         if renderer == "arnold" and "<RenderPass>" not in prefix:
