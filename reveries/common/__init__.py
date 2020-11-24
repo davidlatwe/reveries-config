@@ -60,7 +60,7 @@ def mapping_shot_name_to_shotgun(shot_name):
     shot_data = io.find_one(_filter)
     seq_name = shot_data["data"].get("group", None)
     if not seq_name:
-        print "Can't get sequence name for shot \"{}\".".format(shot_name)
+        print("Can't get sequence name for shot \"{}\".".format(shot_name))
         return False
 
     short_shot_name = shot_data["data"]["label"].split("_")[1]
@@ -70,7 +70,7 @@ def mapping_shot_name_to_shotgun(shot_name):
     shotgun_shot_name_template = project_data["config"]["template"].get("shotgun_shot_name", None)
 
     if not shotgun_shot_name_template:
-        print "Can't get template for shot \"{}\".".format(shot_name)
+        print("Can't get template for shot \"{}\".".format(shot_name))
         return False
 
     shotgun_shot_name = shotgun_shot_name_template.format(
@@ -113,3 +113,18 @@ def check_asset_type_from_ns(ns):
         for _as in asset_casting[asset_type]:
             if _as in ns:
                 return asset_type
+
+
+def timing(func):
+    def wrapper(*arg, **kw):
+        import time
+        t1 = time.time()
+        res = func(*arg, **kw)
+        t2 = time.time()
+        string = '| %s took %2.4f sec |' % (func.func_name, (t2-t1))
+        print("\n{0}\n{1}\n{0}\n".format(
+            '-' * len(string),
+            string
+        ))
+        return res
+    return wrapper

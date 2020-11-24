@@ -41,7 +41,8 @@ class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
         "reveries.layout.usd",
         "reveries.camera.usd",
         "reveries.camera",
-        "reveries.final.usd"
+        "reveries.final.usd",
+        "reveries.fx.usd"
     ]
 
     representations = [
@@ -126,12 +127,14 @@ class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
         node = hou.selectedNodes()
         if not node:
             node = stage.createNode("subnet_usd_2", 'subnet_usd')
+            node.moveToGoodPosition()
         else:
             node_type = node[0].type().name()
             if node_type == "subnet_usd_2":
                 node = node[0]
             else:
                 node = stage.createNode("subnet_usd_2", 'subnet_usd')
+                node.moveToGoodPosition()
 
         update_node(node, usd_info)
         self.log.info('Current node: {}'.format(node))

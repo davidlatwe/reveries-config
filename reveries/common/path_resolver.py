@@ -17,6 +17,7 @@ class PathResolver(object):
         self.current_representation_id = ''
 
         self.subset_data = {}
+        self.version_data = {}
         self.latest_version_name = ''
 
         if file_path:
@@ -85,8 +86,8 @@ class PathResolver(object):
             "parent": self.subset_id,
             "name": version_num
         }
-        version_data = io.find_one(_filter)
-        self.current_version_id = version_data["_id"]
+        self.version_data = io.find_one(_filter)
+        self.current_version_id = self.version_data["_id"]
 
         return self.current_version_id
 
@@ -166,6 +167,10 @@ class PathResolver(object):
         else:
             print("File path isn't from publish.")
             return False
+
+    def get_version_data(self):
+        self.get_version_id()
+        return self.version_data
 
 
 if __name__ == "__main__":

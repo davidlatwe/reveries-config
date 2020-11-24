@@ -6,13 +6,21 @@ def update_node(node, usd_info):
     add_parm = node.parm("add_parm")
     add_parm.set(ex_num + 1)
     current_num = ex_num + 1
+    file_path = usd_info["file_path"]
 
-    node.parm("ex_asset_info_{}1".format(current_num)).set(usd_info["asset_name"])
-    node.parm("ex_asset_info_{}2".format(current_num)).set(usd_info["subset_name"])
+    node.parm("ex_asset_info_{}1".format(current_num)).\
+        set(usd_info["asset_name"])
+    node.parm("ex_asset_info_{}2".format(current_num)).\
+        set(usd_info["subset_name"])
 
-    node.parm("ex_file_path_{}".format(current_num)).set(usd_info["file_path"])
+    node.parm("ex_file_path_{}".format(current_num)).set(file_path)
+
+    # Set Current version
+    cur_ver_name = re.findall("/(v\\d+)/USD", file_path)[0]
+    node.parm("ex_ver_name_{}".format(current_num)).set(cur_ver_name)
 
 
+# Old function, will delete later
 def update_node_1026(node, usd_info):
     import hou
 

@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import shutil
-import traceback
 import subprocess
 
 import pyblish.api
@@ -19,46 +18,8 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
-        import hou
         from reveries import utils
-        from reveries.common.usd import update_reference_path
         from reveries.common.usd.pipeline import setdress_prim_export
-
-        # auto_update = instance.data.get("autoUpdate", False)
-        #
-        # if auto_update:
-        #     # Set comment
-        #     context = instance.context
-        #     context.data["comment"] = "Auto update"
-        #
-        #     staging_dir = utils.stage_dir()
-        #     filename = 'setdress_prim.usda'
-        #
-        #     final_output = os.path.join(staging_dir, filename)
-        #     tmp_file_path = self._copy_previous_file_to_tmp(
-        #         staging_dir, instance).replace('\\', '/')
-        #
-        # else:
-        #     ropnode = instance[0]
-        #
-        #     # Get the filename from the filename parameter
-        #     final_output = ropnode.evalParm("lopoutput")
-        #     # Set custom staging dir
-        #     staging_dir, filename = os.path.split(final_output)
-        #     tmp_file_path = os.path.join(
-        #         staging_dir, "setdress_prim_tmp.usda").replace('\\', '/')
-        #
-        #     # Export temp usd file
-        #     try:
-        #         ropnode.parm("lopoutput").set(tmp_file_path)
-        #         ropnode.render()
-        #         ropnode.parm("lopoutput").set(final_output)
-        #
-        #     except hou.Error as exc:
-        #         traceback.print_exc()
-        #         raise RuntimeError("Render failed: {0}".format(exc))
-
-        # Set usd/json file name
 
         # Set comment
         context = instance.context
@@ -69,8 +30,6 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
         filename = 'setdress_prim.usda'
 
         final_output = os.path.join(staging_dir, filename)
-        # tmp_file_path = self._copy_previous_file_to_tmp(
-        #     staging_dir, instance).replace('\\', '/')
 
         #
         json_file_name = 'setdress.json'
@@ -81,11 +40,6 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
         instance.data["repr.USD.entryFileName"] = filename
 
         instance.data["subsetGroup"] = "Layout"
-        # instance.data["step_type"] = "setdress_prim"
-
-        # Update reference/sublayer to latest version
-        # update_reference_path.update(
-        #     usd_file=tmp_file_path, output_path=final_output)
 
         # Export setdressPrim
         shot_name = instance.data['asset']

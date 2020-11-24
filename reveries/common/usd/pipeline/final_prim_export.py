@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-
 from avalon import io
 
 from pxr import Usd, UsdGeom
 from reveries import common as utils
+from reveries.common import timing
 
 
 class FinalUsdBuilder(object):
-    def __init__(self, shot_name='', frame_in=None, frame_out=None):
+    @timing
+    def __init__(self, shot_name='', frame_range=[]):
         self.stage = None
-        self.frame_in = frame_in
-        self.frame_out = frame_out
+        self.frame_in, self.frame_out = frame_range
         self.shot_name = shot_name
         self.usd_dict = {}
 
@@ -23,7 +23,8 @@ class FinalUsdBuilder(object):
         usd_dict = {
             'lay': r'/.../publish/layPrim/v001/USD/lay_prim.usda',
             'ani': r'/.../publish/aniPrim/v012/USD/ani_prim.usda',
-            'cam': r'/.../publish/camPrim/v001/USD/cam_prim.usda'
+            'cam': r'/.../publish/camPrim/v001/USD/cam_prim.usda',
+            'fx': r'/.../publish/aniPrim/v013/USD/fx_prim.usda',
         }
         """
         from reveries.common import get_publish_files
@@ -39,7 +40,7 @@ class FinalUsdBuilder(object):
         shot_data = io.find_one(_filter)
 
         # Get camPrim/aniPrim/layPrim usd file
-        for step_key in ["ani", "cam", "lay"]:
+        for step_key in ["ani", "cam", "lay", "fx"]:
             _filter = {
                 "type": "subset",
                 "parent": shot_data['_id'],
@@ -60,30 +61,27 @@ class FinalUsdBuilder(object):
         self.stage.SetEndTimeCode(self.frame_out)
 
         # Create shot prim
-        shot_define = UsdGeom.Xform.Define(self.stage, "/ROOT")
+        root_define = UsdGeom.Xform.Define(self.stage, "/ROOT")
+        root_prim = self.stage.GetPrimAtPath("/ROOT")
         self.stage.GetRootLayer().documentation = \
             "Final usd for {}".format(self.shot_name)
 
         # Add shot variants
-        variants = shot_define.GetPrim().GetVariantSets().AddVariantSet("shot")
-        variants.AddVariant(self.shot_name)
-        variants.SetVariantSelection(self.shot_name)
+        step_variants = root_define.GetPrim().GetVariantSets().\
+            AddVariantSet("step")
 
-        with variants.GetVariantEditContext():
-            # Add step variants
-            asset_define = UsdGeom.Xform.Define(self.stage, "/ROOT/Asset")
-            asset_prim = self.stage.GetPrimAtPath("/ROOT/Asset")
-            step_variants = asset_define.GetPrim().\
-                GetVariantSets().AddVariantSet("step")
-
+        with step_variants.GetVariantEditContext():
             # Set ani option
-            self._set_step_variants("ani", step_variants, asset_prim)
+            self._set_step_variants("ani", step_variants, root_prim)
 
             # Set lay option
-            self._set_step_variants("lay", step_variants, asset_prim)
+            self._set_step_variants("lay", step_variants, root_prim)
+
+            # Set lay option
+            self._set_step_variants("fx", step_variants, root_prim)
 
             # Set final option
-            self._set_step_variants("final", step_variants, asset_prim)
+            self._set_step_variants("final", step_variants, root_prim)
 
         # Add camera sublayer
         if "cam" in self.usd_dict.keys():
@@ -94,31 +92,38 @@ class FinalUsdBuilder(object):
         root_prim = self.stage.GetPrimAtPath("/ROOT")
         self.stage.SetDefaultPrim(root_prim)
 
-    def _set_step_variants(self, step_name, step_variants, asset_prim):
+        print("Done")
+
+    @timing
+    def _set_step_variants(self, step_name, step_variants, root_prim):
         """
         Generate step variant option
-        :param step_name: (str) Step name, ani/lay/final
+        :param step_name: (str) Step name, ani/lay/fx/final
         :param step_variants: (obj)
-        :param asset_prim: (obj)
+        :param root_prim: (obj)
         :return:
         """
         # Set final option
+        print("Running step: {}".format(step_name))
         step_variants.AddVariant(step_name)
         step_variants.SetVariantSelection(step_name)
 
-        if step_name == "final":
-            step_usd_key = ["ani", "lay"]
-        else:
-            step_usd_key = [step_name]
+        step_usd_key = ["fx", "ani", "lay"]
 
-        for _key in step_usd_key:
+        if step_name in step_usd_key:
             with step_variants.GetVariantEditContext():
-                if _key in self.usd_dict.keys():
-                    asset_prim.GetReferences().AddReference(
-                        assetPath=self.usd_dict[_key],
-                        primPath="/ROOT/Asset"
+                root_prim.GetReferences().AddReference(
+                    assetPath=self.usd_dict[step_name],
+                    primPath="/ROOT"
+                )
+        else:
+            with step_variants.GetVariantEditContext():
+                for step in step_usd_key:
+                    root_prim.GetReferences().AddReference(
+                        assetPath=self.usd_dict[step],
+                        primPath="/ROOT"
                     )
 
     def export(self, save_path):
         self.stage.GetRootLayer().Export(save_path)
-        # print self.stage.GetRootLayer().ExportToString()
+        # print(self.stage.GetRootLayer().ExportToString())

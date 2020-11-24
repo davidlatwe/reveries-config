@@ -24,6 +24,12 @@ class ExtractFinalShotUSDExport(pyblish.api.InstancePlugin):
         instance.data["repr.USD._files"] = [file_name]
         instance.data["repr.USD.entryFileName"] = file_name
 
+        self.frame_range = []
+        start_frame = instance.data.get("startFrame", None)
+        end_frame = instance.data.get("endFrame", None)
+        if start_frame and end_frame:
+            self.frame_range = [start_frame, end_frame]
+
         # === Export USD file === #
         output_path = os.path.join(staging_dir, file_name)
         self._export_usd(output_path)
@@ -34,7 +40,8 @@ class ExtractFinalShotUSDExport(pyblish.api.InstancePlugin):
         from reveries.common.usd.pipeline import final_prim_export
 
         builder = final_prim_export.FinalUsdBuilder(
-            shot_name=self.shot_name
+            shot_name=self.shot_name,
+            frame_range=self.frame_range
         )
         builder.export(output_path)
 

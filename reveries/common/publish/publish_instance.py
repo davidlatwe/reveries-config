@@ -456,6 +456,9 @@ class IntegrateAvalonSubset(object):
             "dependents": dict(),
         }
 
+        if instance.data.get("usd_type", None):
+            version_data["usd_type"] = instance.data["usd_type"]
+
         # Include optional data if present in
         optionals = [
             "startFrame",
