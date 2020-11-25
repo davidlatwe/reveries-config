@@ -1450,6 +1450,7 @@ class RedshiftShadersToUSD:
         else:
             usdShader.CreateInput('tex0_srgb', Sdf.ValueTypeNames.Int).Set(0)
 
+        usdShader.CreateInput('tspace_id', Sdf.ValueTypeNames.String).Set("uv")
         self._uv_coord(mayaShader, usdShader)
 
         return True
