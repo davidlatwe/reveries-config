@@ -12,7 +12,8 @@ class CollectMODUSDOutputs(pyblish.api.InstancePlugin):
         "reveries.model",
     ]
 
-    def ins_exists(self, context, name):
+    @staticmethod
+    def ins_exists(context, name):
         _exists = False
         for instance in context:
             if instance.data["subset"] == name:
@@ -21,21 +22,23 @@ class CollectMODUSDOutputs(pyblish.api.InstancePlugin):
         return _exists
 
     def subset_exists(self, subset_name):
-        filter = {"type": "subset",
+        _filter = {"type": "subset",
                   "name": subset_name,
                   "parent": self.asset_id}
-        subset_data = io.find_one(filter)
+        subset_data = io.find_one(_filter)
         return subset_data
 
     def process(self, instance):
         from reveries.common import skip_instance
 
-        asset_name = instance.data['asset']
         context = instance.context
-
         if skip_instance(context, ['reveries.xgen']):
             return
 
+        if not instance.data.get("publishUSD", True):
+            return
+
+        asset_name = instance.data['asset']
         _filter = {"type": "asset", "name": asset_name}
         asset_data = io.find_one(_filter)
         self.asset_id = asset_data['_id']

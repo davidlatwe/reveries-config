@@ -37,18 +37,19 @@ class CollectLookDevUSDOutputs(pyblish.api.InstancePlugin):
     def process(self, instance):
         from reveries.common import skip_instance
 
-        asset_name = instance.data['asset']
         context = instance.context
 
         if skip_instance(context, ['reveries.xgen']):
             return
+        if not instance.data.get("publishUSD", True):
+            return
 
+        asset_name = instance.data['asset']
         _filter = {"type": "asset", "name": asset_name}
         asset_data = io.find_one(_filter)
         self.asset_id = asset_data['_id']
 
         # Create new instance
-        context = instance.context
         backup = instance
 
         # === Generate asset pre prim usd === #

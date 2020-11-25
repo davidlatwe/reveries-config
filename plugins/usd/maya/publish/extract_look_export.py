@@ -27,6 +27,9 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         if skip_instance(context, ['reveries.xgen']):
             return
 
+        if not instance.data.get("publishUSD", True):
+            return
+
         # Check renderer from db
         self.renderer = instance.data.get('renderer', None)
         assert self.renderer, \
@@ -52,20 +55,21 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         self.export_usd(instance)
 
     def export_usd(self, instance):
-        import pymel.core as pm
+        import maya.cmds as cmds
+        # import pymel.core as pm
         from reveries.maya.usd import load_maya_plugin
 
         load_maya_plugin()
 
         # === Check model is reference or not === #
-        root_node = 'ROOT'
-        all_ref = pm.listReferences()
-        if all_ref:
-            for ref in all_ref:
-                _path = ref.unresolvedPath()
-                if '/publish/modelDefault/' in _path:
-                    ns = ref.namespace
-                    root_node = '{}:ROOT'.format(ns)
+        # Get root node
+        subset_name = instance.data["subset"]
+        set_member = cmds.sets(subset_name, q=True)
+        if not set_member:
+            _msg = "Get set member failed for {}".format(instance)
+            self.log.error(_msg)
+            raise Exception(_msg)
+        root_node = set_member[0]
 
         # === Export assign.usd === #
         outpath = os.path.join(self.staging_dir, self.files_info['assign'])
