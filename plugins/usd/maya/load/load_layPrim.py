@@ -14,8 +14,8 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
 
     label = "Reference Layout"
     order = -10
-    icon = "code-fork"
-    color = "orange"
+    icon = "institution"
+    color = "#eb605e"
 
     hosts = ["maya"]
 
@@ -65,7 +65,7 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
                                  options, layPrim_data)
 
         # === Reference Camera === #
-        self._reference_camera(context, name, namespace, options)
+        self._reference_camera(context, name, namespace, options, shot_name)
 
         # === Update frame range === #
         frame_in, frame_out = get_frame_range(shot_name)
@@ -118,16 +118,23 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
                 else:
                     self.log.info("{} no GPU published.".format(subset_name))
 
-    def _reference_camera(self, context, name, namespace, options):
+    def _reference_camera(self, context, name, namespace, options, shot_name):
         from maya import cmds
 
         update_camera = options.get("update_camera", True)
         self.log.info("update_camera: {}".format(update_camera))
 
+        _filter = {"type": "asset", "name": shot_name}
+        shot_data = io.find_one(_filter)
+
         _filter = {
             "type": "subset",
-            "data.task": "layout"}
+            "data.task": "layout",
+            "parent": shot_data['_id']}
         subset_data = io.find_one(_filter)
+        if not subset_data:
+            self.log.error("Get camera failed.")
+            return
 
         subset_id = subset_data["_id"]
 
@@ -144,7 +151,7 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
             version=version_num).get("Alembic", [])
         abc_file = [s for s in files if s.endswith(".abc")]
         if not abc_file:
-            self.log.info("Not found camera abc file published.")
+            self.log.error("Not found camera abc file published.")
             return
 
         abc_file = abc_file[0]

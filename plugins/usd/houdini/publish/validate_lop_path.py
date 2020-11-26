@@ -10,7 +10,8 @@ class ValidateLOPPath(pyblish.api.InstancePlugin):
     hosts = ["houdini"]
     families = [
         "reveries.setdress.layer_prim",
-        "reveries.fx.layer_prim"
+        "reveries.fx.layer_prim",
+        "reveries.lgt.usd"
     ]
 
     def process(self, instance):

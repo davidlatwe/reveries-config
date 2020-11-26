@@ -3,7 +3,7 @@ import pyblish.api
 
 
 class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
-    """Get container from caches to get asset data.
+    """Get container from ROOT group and get asset data from db.
     Generate child pointcache instance if rigging reference multiple models.
     """
 
@@ -80,8 +80,8 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
             return
 
         skip_parent = False
+        invalid_grp = []
         for child_name in children:
-            # child_name = children[1]
             # Get asset name
             child_root_group = ""
             for _group in cmds.listRelatives(
@@ -90,9 +90,20 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
                     child_root_group = _group
                     break
 
+            if not child_root_group:
+                invalid_grp.append(child_name)
+                _msg = "{}: Missing \"ROOT\" in model hierarchy.".\
+                    format(child_name)
+                self.log.error(_msg)
+                continue
+
             if not cmds.attributeQuery(
                     'AvalonID', node=child_root_group, exists=True):
-                return
+                invalid_grp.append(child_name)
+                _msg = "{}: Missing \"AvalonID\" attribute on ROOT group. ".\
+                    format(child_name)
+                self.log.error(_msg)
+                continue
 
             asset_id = cmds.getAttr(
                 "{}.AvalonID".format(child_root_group)).split(":")[0]
@@ -101,7 +112,11 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
             asset_data = avalon.io.find_one(_filter)
 
             if not asset_data:
-                return
+                invalid_grp.append(child_name)
+                _msg = "{}: Cant get model's asset data from db.". \
+                    format(child_name)
+                self.log.error(_msg)
+                continue
 
             child_asset_name = asset_data.get('name', '')
 
@@ -125,6 +140,12 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
                 asset_name=child_asset_name,
                 asset_id=asset_id,
                 caches=child_cache
+            )
+
+        if invalid_grp:
+            raise Exception(
+                "%s <Check children subset usd> Failed."
+                "Please check your models are from publish." % instance
             )
 
     def __create_child_instance(self, instance, subset_name=None,

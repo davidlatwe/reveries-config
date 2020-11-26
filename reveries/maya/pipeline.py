@@ -292,7 +292,8 @@ def parse_container(container):
     return data
 
 
-def update_container(container, asset, subset, version, representation):
+def update_container(container, asset, subset, version, representation,
+                     rename_group=True):
     """Update container node attributes' value and namespace
 
     Arguments:
@@ -301,6 +302,7 @@ def update_container(container, asset, subset, version, representation):
         subset (dict): subset document
         version (dict): version document
         representation (dict): representation document
+        rename_group (bool): rename group
 
     """
     container_node = container["objectName"]
@@ -352,12 +354,13 @@ def update_container(container, asset, subset, version, representation):
     name = subset["name"]
 
     # Rename group node
-    group = get_group_from_container(container_node)
-    new_name = subset_group_name(namespace, name)
-    if group and group != new_name and cmds.objExists(group):
-        group = cmds.rename(group, new_name)
+    if rename_group:
+        group = get_group_from_container(container_node)
+        new_name = subset_group_name(namespace, name)
+        if group and group != new_name and cmds.objExists(group):
+            group = cmds.rename(group, new_name)
 
-        log.info("Subset group renamed to '%s'." % group)
+            log.info("Subset group renamed to '%s'." % group)
 
     # Rename container
     container_node = cmds.rename(

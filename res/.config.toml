@@ -224,3 +224,26 @@ icon = "list"
 name = "reveries.setdress.layer_prim"
 label = "USD (Setdress Layer)"
 icon = "list"
+
+[[families]]
+name = "reveries.final.usd"
+label = "USD (Final)"
+icon = "list"
+
+[[families]]
+name = "reveries.fx.layer_prim"
+label = "USD (Fx Layer)"
+icon = "list"
+
+[[families]]
+name = "reveries.fx.usd"
+label = "USD (Fx)"
+icon = "list"
+
+[[families]]
+name = "reveries.pointcache.child.usd"
+hideFilter = true
+
+[[families]]
+name = "reveries.pointcache.usd"
+hideFilter = true

@@ -2,17 +2,17 @@ from avalon import houdini
 from reveries import lib
 
 
-class CreateFxLayerUSD(houdini.Creator):
-    """Publish FX layer USD"""
+class CreateLightingUSD(houdini.Creator):
+    """Publish Lighting USD"""
 
-    label = "FX Layer (USD)"
-    family = "reveries.fxlayer"
-    icon = "magic"
+    label = "Lighting (USD)"
+    family = "reveries.lgt"
+    icon = "lightbulb-o"
 
     hosts = ["houdini"]
 
     def __init__(self, *args, **kwargs):
-        super(CreateFxLayerUSD, self).__init__(*args, **kwargs)
+        super(CreateLightingUSD, self).__init__(*args, **kwargs)
 
         # Remove the `active`, we are checking the `bypass` flag of the nodes
         # self.data.pop("active", None)
@@ -23,17 +23,13 @@ class CreateFxLayerUSD(houdini.Creator):
         self.data["deadlinePriority"] = 80
         self.data["deadlinePool"] = lib.get_deadline_pools()
 
-        self.data["family"] = "reveries.fx.layer_prim"
-        self.data["usdType"] = [
-            "Sublayer",
-            "Reference"
-        ]
+        self.data["family"] = "reveries.lgt.usd"
 
     def process(self):
         import hou
 
-        instance = super(CreateFxLayerUSD, self).process()
-        file_path = "$HIP/pyblish/{0}/{0}_prim.usda".format(self.name)
+        instance = super(CreateLightingUSD, self).process()
+        file_path = "$HIP/pyblish/{0}/lgt_prim.usda".format(self.name)
 
         parms = {
             "lopoutput": file_path,
@@ -42,4 +38,4 @@ class CreateFxLayerUSD(houdini.Creator):
         }
 
         instance.setParms(parms)
-        instance.setColor(hou.Color((0.063, 0.063, 0.292)))
+        instance.setColor(hou.Color((0.063, 0.257, 0.083)))

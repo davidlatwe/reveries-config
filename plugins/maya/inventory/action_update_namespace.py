@@ -26,6 +26,9 @@ class UpdateNamespace(avalon.api.InventoryAction):
         if not ("subsetGroup" in container and container["subsetGroup"]):
             return False
 
+        if container["loader"] in ["USDSetdressLoader"]:
+            return False
+
         namespace = lib.get_ns(container["subsetGroup"])
         return container["namespace"] != namespace
 

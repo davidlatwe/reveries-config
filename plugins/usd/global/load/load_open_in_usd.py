@@ -26,7 +26,7 @@ class OpenInUSD(PackageLoader, avalon.api.Loader):
     """Load the model"""
 
     label = "Open in USD view"
-    order = -10
+    order = -15
     icon = "list"
     color = "#56a6db"
 

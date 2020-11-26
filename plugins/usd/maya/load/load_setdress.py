@@ -4,7 +4,7 @@ from avalon.vendor import qargparse
 from reveries.maya.plugins import ReferenceLoader
 
 
-class USDSetdressLoader(ReferenceLoader, avalon.api.Loader):
+class SetdressLoader(ReferenceLoader, avalon.api.Loader):
     """Load the setdress USD"""
 
     label = "Reference Setdress Cache"

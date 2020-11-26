@@ -87,6 +87,107 @@ class MayaBaseLoader(PackageLoader):
         return group.replace(".", "_")
 
 
+class USDLoader(MayaBaseLoader):
+    def process_reference(self, context, name, namespace, group, options):
+        """To be implemented by subclass"""
+        raise NotImplementedError("Must be implemented by subclass")
+
+    def load(self, context, name=None, namespace=None, options=None):
+
+        from maya import cmds
+
+        options = options or dict()
+
+        count = options.get("count", 1)
+        if count > 1:
+            options["count"] -= 1
+            self.load(context, name, options=options.copy())
+
+        load_plugin(context["representation"]["name"])
+
+        asset = context["asset"]
+
+        asset_name = asset["data"].get("shortName", asset["name"])
+        if context["subset"]["schema"] == "avalon-core:subset-3.0":
+            families = context["subset"]["data"]["families"]
+        else:
+            families = context["version"]["data"]["families"]
+        family_name = families[0].split(".")[-1]
+        namespace = namespace or unique_root_namespace(asset_name, family_name)
+
+        group_name = "{}_{}".format(namespace, name)
+
+        self.process_reference(context=context,
+                               name=name,
+                               namespace=namespace,
+                               group=group_name,
+                               options=options)
+        # (TODO) The group node may not be named exactly as `group_name` if
+        #   `namespace` already exists. Might need to get the group node from
+        #   `process_reference` so we could get the real name in case it's been
+        #   renamed by Maya. May reference `ImportLoader.process_import`.
+
+        # Only containerize if any nodes were loaded by the Loader
+        nodes = self[:]
+
+        # Only containerize if any nodes were loaded by the Loader
+        if not nodes:
+            return
+
+        if "offset" in options and cmds.objExists(group_name):
+            offset = [i * (count - 1) for i in options["offset"]]
+            cmds.setAttr(group_name + ".t", *offset)
+
+        container_id = options.get("containerId", generate_container_id())
+        container = subset_containerising(name=name,
+                                          namespace=namespace,
+                                          container_id=container_id,
+                                          nodes=nodes,
+                                          context=context,
+                                          cls_name=self.__class__.__name__,
+                                          group_name=group_name)
+        return container
+
+    def update(self, container, representation):
+        from maya import cmds
+
+        parents = avalon.io.parenthood(representation)
+        self.package_path = get_representation_path_(representation, parents)
+
+        entry_path = self.file_path(representation).replace("\\", "/")
+        entry_path = entry_path.replace(
+            "$AVALON_PROJECTS",
+            os.environ["AVALON_PROJECTS"])
+        entry_path = entry_path.replace(
+            "$AVALON_PROJECT",
+            os.environ["AVALON_PROJECT"])
+
+        subset_group = container["subsetGroup"]
+        proxy_shape_node = cmds.listRelatives(subset_group, children=True)[0]
+        cmds.setAttr("{}.filePath".format(proxy_shape_node),
+                     entry_path, type="string")
+
+        # Update container
+        version, subset, asset, _ = parents
+        update_container(container, asset, subset, version, representation,
+                         rename_group=False)
+
+        return True
+
+    def remove(self, container):
+        from maya import cmds
+
+        node = container["objectName"]
+        subset_group = container["subsetGroup"]
+
+        try:
+            cmds.delete(node)
+            cmds.delete(subset_group)
+        except ValueError:
+            pass
+        return True
+
+
 class ReferenceLoader(MayaBaseLoader):
     """A basic ReferenceLoader for Maya
 
