@@ -10,9 +10,15 @@ class FinalUsdBuilder(object):
     @timing
     def __init__(self, shot_name='', frame_range=[]):
         self.stage = None
-        self.frame_in, self.frame_out = frame_range
-        self.shot_name = shot_name
         self.usd_dict = {}
+        self.shot_name = shot_name
+
+        # Check frame range
+        if frame_range:
+            self.frame_in, self.frame_out = frame_range
+        else:
+            self.frame_in, self.frame_out = \
+                utils.get_frame_range(self.shot_name)
 
         self._get_shot_data()
         self._build()
@@ -28,10 +34,6 @@ class FinalUsdBuilder(object):
         }
         """
         from reveries.common import get_publish_files
-
-        if not self.frame_in or not self.frame_out:
-            self.frame_in, self.frame_out = utils.get_frame_range(
-                self.shot_name)
 
         self.usd_dict = {}
 
@@ -109,20 +111,23 @@ class FinalUsdBuilder(object):
         step_variants.SetVariantSelection(step_name)
 
         step_usd_key = ["fx", "ani", "lay"]
+        usd_dict_key = list(self.usd_dict.keys())
 
-        if step_name in step_usd_key:
+        if step_name == "final":
+            with step_variants.GetVariantEditContext():
+                for step in step_usd_key:
+                    if step in usd_dict_key:
+                        root_prim.GetReferences().AddReference(
+                            assetPath=self.usd_dict[step],
+                            primPath="/ROOT"
+                        )
+        elif step_name in usd_dict_key:
             with step_variants.GetVariantEditContext():
                 root_prim.GetReferences().AddReference(
                     assetPath=self.usd_dict[step_name],
                     primPath="/ROOT"
                 )
-        else:
-            with step_variants.GetVariantEditContext():
-                for step in step_usd_key:
-                    root_prim.GetReferences().AddReference(
-                        assetPath=self.usd_dict[step],
-                        primPath="/ROOT"
-                    )
+
 
     def export(self, save_path):
         self.stage.GetRootLayer().Export(save_path)
