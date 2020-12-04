@@ -25,6 +25,7 @@ Example Usage:
 
 """
 import os
+import sys
 from maya import OpenMaya as oldOm
 
 
@@ -113,6 +114,9 @@ def reveal():
 
 def _parse_target(target):
     """Internal function for type check"""
+    if sys.version_info.major == 3:
+        unicode = str
+
     if isinstance(target, (str, unicode)):
         target = [target]
 

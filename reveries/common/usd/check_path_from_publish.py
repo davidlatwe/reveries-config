@@ -18,7 +18,6 @@ class CheckPath(object):
         root_layer = source_stage.GetRootLayer()
         layers = [s.replace('\\', '/')
                   for s in root_layer.GetExternalReferences() if s]
-        print('layers: {}\n'.format(layers))
 
         for _path in layers:
             if _path:

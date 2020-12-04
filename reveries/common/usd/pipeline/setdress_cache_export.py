@@ -13,6 +13,7 @@ class SetdressUSDToCacheExport(object):
         self.gpu = gpu
 
         self._load_maya_plugin()
+        print("usd_path: ", self.usd_path)
         print("__init__ done.")
 
     def _load_maya_plugin(self):
@@ -23,6 +24,7 @@ class SetdressUSDToCacheExport(object):
 
         try:
             PLUGIN_NAMES = [
+                "mayaUsdPlugin",
                 "pxrUsd",
                 "pxrUsdPreviewSurface",
                 "gpuCache",
@@ -38,7 +40,7 @@ class SetdressUSDToCacheExport(object):
         cmds.file(
             self.usd_path,
             i=True,
-            type="pxrUsdImport",
+            type="USD Import",  # "pxrUsdImport"
             options=";shadingMode=displayColor;readAnimData=0;"
                     "useAsAnimationCache=0;assemblyRep=Collapsed;startTime=0;"
                     "endTime=0;useCustomFrameRange=0"

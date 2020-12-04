@@ -90,12 +90,13 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
             )
         )
         cmd = [usdenv_bat, __file__, usd_file]
+        print("USD to Alembic cmd:", cmd)
 
         try:
             out_bytes = subprocess.check_output(cmd, shell=True)
-            self.log.info("out: {}".format(out_bytes))
+            print("Export USD Log: {}".format(out_bytes))
         except Exception as e:
-            self.log.info("Export GPU/Alembic cache failed: {}".format(e))
+            print("Export USD to GPU/Alembic cache failed: {}".format(e))
 
     def _copy_previous_file_to_tmp(self, staging_dir, instance):
         from reveries.common import get_publish_files
@@ -176,14 +177,17 @@ class LauncherAutoEnvCacheExport(object):
             setdress_cache_export import SetdressUSDToCacheExport
 
         standalone.initialize(name="python")
+        print("="*5, "USD TO Alembic Process", "="*5)
         try:
-            exporter = SetdressUSDToCacheExport(self.usd_path)
+            exporter = SetdressUSDToCacheExport(
+                self.usd_path
+            )
             exporter.export()
 
             print("USD to ENV Done!!")
         except Exception as e:
             print("USD to ENV Failed: {}".format(e))
-
+        print("=" * 5, "USD TO Alembic Process Finish", "=" * 5)
         standalone.uninitialize()
         # Bye
 

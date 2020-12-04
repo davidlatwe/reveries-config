@@ -20,7 +20,6 @@ class SwitchPath(object):
         root_layer = source_stage.GetRootLayer()
         layers = [s.replace('\\', '/')
                   for s in root_layer.GetExternalReferences() if s]
-        print("layers: ", layers)
 
     @classmethod
     def switch(cls, file_path=None, pub_dir=None, output_path=None):

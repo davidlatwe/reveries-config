@@ -2,17 +2,54 @@ import os
 import json
 
 import avalon.api
-from avalon import io, api
+from avalon import io
 from avalon.vendor import qargparse
-from reveries.maya.plugins import ReferenceLoader
+
 from reveries.common import path_resolver
 from reveries.common import get_publish_files
 
+from reveries.maya.plugins import ReferenceLoader
+from reveries.maya.plugins import USDLoader
 
-class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
+
+class _ReferenceLoader(ReferenceLoader, avalon.api.Loader):
+    def __init__(self, context=None):
+        if context:
+            super(_ReferenceLoader, self).__init__(context)
+
+    def update(self, container, representation):
+        super(_ReferenceLoader, self).update(container, representation)
+
+    def remove(self, container):
+        super(_ReferenceLoader, self).remove(container)
+
+    def load(self,
+             context, name=None, namespace=None, options=None, ref_path=None):
+        self.ref_path = ref_path
+        container = super(_ReferenceLoader, self).load(
+            context, name=name, namespace=namespace, options=options
+        )
+        return container
+
+    def process_reference(self, context, name, namespace, group, options):
+        import maya.cmds as cmds
+        from avalon import maya
+
+        with maya.maintained_selection():
+            nodes = cmds.file(self.ref_path,
+                              namespace=namespace,
+                              ignoreVersion=True,
+                              reference=True,
+                              returnNewNodes=True,
+                              groupReference=True,
+                              groupName=group)
+        self[:] = nodes
+
+
+class USDLayoutLoader(USDLoader, avalon.api.Loader):
     """Load layout USD"""
 
-    label = "Reference Layout"
+    label = "Build Layout Scene"
     order = -10
     icon = "institution"
     color = "#eb605e"
@@ -21,15 +58,14 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
 
     families = ["reveries.layout.usd"]
 
-    representations = [
-        "USD",
-    ]
+    representations = ["USD"]
 
     options = [
-        qargparse.Integer("count", default=1, min=1, help="Batch load count."),
-        qargparse.Boolean("update_camera",
-                          label="Update to latest camera",
-                          default=True, help="Update camera to latest version")
+        qargparse.Boolean(
+            "update_camera",
+            label="Update to latest camera",
+            default=True, help="Update camera to latest version"
+        )
     ]
 
     def load(self, context, name=None, namespace=None, options=None):
@@ -58,14 +94,17 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
             layPrim_data = json.load(json_path)
 
         # Get namespace
-        namespace = namespace or self._get_namespace(context)
+        namespace = namespace or self._get_namespace(context, shot_name)
 
         # === Reference Setdress === #
-        self._reference_setdress(context, name, namespace,
-                                 options, layPrim_data)
+        self._reference_setdress(
+            context, name, namespace, options, layPrim_data
+        )
 
         # === Reference Camera === #
-        self._reference_camera(context, name, namespace, options, shot_name)
+        self._reference_camera(
+            context, "camera", namespace, options, shot_name
+        )
 
         # === Update frame range === #
         frame_in, frame_out = get_frame_range(shot_name)
@@ -75,10 +114,8 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
         cmds.playbackOptions(animationStartTime=frame_in)
         cmds.playbackOptions(animationEndTime=frame_out)
 
-    def _reference_setdress(self, context, name, namespace,
-                            options, layPrim_data):
-        from maya import cmds
-
+    def _reference_setdress(
+            self, context, name, namespace, options, layPrim_data):
         for subset_name, data in layPrim_data.get("Shot", {}).items():
             if "reveries.setdress.usd" in data.get("families", []):
                 subset_id = data["subset_id"]
@@ -86,41 +123,30 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
                 version_num = int(version_name.replace("v", ""))
 
                 files = get_publish_files.get_files(
-                    subset_id, version=version_num).get("GPUCache", [])
-                ma_file = [s for s in files if s.endswith(".ma")]
-                if ma_file:
-                    ma_file = ma_file[0]
-                    group_name = self.group_name(namespace, subset_name)
-
+                    subset_id, version=version_num).get("USD", [])
+                usd_file = [s for s in files if s.endswith(".usda")]
+                if usd_file:
+                    usd_file = usd_file[0]
+                    group_name = "{}{}".format(namespace, name)
                     container = self._load(
                         context,
                         name=name,
                         namespace="{}{}".format(namespace, subset_name),
                         options=options,
                         group_name=group_name,
-                        file_path=ma_file)
+                        file_path=usd_file)
                     con_node_name = container.get("objectName", None)
 
                     if con_node_name:
-                        resolver_obj = path_resolver.PathResolver(
-                            file_path=ma_file)
-                        representation_id = resolver_obj.get_representation_id()
-
-                        _new_id_data = {
-                            "subsetId": subset_id,
-                            "versionId": data["version_id"],
-                            "representation": representation_id
-                        }
-                        for _key, _value in _new_id_data.items():
-                            cmds.setAttr("{}.{}".format(con_node_name, _key),
-                                         _value,
-                                         type="string")
+                        self._update_container_node(usd_file, con_node_name)
                 else:
-                    self.log.info("{} no GPU published.".format(subset_name))
+                    self.log.info(
+                        "Error: {}({}) no USD published.".format(
+                            subset_name, version_name
+                        )
+                    )
 
     def _reference_camera(self, context, name, namespace, options, shot_name):
-        from maya import cmds
-
         update_camera = options.get("update_camera", True)
         self.log.info("update_camera: {}".format(update_camera))
 
@@ -130,7 +156,8 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
         _filter = {
             "type": "subset",
             "data.task": "layout",
-            "parent": shot_data['_id']}
+            "parent": shot_data['_id']
+        }
         subset_data = io.find_one(_filter)
         if not subset_data:
             self.log.error("Get camera failed.")
@@ -146,6 +173,7 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
         #     version_num = int(version_name.replace("v", ""))
         version_num = None
 
+        # Get camera.abc file
         files = get_publish_files.get_files(
             subset_id,
             version=version_num).get("Alembic", [])
@@ -153,71 +181,65 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
         if not abc_file:
             self.log.error("Not found camera abc file published.")
             return
-
         abc_file = abc_file[0]
 
-        group_name = self.group_name(namespace, "camera")
-        container = self._load(context, name=name,
-                               namespace="{}camera".format(namespace),
-                               options=options, group_name=group_name,
-                               file_path=abc_file)
+        # Reference camera
+        # group_name = self.group_name(namespace, name)
+        # container = self._load(context, name=name,
+        #                        namespace=namespace,
+        #                        options=options, group_name=group_name,
+        #                        file_path=abc_file)
+        loader = _ReferenceLoader(context=context)
+        container = loader.load(
+            context, name="camera", namespace=namespace, options=options,
+            ref_path=abc_file
+        )
 
         con_node_name = container.get("objectName", None)
         if con_node_name:
-            resolver_obj = path_resolver.PathResolver(file_path=abc_file)
-            version_id = resolver_obj.get_version_id()
-            representation_id = resolver_obj.get_representation_id()
+            self._update_container_node(abc_file, con_node_name)
 
-            _new_id_data = {
-                "subsetId": subset_id,
-                "versionId": version_id,  # camera_data["version_id"],
-                "representation": representation_id
-            }
-            for _key, _value in _new_id_data.items():
-                cmds.setAttr("{}.{}".format(con_node_name, _key),
-                             _value,
-                             type="string")
+    def _update_container_node(self, file_path, con_node_name):
+        from maya import cmds
+
+        resolver_obj = path_resolver.PathResolver(file_path=file_path)
+        version_id = resolver_obj.get_version_id()
+        representation_id = resolver_obj.get_representation_id()
+        subset_id = resolver_obj.get_subset_id()
+
+        _new_id_data = {
+            "subsetId": subset_id,
+            "versionId": version_id,  # camera_data["version_id"],
+            "representation": representation_id,
+            "loader": "USDLayoutLoader"
+        }
+        for _key, _value in _new_id_data.items():
+            cmds.setAttr("{}.{}".format(con_node_name, _key), _value,
+                         type="string")
 
     def _load(self, context, name=None, namespace=None,
               options=None, group_name=None, file_path=None):
-        from maya import cmds
 
         from reveries.maya.pipeline import subset_containerising
         from reveries.maya.utils import generate_container_id
 
         options = options or dict()
 
-        count = options.get("count", 1)
-        if count > 1:
-            options["count"] -= 1
-            self.load(context, name, options=options.copy())
-
-        # Get namespace
-        namespace = namespace or self._get_namespace(context)
-
-        # group_name = self.group_name(namespace, name)
         self.process_reference(context=context,
                                name=name,
                                namespace=namespace,
                                group=group_name,
                                options=options,
                                file_path=file_path)
-        # (TODO) The group node may not be named exactly as `group_name` if
-        #   `namespace` already exists. Might need to get the group node from
-        #   `process_reference` so we could get the real name in case it's been
-        #   renamed by Maya. May reference `ImportLoader.process_import`.
 
         # Only containerize if any nodes were loaded by the Loader
         nodes = self[:]
-        nodes = self._get_containerizable_nodes(nodes)
+        print("nodes: ", nodes)
+        # nodes = self._get_containerizable_nodes(nodes)
 
         # Only containerize if any nodes were loaded by the Loader
         if not nodes:
             return
-
-        if "offset" in options and cmds.objExists(group_name):
-            offset = [i * (count - 1) for i in options["offset"]]
-            cmds.setAttr(group_name + ".t", *offset)
 
         container_id = options.get("containerId", generate_container_id())
 
@@ -230,21 +252,45 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
                                           group_name=group_name)
         return container
 
-    def process_reference(self, context, name, namespace,
-                          group, options, file_path=None):
+    def process_reference(self, context, name, namespace, group, options,
+                          file_path=None):
         import maya.cmds as cmds
         from avalon import maya
 
-        with maya.maintained_selection():
-            nodes = cmds.file(file_path,
-                              namespace=namespace,
-                              ignoreVersion=True,
-                              reference=True,
-                              returnNewNodes=True,
-                              groupReference=True,
-                              groupName=group)
+        if file_path.endswith("usda"):
+            with maya.maintained_selection():
+                node = cmds.createNode(
+                    # "mayaUsdProxyShape",  # unselectable not working
+                    "pxrUsdProxyShape",
+                    name="{}Shape".format(namespace)
+                )
+                cmds.setAttr("{}.drawProxyPurpose".format(node), 0)
+                cmds.setAttr("{}.drawRenderPurpose".format(node), 1)
 
-        self[:] = nodes
+                translate_grp = cmds.listRelatives(node, parent=True)[0]
+                cmds.rename(translate_grp, namespace)
+
+                cmds.setAttr(
+                    "{}.filePath".format(node), file_path, type="string"
+                )
+
+                cmds.setAttr("{}.overrideEnabled".format(namespace), 1)
+                cmds.setAttr("{}.overrideDisplayType".format(namespace), 2)
+
+                cmds.select(cl=True)
+                cmds.group(translate_grp, name=group)
+            self[:] = [node]
+
+        elif file_path.endswith(".abc"):
+            with maya.maintained_selection():
+                nodes = cmds.file(file_path,
+                                  namespace=namespace,
+                                  ignoreVersion=True,
+                                  reference=True,
+                                  returnNewNodes=True,
+                                  groupReference=True,
+                                  groupName=group)
+            self[:] = nodes
 
     def _load_maya_plugin(self):
         """
@@ -264,15 +310,42 @@ class USDLayoutLoader(ReferenceLoader, avalon.api.Loader):
         except Exception as e:
             self.log.info("Load plugin failed: {}".format(e))
 
-    def _get_namespace(self, context):
+    def _get_namespace(self, context, shot_name):
         from reveries.maya.pipeline import unique_root_namespace
 
-        shot_data = context["asset"]
-
-        shot_name = shot_data["data"].get("shortName", shot_data["name"])
         if context["subset"]["schema"] == "avalon-core:subset-3.0":
             families = context["subset"]["data"]["families"]
         else:
             families = context["version"]["data"]["families"]
         family_name = families[0].split(".")[-1]
+
         return unique_root_namespace(shot_name, family_name)
+
+    def update(self, container, representation):
+        entry_path = self.file_path(representation).replace("\\", "/")
+
+        if entry_path.endswith(".usda"):
+            super(USDLayoutLoader, self).update(container, representation)
+        else:
+            loader = _ReferenceLoader()
+            loader.update(container, representation)
+
+        return True
+
+    def remove(self, container):
+        _filter = {"_id": io.ObjectId(container.get("representation", ""))}
+        representation_data = io.find_one(_filter)
+
+        if not representation_data:
+            self.log.error(
+                "No representation found for {}".format(container["objectName"])
+            )
+            return False
+
+        if str(representation_data["name"]) == "USD":
+            super(USDLayoutLoader, self).remove(container)
+        else:
+            loader = _ReferenceLoader()
+            loader.remove(container)
+
+        return True

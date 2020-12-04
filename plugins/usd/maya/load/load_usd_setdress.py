@@ -11,7 +11,7 @@ class USDSetdressLoader(USDLoader, avalon.api.Loader):
     label = "Load USD Stage"
     order = -10.5
     icon = "cloud-download"
-    color = "#b85c7c"
+    color = "#eb605e"
 
     hosts = ["maya"]
 
@@ -40,8 +40,13 @@ class USDSetdressLoader(USDLoader, avalon.api.Loader):
             os.environ["AVALON_PROJECT"])
 
         with maya.maintained_selection():
-            node = cmds.createNode("pxrUsdProxyShape",
-                                   name="{}Shape".format(namespace))
+            node = cmds.createNode(
+                # "mayaUsdProxyShape",  # unselectable not working
+                "pxrUsdProxyShape",
+                name="{}Shape".format(namespace)
+            )
+            cmds.setAttr("{}.drawProxyPurpose".format(node), 0)
+            cmds.setAttr("{}.drawRenderPurpose".format(node), 1)
 
             translate_grp = cmds.listRelatives(node, parent=True)[0]
             cmds.rename(translate_grp, namespace)
@@ -54,5 +59,4 @@ class USDSetdressLoader(USDLoader, avalon.api.Loader):
             cmds.select(cl=True)
             cmds.group(translate_grp, name=group)
 
-        print("node:", node)
         self[:] = [node]
