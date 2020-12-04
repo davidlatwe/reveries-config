@@ -53,6 +53,10 @@ def _get_variant_data(asset_name, prim_type='default'):
         files = get_publish_files.get_files(subset_id)
         lookfiles_data[subset_name] = files.get('USD', {})
 
+    if not lookfiles_data or not variant_key:
+        lookfiles_data = {"lookDefault": []}
+        variant_key = ["lookDefault"]
+
     return lookfiles_data, variant_key
 
 
@@ -80,7 +84,6 @@ def prim_export(asset_name, output_path, prim_type='default'):
     variant_data, variant_key = _get_variant_data(
         asset_name, prim_type=prim_type
     )
-    assert variant_data, "Can't found look usd file from publish."
 
     # Check prim name
     if prim_type == 'proxy':

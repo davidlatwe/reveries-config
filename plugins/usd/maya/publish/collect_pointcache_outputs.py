@@ -89,7 +89,6 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
                 if _group.endswith(":ROOT"):
                     child_root_group = _group
                     break
-
             if not child_root_group:
                 invalid_grp.append(child_name)
                 _msg = "{}: Missing \"ROOT\" in model hierarchy.".\
@@ -131,7 +130,7 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
             # Get subset name
             subset_name = "pointcache.{}.{}".format(
                 instance.data["subset"].replace("pointcache.", ""),
-                child_name.split(":")[-1]
+                child_name.split(":")[-2]
             )
 
             self.__create_child_instance(

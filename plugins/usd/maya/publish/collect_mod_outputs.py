@@ -62,24 +62,26 @@ class CollectMODUSDOutputs(pyblish.api.InstancePlugin):
         if self.subset_exists('renderPrim'):
             subset_types.append('render')
 
-        if subset_types:
-            for subset_type in subset_types:
-                name = '{}Prim'.format(subset_type)
-                if not self.ins_exists(context, name):
-                    instance = context.create_instance(name)
-                    instance.data.update(backup.data)
+        if not subset_types:
+            subset_types = ["render"]
 
-                    instance.data["family"] = "reveries.look.pre_prim"
-                    instance.data["subset"] = name
-                    instance.data["subset_type"] = subset_type
-                    instance.data["subsetGroup"] = "USD"
-
-            # === Generate asset prim usd === #
-            name = 'assetPrim'
+        for subset_type in subset_types:
+            name = '{}Prim'.format(subset_type)
             if not self.ins_exists(context, name):
                 instance = context.create_instance(name)
                 instance.data.update(backup.data)
 
-                instance.data["family"] = "reveries.look.asset_prim"
+                instance.data["family"] = "reveries.look.pre_prim"
                 instance.data["subset"] = name
+                instance.data["subset_type"] = subset_type
+                instance.data["subsetGroup"] = "USD"
+
+        # === Generate asset prim usd === #
+        name = 'assetPrim'
+        if not self.ins_exists(context, name):
+            instance = context.create_instance(name)
+            instance.data.update(backup.data)
+
+            instance.data["family"] = "reveries.look.asset_prim"
+            instance.data["subset"] = name
 
