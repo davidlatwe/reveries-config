@@ -19,6 +19,9 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
         from reveries import utils
         from reveries.maya import utils as maya_utils
 
+        if not instance.data.get("publishUSD", True):
+            return
+
         asset_doc = instance.data["assetDoc"]
         self.shot_name = asset_doc["name"]
 
@@ -91,20 +94,22 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
 
         cam_transform = cmds.listRelatives(
             camera, parent=True, fullPath=True)[0]
-        cam_top_group = "|{}".format(cam_transform.split("|")[1])
-        if cam_top_group != "|ROOT":
-            cmds.select(cl=True)
-            if cmds.objExists("|ROOT"):
-                cmds.parent(cam_top_group, "|ROOT")
-            else:
-                root_created = True
-                cmds.group(cam_top_group, n="ROOT")
-            cmds.select(cl=True)
+        camera_shape = camera
+
+        # cam_top_group = "|{}".format(cam_transform.split("|")[1])
+        # if cam_top_group != "|ROOT":
+        #     cmds.select(cl=True)
+        #     if cmds.objExists("|ROOT"):
+        #         cmds.parent(cam_top_group, "|ROOT")
+        #     else:
+        #         root_created = True
+        #         cmds.group(cam_top_group, n="ROOT")
+        #     cmds.select(cl=True)
 
         # Update shape node name
-        camera_shape = cmds.ls(type="camera", long=True)[0]
-        cam_transform = cmds.listRelatives(
-            camera_shape, parent=True, fullPath=True)[0]
+        # camera_shape = cmds.ls(type="camera", long=True)[0]
+        # cam_transform = cmds.listRelatives(
+        #     camera_shape, parent=True, fullPath=True)[0]
 
         self._check_film_gata(camera_shape)
 
@@ -124,10 +129,10 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
             "Export usd file for camera \"{}\".".format(cam_transform))
 
         # Clean unless group
-        if root_created:
-            cmds.parent("|ROOT{}".format(cam_top_group), w=True)
-            cmds.select(cl=True)
-            cmds.delete("|ROOT")
+        # if root_created:
+        #     cmds.parent("|ROOT{}".format(cam_top_group), w=True)
+        #     cmds.select(cl=True)
+        #     cmds.delete("|ROOT")
 
         cmds.setAttr(
             "{}.verticalFilmAperture".format(camera),

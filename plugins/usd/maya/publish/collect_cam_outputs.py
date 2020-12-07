@@ -30,6 +30,9 @@ class CollectCameraPrimUSDOutputs(pyblish.api.InstancePlugin):
         return subset_data
 
     def process(self, instance):
+        if not instance.data.get("publishUSD", True):
+            return
+
         self.shot_name = instance.data['asset']
         _filter = {"type": "asset", "name": self.shot_name}
         shot_data = io.find_one(_filter)

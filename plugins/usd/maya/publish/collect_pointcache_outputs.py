@@ -85,7 +85,9 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
             # Get asset name
             child_root_group = ""
             for _group in cmds.listRelatives(
-                    child_name, allDescendents=True, type="transform"):
+                    child_name, allDescendents=True,
+                    type="transform", fullPath=True
+            ):
                 if _group.endswith(":ROOT"):
                     child_root_group = _group
                     break

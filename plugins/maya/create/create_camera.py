@@ -1,5 +1,6 @@
 
 import avalon.maya
+from avalon import io, api
 from reveries.maya.pipeline import put_instance_icon
 from reveries import lib
 
@@ -20,5 +21,13 @@ class CameraCreator(avalon.maya.Creator):
         self.data["deadlinePool"] = lib.get_deadline_pools()
 
         self.data["overSessionAsset"] = False
+
+        # For usd setting
+        self.data["publishUSD"] = False
+        project = io.find_one({"name": api.Session["AVALON_PROJECT"],
+                               "type": "project"})
+
+        if project.get('usd_pipeline', False):
+            self.data["publishUSD"] = True
 
         return put_instance_icon(super(CameraCreator, self).process())
