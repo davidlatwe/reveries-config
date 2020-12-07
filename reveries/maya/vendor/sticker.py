@@ -114,10 +114,7 @@ def reveal():
 
 def _parse_target(target):
     """Internal function for type check"""
-    if sys.version_info.major == 3:
-        unicode = str
-
-    if isinstance(target, (str, unicode)):
+    if isinstance(target, str):
         target = [target]
 
     if not isinstance(target, (list, tuple)):
