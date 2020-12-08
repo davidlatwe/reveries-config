@@ -15,7 +15,7 @@ class CameraCreator(avalon.maya.Creator):
     def process(self):
         self.data["bakeStep"] = 1.0
         # Apply Euler filter to rotations for Alembic
-        self.data["eulerFilter"] = False
+        self.data["eulerFilter"] = True
 
         self.data["deadlinePriority"] = 80
         self.data["deadlinePool"] = lib.get_deadline_pools()

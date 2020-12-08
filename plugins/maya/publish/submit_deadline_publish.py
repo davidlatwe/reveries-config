@@ -119,6 +119,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                     "InitialStatus": init_state,
 
                     "ExtraInfo0": project["name"],
+                    # "Whitelist": platform.node().lower()
                 },
 
                 # Mandatory for Deadline, may be empty
