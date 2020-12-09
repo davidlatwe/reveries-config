@@ -21,7 +21,7 @@ class ExtractFxPrimUSD(pyblish.api.InstancePlugin):
         context.data["comment"] = "Auto generate"
         # subset_name = instance.data["subset"]
 
-        staging_dir = utils.stage_dir()
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
         filename = 'fx_prim.usda'
 
         final_output = os.path.join(staging_dir, filename)

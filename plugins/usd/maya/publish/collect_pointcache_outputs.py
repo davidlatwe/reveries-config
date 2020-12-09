@@ -77,6 +77,7 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
         children = [g for g in children if cmds.getAttr("{}.v".format(g))]
 
         if len(children) == 1:
+            instance.data["usd_outCache"] = out_caches
             return
 
         skip_parent = False
@@ -121,18 +122,19 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
 
             child_asset_name = asset_data.get('name', '')
 
-            if not skip_parent:
-                if str(child_asset_name) == str(self.parent_asset_name):
-                    skip_parent = True
-                    continue
-
             # Get child cache
             child_cache = [cache for cache in out_caches if child_name in cache]
+
+            if not skip_parent:
+                if str(child_asset_name) == str(self.parent_asset_name):
+                    instance.data["usd_outCache"] = child_cache
+                    skip_parent = True
+                    continue
 
             # Get subset name
             subset_name = "pointcache.{}.{}".format(
                 instance.data["subset"].replace("pointcache.", ""),
-                child_name.split(":")[-2]
+                child_name.split(":")[-1]
             )
 
             self.__create_child_instance(
@@ -160,6 +162,9 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
             parent_pointcache_name = instance.data["subset"]
 
             _instance = context.create_instance(subset_name)
+            context.remove(_instance)
+            context.insert(0, _instance)
+
             _instance.data.update(backup.data)
 
             _instance.data["family"] = _family
@@ -169,6 +174,7 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
             _instance.data["asset_name"] = asset_name
             _instance.data["asset_id"] = asset_id
             _instance.data["outCache"] = caches
+            _instance.data["usd_outCache"] = caches
             _instance.data["subsetGroup"] = "USD"
             _instance.data["parent_pointcache_name"] = parent_pointcache_name
 

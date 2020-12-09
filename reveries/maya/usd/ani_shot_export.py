@@ -4,6 +4,7 @@ from avalon import io
 
 from pxr import Usd, Sdf, UsdGeom
 from reveries import common as utils
+from reveries.common import get_frame_range
 from reveries.common import get_publish_files
 
 
@@ -30,8 +31,7 @@ class AniUsdBuilder(object):
         }
         """
         if not self.frame_in or not self.frame_out:
-            self.frame_in, self.frame_out = \
-                utils.get_frame_range(self.shot_name)
+            self.frame_in, self.frame_out = get_frame_range.get(self.shot_name)
 
         # Get shot id
         _filter = {"type": "asset", "name": self.shot_name}
@@ -43,6 +43,12 @@ class AniUsdBuilder(object):
         asset_datas = io.find(_filter)
         for asset_data in asset_datas:
             subset_name = asset_data['name']
+
+            # Skip child usd
+            families = asset_data['data']["families"]
+            if "reveries.pointcache.child.usd" in families:
+                continue
+
             if subset_name.startswith('pointcache.'):
                 ns = subset_name.split('.')[1]
                 asset_type = utils.check_asset_type_from_ns(ns)
@@ -78,10 +84,11 @@ class AniUsdBuilder(object):
                     UsdGeom.Xform.Define(self.stage, _instance_path)
 
                     # Add usd reference
-                    _prim = self.stage.GetPrimAtPath(_instance_path)
-                    _prim.GetReferences().SetReferences(
-                        [Sdf.Reference(_usd_path)]
-                    )
+                    if _usd_path:
+                        _prim = self.stage.GetPrimAtPath(_instance_path)
+                        _prim.GetReferences().SetReferences(
+                            [Sdf.Reference(_usd_path)]
+                        )
 
         # Add camera sublayer
         root_layer = self.stage.GetRootLayer()

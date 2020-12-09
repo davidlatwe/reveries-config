@@ -24,6 +24,7 @@ class DelayedExtractionRunner(pyblish.api.InstancePlugin):
         extractors = [(key.split(".")[1], value)
                       for key, value in instance.data.items()
                       if re.match(r"repr\.[a-zA-Z_]*\._delayRun", key)]
+        extractors.sort(key=lambda t: t[1].get("order", -1))
 
         for repr_name, extractor in extractors:
 

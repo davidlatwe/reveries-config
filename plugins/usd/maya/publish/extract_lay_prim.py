@@ -19,7 +19,7 @@ class ExtractLayoutPrim(pyblish.api.InstancePlugin):
         start = context_data["startFrame"]
         end = context_data["endFrame"]
 
-        staging_dir = utils.stage_dir()
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
         filename = "lay_prim.usda"
         file_path = os.path.join(staging_dir, filename).replace('\\', '/')
 

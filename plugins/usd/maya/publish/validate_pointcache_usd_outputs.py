@@ -21,7 +21,7 @@ class ValidatePointCacheUSDOutputs(pyblish.api.InstancePlugin):
         if instance.data.get("isDummy"):
             return
 
-        self.out_cache = instance.data.get("outCache")
+        self.out_cache = instance.data.get("usd_outCache")
 
         # Check MOD group long name
         export_node, root_usd_path = get_export_hierarchy(self.out_cache[0])
@@ -33,29 +33,3 @@ class ValidatePointCacheUSDOutputs(pyblish.api.InstancePlugin):
         instance.data["export_node"] = export_node
         # r'/rigDefault/ROOT/Group/Geometry/modelDefault/ROOT'
         instance.data["root_usd_path"] = root_usd_path
-
-    # def _check_export_hierarchy(self, geom):
-    #     import maya.cmds as cmds
-    #
-    #     cmds.listRelatives(geom, allDescendents=True)
-    #     geom_long = cmds.ls(geom, long=True)
-    #     if not geom_long:
-    #         return '', ''
-    #     parents = geom_long[0].split("|")[1:-1]
-    #     parents_long_named = ["|".join(parents[:i])
-    #                           for i in xrange(1, 1 + len(parents))]
-    #     export_node = [_p for _p in parents_long_named
-    #                    if _p.endswith(':Geometry')]  # MOD
-    #
-    #     # Get mod root path
-    #     root_usd_path = ''
-    #     parents_without_ns = [parents[i].split(':')[-1]
-    #                           for i in xrange(0, len(parents))]
-    #     for item in ["|".join(parents_without_ns[:i])
-    #                  for i in xrange(1, 1 + len(parents_without_ns))]:
-    #         # if item.endswith('MOD'):
-    #         if item.endswith('ROOT') and item.split('|')[-2] != 'rigDefault':
-    #             root_usd_path = '|{}'.format(item).\
-    #                 replace('|MOD', '').replace('|', '/')
-    #
-    #     return export_node[0] if export_node else '', root_usd_path

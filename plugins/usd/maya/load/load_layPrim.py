@@ -107,7 +107,7 @@ class USDLayoutLoader(USDLoader, avalon.api.Loader):
         )
 
         # === Update frame range === #
-        frame_in, frame_out = get_frame_range(shot_name)
+        frame_in, frame_out = get_frame_range.get(shot_name)
         cmds.playbackOptions(minTime=frame_in)
         cmds.playbackOptions(maxTime=frame_out)
 

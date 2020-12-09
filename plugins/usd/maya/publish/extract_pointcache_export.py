@@ -7,7 +7,7 @@ class ExtractPointCacheUSDExport(pyblish.api.InstancePlugin):
     """Publish parent pointcache usd file.
     """
 
-    order = pyblish.api.ExtractorOrder + 0.4921
+    order = pyblish.api.ExtractorOrder + 0.4811
     hosts = ["maya"]
     label = "Extract PointCache (main usd)"
     families = [
@@ -16,8 +16,9 @@ class ExtractPointCacheUSDExport(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         from reveries import utils
-        from reveries.maya.usd import pointcache_export
+
         from reveries.common import get_frame_range
+        from reveries.common.build_delay_run import DelayRunBuilder
 
         if instance.data.get("isDummy"):
             return
@@ -25,35 +26,26 @@ class ExtractPointCacheUSDExport(pyblish.api.InstancePlugin):
         out_cache = instance.data.get("outCache")
         start_frame = instance.data.get("startFrame")
         end_frame = instance.data.get("endFrame")
-        self.subset_name = instance.data["subset"]
-        self.shot_name = instance.data["asset"]
 
         if not out_cache:
             self.log.warning("No output geometry found in your scene.")
             return
 
         if not start_frame or not end_frame:
-            start_frame, end_frame = get_frame_range(self.shot_name)
+            shot_name = instance.data["asset"]
+            start_frame, end_frame = get_frame_range.get(shot_name)
+            instance.data["startFrame"] = start_frame
+            instance.data["endFrame"] = end_frame
+
         self.frame_range = [start_frame, end_frame]
 
-        staging_dir = utils.stage_dir()
-
-        # === Export Pointcache USD === #
-        exporter = pointcache_export.PointCacheExporter(
-            output_dir=staging_dir,
-            export_node=instance.data.get("export_node"),
-            root_usd_path=instance.data.get("root_usd_path"),
-            frame_range=[start_frame, end_frame],
-            asset_name=instance.data.get("asset_name"),
-            out_cache=out_cache
-        )
-        exporter.export_usd()
-
-        file_info = exporter.files_info
-
-        # === Generate parent USD === #
-        self.parent_usd_file = "parent_pointcache_prim.usda"
-        parent_result = self._generate_parent_usd(staging_dir, file_info)
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
+        file_info = {
+            'authored_data': 'authored_data.usda',
+            'source': 'source.usda',
+            'main': 'pointcache_prim.usda'
+        }
+        instance.data['file_info'] = file_info
 
         # Update information in instance data
         instance.data["repr.USD._stage"] = staging_dir
@@ -63,20 +55,72 @@ class ExtractPointCacheUSDExport(pyblish.api.InstancePlugin):
             file_info['main']  # pointcache_prim.usda
         ]
         instance.data["repr.USD.entryFileName"] = file_info['main']
+        instance.data["_preflighted"] = True
+
+        # Create delay running
+        delay_builder = DelayRunBuilder(instance)
+
+        instance.data["repr.USD._delayRun"] = {
+            "func": self._export_usd,
+            "args": [
+                delay_builder.instance_data, delay_builder.context_data
+            ],
+            "order": 10
+        }
+        instance.data["deadline_dependency"] = self.get_child_instance(instance)
+
+    def get_child_instance(self, instance):
+        context = instance.context
+        child_instances = []
+
+        for _instance in context:
+            if _instance.data["family"] == "reveries.pointcache.child.usd":
+                if str(_instance.data.get("parent_pointcache_name", "")) == \
+                        str(instance.data["subset"]):
+                    child_instances.append(_instance)
+
+        return child_instances
+
+    def _export_usd(self, instance_data, context_data):
+        from reveries.maya.usd import pointcache_export
+
+        staging_dir = instance_data.get("repr.USD._stage")
+        file_info = instance_data.get("file_info")
+
+        # === Export Pointcache USD === #
+        exporter = pointcache_export.PointCacheExporter(
+            output_dir=staging_dir,
+            export_node=instance_data.get("export_node"),
+            root_usd_path=instance_data.get("root_usd_path"),
+            frame_range=[
+                instance_data.get("startFrame"), instance_data.get("endFrame")],
+            asset_name=instance_data.get("asset_name"),
+            out_cache=instance_data.get("outCache"),
+            file_info=file_info
+        )
+        exporter.export_usd()
+
+        # === Generate parent USD === #
+        self.parent_usd_file = "parent_pointcache_prim.usda"
+        parent_result = self._generate_parent_usd(instance_data, staging_dir, file_info)
 
         if parent_result:
-            instance.data["repr.USD._files"].append(self.parent_usd_file)
+            instance_data["repr.USD._files"].append(self.parent_usd_file)
 
-        self._publish_instance(instance)
+        self._publish_instance(instance_data, context_data)
 
-    def _generate_parent_usd(self, staging_dir, file_info):
+    def _generate_parent_usd(self, instance_data, staging_dir, file_info):
         from reveries.maya.usd import parent_pointcache_export
+
+        shot_name = instance_data["asset"]
+        subset_name = instance_data["subset"]
 
         # Export main usd file
         exporter = parent_pointcache_export.ParentPointcacheExporter(
-            self.shot_name,
-            self.subset_name,  # parent subset name
-            frame_range=self.frame_range
+            shot_name,
+            subset_name,  # parent subset name
+            frame_range=[
+                instance_data.get("startFrame"), instance_data.get("endFrame")]
         )
 
         if exporter.get_children_data():
@@ -100,9 +144,8 @@ class ExtractPointCacheUSDExport(pyblish.api.InstancePlugin):
 
         return False
 
-    def _publish_instance(self, instance):
+    def _publish_instance(self, instance_data, context_data):
         # === Publish instance === #
         from reveries.common.publish import publish_instance
-        publish_instance.run(instance)
 
-        instance.data["_preflighted"] = True
+        publish_instance.run(instance_data, context=context_data)

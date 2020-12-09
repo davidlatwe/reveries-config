@@ -82,7 +82,7 @@ def export(shot_name, output_path):
     stage.SetDefaultPrim(root_prim)
 
     # Set frame range
-    frame_in, frame_out = get_frame_range(shot_name)
+    frame_in, frame_out = get_frame_range.get(shot_name)
     stage.SetStartTimeCode(frame_in)
     stage.SetEndTimeCode(frame_out)
 

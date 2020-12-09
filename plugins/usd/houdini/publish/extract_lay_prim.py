@@ -15,7 +15,7 @@ class ExtractLayoutPrim(pyblish.api.InstancePlugin):
     def process(self, instance):
         from reveries import utils
 
-        staging_dir = utils.stage_dir()
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
         filename = "lay_prim.usda"
         file_path = os.path.join(staging_dir, filename).replace('\\', '/')
 

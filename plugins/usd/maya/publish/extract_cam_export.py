@@ -1,4 +1,3 @@
-
 import pyblish.api
 from avalon import io, api
 
@@ -7,7 +6,7 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
     """Export camera USD.
     """
 
-    order = pyblish.api.ExtractorOrder + 0.494
+    order = pyblish.api.ExtractorOrder + 0.480
     hosts = ["maya"]
     label = "Extract Camera USD"
     families = [
@@ -18,12 +17,10 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
         from maya import cmds
         from reveries import utils
         from reveries.maya import utils as maya_utils
+        from reveries.common.build_delay_run import DelayRunBuilder
 
         if not instance.data.get("publishUSD", True):
             return
-
-        asset_doc = instance.data["assetDoc"]
-        self.shot_name = asset_doc["name"]
 
         camera = cmds.ls(instance, type="camera", long=True)[0]
 
@@ -47,20 +44,39 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
         instance.data["repr.USD.entryFileName"] = usd_file_name
         instance.data["repr.USD.cameraUUID"] = maya_utils.get_id(camera)
 
+        instance.data["_preflighted"] = True
+
+        # Create delay running
+        delay_builder = DelayRunBuilder(instance)
+
+        instance.data["repr.USD._delayRun"] = {
+            "func": self._export_usd_main,
+            "args": [
+                delay_builder.instance_data, delay_builder.context_data,
+                camera, usd_outpath
+            ],
+            "order": 10
+        }
+
+    def _export_usd_main(self, instance_data, context_data, camera, usd_outpath):
+
         self._export_usd(camera, usd_outpath)
 
-        self._publish_instance(instance)
+        self._publish_instance(instance_data, context_data=context_data)
 
         # Update task information
-        self._check_task_data_exists(instance)
+        self._check_task_data_exists(instance_data)
 
     def _check_task_data_exists(self, instance):
-        _filter = {'type': 'asset', 'name': self.shot_name}
+        shot_name = instance["asset"]
+        subset_name = instance["subset"]
+
+        _filter = {'type': 'asset', 'name': shot_name}
         shot_data = io.find_one(_filter)
 
         subset_filter = {
             'type': 'subset',
-            'name': instance.data["subset"],
+            'name': subset_name,
             'parent': shot_data['_id']
         }
 
@@ -128,6 +144,8 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
         self.log.info(
             "Export usd file for camera \"{}\".".format(cam_transform))
 
+        self._check_root_prim(usd_outpath)
+
         # Clean unless group
         # if root_created:
         #     cmds.parent("|ROOT{}".format(cam_top_group), w=True)
@@ -138,6 +156,34 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
             "{}.verticalFilmAperture".format(camera),
             self.old_aperture_v
         )
+
+    def _check_root_prim(self, usd_outpath):
+        from pxr import Usd, Sdf, UsdGeom
+
+        stage = Usd.Stage.Open(usd_outpath)
+        root_layer = stage.GetRootLayer()
+
+        root_exists = root_layer.GetPrimAtPath("/ROOT")
+        default_prim_name = stage.GetDefaultPrim().GetName()
+        if root_exists and default_prim_name == "ROOT":
+            return
+
+        destination_path = '/ROOT/{}'.format(default_prim_name)
+        old_usd_path = '/{}'.format(default_prim_name)
+
+        temp_layer = Sdf.Layer.CreateAnonymous()
+        Sdf.CopySpec(root_layer, old_usd_path, temp_layer, '/temp')
+        stage.RemovePrim(old_usd_path)
+
+        UsdGeom.Xform.Define(stage, destination_path)
+        Sdf.CopySpec(temp_layer, '/temp', root_layer, destination_path)
+        temp_layer.Clear()
+
+        root_prim = stage.GetPrimAtPath('/ROOT')
+        stage.SetDefaultPrim(root_prim)
+
+        stage.GetRootLayer().Export(usd_outpath)
+        # print(stage.GetRootLayer().ExportToString())
 
     def _check_film_gata(self, cam_shape):
         import maya.cmds as cmds
@@ -161,10 +207,8 @@ class ExtractCameraUSD(pyblish.api.InstancePlugin):
         self.log.info(
             "Set camera verticalFilmAperture to {}".format(aperture_v))
 
-    def _publish_instance(self, instance):
+    def _publish_instance(self, instance_data, context_data=None):
         # === Publish instance === #
         from reveries.common.publish import publish_instance
 
-        publish_instance.run(instance)
-
-        instance.data["_preflighted"] = True
+        publish_instance.run(instance_data, context=context_data)

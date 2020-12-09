@@ -149,12 +149,13 @@ class PointCacheExtractor(object):
 
 class PointCacheExporter(object):
     def __init__(self, output_dir=None, export_node=None, root_usd_path="",
-                 frame_range=[], asset_name=None, out_cache=None):
+                 frame_range=[], asset_name=None, out_cache=None,
+                 file_info=None):
 
         import maya.cmds as cmds
         from reveries.maya.usd import get_export_hierarchy
 
-        self.files_info = {
+        self.files_info = file_info or {
             'authored_data': 'authored_data.usda',
             'source': 'source.usda',
             'main': 'pointcache_prim.usda'

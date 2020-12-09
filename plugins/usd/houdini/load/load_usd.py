@@ -43,7 +43,8 @@ class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
         "reveries.camera",
         "reveries.final.usd",
         "reveries.fx.usd",
-        "reveries.lgt.usd"
+        "reveries.lgt.usd",
+        "reveries.ani.usd"
     ]
 
     representations = [

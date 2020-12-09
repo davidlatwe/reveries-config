@@ -26,7 +26,7 @@ class ExtractSetDress(pyblish.api.InstancePlugin):
         context.data["comment"] = "Auto update"
         # subset_name = instance.data["subset"]
 
-        staging_dir = utils.stage_dir()
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
         filename = 'setdress_prim.usda'
 
         final_output = os.path.join(staging_dir, filename)

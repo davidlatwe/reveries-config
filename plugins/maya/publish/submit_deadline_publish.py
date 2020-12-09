@@ -127,6 +127,11 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
                 "IdOnly": True
             }
 
+            # Add dependency for pointcache usd
+            if instance.data.get("deadline_dependency", False):
+                payload = self._add_dependency_for_usd_pointcache(
+                    instance, payload)
+
             if instance.data.get("hasYeti"):
                 # Change Deadline group for Yeti
                 payload["JobInfo"]["Group"] = "yeti_render"
@@ -266,13 +271,27 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
 
                 self.submit_instance(context, instance, payload)
 
+    def _add_dependency_for_usd_pointcache(self, instance, payload):
+        _child_indexs = []
+
+        for _instance in instance.data.get("deadline_dependency", []):
+            if "deadline_index" in list(_instance.data.keys()):
+                _child_indexs.append(_instance.data.get("deadline_index", ""))
+        if _child_indexs:
+            dependency_list = {
+                "JobDependencies": ",".join(_child_indexs)
+            }
+            payload["JobInfo"].update(dependency_list)
+        return payload
+
     def submit_instance(self, context, instance, payload):
         self.log.info("Submitting.. %s" % instance)
         self.log.info(json.dumps(
             payload, indent=4, sort_keys=True)
         )
         submitter = context.data["deadlineSubmitter"]
-        submitter.add_job(payload)
+        index = submitter.add_job(payload)
+        instance.data["deadline_index"] = index
 
     def assemble_environment(self, instance):
         """Compose submission required environment variables for instance

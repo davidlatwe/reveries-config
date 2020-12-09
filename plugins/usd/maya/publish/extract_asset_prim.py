@@ -20,7 +20,7 @@ class ExtractAssetPrimUSDExport(pyblish.api.InstancePlugin):
         asset_doc = instance.data["assetDoc"]
         asset_name = asset_doc["name"]
 
-        staging_dir = utils.stage_dir()
+        staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
 
         file_name = 'asset_prim.usda'
 

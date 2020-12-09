@@ -2,7 +2,7 @@
 from avalon import io
 
 from pxr import Usd, UsdGeom
-from reveries import common as utils
+from reveries.common import get_frame_range
 from reveries.common import timing
 
 
@@ -17,8 +17,7 @@ class FinalUsdBuilder(object):
         if frame_range:
             self.frame_in, self.frame_out = frame_range
         else:
-            self.frame_in, self.frame_out = \
-                utils.get_frame_range(self.shot_name)
+            self.frame_in, self.frame_out = get_frame_range.get(self.shot_name)
 
         self._get_shot_data()
         self._build()

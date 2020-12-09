@@ -5,6 +5,8 @@ import errno
 from avalon import api, io
 from avalon.vendor import filelink
 
+from reveries.common import str_to_objectid
+
 
 class PublishInstance(object):
     def __init__(self):
@@ -25,13 +27,17 @@ class PublishInstance(object):
         subset, version, representations = instance.data["toDatabase"]
 
         # Write subset if not exists
-        filter = {"parent": asset["_id"], "name": subset["name"]}
-        if io.find_one(filter) is None:
+        _filter = {
+            "parent": str_to_objectid(asset["_id"]), "name": subset["name"]
+        }
+        if io.find_one(_filter) is None:
             io.insert_one(subset)
 
         # Write version if not exists
-        filter = {"parent": subset["_id"], "name": version["name"]}
-        existed_version = io.find_one(filter)
+        _filter = {
+            "parent": str_to_objectid(subset["_id"]), "name": version["name"]
+        }
+        existed_version = io.find_one(_filter)
 
         if existed_version is None:
             # Write version and representations to database
@@ -292,8 +298,7 @@ class IntegrateAvalonSubset(object):
                       "          -> {2}".format(job, src, dst))
 
                 if src == dst:
-                    print("Source and destination are the same, "
-                                   "will not copy.")
+                    print("Source and destination are the same, will not copy.")
                     continue
 
                 if dst in transfered:
@@ -338,8 +343,7 @@ class IntegrateAvalonSubset(object):
         filelink.create(src, dst, filelink.HARDLINK)
 
     def get_subset(self, instance, families):
-
-        asset_id = instance.data["assetDoc"]["_id"]
+        asset_id = str_to_objectid(instance.data["assetDoc"]["_id"])
 
         subset = io.find_one({"type": "subset",
                               "parent": asset_id,
@@ -397,7 +401,7 @@ class IntegrateAvalonSubset(object):
 
         version = {
             "type": "version",
-            "parent": subset["_id"],
+            "parent": str_to_objectid(subset["_id"]),
             "name": version_number,
             "locations": version_locations,
             "data": data
@@ -475,7 +479,21 @@ class IntegrateAvalonSubset(object):
         return version_data
 
 
-def run(instance):
+class InstanceReCreator(object):
+    def __init__(self, instance, context):
+        self.data = instance
+        self.context = ContextReCreator(context)
+
+
+class ContextReCreator(object):
+    def __init__(self, context):
+        self.data = context
+
+
+def run(instance, context=None):
+    if instance and context:
+        instance = InstanceReCreator(instance, context)
+
     integrater = IntegrateAvalonSubset()
     instance = integrater.process(instance)
 

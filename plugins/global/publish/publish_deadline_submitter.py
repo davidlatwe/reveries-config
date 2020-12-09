@@ -99,22 +99,24 @@ class DeadlineSubmitter(object):
         """Submit all jobs"""
         while self._jobs:
             index, payload = self._jobs.popitem()
+            self._pre_submit(index, payload)
 
-            deps = payload["JobInfo"].get("JobDependencies")
-            if deps:
-                dep_jobids = list()
-                for _index in deps.split(","):
-                    if _index in self._submitted:
-                        _jobid = self._submitted[_index]
-                    else:
-                        _payload = self._jobs.pop(_index)
-                        _jobid = self._submit(_index, _payload)
+    def _pre_submit(self, index, payload):
+        deps = payload["JobInfo"].get("JobDependencies")
+        if deps:
+            dep_jobids = list()
+            for _index in deps.split(","):
+                if _index in self._submitted:
+                    _jobid = self._submitted[_index]
+                else:
+                    _payload = self._jobs.pop(_index)
+                    _jobid = self._pre_submit(_index, _payload)
 
-                    dep_jobids.append(_jobid)
+                dep_jobids.append(_jobid)
 
-                payload["JobInfo"]["JobDependencies"] = ",".join(dep_jobids)
+            payload["JobInfo"]["JobDependencies"] = ",".join(dep_jobids)
 
-            self._submit(index, payload)
+        return self._submit(index, payload)
 
     def _submit(self, index, payload):
         # (NOTE) "Error: Alternate job auxiliary path <...> doesn't exist"

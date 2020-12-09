@@ -746,6 +746,16 @@ class RedshiftShadersToUSD:
 
                 'post_proc': self.post_Nothing
             },
+            # 'RedshiftUserDataScalar': {
+            #     'info:id': {'name': 'redshift::ParticleAttributeLookup'},
+            #     'out': {'name': 'out', 'type': Sdf.ValueTypeNames.Float,
+            #             'convert': Same},
+            #     'attributeName': {'name': 'attributeName',
+            #                       'type': Sdf.ValueTypeNames.String,
+            #                       'convert': Same},
+            #
+            #     'post_proc': self.post_Nothing
+            # },
             'RedshiftUserDataVector': {
                 'info:id': {'name': 'redshift::RSUserDataVector'},
                 'out': {'name': 'out', 'type': Sdf.ValueTypeNames.Float3, 'convert': MayaArrayToVector},
@@ -1136,7 +1146,28 @@ class RedshiftShadersToUSD:
                 'oldMax': {'name': 'old_max', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
 
                 'post_proc': self.post_Nothing
-            }
+            },
+            # 'setRange': {
+            #     'info:id': {'name': 'redshift::RSMathRangeVector'},
+            #     'value': {'name': 'input', 'type': Sdf.ValueTypeNames.Vector3f,
+            #               'convert': MayaArrayToVector},
+            #     'outValue': {'name': 'outColor',
+            #                  'type': Sdf.ValueTypeNames.Vector3f,
+            #                  'convert': MayaArrayToVector},
+            #     'min': {'name': 'new_min', 'type': Sdf.ValueTypeNames.Vector3f,
+            #             'convert': MayaArrayToVector},
+            #     'max': {'name': 'new_max', 'type': Sdf.ValueTypeNames.Vector3f,
+            #             'convert': MayaArrayToVector},
+            #     'maxX': {'name': 'new_max', 'type': Sdf.ValueTypeNames.Vector3f,
+            #              'convert': Same},
+            #     'oldMin': {'name': 'old_min',
+            #                'type': Sdf.ValueTypeNames.Vector3f,
+            #                'convert': MayaArrayToVector},
+            #     'oldMax': {'name': 'old_max',
+            #                'type': Sdf.ValueTypeNames.Vector3f,
+            #                'convert': MayaArrayToVector},
+            #     'post_proc': self.post_setRange
+            # }
         }
         self.shadingGroups = shadingGroups
         self.scopeName = scopeName
@@ -1319,6 +1350,15 @@ class RedshiftShadersToUSD:
                             '{}.{}'.format(source_shader, attr),
                             x=True
                         )
+
+                    # if nodeType in [
+                    #     "setRange",
+                    #     # "RedshiftUserDataScalar"
+                    # ]:
+                    #     print("_value:", attr, _value)
+                    #     print("aa: ", attr_table[attr]['convert'](_value))
+                    #     print("\n")
+
                     usdShader.CreateInput(
                         attr_table[attr]['name'],
                         attr_table[attr]['type']).\
@@ -1335,6 +1375,10 @@ class RedshiftShadersToUSD:
                         connectSourceAttr = connectSource.split('.')[-1]
                         # connectDestNode = connectDest.split('.')[0]
                         connectDestAttr = connectDest.split('.')[-1]
+
+                        # if nodeType in ["setRange"]:
+                        #     print("_value:", connectSourceAttr)
+
                         if connectDestAttr in attr_table.keys():
                             self.rebuildShader(source_shader=connectSourceNode,
                                                usd_target=usdShader,
@@ -1367,6 +1411,40 @@ class RedshiftShadersToUSD:
 
     # USD Shader post process
     def post_Nothing(self, mayaShader, usdShader, usdShadingGroup):
+        return True
+
+    def post_setRange(self, mayaShader, usdShader, usdShadingGroup):
+        import maya.cmds as cmds
+
+        # if cmds.listConnections(mayaShader, d=False, c=True, p=True):
+        #
+        #     connections = iter(cmds.listConnections(
+        #         mayaShader, d=False, c=True, p=True))
+        #
+        #     for connectDest, connectSource in \
+        #             zip(connections, connections):
+        #         connectSourceNode = connectSource.split('.')[0]
+        #         connectSourceAttr = connectSource.split('.')[-1]
+        #         # connectDestNode = connectDest.split('.')[0]
+        #         connectDestAttr = connectDest.split('.')[-1]
+        #
+        #         nodeType = cmds.nodeType(connectSourceNode)
+        #         print("nodeType:", nodeType)
+        #         print("......: ", connectDest, connectSource)
+        #         if nodeType in self.translator.keys():
+        #             attr_table = self.translator[nodeType]
+        #             print("attr_table: ", attr_table.keys())
+        #             print(connectDestAttr)
+        #             if connectSourceAttr in attr_table.keys():
+        #                 print(66666)
+        #                 self.rebuildShader(
+        #                     source_shader=connectSourceNode,
+        #                     usd_target=usdShader,
+        #                     source_attr=connectSourceAttr,
+        #                     target_attr=connectDestAttr,
+        #                     usdShadingGroup=usdShadingGroup
+        #                 )
+
         return True
 
     def post_displacemenShader(self, mayaShader, usdShader, usdShadingGroup):

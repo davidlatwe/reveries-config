@@ -17,7 +17,7 @@ class ParentPointcacheExporter(object):
         if frame_range:
             self.frame_in, self.frame_out = frame_range
         else:
-            self.frame_in, self.frame_out = get_frame_range(self.shot_name)
+            self.frame_in, self.frame_out = get_frame_range.get(self.shot_name)
 
     def _get_shot_id(self):
         _filter = {"type": "asset", "name": self.shot_name}

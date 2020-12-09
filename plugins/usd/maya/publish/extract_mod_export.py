@@ -30,7 +30,7 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
             'geom': 'geom.usda',
         }
 
-        self.staging_dir = utils.stage_dir()
+        self.staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
 
         # Update information in instance data
         instance.data["repr.USD._stage"] = self.staging_dir

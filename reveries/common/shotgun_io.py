@@ -1,10 +1,6 @@
 import sys
 sys.path.append(r'Q:\Resource\python_modules')
 
-# set PATH=C:\Python27\;C:\Python27\Scripts\;%PATH%
-# sys.path.insert(0, r'C:\Python27')
-# sys.path.insert(0, r'C:\Python27\Scripts')
-
 from pprint import pprint
 
 import shotgun_api3
@@ -60,13 +56,13 @@ class ShotgunIO(object):
         return assets
 
     def get_frame_range(self, shot_name, fields=[], filters=[]):
-        fields += ["sg_cut_in", "code", "sg_cut_out"]  # , 'tags'
-        filters += [
+        _fields = ["sg_cut_in", "code", "sg_cut_out"] + fields  # , 'tags'
+        _filters = [
             ['project', 'is', self.sg_project],
             ['code', 'is', shot_name],
-        ]
+        ] + filters
 
-        frame_range = self.shotgun.find_one('Shot', filters, fields)
+        frame_range = self.shotgun.find_one('Shot', _filters, _fields)
         return frame_range
 
 
