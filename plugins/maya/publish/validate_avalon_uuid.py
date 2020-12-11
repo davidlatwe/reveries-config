@@ -175,8 +175,8 @@ class ValidateAvalonUUID(pyblish.api.InstancePlugin):
 
         invalid = self.get_invalid_duplicated(instance, uuids_dict)
         if invalid:
-            # IS_INVALID = True
-            self.log.warning(self.message(instance, invalid, "發現**重複**編號的物件"))
+            IS_INVALID = True
+            self.log.error(self.message(instance, invalid, "發現**重複**編號的物件"))
 
         invalid = self.get_invalid_asset_id(instance, uuids_dict)
         if invalid:
