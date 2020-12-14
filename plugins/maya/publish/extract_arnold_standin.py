@@ -67,6 +67,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
             file_node_attrs = texture.data.get("fileNodeAttrs", dict())
 
         expand_procedurals = instance.data.get("expandProcedurals", True)
+        enable_motion_blur = instance.data.get("enableMotionBlur", True)
 
         instance.data["repr.Ass._delayRun"] = {
             "func": self.export_ass,
@@ -81,6 +82,7 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                 "end": end,
                 "step": step,
                 "expand_procedurals": expand_procedurals,
+                "enable_motion_blur": enable_motion_blur,
             }
         }
 
@@ -92,7 +94,8 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
                    start,
                    end,
                    step,
-                   expand_procedurals=True):
+                   expand_procedurals=True,
+                   enable_motion_blur=False):
         from maya import cmds, mel
         from reveries.maya import arnold, capsule
 
@@ -106,6 +109,14 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
             # Ensure frame padding == 4
             "defaultRenderGlobals.extensionPadding": 4,
         }
+        if enable_motion_blur:
+            render_settings.update({
+                "defaultArnoldRenderOptions.motion_blur_enable": True,
+                "defaultArnoldRenderOptions.mb_object_deform_enable": True,
+                "defaultArnoldRenderOptions.mb_camera_enable": True,
+                "defaultArnoldRenderOptions.range_type": 0,  # start on frame
+                "defaultArnoldRenderOptions.motion_frames": 0.5,
+            })
 
         # Yeti
         if has_yeti:
