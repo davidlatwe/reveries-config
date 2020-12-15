@@ -57,14 +57,23 @@ class PointCacheExtractor(object):
 
         return prim_path
 
-    def _set_vis_value(self, source_prim, over_mesh_prim):
-        source_attr = source_prim.GetAttribute('visibility')
-        source_value = source_attr.Get()
+    def _set_vis_value(self, mesh, over_mesh):
+        vis = mesh.GetVisibilityAttr()
 
-        if source_value == "invisible":
-            attr = over_mesh_prim.CreateAttribute(
-                "visibility", Sdf.ValueTypeNames.Token)
-            attr.Set(source_value)
+        if vis.GetTimeSamples():
+            over_vis = over_mesh.CreateVisibilityAttr()
+
+            for time_sample in vis.GetTimeSamples():
+                over_vis.Set(
+                    vis.Get(time_sample),
+                    time=Usd.TimeCode(time_sample)
+                )
+        else:
+            source_value = vis.Get()
+
+            if source_value == "invisible":
+                over_vis = over_mesh.CreateVisibilityAttr()
+                over_vis.Set(source_value)
 
     def process(self):
         self._open_stage()
@@ -90,17 +99,18 @@ class PointCacheExtractor(object):
                         time=Usd.TimeCode(time_sample)
                     )
 
-                self._set_vis_value(prim, over_mesh_prim)
+                self._set_vis_value(mesh, over_mesh)
 
             if prim.GetTypeName() == 'Xform' and prim.IsActive():
                 xform = UsdGeom.Xform(prim)
                 prim_path = self._check_prim_path(prim)
                 over_xform_prim = self.override_stage.OverridePrim(prim_path)
+                over_xform = UsdGeom.Xform(over_xform_prim)
 
                 if xform.GetTimeSamples():
                     xform_order = xform.GetXformOpOrderAttr()
 
-                    over_xform = UsdGeom.Xform(over_xform_prim)
+                    # over_xform = UsdGeom.Xform(over_xform_prim)
 
                     xform_op_names = []
                     for op in xform.GetOrderedXformOps():
@@ -128,7 +138,7 @@ class PointCacheExtractor(object):
                     over_xform_order.Clear()
                     over_xform_order.Set(xform_order.Get())
 
-                self._set_vis_value(prim, over_xform_prim)
+                self._set_vis_value(xform, over_xform)
 
         # Delete unnecessary prim
         try:
