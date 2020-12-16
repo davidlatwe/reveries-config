@@ -289,6 +289,7 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 "parent": asset_id,
             }
 
+            # For lookdev publish
             if instance.data.get("model_subset_id", None):
                 subset["data"]["model_subset_id"] = \
                     instance.data["model_subset_id"]
@@ -380,6 +381,11 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             "dependencies": instance.data.get("dependencies", dict()),
             "dependents": dict(),
         }
+
+        # For rig publish
+        if instance.data.get("model_subset_data", None):
+            version_data["model_subset_data"] = \
+                instance.data["model_subset_data"]
 
         # Include optional data if present in
         optionals = [

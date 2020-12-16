@@ -32,7 +32,7 @@ class ValidateGeometryExists(pyblish.api.InstancePlugin):
                 return
             parents = geom_long[0].split("|")[1:-1]
             parents_long_named = ["|".join(parents[:i])
-                                  for i in xrange(1, 1 + len(parents))]
+                                  for i in range(1, 1 + len(parents))]
 
             for _path in parents_long_named:
                 if _path.endswith(':Geometry'):

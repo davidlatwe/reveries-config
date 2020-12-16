@@ -1,5 +1,6 @@
 from maya import cmds
 import avalon.maya
+from avalon import io, api
 
 from reveries.maya.lib import TRANSFORM_ATTRS
 from reveries.maya.pipeline import put_instance_icon
@@ -30,6 +31,14 @@ class RigCreator(avalon.maya.Creator):
 
     def process(self):
         self.build_base()
+
+        # For usd setting
+        self.data["publishUSD"] = False
+        project = io.find_one({"name": api.Session["AVALON_PROJECT"],
+                               "type": "project"})
+
+        if project.get('usd_pipeline', False):
+            self.data["publishUSD"] = True
 
         instance = super(RigCreator, self).process()
         self.log.info("Creating Rig instance set up ...")
