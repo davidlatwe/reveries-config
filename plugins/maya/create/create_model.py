@@ -1,5 +1,6 @@
 
 import avalon.maya
+from avalon import io, api
 from maya import cmds
 
 from reveries.maya.pipeline import put_instance_icon
@@ -29,5 +30,13 @@ class ModelCreator(avalon.maya.Creator):
     def process(self):
 
         self.build_base()
+
+        # For usd setting
+        self.data["publishUSD"] = False
+        project = io.find_one({"name": api.Session["AVALON_PROJECT"],
+                               "type": "project"})
+
+        if project.get('usd_pipeline', False):
+            self.data["publishUSD"] = True
 
         return put_instance_icon(super(ModelCreator, self).process())

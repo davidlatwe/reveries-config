@@ -10,7 +10,7 @@ def tx_updated(source, tx):
     return int_mtime(source) == int_mtime(tx)
 
 
-class ValidateTextureTxMapUpdated(pyblish.api.InstancePlugin):
+class _ValidateTextureTxMapUpdated(pyblish.api.InstancePlugin):
     """Ensure all texture file have .tx map updated
 
     If you got error from this validation, please use Arnold's 'Tx Manager'

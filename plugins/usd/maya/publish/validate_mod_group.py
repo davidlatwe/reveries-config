@@ -1,4 +1,5 @@
 import re
+import os
 
 from avalon import io
 import pyblish.api
@@ -54,6 +55,17 @@ class ValidateMODGroup(pyblish.api.InstancePlugin):
             # Running when only publish look
             self._look_family_check(instance)
 
+    def _replace_root(self, _path):
+        # Replace root
+        root_path = "{}/{}/".format(
+            os.environ["AVALON_PROJECTS"],
+            os.environ["AVALON_PROJECT"]
+        )  # "Q:/199909_AvalonPlay/"
+        _tag = "$AVALON_PROJECTS/$AVALON_PROJECT/"
+        _path = _path.replace(_tag, root_path)
+
+        return _path
+
     def _look_family_check(self, instance):
         import maya.cmds as cmds
         import pymel.core as pm
@@ -82,8 +94,9 @@ class ValidateMODGroup(pyblish.api.InstancePlugin):
         for ref in pm.listReferences():
             ref_node = ref.refNode
             if str(root_ref_node) == str(ref_node):
-                # _path = ref.unresolvedPath()
-                _path_resolver = PathResolver(file_path=ref.unresolvedPath())
+                _path = self._replace_root(ref.unresolvedPath())
+
+                _path_resolver = PathResolver(file_path=_path)
 
                 if not _path_resolver.is_publish_file():
                     is_invalid = True

@@ -19,6 +19,9 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         from reveries import utils
         from reveries.common import skip_instance
 
+        if not instance.data.get("publishUSD", True):
+            return
+
         context = instance.context
         if skip_instance(context, ['reveries.xgen']):
             return

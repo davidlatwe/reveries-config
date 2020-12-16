@@ -375,6 +375,10 @@ class IntegrateAvalonSubset(object):
                 subset["data"]["parent_pointcache_name"] = \
                     instance.data["parent_pointcache_name"]
 
+            if instance.data.get("model_subset_id", None):
+                subset["data"]["model_subset_id"] = \
+                    instance.data["model_subset_id"]
+
         return subset
 
     def create_version(self,

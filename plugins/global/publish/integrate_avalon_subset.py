@@ -289,6 +289,10 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
                 "parent": asset_id,
             }
 
+            if instance.data.get("model_subset_id", None):
+                subset["data"]["model_subset_id"] = \
+                    instance.data["model_subset_id"]
+
         return subset
 
     def create_version(self,

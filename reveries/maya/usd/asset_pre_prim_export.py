@@ -37,7 +37,7 @@ def _get_variant_data(asset_name, prim_type='default'):
         "name": re.compile("look*")
     }
     # subset_data = []
-    subset_data = [subset for subset in io.find(_filter)]
+    lookdev_data = [subset for subset in io.find(_filter)]
     for subset in io.find(_filter):
         regex = re.compile("^.*?(?<!Proxy)$")
         _subset_name = subset['name']
@@ -47,15 +47,36 @@ def _get_variant_data(asset_name, prim_type='default'):
 
     # Get assign/look usd file
     lookfiles_data = {}
-    for _subset in subset_data:
+    for _subset in lookdev_data:
         subset_name = _subset['name']
         subset_id = _subset['_id']
         files = get_publish_files.get_files(subset_id)
-        lookfiles_data[subset_name] = files.get('USD', {})
+        lookfiles_data[subset_name] = []
+
+        # Get model subset's usd file
+        model_id = _subset["data"].get("model_subset_id")
+        if model_id:
+            model_file = get_publish_files.get_files(
+                model_id,
+                key="entryFileName").get("USD", "")
+            if model_file:
+                lookfiles_data[subset_name].append(model_file)
+
+        # Take modelDefault usd
+        if not lookfiles_data[subset_name]:
+            lookfiles_data[subset_name].append(_get_geom_usd(asset_name))
+
+        lookfiles_data[subset_name] += files.get('USD', [])
 
     if not lookfiles_data or not variant_key:
-        lookfiles_data = {"lookDefault": []}
-        variant_key = ["lookDefault"]
+        model_file = _get_geom_usd(asset_name)
+        if model_file:
+            look_key = model_file.split("/")[-4].replace("model", "look")  # lookDefault
+            lookfiles_data = {look_key: [model_file]}
+            variant_key = [look_key]
+        else:
+            lookfiles_data = {"lookDefault": []}
+            variant_key = ["lookDefault"]
 
     return lookfiles_data, variant_key
 
@@ -73,6 +94,18 @@ def _get_geom_usd(asset_name):
         "name": 'modelDefault'
     }
     model_data = io.find_one(_filter)
+
+    # If subset name without "Default"
+    if not model_data:
+        _filter = {
+            "type": "subset",
+            "parent": io.ObjectId(str(asset_id)),
+            "data.families": "reveries.model"
+        }
+        model_data = io.find_one(_filter)
+    if not model_data:
+        raise RuntimeError(
+            "Asset \"{}\" : Get modelDefault failed.".format(asset_name))
 
     files = get_publish_files.get_files(model_data['_id']).get('USD', [])
 
@@ -92,7 +125,7 @@ def prim_export(asset_name, output_path, prim_type='default'):
         prim_name = 'modelDefault'
 
     # Get model usd file
-    geom_file_path = _get_geom_usd(asset_name)
+    # geom_file_path = _get_geom_usd(asset_name)
 
     # Create USD file
     stage = Usd.Stage.CreateInMemory()
@@ -124,9 +157,10 @@ def prim_export(asset_name, output_path, prim_type='default'):
             # Add step variants
             UsdGeom.Xform.Define(stage, "/ROOT/{}".format(prim_name))
             _prim = stage.GetPrimAtPath("/ROOT/{}".format(prim_name))
-            _usd_paths = [
-                Sdf.Reference(geom_file_path)
-            ]
+            # _usd_paths = [
+            #     Sdf.Reference(geom_file_path)
+            # ]
+            _usd_paths = []
             for ref_path in usd_file_paths:
                 _usd_paths.append(Sdf.Reference(ref_path))
 
