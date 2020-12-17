@@ -22,7 +22,7 @@ def __main__():
 
     scriptDialog.AddGrid()
     scriptDialog.AddControlToGrid(
-        "FramesLabel",    
+        "FramesLabel",
         "LabelControl",
         "Frames To Resume:",
         0, 0,
@@ -82,7 +82,7 @@ def process(frames):
 
         resume = list()
         for task in tasks:
-            if task.TaskStatus != "Suspended":
+            if task.TaskStatus not in ["Suspended", "Completed"]:
                 continue
             task_frames = set(task.TaskFrameList)
             if frame_nums.intersection(task_frames):
