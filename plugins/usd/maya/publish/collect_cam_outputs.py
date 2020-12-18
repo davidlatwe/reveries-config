@@ -30,7 +30,7 @@ class CollectCameraPrimUSDOutputs(pyblish.api.InstancePlugin):
         return subset_data
 
     def process(self, instance):
-        if not instance.data.get("publishUSD", True):
+        if not instance.data.get("publishUSD", False):
             return
 
         self.shot_name = instance.data['asset']

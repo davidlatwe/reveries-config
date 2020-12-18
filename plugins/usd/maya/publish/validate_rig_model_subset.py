@@ -49,4 +49,3 @@ class ValidateRigModelSubset(pyblish.api.InstancePlugin):
                     }
         if model_subset_data:
             instance.data["model_subset_data"] = model_subset_data
-

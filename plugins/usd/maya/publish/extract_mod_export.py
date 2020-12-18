@@ -30,7 +30,7 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         self.asset_name = asset_doc["name"]
 
         self.files_info = {
-            'geom': 'geom.usda',
+            'geom': 'geom.usd',
         }
 
         self.staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])

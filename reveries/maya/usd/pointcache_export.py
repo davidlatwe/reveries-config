@@ -160,13 +160,13 @@ class PointCacheExtractor(object):
 class PointCacheExporter(object):
     def __init__(self, output_dir=None, export_node=None, root_usd_path="",
                  frame_range=[], asset_name=None, out_cache=None,
-                 file_info=None):
+                 file_info=None, look_variant=None):
 
         import maya.cmds as cmds
         from reveries.maya.usd import get_export_hierarchy
 
         self.files_info = file_info or {
-            'authored_data': 'authored_data.usda',
+            'authored_data': 'authored_data.usd',
             'source': 'source.usda',
             'main': 'pointcache_prim.usda'
         }
@@ -180,6 +180,7 @@ class PointCacheExporter(object):
         self.export_node = export_node
         self.staging_dir = output_dir
         self.asset_name = asset_name
+        self.look_variant = look_variant
 
         if out_cache:
             self.out_cache = out_cache
@@ -209,7 +210,7 @@ class PointCacheExporter(object):
             outpath = os.path.join(self.staging_dir,
                                    self.files_info['authored_data'])
             self._export_authored_data(outpath)
-            print('authored_data.usda done')
+            print('authored_data.usd done')
 
             # === Export ani.usda === #
             outpath = os.path.join(self.staging_dir, self.files_info['main'])
@@ -273,14 +274,25 @@ class PointCacheExporter(object):
 
         # Generate usd file
         stage = Usd.Stage.CreateInMemory()
+        UsdGeom.Xform.Define(stage, "/ROOT")
+        root_prim = stage.GetPrimAtPath('/ROOT')
 
         root_layer = stage.GetRootLayer()
         root_layer.subLayerPaths.append(self.files_info['authored_data'])
         root_layer.subLayerPaths.append(asset_prim_usd)
 
-        UsdGeom.Xform.Define(stage, "/ROOT")
-        shot_prim = stage.GetPrimAtPath('/ROOT')
-        stage.SetDefaultPrim(shot_prim)
+        # Check lookdev dependency
+        if self.look_variant:
+            try:
+                vs = root_prim.GetVariantSet("appearance")
+                vs.SetVariantSelection(self.look_variant)
+            except Exception as e:
+                raise RuntimeError(
+                    "Set lookdev to {} failed. Error: {}".format(
+                        self.look_variant, e))
+
+        # Set default prim
+        stage.SetDefaultPrim(root_prim)
         stage.SetStartTimeCode(self.start_frame)
         stage.SetEndTimeCode(self.end_frame)
 

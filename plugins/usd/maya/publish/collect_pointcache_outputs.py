@@ -23,11 +23,14 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
         return _exists
 
     def process(self, instance):
-        from reveries.maya import lib
+        from reveries.maya import lib, pipeline
 
         _skip_msg = "Please turn off \"exportAniUSDData\" to skip USD publish."
 
         if instance.data.get("isDummy"):
+            return
+
+        if not instance.data.get("exportPointCacheUSD", False):
             return
 
         if not instance.data.get("geometry_path", ""):
@@ -37,18 +40,12 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
             raise Exception("%s <Geometry Check> Failed." % instance)
 
         # Check container exists
-        out_caches = instance.data.get("outCache")
+        out_caches = instance.data.get("all_cacheables")
 
-        root_container_data = instance.context.data.get("RootContainers")
-        container = None
-        if root_container_data:
-            _geom = out_caches[0]
-
-            for container_name, _data in root_container_data.items():
-                geom_ns = lib.get_ns(_geom)
-                if _data.get("namespace", "") in geom_ns:
-                    container = container_name
-                    break
+        # self.rig_namespace = out_caches[0].split(":")[0] \
+        #     if len(out_caches[0].split(":")) > 1 else None
+        self.rig_namespace = lib.get_ns(out_caches[0]).split(":")[1]
+        container = pipeline.get_container_from_namespace(self.rig_namespace)
 
         if not container:
             self.log.error("Get container failed. {}".format(_skip_msg))
@@ -67,69 +64,53 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
 
         # Create children pointcache instance
         geometry_path = instance.data["geometry_path"]
-        self._get_child_subset(instance, geometry_path, out_caches)
+        self._get_child_subset(instance, geometry_path, out_caches, container)
 
-    def _get_child_subset(self, instance, geometry_path, out_caches):
+    def _get_child_subset(self, instance, geometry_path, out_caches, container):
         import maya.cmds as cmds
 
         # Get children
         children = cmds.listRelatives(geometry_path, children=True)
-        children = [g for g in children if cmds.getAttr("{}.v".format(g))]
-
+        # children = [g for g in children if cmds.getAttr("{}.v".format(g))]
         if len(children) == 1:
             instance.data["usd_outCache"] = out_caches
             return
 
         skip_parent = False
-        invalid_grp = []
+        self.invalid_grp = []
         for child_name in children:
-            # Get asset name
-            child_root_group = ""
-            for _group in cmds.listRelatives(
-                    child_name, allDescendents=True,
-                    type="transform", fullPath=True
-            ):
-                if _group.endswith(":ROOT"):
-                    child_root_group = _group
-                    break
-            if not child_root_group:
-                invalid_grp.append(child_name)
-                _msg = "{}: Missing \"ROOT\" in model hierarchy.".\
-                    format(child_name)
-                self.log.error(_msg)
+
+            # Get asset data
+            asset_id, look_variant = self.__get_model_subset_data(
+                child_name, container)
+            if not asset_id:
                 continue
 
-            if not cmds.attributeQuery(
-                    'AvalonID', node=child_root_group, exists=True):
-                invalid_grp.append(child_name)
-                _msg = "{}: Missing \"AvalonID\" attribute on ROOT group. ".\
-                    format(child_name)
-                self.log.error(_msg)
-                continue
-
-            asset_id = cmds.getAttr(
-                "{}.AvalonID".format(child_root_group)).split(":")[0]
-
+            # Get asset data
             _filter = {"type": "asset", "_id": avalon.io.ObjectId(asset_id)}
             asset_data = avalon.io.find_one(_filter)
 
             if not asset_data:
-                invalid_grp.append(child_name)
+                self.invalid_grp.append(child_name)
                 _msg = "{}: Cant get model's asset data from db.". \
                     format(child_name)
                 self.log.error(_msg)
                 continue
 
             child_asset_name = asset_data.get('name', '')
-
+            print("........child_name: ", child_name)
+            print("out_caches: ", out_caches)
             # Get child cache
             child_cache = [cache for cache in out_caches if child_name in cache]
+            if not child_cache:
+                continue
 
             if not skip_parent:
-                if str(child_asset_name) == str(self.parent_asset_name):
-                    instance.data["usd_outCache"] = child_cache
-                    skip_parent = True
-                    continue
+                # if str(child_asset_name) == str(self.parent_asset_name):
+                instance.data["usd_outCache"] = child_cache
+                instance.data["look_variant"] = look_variant
+                skip_parent = True
+                continue
 
             # Get subset name
             subset_name = "pointcache.{}.{}".format(
@@ -142,17 +123,19 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
                 subset_name=subset_name,
                 asset_name=child_asset_name,
                 asset_id=asset_id,
-                caches=child_cache
+                caches=child_cache,
+                look_variant=look_variant
             )
 
-        if invalid_grp:
+        if self.invalid_grp:
             raise Exception(
                 "%s <Check children subset usd> Failed."
                 "Please check your models are from publish." % instance
             )
 
-    def __create_child_instance(self, instance, subset_name=None,
-                               asset_id=None, asset_name=None, caches=None):
+    def __create_child_instance(
+            self, instance, subset_name=None, asset_id=None,
+            asset_name=None, caches=None, look_variant=None):
         # Create new instance
         context = instance.context
         backup = instance
@@ -177,6 +160,83 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
             _instance.data["usd_outCache"] = caches
             _instance.data["subsetGroup"] = "USD"
             _instance.data["parent_pointcache_name"] = parent_pointcache_name
+            _instance.data["look_variant"] = look_variant
+
+    def __get_model_subset_data(self, child_name, container):
+        import maya.cmds as cmds
+
+        asset_id = ""
+        look_variant = ""
+
+        try:
+            rig_subset_id = cmds.getAttr("{}.subsetId".format(container))
+
+            # Get rig latest version
+            _filter = {
+                "type": "version",
+                "parent": avalon.io.ObjectId(rig_subset_id),
+            }
+            version_data = avalon.io.find_one(_filter, sort=[("name", -1)])
+            model_subset_data = version_data["data"].get(
+                "model_subset_data", {})
+
+            # Get asset/model subset id
+            _model_group = child_name.replace("{}:".format(
+                self.rig_namespace), "")
+            if model_subset_data and _model_group in model_subset_data.keys():
+                asset_id = model_subset_data[_model_group]["asset_id"]
+                model_subset_id = model_subset_data[_model_group]["subset_id"]
+
+                _filter = {
+                    "type": "subset",
+                    "data.families": "reveries.look",
+                    "data.model_subset_id": model_subset_id}
+                lookdev_data = avalon.io.find_one(_filter)
+
+                if lookdev_data:
+                    look_variant = lookdev_data["name"]
+        except Exception as e:
+            print("{}: Get container failed: {}".format(child_name, e))
+
+        if not asset_id:
+            asset_id = self.__get_asset_id_from_model_group_old_way(child_name)
+
+        return asset_id, look_variant
+
+    def __get_asset_id_from_model_group_old_way(self, child_name):
+        import maya.cmds as cmds
+
+        child_root_group = ""
+
+        _child_groups = cmds.listRelatives(
+            child_name, allDescendents=True, type="transform", fullPath=True)
+
+        if not _child_groups:
+            return
+
+        for _group in _child_groups:
+            if _group.endswith(":ROOT"):
+                child_root_group = _group
+                break
+
+        if not child_root_group:
+            # self.invalid_grp.append(child_name)
+            # _msg = "{}: Missing \"ROOT\" in model hierarchy.". \
+            #     format(child_name)
+            # self.log.error(_msg)
+            return False
+
+        if not cmds.attributeQuery(
+                'AvalonID', node=child_root_group, exists=True):
+            self.invalid_grp.append(child_name)
+            _msg = "{}: Missing \"AvalonID\" attribute on ROOT group. ". \
+                format(child_name)
+            self.log.error(_msg)
+            return False
+
+        asset_id = cmds.getAttr(
+            "{}.AvalonID".format(child_root_group)).split(":")[0]
+        return asset_id
 
     def _check_asset_exists(self, container):
         import maya.cmds as cmds

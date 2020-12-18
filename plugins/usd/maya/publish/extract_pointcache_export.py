@@ -41,7 +41,7 @@ class ExtractPointCacheUSDExport(pyblish.api.InstancePlugin):
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
         file_info = {
-            'authored_data': 'authored_data.usda',
+            'authored_data': 'authored_data.usd',
             'source': 'source.usda',
             'main': 'pointcache_prim.usda'
         }
@@ -67,9 +67,9 @@ class ExtractPointCacheUSDExport(pyblish.api.InstancePlugin):
             ],
             "order": 10
         }
-        instance.data["deadline_dependency"] = self.get_child_instance(instance)
+        instance.data["deadline_dependency"] = self.get_deadline_dependency(instance)
 
-    def get_child_instance(self, instance):
+    def get_deadline_dependency(self, instance):
         context = instance.context
         child_instances = []
 
@@ -96,7 +96,8 @@ class ExtractPointCacheUSDExport(pyblish.api.InstancePlugin):
                 instance_data.get("startFrame"), instance_data.get("endFrame")],
             asset_name=instance_data.get("asset_name"),
             out_cache=instance_data.get("outCache"),
-            file_info=file_info
+            file_info=file_info,
+            look_variant=instance_data.get("look_variant", "")
         )
         exporter.export_usd()
 

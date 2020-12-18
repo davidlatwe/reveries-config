@@ -65,11 +65,10 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         # Get root node
         subset_name = instance.data["subset"]
         set_member = cmds.sets(subset_name, q=True)
-        if not set_member:
-            _msg = "Get set member failed for {}".format(instance)
-            self.log.error(_msg)
-            raise Exception(_msg)
-        root_node = set_member[0]
+        if len(set_member) == 1:
+            root_node = set_member[0]
+        else:
+            root_node = "ROOT"
 
         # === Export assign.usd === #
         outpath = os.path.join(self.staging_dir, self.files_info['assign'])
@@ -130,6 +129,7 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
                 capsule.no_refresh(),
         ):
             cmds.select(root_node)
+            print()
             looks_export.export(file_path=outpath)
 
     def _get_file_node_attrs(self, instance):

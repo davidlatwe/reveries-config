@@ -23,7 +23,7 @@ class ExtractPointCacheChildUSDExport(pyblish.api.InstancePlugin):
         end_frame = instance.data.get("endFrame")
 
         file_info = {
-            'authored_data': 'authored_data.usda',
+            'authored_data': 'authored_data.usd',
             'source': 'source.usda',
             'main': 'pointcache_prim.usda'
         }
@@ -73,7 +73,8 @@ class ExtractPointCacheChildUSDExport(pyblish.api.InstancePlugin):
                 instance_data.get("startFrame"), instance_data.get("endFrame")],
             asset_name=instance_data.get("asset_name"),
             out_cache=instance_data.get("outCache"),
-            file_info=instance_data.get("file_info")
+            file_info=instance_data.get("file_info"),
+            look_variant=instance_data.get("look_variant", "")
         )
         exporter.export_usd()
 

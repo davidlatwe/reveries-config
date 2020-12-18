@@ -91,6 +91,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
                 namespace = lib.get_ns(out_set)
                 set_member = cmds.ls(cmds.sets(out_set, query=True), long=True)
+                print("set_member: ", set_member)
                 all_cacheables = lib.pick_cacheable(set_member)
                 cacheables = lib.get_visible_in_frame_range(all_cacheables,
                                                             int(start_frame),
@@ -142,6 +143,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 instance.data["requireAvalonUUID"] = cacheables
                 instance.data["startFrame"] = start_frame
                 instance.data["endFrame"] = end_frame
+                instance.data["all_cacheables"] = all_cacheables
 
                 self.add_families(instance)
 
@@ -174,6 +176,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
             instance.data["requireAvalonUUID"] = cacheables
             instance.data["startFrame"] = start_frame
             instance.data["endFrame"] = end_frame
+            instance.data["all_cacheables"] = all_cacheables
 
             self.add_families(instance)
 
@@ -257,7 +260,11 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 families.append("reveries.pointcache.gpu")
             if instance.data.pop("exportFBXCache"):
                 families.append("reveries.pointcache.fbx")
-            if instance.data.pop("exportAniUSDData"):
-                families.append("reveries.pointcache.usd")
+
+            instance.data["exportPointCacheUSD"] = False
+            if "exportAniUSDData" in instance.data.keys():
+                if instance.data.pop("exportAniUSDData"):
+                    families.append("reveries.pointcache.usd")
+                    instance.data["exportPointCacheUSD"] = True
 
         instance.data["families"] = families

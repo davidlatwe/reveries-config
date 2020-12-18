@@ -1,3 +1,5 @@
+import re
+
 from pxr import Sdf, Usd, UsdShade, UsdGeom
 
 # Maya Attributes to USD post process
@@ -84,6 +86,7 @@ class RedshiftShadersToUSD:
         else:
             self.procNamespace = keepNamespace
 
+        self.vector_scalars_builder = {}
         self.translator = {
             'RedshiftMaterial': {
                 'info:id': {'name': 'redshift::Material'},
@@ -739,23 +742,75 @@ class RedshiftShadersToUSD:
 
                 'post_proc': self.post_Nothing
             },
-            'RedshiftUserDataScalar': {
-                'info:id': {'name': 'redshift::RSUserDataScalar'},
-                'out': {'name': 'out', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
-                'attributeName': {'name': 'attributeName', 'type': Sdf.ValueTypeNames.String, 'convert': Same},
-
-                'post_proc': self.post_Nothing
-            },
             # 'RedshiftUserDataScalar': {
-            #     'info:id': {'name': 'redshift::ParticleAttributeLookup'},
-            #     'out': {'name': 'out', 'type': Sdf.ValueTypeNames.Float,
-            #             'convert': Same},
-            #     'attributeName': {'name': 'attributeName',
-            #                       'type': Sdf.ValueTypeNames.String,
-            #                       'convert': Same},
+            #     'info:id': {'name': 'redshift::RSUserDataScalar'},
+            #     'out': {'name': 'out', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
+            #     'attributeName': {'name': 'attributeName', 'type': Sdf.ValueTypeNames.String, 'convert': Same},
             #
             #     'post_proc': self.post_Nothing
             # },
+            'RedshiftUserDataScalar': {
+                'info:id': {'name': 'redshift::ParticleAttributeLookup'},
+                'out': {
+                    'name': 'outScalar',
+                    'type': Sdf.ValueTypeNames.Float,
+                    'convert': Same
+                },
+                'attributeName': {
+                    'name': 'attribute',
+                    'type': Sdf.ValueTypeNames.String,
+                    'convert': Same
+                },
+                'post_proc': self.post_Nothing
+            },
+            'RSVectorMaker': {
+                'info:id': {'name': 'redshift::RSVectorMaker'},
+                'out': {
+                    'name': 'out',
+                    'type': Sdf.ValueTypeNames.Vector3f,
+                    'convert': Same
+                },
+                'x': {
+                    'name': 'x',
+                    'type': Sdf.ValueTypeNames.Float,
+                    'convert': Same
+                },
+                'y': {
+                    'name': 'y',
+                    'type': Sdf.ValueTypeNames.Float,
+                    'convert': Same
+                },
+                'z': {
+                    'name': 'z',
+                    'type': Sdf.ValueTypeNames.Float,
+                    'convert': Same
+                },
+                'post_proc': self.post_Nothing
+            },
+            'RSVectorToScalars': {
+                'info:id': {'name': 'redshift::RSVectorToScalars'},
+                'input': {
+                    'name': 'input',
+                    'type': Sdf.ValueTypeNames.Vector3f,
+                    'convert': Same
+                },
+                'outValueX': {
+                    'name': 'outX',
+                    'type': Sdf.ValueTypeNames.Float,
+                    'convert': Same
+                },
+                'outValueY': {
+                    'name': 'outY',
+                    'type': Sdf.ValueTypeNames.Float,
+                    'convert': Same
+                },
+                'outValueZ': {
+                    'name': 'outZ',
+                    'type': Sdf.ValueTypeNames.Float,
+                    'convert': Same
+                },
+                'post_proc': self.post_Nothing
+            },
             'RedshiftUserDataVector': {
                 'info:id': {'name': 'redshift::RSUserDataVector'},
                 'out': {'name': 'out', 'type': Sdf.ValueTypeNames.Float3, 'convert': MayaArrayToVector},
@@ -868,89 +923,86 @@ class RedshiftShadersToUSD:
                 'post_proc': self.post_Nothing
             },
             'RedshiftColorLayer': {
-                'info:id': {'name': 'redshift::ColorLayer'},
+                'info:id': {'name': 'redshift::RSColorLayer'},
                 'outColor': {'name': 'outColor', 'type': Sdf.ValueTypeNames.Color3f, 'convert': MayaArrayToVector},
-                'outAlpha': {'name': 'outAlpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
+                # 'outAlpha': {'name': 'outAlpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'advanced_mode': {'name': 'advanced_mode', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
-                'base_color': {'name': 'base_color', 'type': Sdf.ValueTypeNames.Color3f, 'convert': MayaArrayToVector},
-                'base_alpha': {'name': 'base_alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
+                'base_color': {'name': 'base_color', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
+                # 'base_alpha': {'name': 'base_alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'base_color_premult': {'name': 'base_color_premult', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
                 'layer1_enable': {'name': 'layer1_enable', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
-                'layer1_color': {'name': 'layer1_color', 'type': Sdf.ValueTypeNames.Color3f,
-                                 'convert': MayaArrayToVector},
-                'layer1_alpha': {'name': 'layer1_alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
+                'layer1_color': {'name': 'layer1_color', 'type': Sdf.ValueTypeNames.Color4f,
+                                 'convert': VectorToVector4},
+                # 'layer1_alpha': {'name': 'layer1_alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'layer1_mask': {'name': 'layer1_mask', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
-                'layer1_blend_mode': {'name': 'layer1_blend_mode', 'type': Sdf.ValueTypeNames.Int,
-                                      'convert': IntToString},
-                'layer1_overlay_mode': {'name': 'layer1_overlay_mode', 'type': Sdf.ValueTypeNames.Int,
-                                        'convert': IntToString},
-                'layer1_color_premult': {'name': 'layer1_color_premult', 'type': Sdf.ValueTypeNames.Int,
-                                         'convert': Same},
+                'layer1_blend_mode': {'name': 'layer1_blend_mode', 'type': Sdf.ValueTypeNames.Token, 'convert': IntToString},
+                'layer1_overlay_mode': {'name': 'layer1_overlay_mode', 'type': Sdf.ValueTypeNames.Token, 'convert': IntToString},
+                'layer1_color_premult': {'name': 'layer1_color_premult', 'type': Sdf.ValueTypeNames.Bool, 'convert': Same},
                 'layer2_enable': {'name': 'layer2_enable', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
-                'layer2_color': {'name': 'layer2_color', 'type': Sdf.ValueTypeNames.Color3f,
-                                 'convert': MayaArrayToVector},
+                'layer2_color': {'name': 'layer2_color', 'type': Sdf.ValueTypeNames.Color4f,
+                                 'convert': VectorToVector4},
                 'layer2_alpha': {'name': 'layer2_alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'layer2_mask': {'name': 'layer2_mask', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
-                'layer2_blend_mode': {'name': 'layer2_blend_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer2_blend_mode': {'name': 'layer2_blend_mode', 'type': Sdf.ValueTypeNames.Token,
                                       'convert': IntToString},
-                'layer2_overlay_mode': {'name': 'layer2_overlay_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer2_overlay_mode': {'name': 'layer2_overlay_mode', 'type': Sdf.ValueTypeNames.Token,
                                         'convert': IntToString},
-                'layer2_color_premult': {'name': 'layer2_color_premult', 'type': Sdf.ValueTypeNames.Int,
+                'layer2_color_premult': {'name': 'layer2_color_premult', 'type': Sdf.ValueTypeNames.Bool,
                                          'convert': Same},
                 'layer3_enable': {'name': 'layer3_enable', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
-                'layer3_color': {'name': 'layer3_color', 'type': Sdf.ValueTypeNames.Color3f,
-                                 'convert': MayaArrayToVector},
+                'layer3_color': {'name': 'layer3_color', 'type': Sdf.ValueTypeNames.Color4f,
+                                 'convert': VectorToVector4},
                 'layer3_alpha': {'name': 'layer3_alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'layer3_mask': {'name': 'layer3_mask', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
-                'layer3_blend_mode': {'name': 'layer3_blend_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer3_blend_mode': {'name': 'layer3_blend_mode', 'type': Sdf.ValueTypeNames.Token,
                                       'convert': IntToString},
-                'layer3_overlay_mode': {'name': 'layer3_overlay_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer3_overlay_mode': {'name': 'layer3_overlay_mode', 'type': Sdf.ValueTypeNames.Token,
                                         'convert': IntToString},
-                'layer3_color_premult': {'name': 'layer3_color_premult', 'type': Sdf.ValueTypeNames.Int,
+                'layer3_color_premult': {'name': 'layer3_color_premult', 'type': Sdf.ValueTypeNames.Bool,
                                          'convert': Same},
                 'layer4_enable': {'name': 'layer4_enable', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
-                'layer4_color': {'name': 'layer4_color', 'type': Sdf.ValueTypeNames.Color3f,
-                                 'convert': MayaArrayToVector},
+                'layer4_color': {'name': 'layer4_color', 'type': Sdf.ValueTypeNames.Color4f,
+                                 'convert': VectorToVector4},
                 'layer4_alpha': {'name': 'layer4_alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'layer4_mask': {'name': 'layer4_mask', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
-                'layer4_blend_mode': {'name': 'layer4_blend_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer4_blend_mode': {'name': 'layer4_blend_mode', 'type': Sdf.ValueTypeNames.Token,
                                       'convert': IntToString},
-                'layer4_overlay_mode': {'name': 'layer4_overlay_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer4_overlay_mode': {'name': 'layer4_overlay_mode', 'type': Sdf.ValueTypeNames.Token,
                                         'convert': IntToString},
-                'layer4_color_premult': {'name': 'layer4_color_premult', 'type': Sdf.ValueTypeNames.Int,
+                'layer4_color_premult': {'name': 'layer4_color_premult', 'type': Sdf.ValueTypeNames.Bool,
                                          'convert': Same},
                 'layer5_enable': {'name': 'layer5_enable', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
-                'layer5_color': {'name': 'layer5_color', 'type': Sdf.ValueTypeNames.Color3f,
-                                 'convert': MayaArrayToVector},
+                'layer5_color': {'name': 'layer5_color', 'type': Sdf.ValueTypeNames.Color4f,
+                                 'convert': VectorToVector4},
                 'layer5_alpha': {'name': 'layer5_alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'layer5_mask': {'name': 'layer5_mask', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
-                'layer5_blend_mode': {'name': 'layer5_blend_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer5_blend_mode': {'name': 'layer5_blend_mode', 'type': Sdf.ValueTypeNames.Token,
                                       'convert': IntToString},
-                'layer5_overlay_mode': {'name': 'layer5_overlay_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer5_overlay_mode': {'name': 'layer5_overlay_mode', 'type': Sdf.ValueTypeNames.Token,
                                         'convert': IntToString},
-                'layer5_color_premult': {'name': 'layer5_color_premult', 'type': Sdf.ValueTypeNames.Int,
+                'layer5_color_premult': {'name': 'layer5_color_premult', 'type': Sdf.ValueTypeNames.Bool,
                                          'convert': Same},
                 'layer6_enable': {'name': 'layer6_enable', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
-                'layer6_color': {'name': 'layer6_color', 'type': Sdf.ValueTypeNames.Color3f,
-                                 'convert': MayaArrayToVector},
+                'layer6_color': {'name': 'layer6_color', 'type': Sdf.ValueTypeNames.Color4f,
+                                 'convert': VectorToVector4},
                 'layer6_alpha': {'name': 'layer6_alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'layer6_mask': {'name': 'layer6_mask', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
-                'layer6_blend_mode': {'name': 'layer6_blend_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer6_blend_mode': {'name': 'layer6_blend_mode', 'type': Sdf.ValueTypeNames.Token,
                                       'convert': IntToString},
-                'layer6_overlay_mode': {'name': 'layer6_overlay_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer6_overlay_mode': {'name': 'layer6_overlay_mode', 'type': Sdf.ValueTypeNames.Token,
                                         'convert': IntToString},
-                'layer6_color_premult': {'name': 'layer6_color_premult', 'type': Sdf.ValueTypeNames.Int,
+                'layer6_color_premult': {'name': 'layer6_color_premult', 'type': Sdf.ValueTypeNames.Bool,
                                          'convert': Same},
                 'layer7_enable': {'name': 'layer7_enable', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
-                'layer7_color': {'name': 'layer7_color', 'type': Sdf.ValueTypeNames.Color3f,
-                                 'convert': MayaArrayToVector},
+                'layer7_color': {'name': 'layer7_color', 'type': Sdf.ValueTypeNames.Color4f,
+                                 'convert': VectorToVector4},
                 'layer7_alpha': {'name': 'layer7_alpha', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'layer7_mask': {'name': 'layer7_mask', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
-                'layer7_blend_mode': {'name': 'layer7_blend_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer7_blend_mode': {'name': 'layer7_blend_mode', 'type': Sdf.ValueTypeNames.Token,
                                       'convert': IntToString},
-                'layer7_overlay_mode': {'name': 'layer7_overlay_mode', 'type': Sdf.ValueTypeNames.Int,
+                'layer7_overlay_mode': {'name': 'layer7_overlay_mode', 'type': Sdf.ValueTypeNames.Token,
                                         'convert': IntToString},
-                'layer7_color_premult': {'name': 'layer7_color_premult', 'type': Sdf.ValueTypeNames.Int,
+                'layer7_color_premult': {'name': 'layer7_color_premult', 'type': Sdf.ValueTypeNames.Bool,
                                          'convert': Same},
 
                 'post_proc': self.post_Nothing
@@ -1136,38 +1188,45 @@ class RedshiftShadersToUSD:
 
                 'post_proc': self.post_Nothing
             },
-            'setRange': {
-                'info:id': {'name': 'redshift::RSColorRange'},
-                'value': {'name': 'input', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
-                'outValue': {'name': 'outColor', 'type': Sdf.ValueTypeNames.Color3f, 'convert': MayaArrayToVector},
-                'min': {'name': 'new_min', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
-                'max': {'name': 'new_max', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
-                'oldMin': {'name': 'old_min', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
-                'oldMax': {'name': 'old_max', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
-
-                'post_proc': self.post_Nothing
-            },
             # 'setRange': {
-            #     'info:id': {'name': 'redshift::RSMathRangeVector'},
-            #     'value': {'name': 'input', 'type': Sdf.ValueTypeNames.Vector3f,
-            #               'convert': MayaArrayToVector},
-            #     'outValue': {'name': 'outColor',
-            #                  'type': Sdf.ValueTypeNames.Vector3f,
-            #                  'convert': MayaArrayToVector},
-            #     'min': {'name': 'new_min', 'type': Sdf.ValueTypeNames.Vector3f,
-            #             'convert': MayaArrayToVector},
-            #     'max': {'name': 'new_max', 'type': Sdf.ValueTypeNames.Vector3f,
-            #             'convert': MayaArrayToVector},
-            #     'maxX': {'name': 'new_max', 'type': Sdf.ValueTypeNames.Vector3f,
-            #              'convert': Same},
-            #     'oldMin': {'name': 'old_min',
-            #                'type': Sdf.ValueTypeNames.Vector3f,
-            #                'convert': MayaArrayToVector},
-            #     'oldMax': {'name': 'old_max',
-            #                'type': Sdf.ValueTypeNames.Vector3f,
-            #                'convert': MayaArrayToVector},
-            #     'post_proc': self.post_setRange
-            # }
+            #     'info:id': {'name': 'redshift::RSColorRange'},
+            #     'value': {'name': 'input', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
+            #     'outValue': {'name': 'outColor', 'type': Sdf.ValueTypeNames.Color3f, 'convert': MayaArrayToVector},
+            #     'min': {'name': 'new_min', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
+            #     'max': {'name': 'new_max', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
+            #     'oldMin': {'name': 'old_min', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
+            #     'oldMax': {'name': 'old_max', 'type': Sdf.ValueTypeNames.Color4f, 'convert': VectorToVector4},
+            #
+            #     'post_proc': self.post_Nothing
+            # },
+            'setRange': {
+                'info:id': {'name': 'redshift::RSMathRangeVector'},
+                'value': {'name': 'input', 'type': Sdf.ValueTypeNames.Vector3f,
+                          'convert': MayaArrayToVector},
+                'outValue': {'name': 'out',
+                             'type': Sdf.ValueTypeNames.Vector3f,
+                             'convert': MayaArrayToVector},
+                'outValueX': {
+                    'attr_proc': self.attr_proc_setRange_outValue,
+                },
+                'outValueY': {
+                    'attr_proc': self.attr_proc_setRange_outValue,
+                },
+                'outValueZ': {
+                    'attr_proc': self.attr_proc_setRange_outValue,
+                },
+                'min': {'name': 'new_min', 'type': Sdf.ValueTypeNames.Vector3f,
+                        'convert': MayaArrayToVector},
+                'max': {'name': 'new_max', 'type': Sdf.ValueTypeNames.Vector3f,
+                        'convert': MayaArrayToVector},
+                'oldMin': {'name': 'old_min',
+                           'type': Sdf.ValueTypeNames.Vector3f,
+                           'convert': MayaArrayToVector},
+                'oldMax': {'name': 'old_max',
+                           'type': Sdf.ValueTypeNames.Vector3f,
+                           'convert': MayaArrayToVector},
+                'post_proc': self.post_setRange
+            }
         }
         self.shadingGroups = shadingGroups
         self.scopeName = scopeName
@@ -1321,28 +1380,47 @@ class RedshiftShadersToUSD:
                         self.procNamespace(source_shader)
                     )
                 )
+
             # Check connection input if in translator dictionary
             if source_attr in attr_table.keys():
-                if attr_table[source_attr]['name'] not in \
-                        [x.GetBaseName() for x in usdShader.GetOutputs()]:
-                    usdShaderOutput = usdShader.CreateOutput(
-                        attr_table[source_attr]['name'],
-                        attr_table[source_attr]['type']
+                if attr_table[source_attr].get('attr_proc', None):
+                    attr_table[source_attr]['attr_proc'](
+                        source_shader, usdShader, usdShadingGroup,
+                        last_usd_target=usd_target,
+                        last_target_attr=target_attr,
+                        source_attr=source_attr
                     )
-
                 else:
-                    usdShaderOutput = usdShader.GetOutput(
-                        attr_table[source_attr]['name'])
+                    if attr_table[source_attr]['name'] not in \
+                            [x.GetBaseName() for x in usdShader.GetOutputs()]:
+                        usdShaderOutput = usdShader.CreateOutput(
+                            attr_table[source_attr]['name'],
+                            attr_table[source_attr]['type']
+                        )
+                    else:
+                        usdShaderOutput = usdShader.GetOutput(
+                            attr_table[source_attr]['name'])
 
-                # Connect
-                usd_target.GetInput(target_attr).\
-                    ConnectToSource(usdShaderOutput)
+                    # Connect
+                    usd_target.GetInput(target_attr).\
+                        ConnectToSource(usdShaderOutput)
             else:
+                msg = "{}.{}".format(source_shader, source_attr)
+                print("Source attribute not in dict: {}".format(msg))
                 return
 
             # Creating the attributes and setting the value
             for attr in cmds.listAttr(source_shader, hd=True):
                 if attr in attr_table.keys():
+                    if "attr_proc" in attr_table[attr].keys():
+                        continue
+
+                    if nodeType == 'RedshiftColorLayer':
+                        match = re.findall('(layer+\S)', attr)
+                        if match:
+                            if not cmds.getAttr("{}.{}_enable".format(source_shader, match[0])):
+                                continue
+
                     if nodeType == 'file' and attr == 'fileTextureName':
                         _value = self._get_fileTextureName(source_shader)
                     else:
@@ -1351,14 +1429,6 @@ class RedshiftShadersToUSD:
                             x=True
                         )
 
-                    # if nodeType in [
-                    #     "setRange",
-                    #     # "RedshiftUserDataScalar"
-                    # ]:
-                    #     print("_value:", attr, _value)
-                    #     print("aa: ", attr_table[attr]['convert'](_value))
-                    #     print("\n")
-
                     usdShader.CreateInput(
                         attr_table[attr]['name'],
                         attr_table[attr]['type']).\
@@ -1366,28 +1436,45 @@ class RedshiftShadersToUSD:
 
             if attr_table['post_proc'](
                     source_shader, usdShader, usdShadingGroup):
-                if cmds.listConnections(source_shader, d=False, c=True, p=True):
-                    connections = iter(cmds.listConnections(
-                        source_shader, d=False, c=True, p=True))
-                    for connectDest, connectSource in \
-                            zip(connections, connections):
+
+                all_connections = cmds.listConnections(source_shader, d=False, c=True, p=True)
+                if all_connections:
+                    connections = iter(all_connections)
+
+                    for connectDest, connectSource in zip(connections, connections):
+
                         connectSourceNode = connectSource.split('.')[0]
                         connectSourceAttr = connectSource.split('.')[-1]
                         # connectDestNode = connectDest.split('.')[0]
                         connectDestAttr = connectDest.split('.')[-1]
 
-                        # if nodeType in ["setRange"]:
-                        #     print("_value:", connectSourceAttr)
+                        _target_attr = ""
+                        if cmds.nodeType(connectSourceNode) == "setRange" and \
+                                connectSourceAttr != "outValue":
+                            connectDestAttr = self._attr_remove_rgb(connectDestAttr)
+                            _target_attr = connectDestAttr
 
                         if connectDestAttr in attr_table.keys():
-                            self.rebuildShader(source_shader=connectSourceNode,
-                                               usd_target=usdShader,
-                                               source_attr=connectSourceAttr,
-                                               target_attr=attr_table[connectDestAttr]['name'],
-                                               usdShadingGroup=usdShadingGroup)
-
+                            if not _target_attr:
+                                _target_attr = attr_table[connectDestAttr]['name']
+                            self.rebuildShader(
+                                source_shader=connectSourceNode,
+                                usd_target=usdShader,
+                                source_attr=connectSourceAttr,
+                                target_attr=_target_attr,
+                                usdShadingGroup=usdShadingGroup
+                            )
+                        # else:
+                        #     return
         else:
             return
+
+    def _attr_remove_rgb(self, attr_name):
+        for _k in ["colorR", "colorG", "colorB"]:
+            attr_name = attr_name.replace(_k, "color")\
+        # .replace("colorG", "color").replace("colorB", "color")
+
+        return attr_name
 
     def _get_fileTextureName(self, node):
         import maya.cmds as cmds
@@ -1413,39 +1500,68 @@ class RedshiftShadersToUSD:
     def post_Nothing(self, mayaShader, usdShader, usdShadingGroup):
         return True
 
+    def attr_proc_setRange_outValue(
+            self, mayaShader, usdShader, usdShadingGroup,
+            last_usd_target=None, last_target_attr=None, source_attr=None):
+        """
+        Create "RSVectorToScalars" node between setRange node and the source
+        node of setRange node.
+        :param mayaShader: setRange node maya shader
+        :param usdShader: setRange node usd shader
+        :param usdShadingGroup: usdShadingGroup
+        :param last_usd_target: The source usd shader of setRange node.
+            eg. The usd shader of RedshiftMaterial node
+        :param last_target_attr: Attribute name of laset usd shader node.
+            eg. The attribute name "refr_roughness" of RedshiftMaterial node
+        :param source_attr: The output attribute name of setRange node.
+            eg. outValueX/outValueY/outValueZ
+        :return:
+        """
+
+        from set_range_builder import SetRangeBuilder
+        # last_target_attr = last_target_attr.replace("colorR", "color").replace("colorG", "color").replace("colorB", "color")
+        if mayaShader not in self.vector_scalars_builder.keys():
+            _builder = SetRangeBuilder(
+                    self.stage,
+                    self.translator,
+                    self.procNamespace)
+
+            _builder.post_setRange(mayaShader, usdShader, usdShadingGroup,
+                                   last_usd_target, last_target_attr, source_attr)
+
+    # def add_vector_to_scalars_node(
+    #         self, source_shader=None, source_attr=None,
+    #         usd_target=None, target_attr=None, usdShadingGroup=None):
+    #     """
+    #     Create setRange node and the source node of setRange node.
+    #     :param source_shader: The node name of setRange node
+    #     :param source_attr: The output attribute name of setRange node
+    #     :param usd_target: Target usd shader.
+    #         eg. The RedshiftMaterial node's usd shader
+    #     :param target_attr: Attribute name of target shader node.
+    #         eg. The attribute name "refr_roughness" of RedshiftMaterial node
+    #     :param usdShadingGroup:
+    #     :return:
+    #     """
+    #
+    #     self.rebuildShader(
+    #         source_shader=source_shader,
+    #         usd_target=usd_target,
+    #         source_attr=source_attr,  # outValueX/outValueY/outValueZ
+    #         target_attr=target_attr,
+    #         usdShadingGroup=usdShadingGroup
+    #     )
+
     def post_setRange(self, mayaShader, usdShader, usdShadingGroup):
-        import maya.cmds as cmds
+        from set_range_builder import SetRangeBuilder
 
-        # if cmds.listConnections(mayaShader, d=False, c=True, p=True):
-        #
-        #     connections = iter(cmds.listConnections(
-        #         mayaShader, d=False, c=True, p=True))
-        #
-        #     for connectDest, connectSource in \
-        #             zip(connections, connections):
-        #         connectSourceNode = connectSource.split('.')[0]
-        #         connectSourceAttr = connectSource.split('.')[-1]
-        #         # connectDestNode = connectDest.split('.')[0]
-        #         connectDestAttr = connectDest.split('.')[-1]
-        #
-        #         nodeType = cmds.nodeType(connectSourceNode)
-        #         print("nodeType:", nodeType)
-        #         print("......: ", connectDest, connectSource)
-        #         if nodeType in self.translator.keys():
-        #             attr_table = self.translator[nodeType]
-        #             print("attr_table: ", attr_table.keys())
-        #             print(connectDestAttr)
-        #             if connectSourceAttr in attr_table.keys():
-        #                 print(66666)
-        #                 self.rebuildShader(
-        #                     source_shader=connectSourceNode,
-        #                     usd_target=usdShader,
-        #                     source_attr=connectSourceAttr,
-        #                     target_attr=connectDestAttr,
-        #                     usdShadingGroup=usdShadingGroup
-        #                 )
+        set_range_builder = SetRangeBuilder(
+            self.stage,
+            self.translator,
+            self.procNamespace)
+        set_range_builder.pre_setRange(mayaShader, usdShader, usdShadingGroup)
 
-        return True
+        return False
 
     def post_displacemenShader(self, mayaShader, usdShader, usdShadingGroup):
         import maya.cmds as cmds

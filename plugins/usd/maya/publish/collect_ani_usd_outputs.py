@@ -24,6 +24,9 @@ class CollectAniUSDOutputs(pyblish.api.InstancePlugin):
         if instance.data.get("isDummy"):
             return
 
+        if not instance.data.get("exportPointCacheUSD", False):
+            return
+
         # Create new instance
         context = instance.context
         backup = instance

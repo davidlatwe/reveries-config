@@ -84,9 +84,13 @@ def export(dagObject, merge=False, scopeName='Looks', purpose='all',
     for i, mesh in zip(range(omList.length()), meshList):
         path = omList.getDagPath(i).fullPathName()
 
+        if cmds.attributeQuery('intermediateObject', node=path, ex=True):
+            if cmds.getAttr("{}.intermediateObject".format(path)):
+                continue
+
         if merge is True:
             shapeParentChildCout = om.MFnDagNode(om.MFnDagNode(omList.getDagPath(i)).parent(0)).childCount()
-            if shapeParentChildCout == 1:
+            if shapeParentChildCout >= 1:
                 path = '|'.join(path.split('|')[:-1])
 
         shaders, indices = mesh.getConnectedShaders(0)
