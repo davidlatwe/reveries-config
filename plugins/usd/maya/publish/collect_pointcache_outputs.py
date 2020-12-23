@@ -98,8 +98,6 @@ class CollectPointcacheUSDOutputs(pyblish.api.InstancePlugin):
                 continue
 
             child_asset_name = asset_data.get('name', '')
-            print("........child_name: ", child_name)
-            print("out_caches: ", out_caches)
             # Get child cache
             child_cache = [cache for cache in out_caches if child_name in cache]
             if not child_cache:

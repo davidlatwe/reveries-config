@@ -91,7 +91,6 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
                 namespace = lib.get_ns(out_set)
                 set_member = cmds.ls(cmds.sets(out_set, query=True), long=True)
-                print("set_member: ", set_member)
                 all_cacheables = lib.pick_cacheable(set_member)
                 cacheables = lib.get_visible_in_frame_range(all_cacheables,
                                                             int(start_frame),
@@ -101,7 +100,9 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
                 # Plus locator
                 cacheables += self.pick_locators(set_member)
 
-                out_cache[(namespace, name)] = (has_hidden, cacheables)
+                out_cache[(namespace, name)] = (
+                    has_hidden, cacheables, all_cacheables
+                )
 
                 for n in cacheables:
                     if n in members:
@@ -109,7 +110,7 @@ class CollectDeformedOutputs(pyblish.api.InstancePlugin):
 
             # Re-Create instances
 
-            for k, (has_hidden, cacheables) in out_cache.items():
+            for k, (has_hidden, cacheables, all_cacheables) in out_cache.items():
                 namespace, name = k
 
                 if not cacheables:
