@@ -112,10 +112,11 @@ class ValidateMODGroup(pyblish.api.InstancePlugin):
                 # Check current version already publish USD/geom.usda
                 _filter = {"type": "asset", "name": asset_name}
                 asset_data = io.find_one(_filter)
+                ref_subset_name = _path_resolver.get_subset_name()
 
                 _filter = {
                     "type": "subset",
-                    "name": 'modelDefault',
+                    "name": ref_subset_name,
                     "parent": asset_data['_id']
                 }
                 subset_data = io.find_one(_filter)
