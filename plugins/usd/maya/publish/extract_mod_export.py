@@ -57,8 +57,10 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         import maya.cmds as cmds
         from reveries.maya.usd.maya_export import MayaUsdExporter
 
-        cmds.select('ROOT')
+        # Rename uv set
+        self._rename_uv_set("st")
 
+        cmds.select('ROOT')
         exporter = MayaUsdExporter(export_path=outpath, export_selected=True)
         exporter.exportUVs = True
         exporter.mergeTransformAndShape = True
@@ -66,3 +68,16 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         exporter.exportColorSets = True
         exporter.exportDisplayColor = True
         exporter.export()
+
+        self._rename_uv_set("map1")
+
+    def _rename_uv_set(self, new_name):
+        import maya.cmds as cmds
+
+        meshs = cmds.listRelatives("ROOT", allDescendents=True, type="shape")
+        for _mesh in meshs:
+            uvset = cmds.polyUVSet(_mesh, query=True, currentUVSet=True)
+            if uvset:
+                if uvset[0] != new_name:
+                    cmds.polyUVSet(
+                        _mesh, rename=True, newUVSet=new_name, uvSet=uvset[0])
