@@ -457,10 +457,19 @@ class RedshiftShadersToUSD:
             },
             'RedshiftMaterialBlender': {
                 'info:id': {'name': 'redshift::MaterialBlender'},
-                'outColor': {'name': 'outDisplacementVector', 'type': Sdf.ValueTypeNames.Float3,
-                             'convert': MayaArrayToVector},
-                'baseColor': {'name': 'baseInput', 'type': Sdf.ValueTypeNames.Color3f, 'convert': MayaArrayToVector},
-
+                # 'outColor': {'name': 'outDisplacementVector', 'type': Sdf.ValueTypeNames.Float3,
+                #              'convert': MayaArrayToVector},
+                'outColor': {
+                    'name': 'out',
+                    'type': Sdf.ValueTypeNames.Token,
+                    'convert': MayaArrayToVector
+                },
+                # 'baseColor': {'name': 'baseInput', 'type': Sdf.ValueTypeNames.Color3f, 'convert': MayaArrayToVector},
+                'baseColor': {
+                    'name': 'baseColor',
+                    'type': Sdf.ValueTypeNames.Color3f,
+                    'convert': MayaArrayToVector
+                },
                 'layerColor1': {'name': 'layerColor1', 'type': Sdf.ValueTypeNames.Color3f,
                                 'convert': MayaArrayToVector},
                 'layerColor2': {'name': 'layerColor2', 'type': Sdf.ValueTypeNames.Color3f,
@@ -1413,6 +1422,10 @@ class RedshiftShadersToUSD:
             for attr in cmds.listAttr(source_shader, hd=True):
                 if attr in attr_table.keys():
                     if "attr_proc" in attr_table[attr].keys():
+                        continue
+
+                    if attr_table[attr]['type'] == Sdf.ValueTypeNames.Token \
+                            and attr_table[attr]['name'] == "out":
                         continue
 
                     if nodeType == 'RedshiftColorLayer':
