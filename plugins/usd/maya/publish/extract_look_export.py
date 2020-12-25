@@ -39,8 +39,8 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         self.asset_name = asset_doc["name"]
 
         self.files_info = {
-            'assign': 'assign.usda',
-            'look': 'look.usda',
+            'assign': 'assign.usd',
+            'look': 'look.usd',
         }
 
         self.staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])

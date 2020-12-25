@@ -42,7 +42,7 @@ class ExtractPointCacheUSDExport(pyblish.api.InstancePlugin):
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
         file_info = {
             'authored_data': 'authored_data.usd',
-            'source': 'source.usda',
+            'source': 'source.usd',
             'main': 'pointcache_prim.usda'
         }
         instance.data['file_info'] = file_info
@@ -51,7 +51,7 @@ class ExtractPointCacheUSDExport(pyblish.api.InstancePlugin):
         instance.data["repr.USD._stage"] = staging_dir
         instance.data["repr.USD._files"] = [
             file_info['authored_data'],  # authored_data.usda
-            file_info['source'],  # source.usda
+            file_info['source'],  # source.usd
             file_info['main']  # pointcache_prim.usda
         ]
         instance.data["repr.USD.entryFileName"] = file_info['main']

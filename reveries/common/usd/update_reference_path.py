@@ -28,7 +28,7 @@ def update(usd_file=None, output_path=None):
                     if latest_file_path != current_path:
                         if isinstance(latest_file_path, list):
                             latest_file_path = [s for s in latest_file_path
-                                                if s.endswith(".usda")][0]
+                                                if s.endswith(".usda") or s.endswith(".usd")][0]
 
                         update_prim = source_stage.GetPrimAtPath(_prim_path)
                         update_prim.GetReferences().SetReferences(

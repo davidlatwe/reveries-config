@@ -33,7 +33,7 @@ class CreateFxLayerUSD(houdini.Creator):
         import hou
 
         instance = super(CreateFxLayerUSD, self).process()
-        file_path = "$HIP/pyblish/{0}/{0}_prim.usda".format(self.name)
+        file_path = "$HIP/pyblish/{0}/{0}_prim.usd".format(self.name)
 
         parms = {
             "lopoutput": file_path,

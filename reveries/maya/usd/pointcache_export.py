@@ -167,7 +167,7 @@ class PointCacheExporter(object):
 
         self.files_info = file_info or {
             'authored_data': 'authored_data.usd',
-            'source': 'source.usda',
+            'source': 'source.usd',
             'main': 'pointcache_prim.usda'
         }
 
