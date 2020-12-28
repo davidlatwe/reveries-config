@@ -74,7 +74,10 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
     def _rename_uv_set(self, new_name):
         import maya.cmds as cmds
 
-        meshs = cmds.listRelatives("ROOT", allDescendents=True, type="shape")
+        meshs = cmds.listRelatives("ROOT",
+                                   type="shape",
+                                   allDescendents=True,
+                                   path=True)
         for _mesh in meshs:
             uvset = cmds.polyUVSet(_mesh, query=True, currentUVSet=True)
             if uvset:
