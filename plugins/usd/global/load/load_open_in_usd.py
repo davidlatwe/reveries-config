@@ -13,12 +13,11 @@ def env_embedded_path(path):
 
     """
     path = path.replace(
-        avalon.api.registered_root(), "$AVALON_PROJECTS", 1
+        "$AVALON_PROJECTS", avalon.api.registered_root()
     )
     path = path.replace(
-        avalon.Session["AVALON_PROJECT"], "$AVALON_PROJECT", 1
+        "$AVALON_PROJECT", avalon.Session["AVALON_PROJECT"]
     )
-
     return path
 
 
@@ -69,7 +68,6 @@ class OpenInUSD(PackageLoader, avalon.api.Loader):
                 return
 
             usd_file = os.path.join(directory, files[0])
-
         self._open_usdview(usd_file)
 
     def _open_usdview(self, usd_file):
@@ -87,7 +85,7 @@ class OpenInUSD(PackageLoader, avalon.api.Loader):
             return
 
         cmd = [usdview_bat, usd_file]
-        self.log.info('open usdview cmd: {}'.format(cmd))
+        print('open usdview cmd: {}'.format(cmd))
         subprocess.Popen(
             cmd,
             shell=True,
