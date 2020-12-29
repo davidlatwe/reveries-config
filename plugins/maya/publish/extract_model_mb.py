@@ -60,19 +60,20 @@ class ExtractModelAsMayaBinary(pyblish.api.InstancePlugin):
             # Perform extraction
             cmds.select(nodes, noExpand=True)
 
-            with capsule.undo_chunk_when_no_undo():
+            with capsule.assign_shader(mesh_nodes,
+                                       shadingEngine=clay_shader):
 
-                # Remove mesh history, for removing all intermediate nodes
-                transforms = cmds.ls(nodes, type="transform")
-                cmds.delete(transforms, constructionHistory=True)
-                # Remove all stray shapes, ensure no intermediate nodes
-                all_meshes = set(cmds.ls(nodes, type="mesh", long=True))
-                cmds.delete(list(all_meshes - set(mesh_nodes)))
+                with capsule.undo_chunk_when_no_undo():
 
-                geo_id_and_hash = self.hash(set(mesh_nodes))
+                    # Remove mesh history, for removing all intermediate nodes
+                    transforms = cmds.ls(nodes, type="transform")
+                    cmds.delete(transforms, constructionHistory=True)
+                    # Remove all stray shapes, ensure no intermediate nodes
+                    all_meshes = set(cmds.ls(nodes, type="mesh", long=True))
+                    cmds.delete(list(all_meshes - set(mesh_nodes)))
 
-                with capsule.assign_shader(mesh_nodes,
-                                           shadingEngine=clay_shader):
+                    geo_id_and_hash = self.hash(set(mesh_nodes))
+
                     cmds.file(
                         outpath,
                         force=True,
