@@ -1,4 +1,4 @@
-from pxr import Sdf, Usd, UsdShade, UsdGeom
+from pxr import UsdShade
 
 
 class SetRangeBuilder(object):
@@ -66,7 +66,8 @@ class SetRangeBuilder(object):
     #
     #     return usdShader, usd_vector_shader
 
-    def get_usdShader(self, source_shader, usdShadingGroup, node_type, attr_list=[]):
+    def get_usdShader(self, source_shader, usdShadingGroup,
+                      node_type, attr_list=[]):
         if self.procNamespace(source_shader) not in \
                 [x.GetName() for x in
                  usdShadingGroup.GetPrim().GetAllChildren()]:
@@ -115,7 +116,7 @@ class SetRangeBuilder(object):
         else:
             return None
 
-    def _attr_key_mapping(self, atr_name):
+    def attr_key_mapping(self, atr_name):
         if "max" in atr_name:
             return "new_max"
         if "min" in atr_name:
@@ -127,70 +128,83 @@ class SetRangeBuilder(object):
         if "oldMax" in atr_name:
             return "old_max"
 
-    def pre_setRange(self, mayaShader, usd_set_range_shader, usdShadingGroup):
+    # def pre_setRange(self, mayaShader, usd_set_range_shader, usdShadingGroup):
+    #     import maya.cmds as cmds
+
+        # if cmds.listConnections(mayaShader, d=False, c=True, p=True):
+        #
+        #     connections = iter(cmds.listConnections(
+        #         mayaShader, d=False, c=True, p=True))
+        #
+        #     for connectDest, connectSource in \
+        #             zip(connections, connections):
+        #         connectSourceNode = connectSource.split('.')[0]  # rsUserDataScalar_add
+        #         connectSourceAttr = connectSource.split('.')[-1]  # out
+        #         # connectDestNode = connectDest.split('.')[0]
+        #         connectDestAttr = connectDest.split('.')[-1]
+        #
+        #         node_type = cmds.nodeType(connectSourceNode)
+
+    def create_RSVectorMaker_shader(self, node_name, usdShadingGroup):
+
+        attr_list = [("x", 0.0), ("y", 0.0), ("z", 0.0)]
+        usd_vector_shader = \
+            self.get_usdShader(
+                node_name,
+                usdShadingGroup, "RSVectorMaker", attr_list=attr_list
+            )
+
+        usd_vector_shader_output = self.get_usdShader_output(
+            usd_vector_shader,
+            "RSVectorMaker",
+            "out"
+        )
+
+        return usd_vector_shader, usd_vector_shader_output
+
+    def pre_setRange(
+            self, node_type, usd_set_range_shader, connectSourceNode,
+            connectSourceAttr, usdShadingGroup, connectDestAttr):
         import maya.cmds as cmds
 
-        if cmds.listConnections(mayaShader, d=False, c=True, p=True):
+        # Get ParticleAttributeLookup USD Shader
+        atr_name_value = cmds.getAttr(
+            '{}.attributeName'.format(connectSourceNode))
+        if not atr_name_value:
+            atr_name_value = ""
+        attr_list = [("attributeName", atr_name_value)]
 
-            connections = iter(cmds.listConnections(
-                mayaShader, d=False, c=True, p=True))
+        usd_lookup_shader = \
+            self.get_usdShader(
+                connectSourceNode, usdShadingGroup, node_type,
+                attr_list=attr_list
+            )
 
-            for connectDest, connectSource in \
-                    zip(connections, connections):
-                connectSourceNode = connectSource.split('.')[0]  # rsUserDataScalar_add
-                connectSourceAttr = connectSource.split('.')[-1]  # out
-                # connectDestNode = connectDest.split('.')[0]
-                connectDestAttr = connectDest.split('.')[-1]
+        # Get RSVectorMaker USD Shader
+        usd_vector_shader, usd_vector_shader_output = \
+            self.create_RSVectorMaker_shader(
+                "RSVectorMaker_{}".format(connectSourceNode), usdShadingGroup
+            )
 
-                node_type = cmds.nodeType(connectSourceNode)
+        # Get ParticleAttributeLookup/RSVectorMaker usd output
+        usd_lookup_node_output = self.get_usdShader_output(
+            usd_lookup_shader,
+            node_type,
+            connectSourceAttr
+        )
 
-                # Get ParticleAttributeLookup USD Shader
-                atr_name_value = cmds.getAttr(
-                    '{}.attributeName'.format(connectSourceNode))
-                if not atr_name_value:
-                    atr_name_value = ""
-                attr_list = [("attributeName", atr_name_value)]
+        # Connect usd_lookup_node_output to usd_vector_shader
+        usd_vector_shader.GetInput("x").ConnectToSource(
+            usd_lookup_node_output)
+        usd_vector_shader.GetInput("y").ConnectToSource(
+            usd_lookup_node_output)
+        usd_vector_shader.GetInput("z").ConnectToSource(
+            usd_lookup_node_output)
 
-                usd_lookup_shader = \
-                    self.get_usdShader(
-                        connectSourceNode, usdShadingGroup, node_type,
-                        attr_list=attr_list
-                    )
-
-                # Get RSVectorMaker USD Shader
-                attr_list = [("x", 0.0), ("y", 0.0), ("z", 0.0)]
-                usd_vector_shader = \
-                    self.get_usdShader(
-                        "RSVectorMaker_{}".format(connectSourceNode),
-                        usdShadingGroup, "RSVectorMaker", attr_list=attr_list
-                    )
-
-                # Get ParticleAttributeLookup/RSVectorMaker usd output
-                usd_lookup_node_output = self.get_usdShader_output(
-                    usd_lookup_shader,
-                    node_type,
-                    connectSourceAttr
-                )
-                usd_vector_shader_output = self.get_usdShader_output(
-                    usd_vector_shader,
-                    "RSVectorMaker",
-                    "out"
-                )
-
-                # Connect usd_lookup_node_output to usd_vector_shader
-                usd_vector_shader.GetInput("x").ConnectToSource(
-                    usd_lookup_node_output)
-                usd_vector_shader.GetInput("y").ConnectToSource(
-                    usd_lookup_node_output)
-                usd_vector_shader.GetInput("z").ConnectToSource(
-                    usd_lookup_node_output)
-
-                # Connect usd_vector_shader_output to usd_set_range_shader
-                redshift_atr_name = self._attr_key_mapping(connectDestAttr)
-                usd_set_range_shader.GetInput(redshift_atr_name).\
-                    ConnectToSource(usd_vector_shader_output)
-
-                break
+        # Connect usd_vector_shader_output to usd_set_range_shader
+        redshift_atr_name = self.attr_key_mapping(connectDestAttr)
+        usd_set_range_shader.GetInput(redshift_atr_name).\
+            ConnectToSource(usd_vector_shader_output)
 
     def post_setRange(
             self,  maya_set_range_shader, usd_set_range_shader, usdShadingGroup,
