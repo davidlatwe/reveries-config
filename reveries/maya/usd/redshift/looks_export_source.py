@@ -677,63 +677,18 @@ class RedshiftShadersToUSD:
 
                 'post_proc': self.post_displacemenShader
             },
-            'RSColorSplitter': {
-                'info:id': {'name': 'redshift::RSColorSplitter'},
-                'input': {
-                    'name': 'input',
-                    'type': Sdf.ValueTypeNames.Color4f,
-                    'convert': Same
-                },
-                'outA': {
-                    'name': 'outA',
-                    'type': Sdf.ValueTypeNames.Float3,
-                    'convert': Same
-                },
-                'outR': {
-                    'name': 'outR',
-                    'type': Sdf.ValueTypeNames.Float3,
-                    'convert': Same
-                },
-                'outG': {
-                    'name': 'outG',
-                    'type': Sdf.ValueTypeNames.Float3,
-                    'convert': Same
-                },
-                'outB': {
-                    'name': 'outB',
-                    'type': Sdf.ValueTypeNames.Float3,
-                    'convert': Same
-                },
-                'post_proc': self.post_Nothing
-            },
             'file': {
                 'info:id': {'name': "redshift::TextureSampler"},
                 'output': {'name': 'out', 'type': Sdf.ValueTypeNames.Float3, 'convert': MayaArrayToVector},
                 'outColor': {'name': 'outColor', 'type': Sdf.ValueTypeNames.Color3f, 'convert': MayaArrayToVector},
-                'outColorR': {
-                    'name': 'outColor',
-                    'type': Sdf.ValueTypeNames.Color3f,
-                    'convert': FloatToVector,
-                    'attr_proc': self.attr_proc_file_single_channel,
-                },
-                'outColorG': {
-                    'name': 'outColor',
-                    'type': Sdf.ValueTypeNames.Color3f,
-                    'convert': FloatToVector,
-                    'attr_proc': self.attr_proc_file_single_channel,
-                },
-                'outColorB': {
-                    'name': 'outColor',
-                    'type': Sdf.ValueTypeNames.Color3f,
-                    'convert': FloatToVector,
-                    'attr_proc': self.attr_proc_file_single_channel,
-                },
-                'outAlpha': {
-                    'name': 'outColor',
-                    'type': Sdf.ValueTypeNames.Color3f,
-                    'convert': FloatToVector,
-                    'attr_proc': self.attr_proc_file_single_channel,
-                },
+                'outColorR': {'name': 'outColor', 'type': Sdf.ValueTypeNames.Color3f, 'convert': FloatToVector},
+                'outColorG': {'name': 'outColor',
+                              'type': Sdf.ValueTypeNames.Color3f,
+                              'convert': FloatToVector},
+                'outColorB': {'name': 'outColor',
+                              'type': Sdf.ValueTypeNames.Color3f,
+                              'convert': FloatToVector},
+                'outAlpha': {'name': 'outColor', 'type': Sdf.ValueTypeNames.Color3f, 'convert': FloatToVector},
                 'colorGain': {'name': 'color_multiplier', 'type': Sdf.ValueTypeNames.Color3f,
                               'convert': MayaArrayToVector},
                 'colorOffset': {'name': 'color_offset', 'type': Sdf.ValueTypeNames.Color3f,
@@ -747,11 +702,7 @@ class RedshiftShadersToUSD:
                 'rsFilterEnable': {'name': 'filter_enable_mode', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
                 'rsMipBias': {'name': 'mip_bias', 'type': Sdf.ValueTypeNames.Float, 'convert': Same},
                 'rsBicubicFiltering': {'name': 'filter_bicubic', 'type': Sdf.ValueTypeNames.Int, 'convert': Same},
-                'alphaIsLuminance': {
-                    'name': 'alpha_is_luminance',
-                    'type': Sdf.ValueTypeNames.Int,
-                    'convert': Same
-                },
+
                 'post_proc': self.post_TextureSampler
             },
             'ramp': {
@@ -1526,6 +1477,8 @@ class RedshiftShadersToUSD:
                                 target_attr=_target_attr,
                                 usdShadingGroup=usdShadingGroup
                             )
+                        # else:
+                        #     return
         else:
             return
 
@@ -1560,21 +1513,6 @@ class RedshiftShadersToUSD:
     def post_Nothing(self, mayaShader, usdShader, usdShadingGroup):
         return True
 
-    def attr_proc_file_single_channel(
-            self, mayaShader, usdShader, usdShadingGroup,
-            last_usd_target=None, last_target_attr=None, source_attr=None):
-
-        from texture_sampler_builder import TextureSamplerBuilder
-
-        if mayaShader not in self.vector_scalars_builder.keys():
-            _builder = TextureSamplerBuilder(
-                    self.stage,
-                    self.translator,
-                    self.procNamespace)
-            _builder.post_file(
-                mayaShader, usdShader, usdShadingGroup,
-                last_usd_target, last_target_attr, source_attr)
-
     def attr_proc_setRange_outValue(
             self, mayaShader, usdShader, usdShadingGroup,
             last_usd_target=None, last_target_attr=None, source_attr=None):
@@ -1594,72 +1532,47 @@ class RedshiftShadersToUSD:
         """
 
         from set_range_builder import SetRangeBuilder
+        # last_target_attr = last_target_attr.replace("colorR", "color").replace("colorG", "color").replace("colorB", "color")
         if mayaShader not in self.vector_scalars_builder.keys():
             _builder = SetRangeBuilder(
                     self.stage,
                     self.translator,
                     self.procNamespace)
 
-            _builder.post_setRange(
-                mayaShader, usdShader, usdShadingGroup,
-                last_usd_target, last_target_attr, source_attr
-            )
+            _builder.post_setRange(mayaShader, usdShader, usdShadingGroup,
+                                   last_usd_target, last_target_attr, source_attr)
+
+    # def add_vector_to_scalars_node(
+    #         self, source_shader=None, source_attr=None,
+    #         usd_target=None, target_attr=None, usdShadingGroup=None):
+    #     """
+    #     Create setRange node and the source node of setRange node.
+    #     :param source_shader: The node name of setRange node
+    #     :param source_attr: The output attribute name of setRange node
+    #     :param usd_target: Target usd shader.
+    #         eg. The RedshiftMaterial node's usd shader
+    #     :param target_attr: Attribute name of target shader node.
+    #         eg. The attribute name "refr_roughness" of RedshiftMaterial node
+    #     :param usdShadingGroup:
+    #     :return:
+    #     """
+    #
+    #     self.rebuildShader(
+    #         source_shader=source_shader,
+    #         usd_target=usd_target,
+    #         source_attr=source_attr,  # outValueX/outValueY/outValueZ
+    #         target_attr=target_attr,
+    #         usdShadingGroup=usdShadingGroup
+    #     )
 
     def post_setRange(self, mayaShader, usdShader, usdShadingGroup):
-        import maya.cmds as cmds
         from set_range_builder import SetRangeBuilder
 
         set_range_builder = SetRangeBuilder(
             self.stage,
             self.translator,
             self.procNamespace)
-        # set_range_builder.pre_setRange(mayaShader, usdShader, usdShadingGroup)
-
-        if cmds.listConnections(mayaShader, d=False, c=True, p=True):
-
-            connections = iter(cmds.listConnections(
-                mayaShader, d=False, c=True, p=True))
-
-            for connectDest, connectSource in \
-                    zip(connections, connections):
-                connectSourceNode = connectSource.split('.')[0]  # rsUserDataScalar_add
-                connectSourceAttr = connectSource.split('.')[-1]  # out
-                # connectDestNode = connectDest.split('.')[0]
-                connectDestAttr = connectDest.split('.')[-1]
-
-                node_type = cmds.nodeType(connectSourceNode)
-
-                if node_type == "RedshiftUserDataScalar":
-                    # set_range_builder.pre_setRange(mayaShader, usdShader, usdShadingGroup)
-                    set_range_builder.pre_setRange(
-                        node_type, usdShader,
-                        connectSourceNode, connectSourceAttr,
-                        usdShadingGroup, connectDestAttr
-                    )
-                elif connectDestAttr in self.translator["setRange"].keys():
-                    self.rebuildShader(
-                        source_shader=connectSourceNode,
-                        usd_target=usdShader,
-                        source_attr=connectSourceAttr,
-                        target_attr=self.translator["setRange"][connectDestAttr]["name"],
-                        usdShadingGroup=usdShadingGroup
-                    )
-                else:
-                    _new_target_attr_name = \
-                        set_range_builder.attr_key_mapping(connectDestAttr)  # setRange-input/new_min/...
-                    usd_vector_shader, usd_vector_shader_output = \
-                        set_range_builder.create_RSVectorMaker_shader(
-                            "RSVectorMaker_{}_{}".format(connectSourceNode, _new_target_attr_name),
-                            usdShadingGroup
-                        )
-                    usdShader.GetInput(_new_target_attr_name).ConnectToSource(usd_vector_shader_output)
-                    self.rebuildShader(
-                        source_shader=connectSourceNode,
-                        usd_target=usd_vector_shader,  # usdShader,
-                        source_attr=connectSourceAttr,
-                        target_attr="x",  # _new_target_attr_name,
-                        usdShadingGroup=usdShadingGroup
-                    )
+        set_range_builder.pre_setRange(mayaShader, usdShader, usdShadingGroup)
 
         return False
 
