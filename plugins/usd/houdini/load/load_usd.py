@@ -43,6 +43,7 @@ class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
         "reveries.camera",
         "reveries.final.usd",
         "reveries.fx.usd",
+        "reveries.fx.layer_prim",
         "reveries.lgt.usd",
         "reveries.ani.usd"
     ]
@@ -139,5 +140,6 @@ class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
                 node.moveToGoodPosition()
 
         update_node(node, usd_info)
+        node.setSelected(1, 1)
         self.log.info('Current node: {}'.format(node))
         self.log.info('Add done.\nInfo: {}\n'.format(usd_info))

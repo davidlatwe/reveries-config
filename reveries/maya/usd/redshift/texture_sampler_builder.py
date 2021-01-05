@@ -58,12 +58,12 @@ class TextureSamplerBuilder(object):
             return None
 
     def post_file(
-            self, maya_set_range_shader, usd_file_shader, usdShadingGroup,
+            self, maya_shader, usd_file_shader, usdShadingGroup,
             last_usd_target, last_target_attr, source_attr):
 
         # Get RSVectorToScalars USD Shader
         node_type = "RSColorSplitter"
-        prim_name = "{}_{}".format(node_type, maya_set_range_shader)
+        prim_name = "{}_{}".format(node_type, self.procNamespace(maya_shader))
         attr_list = [("input", (0, 0, 0, 1))]
         usd_color_splitter_shader = \
             self.get_usdShader(
@@ -78,36 +78,39 @@ class TextureSamplerBuilder(object):
             usd_file_output)
 
         # Connect
-        if source_attr == "outAlpha":
+        _source_attr, _target_attr = self._attr_mapping(source_attr, last_target_attr)
 
-            _source_attr, _ = self._attr_mapping(source_attr)  # "outA"
-
-            usd_color_splitter_output = self.get_usdShader_output(
+        if _source_attr and _target_attr:
+            usd_color_splitter_outputR = self.get_usdShader_output(
                 usd_color_splitter_shader, node_type, _source_attr)
-            last_usd_target.GetInput(last_target_attr).ConnectToSource(
-                usd_color_splitter_output)
 
-        else:
-            _source_attr, _target_attr = self._attr_mapping(source_attr)
+            last_usd_target.GetInput(_target_attr).ConnectToSource(
+                usd_color_splitter_outputR)
 
-            if _source_attr and _target_attr:
-                usd_color_splitter_outputR = self.get_usdShader_output(
-                    usd_color_splitter_shader, node_type, _source_attr)
+    def _attr_mapping(self, attr_name, target_attr_name):
+        _mapping = {
+            "outAlpha": {
+                "attr_name": "outA",
+                "is_setRange": "x"
+            },
+            "outColorR": {
+                "attr_name": "outR",
+                "is_setRange": "x"
+            },
+            "outColorG": {
+                "attr_name": "outG",
+                "is_setRange": "y"
+            },
+            "outColorB": {
+                "attr_name": "outB",
+                "is_setRange": "z"
+            }
+        }
 
-                last_usd_target.GetInput(_target_attr).ConnectToSource(
-                    usd_color_splitter_outputR)
+        if attr_name in _mapping.keys():
+            _data = _mapping[attr_name]
+            if target_attr_name in _data.keys():
+                return _data["attr_name"], _data[target_attr_name]
 
-    def _attr_mapping(self, attr_name):
-        if attr_name == "outAlpha":
-            return "outA", ""
-
-        if attr_name == "outColorR":
-            return "outR", "x"
-
-        if attr_name == "outColorG":
-            return "outG", "y"
-
-        if attr_name == "outColorB":
-            return "outB", "z"
-
+            return _data["attr_name"], target_attr_name
         return "", ""

@@ -38,7 +38,10 @@ def MayaArrayToInt(arg):
 
 
 def stripNamespace(name):
-    return name.split(':')[-1]
+    _name = name.split(':')[-1]
+    if ":" in _name:
+        stripNamespace(_name)
+    return _name
 
 
 def keepNamespace(name):
@@ -86,7 +89,6 @@ class RedshiftShadersToUSD:
         else:
             self.procNamespace = keepNamespace
 
-        self.vector_scalars_builder = {}
         self.translator = {
             'RedshiftMaterial': {
                 'info:id': {'name': 'redshift::Material'},
@@ -1566,14 +1568,13 @@ class RedshiftShadersToUSD:
 
         from texture_sampler_builder import TextureSamplerBuilder
 
-        if mayaShader not in self.vector_scalars_builder.keys():
-            _builder = TextureSamplerBuilder(
-                    self.stage,
-                    self.translator,
-                    self.procNamespace)
-            _builder.post_file(
-                mayaShader, usdShader, usdShadingGroup,
-                last_usd_target, last_target_attr, source_attr)
+        _builder = TextureSamplerBuilder(
+                self.stage,
+                self.translator,
+                self.procNamespace)
+        _builder.post_file(
+            mayaShader, usdShader, usdShadingGroup,
+            last_usd_target, last_target_attr, source_attr)
 
     def attr_proc_setRange_outValue(
             self, mayaShader, usdShader, usdShadingGroup,
@@ -1594,26 +1595,24 @@ class RedshiftShadersToUSD:
         """
 
         from set_range_builder import SetRangeBuilder
-        if mayaShader not in self.vector_scalars_builder.keys():
-            _builder = SetRangeBuilder(
-                    self.stage,
-                    self.translator,
-                    self.procNamespace)
 
-            _builder.post_setRange(
-                mayaShader, usdShader, usdShadingGroup,
-                last_usd_target, last_target_attr, source_attr
-            )
+        _builder = SetRangeBuilder(
+                self.stage,
+                self.translator,
+                self.procNamespace)
+
+        _builder.post_setRange(
+            mayaShader, usdShader, usdShadingGroup,
+            last_usd_target, last_target_attr, source_attr
+        )
 
     def post_setRange(self, mayaShader, usdShader, usdShadingGroup):
-        import maya.cmds as cmds
         from set_range_builder import SetRangeBuilder
 
         set_range_builder = SetRangeBuilder(
             self.stage,
             self.translator,
             self.procNamespace)
-        # set_range_builder.pre_setRange(mayaShader, usdShader, usdShadingGroup)
 
         if cmds.listConnections(mayaShader, d=False, c=True, p=True):
 
@@ -1630,7 +1629,6 @@ class RedshiftShadersToUSD:
                 node_type = cmds.nodeType(connectSourceNode)
 
                 if node_type == "RedshiftUserDataScalar":
-                    # set_range_builder.pre_setRange(mayaShader, usdShader, usdShadingGroup)
                     set_range_builder.pre_setRange(
                         node_type, usdShader,
                         connectSourceNode, connectSourceAttr,
@@ -1646,7 +1644,7 @@ class RedshiftShadersToUSD:
                     )
                 else:
                     _new_target_attr_name = \
-                        set_range_builder.attr_key_mapping(connectDestAttr)  # setRange-input/new_min/...
+                        set_range_builder.attr_key_mapping(connectDestAttr)  # setRange: input/new_min/...
                     usd_vector_shader, usd_vector_shader_output = \
                         set_range_builder.create_RSVectorMaker_shader(
                             "RSVectorMaker_{}_{}".format(connectSourceNode, _new_target_attr_name),
@@ -1657,7 +1655,7 @@ class RedshiftShadersToUSD:
                         source_shader=connectSourceNode,
                         usd_target=usd_vector_shader,  # usdShader,
                         source_attr=connectSourceAttr,
-                        target_attr="x",  # _new_target_attr_name,
+                        target_attr="is_setRange",  # _new_target_attr_name,
                         usdShadingGroup=usdShadingGroup
                     )
 
