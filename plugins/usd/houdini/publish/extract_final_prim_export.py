@@ -4,7 +4,7 @@ import pyblish.api
 
 class ExtractFinalShotUSDExport(pyblish.api.InstancePlugin):
     order = pyblish.api.ExtractorOrder + 0.23
-    hosts = ["houdini"]
+    # hosts = ["houdini"]
     label = "Extract Final USD Export"
     families = [
         "reveries.final.usd",
@@ -12,9 +12,7 @@ class ExtractFinalShotUSDExport(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         from reveries import utils
-
-        asset_doc = instance.data["assetDoc"]
-        self.shot_name = asset_doc["name"]
+        from reveries.common.build_delay_run import DelayRunBuilder
 
         staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
 
@@ -24,31 +22,59 @@ class ExtractFinalShotUSDExport(pyblish.api.InstancePlugin):
         instance.data["repr.USD._files"] = [file_name]
         instance.data["repr.USD.entryFileName"] = file_name
 
-        # Get frame range
-        self.frame_range = []
-        start_frame = instance.data.get("startFrame", None)
-        end_frame = instance.data.get("endFrame", None)
-        if start_frame and end_frame:
-            self.frame_range = [start_frame, end_frame]
+        instance.data["_preflighted"] = True
+        instance.data["deadline_script_only"] = True
 
-        # === Export USD file === #
         output_path = os.path.join(staging_dir, file_name)
-        self._export_usd(output_path)
 
-        self._publish_instance(instance)
+        # Create delay running
+        delay_builder = DelayRunBuilder(instance)
 
-    def _export_usd(self, output_path):
+        instance.data["deadline_plugin"] = "HoudiniBatch"
+
+        instance.data["repr.USD._delayRun"] = {
+            "func": self.export_usd,
+            "args": [
+                delay_builder.instance_data, delay_builder.context_data,
+                output_path
+            ],
+        }
+        instance.data["deadline_dependency"] = self.get_deadline_dependency(
+            instance)
+
+    def get_deadline_dependency(self, instance):
+        context = instance.context
+        dependencies = []
+
+        dependencies_family = ["reveries.fx.usd"]
+
+        for _instance in context:
+            if _instance.data["family"] in dependencies_family:
+                dependencies.append(_instance)
+
+        return dependencies
+
+    def export_usd(self, instance_data, context_data, output_path):
         from reveries.common.usd.pipeline import final_prim_export
 
+        shot_name = instance_data['asset']
+
+        frame_range = []
+        start_frame = instance_data.get("startFrame", None)
+        end_frame = instance_data.get("endFrame", None)
+        if start_frame and end_frame:
+            frame_range = [start_frame, end_frame]
+
         builder = final_prim_export.FinalUsdBuilder(
-            shot_name=self.shot_name,
-            frame_range=self.frame_range
+            shot_name=shot_name,
+            frame_range=frame_range
         )
         builder.export(output_path)
 
-    def _publish_instance(self, instance):
+        # ==== Publish instance ==== #
+        self._publish_instance(instance_data, context_data)
+
+    def _publish_instance(self, instance_data, context_data=None):
         # === Publish instance === #
         from reveries.common.publish import publish_instance
-        publish_instance.run(instance)
-
-        instance.data["_preflighted"] = True
+        publish_instance.run(instance_data, context=context_data)

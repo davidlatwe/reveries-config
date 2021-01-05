@@ -8,13 +8,13 @@ class ExtractFxLayerUSD(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ExtractorOrder + 0.2
     label = "Extract Fx Layer USD Export"
-    hosts = ["houdini"]
+    # hosts = ["houdini"]
     families = [
         "reveries.fx.layer_prim",
     ]
 
     def process(self, instance):
-        import hou
+        from reveries.common.build_delay_run import DelayRunBuilder
 
         ropnode = instance[0]
 
@@ -31,21 +31,42 @@ class ExtractFxLayerUSD(pyblish.api.InstancePlugin):
         instance.data["subsetGroup"] = "Fx"
         instance.data["usd_type"] = usd_type
 
+        instance.data["_preflighted"] = True
+
+        # Create delay running
+        delay_builder = DelayRunBuilder(instance)
+
+        instance.data["deadline_plugin"] = "HoudiniBatch"
+
+        instance.data["repr.USD._delayRun"] = {
+            "func": self.export_usd,
+            "args": [
+                delay_builder.instance_data, delay_builder.context_data,
+                ropnode
+            ],
+            # "order": 10
+        }
+
+    def export_usd(self, instance_data, context_data, node_name):
+        import hou
+
+        # Export usd
         try:
-            ropnode.render()
-            self._publish_instance(instance)
+            node = hou.node("/out/{}".format(node_name))
+            if node:
+                node.render()
+                self._publish_instance(instance_data, context_data=context_data)
+            else:
+                msg = "Export fx layer failed, node \"{}\" not exists.".\
+                    format(node_name)
+                raise RuntimeError(msg)
 
         except hou.Error as exc:
-            # The hou.Error is not inherited from a Python Exception class,
-            # so we explicitly capture the houdini error, otherwise pyblish
-            # will remain hanging.
-            traceback.print_exc()
+            print("FX layer export failed: {}".format(traceback.print_exc()))
             raise RuntimeError("Render failed: {0}".format(exc))
 
-    def _publish_instance(self, instance):
+    def _publish_instance(self, instance_data, context_data=None):
         # === Publish instance === #
         from reveries.common.publish import publish_instance
 
-        publish_instance.run(instance)
-
-        instance.data["_preflighted"] = True
+        publish_instance.run(instance_data, context=context_data)

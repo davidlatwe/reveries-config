@@ -9,9 +9,16 @@ class DelayRunBuilder(object):
 
         self._copy_dict(instance)
 
+    def __remove_item(self, _data):
+        _data.pop("_cache_nodes", None)
+        return _data
+
     def _copy_dict(self, instance):
         self.delete_data = []
-        instance_data = copy.deepcopy(dict(instance.data))
+
+        _data = self.__remove_item(dict(instance.data))
+        instance_data = copy.deepcopy(_data)
+
         self.walk_dict(instance_data)
         self.instance_data = self.delete_keys_from_dict(
             instance_data, self.delete_data

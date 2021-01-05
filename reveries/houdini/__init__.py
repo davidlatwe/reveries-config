@@ -28,6 +28,8 @@ def install():
     avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
 
     # Check USD pipeline
+    if "AVALON_PROJECT" not in avalon.Session.keys():
+        io.install()
     project = io.find_one({"name": avalon.Session["AVALON_PROJECT"], "type": "project"})
 
     if project.get('usd_pipeline', False):
