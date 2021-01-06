@@ -75,7 +75,7 @@ def get_files(subset_id, version=None, key=''):
 
             return _pub_file
 
-        files = os.listdir(_dir)
+        files = os.listdir(_dir) if os.path.exists(_dir) else None
         if files:
             for _file in files:
                 _file_path = os.path.join(_dir, _file).replace('\\', '/')
