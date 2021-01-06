@@ -21,12 +21,20 @@ class ExtractAssumedDestination(pyblish.api.InstancePlugin):
         project = context.data["projectDoc"]
         root = instance.data.get("reprRoot", avalon.api.registered_root())
 
+        _asset = avalon.api.Session["AVALON_ASSET"]
+        if instance.data.get("overSessionAsset", False):
+            _asset = instance.data["asset"]
+
+        _silo = avalon.api.Session["AVALON_SILO"]
+        if instance.data.get("overSessionAsset", False):
+            _silo = instance.data["assetDoc"]["silo"]
+
         template_publish = project["config"]["template"]["publish"]
         template_data = {
             "root": root,
             "project": avalon.api.Session["AVALON_PROJECT"],
-            "silo": avalon.api.Session["AVALON_SILO"],
-            "asset": avalon.api.Session["AVALON_ASSET"],
+            "silo": _silo,
+            "asset": _asset,
             "subset": instance.data["subset"],
         }
 
