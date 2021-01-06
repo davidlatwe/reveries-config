@@ -1607,6 +1607,7 @@ class RedshiftShadersToUSD:
         )
 
     def post_setRange(self, mayaShader, usdShader, usdShadingGroup):
+        from maya import cmds
         from set_range_builder import SetRangeBuilder
 
         set_range_builder = SetRangeBuilder(
