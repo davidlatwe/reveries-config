@@ -70,7 +70,7 @@ class CollectLookDevDependency(pyblish.api.InstancePlugin):
 
             self.filter_out_referenced(instance, referenced)
 
-        subset_ids = list(self.collect_model_subset(referenced))
+        subset_ids = self.collect_model_subset(referenced)
         if len(subset_ids):
             instance.data["model_subset_id"] = subset_ids[0]
             if len(subset_ids) > 1:
@@ -85,6 +85,8 @@ class CollectLookDevDependency(pyblish.api.InstancePlugin):
             "RigLoader",
         ]
 
+        collected_ids = list()
+
         for _member in nodes:
             base_name = _member.split("|")[-1]
             if ":" in base_name:
@@ -92,8 +94,10 @@ class CollectLookDevDependency(pyblish.api.InstancePlugin):
                 container = pipeline.get_container_from_namespace(namespace)
                 if cmds.getAttr("{}.loader".format(container)) in Loaders:
                     subset_id = cmds.getAttr("{}.subsetId".format(container))
+                    if subset_id not in collected_ids:
+                        collected_ids.append(subset_id)
 
-                    yield subset_id
+        return collected_ids
 
     def filter_out_referenced(self, instance, referenced):
         from maya import cmds
