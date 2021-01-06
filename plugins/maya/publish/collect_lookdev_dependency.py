@@ -80,14 +80,17 @@ class CollectLookDevDependency(pyblish.api.InstancePlugin):
         from maya import cmds
         from reveries.maya import pipeline
 
+        Loaders = [
+            "ModelLoader",
+            "RigLoader",
+        ]
+
         for _member in nodes:
             base_name = _member.split("|")[-1]
             if ":" in base_name:
                 namespace = base_name.rsplit(":", 1)[0]
-                self.log.debug("namespace: ", namespace)
-
                 container = pipeline.get_container_from_namespace(namespace)
-                if cmds.getAttr("{}.loader".format(container)) == "ModelLoader":
+                if cmds.getAttr("{}.loader".format(container)) in Loaders:
                     subset_id = cmds.getAttr("{}.subsetId".format(container))
 
                     yield subset_id
