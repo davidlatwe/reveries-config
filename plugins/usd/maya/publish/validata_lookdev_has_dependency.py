@@ -26,6 +26,12 @@ class ValidateLookDevHasDependency(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        from maya import cmds
+
+        if not cmds.ls(instance.data["dagMembers"], type="mesh"):
+            # publishing hair look
+            return
+
         if not instance.data.get("model_subset_id"):
             raise RuntimeError("{}: Get model dependency failed".format(instance))
 
