@@ -36,6 +36,8 @@ def build(output_path, shot_name):
 
 
 def _get_camera_prim_files(shot_name):
+    usd_file = ''
+
     _filter = {"type": "asset", "name": shot_name}
     shot_data = io.find_one(_filter)
 
@@ -45,8 +47,10 @@ def _get_camera_prim_files(shot_name):
         "type": "subset"
     }
     subset_data = io.find_one(_filter)
-    usd_file = get_publish_files.get_files(
-        subset_data["_id"], key='entryFileName').get('USD', '')
+    if subset_data:
+        usd_file = get_publish_files.get_files(
+            subset_data["_id"], key='entryFileName').get('USD', '')
+
     return usd_file
 
 

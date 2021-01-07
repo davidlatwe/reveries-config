@@ -63,3 +63,12 @@ def install():
             "targets": ["default", "deadline"],
         },
     }
+
+    # Setting fps
+    import hou
+    _filter = {"type": "project"}
+    project_data = io.find_one(_filter) or {}
+
+    _fps = project_data.get("data", {}).get("fps", 24.0)
+    hou.setFps(_fps)
+    print("Setting FPS to {}".format(_fps))
