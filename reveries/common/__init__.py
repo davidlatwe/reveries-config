@@ -1,6 +1,12 @@
 import sys
 from avalon import io
 
+from .utils import get_fps
+
+__all__ = [
+    "get_fps"
+]
+
 
 def str_to_objectid(obj_id):
     if sys.version_info.major == 3:

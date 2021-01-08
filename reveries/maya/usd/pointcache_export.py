@@ -2,7 +2,7 @@
 import os
 
 from avalon import io
-from pxr import Usd, Sdf, UsdGeom
+from pxr import Usd, UsdGeom
 
 
 class PointCacheExtractor(object):
@@ -249,7 +249,8 @@ class PointCacheExporter(object):
 
     def _export_ani(self, outpath):
         from pxr import Usd, UsdGeom
-        from reveries.common import get_publish_files
+        from reveries.common import get_publish_files, get_fps
+        from reveries.common.usd.utils import get_UpAxis
 
         # Get asset id
         _filter = {"type": "asset", "name": self.asset_name}
@@ -291,10 +292,13 @@ class PointCacheExporter(object):
                     "Set lookdev to {} failed. Error: {}".format(
                         self.look_variant, e))
 
-        # Set default prim
+        # Set metadata
         stage.SetDefaultPrim(root_prim)
         stage.SetStartTimeCode(self.start_frame)
         stage.SetEndTimeCode(self.end_frame)
+        stage.SetFramesPerSecond(get_fps())
+        stage.SetTimeCodesPerSecond(get_fps())
+        UsdGeom.SetStageUpAxis(stage, get_UpAxis(host="Maya"))
 
         stage.GetRootLayer().Export(outpath)
 
