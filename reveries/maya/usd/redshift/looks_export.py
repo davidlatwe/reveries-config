@@ -1764,13 +1764,13 @@ class RedshiftShadersToUSD:
         self.stage.Export(self.filename)
 
 
-def export(file_path=None):
-    import maya.cmds as cmds
+def export(sel, out_path=None):
+    # import maya.cmds as cmds
 
-    shadingGroups = getShadingGroups(cmds.ls(sl=True)[0])
+    shadingGroups = getShadingGroups(sel)
     exporter = RedshiftShadersToUSD(
         shadingGroups=shadingGroups,
-        filename=file_path
+        filename=out_path
     )
     # print(tmp.stage.GetRootLayer().ExportToString())
     exporter.Save()
