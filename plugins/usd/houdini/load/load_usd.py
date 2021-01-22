@@ -45,7 +45,9 @@ class USDLoader(HoudiniUSDBaseLoader, avalon.api.Loader):
         "reveries.fx.usd",
         "reveries.fx.layer_prim",
         "reveries.lgt.usd",
-        "reveries.ani.usd"
+        "reveries.ani.usd",
+        "reveries.rig.usd",
+        "reveries.skeletoncache"
     ]
 
     representations = [

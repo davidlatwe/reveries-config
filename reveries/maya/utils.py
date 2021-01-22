@@ -1256,3 +1256,117 @@ def export_sftpc_job_from_scene(remote_root, remote_user, site):
     exporter.from_workfile(additional_jobs)
 
     return exporter.export()
+
+
+def get_model_reference_group(geometry_path=None):
+    """
+    Get model reference group name under "Geometry" group.
+    :param geometry_path: "Geometry" maya path
+    :return: model_group, invalid_group
+        Example:
+        model_group = [
+            '|ROOT|Group|Geometry|MonsterSharkB_model_01_:modelDefault',
+            '|ROOT|Group|Geometry|MonsterSharkB_model_03_:modelLow',
+            '|ROOT|Group|Geometry|spear_model_grp1',
+        ]
+        invalid_group = [
+            u'|ROOT|Group|Geometry|foBase_geo2',
+            u'|ROOT|Group|Geometry|previewEye_R_geo',
+            u'|ROOT|Group|Geometry|previewEye_L_geo'
+        ]
+    """
+    import maya.cmds as cmds
+
+    # Get node's long name
+    geometry_path = geometry_path or r'|ROOT|Group|Geometry'
+    geometry_path = cmds.ls(geometry_path, long=True)[0]
+
+    model_group = []
+    invalid_group = []
+
+    children = cmds.listRelatives(
+        geometry_path, allDescendents=True, type="transform", fullPath=True)
+
+    for child_name in children:
+        if cmds.referenceQuery(child_name, isNodeReferenced=True):
+            model_group_name = r'{}|{}'.format(
+                geometry_path, child_name.split('|')[4])
+            if model_group_name in model_group:
+                continue
+            model_group.append(model_group_name)
+
+    for child_name in cmds.listRelatives(
+            geometry_path, children=True, fullPath=True):
+        if child_name not in model_group:
+            invalid_group.append(child_name)
+
+    return model_group, invalid_group
+
+
+class HierarchyGetter(object):
+    def __init__(self, skip_type=[], list_type=[], skip_grp=[]):
+        self.shapes = []
+        self.hierarchy_data = {}
+        self.skip_grp = skip_grp
+        self.skip_type = skip_type
+        self.list_type = list_type or ["transform", "shape"]
+
+    def _get_children(self, parent):
+        children = cmds.listRelatives(parent, c=True, type=self.list_type, fullPath=True)
+        if children:
+            del_list = []
+            for child in children:
+                # child_long_name = cmds.ls(child, long=True)[0]
+
+                if cmds.objectType(child) in self.skip_type:
+                    del_list.append(child)
+
+                if cmds.attributeQuery(
+                        'intermediateObject', node=child, exists=True):
+                    if cmds.getAttr('{0}.intermediateObject'.format(child)):
+                        del_list.append(child)
+
+            children = [x for x in children if x not in del_list]
+        return children
+
+    def _strip_namespace(self, children):
+        new_children = []
+        for child in children:
+            new_children.append(child.split("|")[-1].split(":")[-1])
+        return new_children
+
+    def get_hierarchy(self, top_node):
+        self.hierarchy_data = {}
+        self._get_hierarchy(top_node, self.hierarchy_data)
+
+        return self.hierarchy_data
+
+    def _get_hierarchy(self, node, data):
+        children = self._get_children(node)
+        if children:
+            _parent = node.split("|")[-1].split(":")[-1]
+            data[_parent] = (self._strip_namespace(children), {})
+            for child in children:
+                self._get_hierarchy(child, data[_parent][1])
+
+    def get_shapes(self, node):
+        self.shapes = []
+        self._get_shapes(node)
+
+        return self.shapes
+
+    def _get_shapes(self, node):
+        children = cmds.listRelatives(node, c=True, type=["transform", "shape"], fullPath=True)
+        if children:
+            for child in children:
+                # child_long_name = cmds.ls(child, long=True)[0]
+                # print("child: ", child)
+                # print("child_long_name: ", child_long_name)
+                if cmds.attributeQuery(
+                        'intermediateObject', node=child, exists=True):
+                    if cmds.getAttr('{0}.intermediateObject'.format(child)):
+                        continue
+                if cmds.objectType(child) == "mesh":
+                    self.shapes.append(child)
+
+                self._get_shapes(child)

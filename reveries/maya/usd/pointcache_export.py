@@ -39,21 +39,36 @@ class PointCacheExtractor(object):
             :param key: modelDefault/modelDefaultProxy
             :return:
             """
-            destination_path = '/ROOT/{}/MOD'.format(key)
+            # destination_path = '/ROOT/{}/MOD'.format(key)
+
+            # === Just for transition === #
+            _filter = {"type": "project"}
+            project_data = io.find_one(_filter)
+            if project_data["name"] in ["201912_ChimelongPreshow"]:
+                destination_path = '/ROOT/{}/MOD'.format(key)
+                for prim in self.source_stage.TraverseAll():
+                    if '/ROOT/MOD/' in str(prim.GetPath()):
+                        destination_path = '/ROOT/{}'.format(key)
+                        break
+                return destination_path
+            # === Just for transition end === #
+
+            destination_path = '/ROOT/MOD'
             for prim in self.source_stage.TraverseAll():
                 if '/ROOT/MOD/' in str(prim.GetPath()):
-                    destination_path = '/ROOT/{}'.format(key)
+                    # destination_path = '/ROOT/{}'.format(key)
+                    destination_path = '/ROOT'
                     break
             return destination_path
 
         prim_path = str(prim.GetPath())
         if self.root_usd_path:
-            if self.has_proxy and "_proxy" in str(prim.GetPath()):
-                prim_path = str(prim.GetPath()).replace(
-                    self.root_usd_path, _check_mod_exists("modelDefaultProxy"))
-            else:
-                prim_path = str(prim.GetPath()).replace(
-                    self.root_usd_path, _check_mod_exists("modelDefault"))
+            # if self.has_proxy and "_proxy" in str(prim.GetPath()):
+            #     prim_path = str(prim.GetPath()).replace(
+            #         self.root_usd_path, _check_mod_exists("modelDefaultProxy"))
+            # else:
+            prim_path = str(prim.GetPath()).replace(
+                self.root_usd_path, _check_mod_exists("modelDefault"))
 
         return prim_path
 
@@ -145,7 +160,8 @@ class PointCacheExtractor(object):
 
         # Delete unnecessary prim
         try:
-            self.override_stage.RemovePrim('/rigDefault')
+            del_prim = "/{}".format(self.root_usd_path.split("/")[1])
+            self.override_stage.RemovePrim(del_prim)
         except Exception as e:
             print(e)
 
@@ -242,6 +258,8 @@ class PointCacheExporter(object):
         exporter.export()
 
         cmds.select(cl=True)
+
+        # TODO: Get shape_merge value from rig publish data
 
     def _export_authored_data(self, outpath):
         # Check has proxy group

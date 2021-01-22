@@ -124,6 +124,7 @@ def export(dagObject, merge=False, scopeName='Looks', purpose='all',
                     procNamespace(shadingGroup_name)))
                 UsdShade.MaterialBindingAPI(geomSubset).Bind(usdMaterial, materialPurpose=materialPurpose)
 
+    # Setting default primitive
     rootPrim = stage.GetPrimAtPath('/').GetAllChildren()[0]
     if assetVersion:
         rootPrim.SetAssetInfoByKey('version', assetVersion)

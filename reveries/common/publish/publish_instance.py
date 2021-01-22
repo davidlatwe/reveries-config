@@ -475,6 +475,8 @@ class IntegrateAvalonSubset(object):
             "handles",
             "hasUnversionedSurfaces",
             "deadlineJobId",
+            # "model_subset_data",  # For rig publish
+            "shape_merge"  # For model/lookdev publish
         ]
         for key in optionals:
             if key in instance.data:

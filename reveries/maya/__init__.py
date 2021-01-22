@@ -67,6 +67,10 @@ def install():  # pragma: no cover
             os.path.join(PLUGINS_DIR, "usd", "maya", "publish")
         )
         avalon.register_plugin_path(
+            avalon.Creator,
+            os.path.join(PLUGINS_DIR, "usd", "maya", "create")
+        )
+        avalon.register_plugin_path(
             avalon.InventoryAction,
             os.path.join(PLUGINS_DIR, "usd", "maya", "inventory")
         )

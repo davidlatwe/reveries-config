@@ -21,6 +21,9 @@ class ValidateRenderer(pyblish.api.InstancePlugin):
         if skip_instance(context, ['reveries.xgen']):
             return
 
+        if not instance.data.get("publishUSD", True):
+            return
+
         project = avalon.io.find_one({
             "name": avalon.api.Session["AVALON_PROJECT"],
             "type": "project"

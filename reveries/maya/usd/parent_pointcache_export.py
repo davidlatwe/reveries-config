@@ -32,7 +32,10 @@ class ParentPointcacheExporter(object):
             "parent": self.shot_data["_id"],
             "data.parent_pointcache_name": self.parent_subset_name
         }
-        self.children_data = [s for s in io.find(_filter)]
+        # self.children_data = [s for s in io.find(_filter)]
+        self.children_data = [
+            s for s in io.find(_filter)
+            if s.get("data", {}).get("subsetGroup", "") not in ["Trash Bin"]]
         return self.children_data
 
     def export(self, output_dir):

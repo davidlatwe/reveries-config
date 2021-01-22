@@ -1,16 +1,14 @@
 from avalon import io
 import pyblish.api
-from reveries.common.task_check import task_check
 
 
-class CollectAniUSDOutputs(pyblish.api.InstancePlugin):
+class CollectRigPrimOutputs(pyblish.api.InstancePlugin):
 
-    order = pyblish.api.CollectorOrder
-    label = "Collect Ani USD Outputs"
+    order = pyblish.api.CollectorOrder + 0.25
+    label = "Collect Rig Prim USD Outputs"
     hosts = ["maya"]
     families = [
-        "reveries.pointcache.usd" if task_check(task_name="animating") else "",
-        "reveries.skeletoncache" if task_check(task_name="animating") else ""
+        "reveries.rig"
     ]
 
     def ins_exists(self, context, name):
@@ -22,21 +20,19 @@ class CollectAniUSDOutputs(pyblish.api.InstancePlugin):
         return _exists
 
     def process(self, instance):
-        if instance.data.get("isDummy"):
+        if not instance.data.get("publishUSD", False):
             return
 
-        if instance.data["family"] in ['reveries.pointcache']:
-            if not instance.data.get("exportPointCacheUSD", False):
-                return
+        subset_name = instance.data["subset"]
 
         # Create new instance
         context = instance.context
         backup = instance
 
-        # === Generate aniPrim usd === #
-        name = 'aniPrim'
+        # === Generate rigPrim usd === #
+        name = '{}Skeleton'.format(subset_name)
         if not self.ins_exists(context, name):
-            _family = "reveries.ani.usd"
+            _family = "reveries.rig.skeleton"
 
             _instance = context.create_instance(name)
             _instance.data.update(backup.data)
@@ -44,11 +40,12 @@ class CollectAniUSDOutputs(pyblish.api.InstancePlugin):
             _instance.data["family"] = _family
             _instance.data["families"] = [_family]
             _instance.data["subset"] = name
+            _instance.data["subsetGroup"] = "USD"
 
-        # === Generate finalPrim usd === #
-        name = 'finalPrim'
+        # === Generate rigPrim usd === #
+        name = '{}Prim'.format(subset_name)
         if not self.ins_exists(context, name):
-            _family = "reveries.final.usd"
+            _family = "reveries.rig.usd"
 
             _instance = context.create_instance(name)
             _instance.data.update(backup.data)
@@ -61,12 +58,12 @@ class CollectAniUSDOutputs(pyblish.api.InstancePlugin):
     def _check_version_pin(self, instance, subset_name):
         shot_name = instance.data['asset']
         _filter = {"type": "asset", "name": shot_name}
-        shot_data = io.find_one(_filter)
+        asset_data = io.find_one(_filter)
 
         # Get subset id
         _filter = {
             "type": "subset",
-            "parent": shot_data['_id'],
+            "parent": asset_data['_id'],
             "name": subset_name  # "camPrim"/"layPrim"/"finalPrim"
         }
         subset_data = io.find_one(_filter)

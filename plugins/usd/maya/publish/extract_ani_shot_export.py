@@ -55,6 +55,7 @@ class ExtractAniShotUSDExport(pyblish.api.InstancePlugin):
         dependencies_family = [
             "reveries.pointcache",
             "reveries.camera.usd",
+            "reveries.skeletoncache",
         ]
 
         for _instance in context:

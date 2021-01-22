@@ -4,11 +4,13 @@ class MayaUsdExporter(object):
     TYPE = "usd"
     PLUGIN_NAMES = ["pxrUsd", "pxrUsdPreviewSurface"]
 
-    def __init__(self, export_path=None, frame_range=[], export_selected=True):
+    def __init__(self, export_path=None, frame_range=[], export_selected=True,
+                 rename_uv_set=True):
         """
         :param export_path:(str) absolute path for export dir or file
         :param frame_range:(list) list with 2 elements, first and last frame
         :param export_selected:(bool) Selection export True/False
+        :param rename_uv_set:(bool) Rename uv set name to "st"
         """
         import maya.cmds as cmds
 
@@ -27,6 +29,7 @@ class MayaUsdExporter(object):
         self.frameRange = [self.first_frame, self.end_frame]
         self.selection = export_selected
         self.mergeTransformAndShape = True
+        self.rename_uv_set = rename_uv_set
 
         # usd options
         self.exportColorSets = False
@@ -36,7 +39,6 @@ class MayaUsdExporter(object):
         self.exportDisplayColor = False
         self.stripNamespaces = True
 
-        # al options
         self.animation = True
         self.nurbsCurves = True
         self.meshes = False
@@ -51,10 +53,30 @@ class MayaUsdExporter(object):
             cmds.loadPlugin(plugin_name, quiet=True)
 
     def pre_process(self):
-        pass
+        if self.rename_uv_set:
+            self._rename_uv_set("st")
 
     def post_process(self):
+        if self.rename_uv_set:
+            self._rename_uv_set("map1")
+
         return self.file_path
+
+    def _rename_uv_set(self, new_name):
+        import maya.cmds as cmds
+
+        sel = cmds.ls(sl=True)[0]
+
+        meshs = cmds.listRelatives(sel,
+                                   type="shape",
+                                   allDescendents=True,
+                                   path=True)
+        for _mesh in meshs:
+            uvset = cmds.polyUVSet(_mesh, query=True, currentUVSet=True)
+            if uvset:
+                if uvset[0] != new_name:
+                    cmds.polyUVSet(
+                        _mesh, rename=True, newUVSet=new_name, uvSet=uvset[0])
 
     def export(self, plugin_name='usd'):
 
