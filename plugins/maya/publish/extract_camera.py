@@ -171,5 +171,8 @@ class ExtractCamera(pyblish.api.InstancePlugin):
                                   expressions=False)
 
                     with avalon.maya.maintained_selection():
+                        # NOTE:
+                        #   FBX camera far clip has max value 600000,
+                        #   and can not have key.
                         io.export_fbx_set_camera()
                         io.export_fbx(fbx_outpath)
