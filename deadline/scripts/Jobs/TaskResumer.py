@@ -37,18 +37,26 @@ def __main__():
                  "frame ranges. ex: 1-2, 3, 4-6, 10-20@3"),
         expand=False,
     )
+    scriptDialog.AddSelectionControlToGrid(
+        "ResumeCompletedCheck",
+        "CheckBoxControl",
+        False,
+        "Resume Completed Tasks",
+        2, 0,
+        expand=False,
+    )
     OkButton = scriptDialog.AddControlToGrid(
         "OkButton",
         "ButtonControl",
         "Apply",
-        2, 0,
+        3, 0,
         expand=False,
     )
     closeButton = scriptDialog.AddControlToGrid(
         "CloseButton",
         "ButtonControl",
         "Cancel",
-        2, 1,
+        3, 1,
         expand=False
     )
     scriptDialog.EndGrid()
@@ -63,11 +71,13 @@ def OkButtonPressed(*args):
     global scriptDialog
 
     frames = str(scriptDialog.GetValue("FramesMultiLineText"))
-    if process(frames):
+    resume_completed = bool(scriptDialog.GetValue("ResumeCompletedCheck"))
+
+    if process(frames, resume_completed):
         scriptDialog.CloseDialog()
 
 
-def process(frames):
+def process(frames, resume_completed):
 
     frame_nums = parse_frames(frames)
     if not frame_nums:
@@ -75,6 +85,9 @@ def process(frames):
         return
 
     jobIds = MonitorUtils.GetSelectedJobIds()
+    resume_on_state = ["Suspended"]
+    if resume_completed:
+        resume_on_state.append("Completed")
 
     for jobId in jobIds:
         job = RepositoryUtils.GetJob(jobId, True)
@@ -82,7 +95,7 @@ def process(frames):
 
         resume = list()
         for task in tasks:
-            if task.TaskStatus not in ["Suspended", "Completed"]:
+            if task.TaskStatus not in resume_on_state:
                 continue
             task_frames = set(task.TaskFrameList)
             if frame_nums.intersection(task_frames):
