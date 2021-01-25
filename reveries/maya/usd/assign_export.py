@@ -86,6 +86,9 @@ def export(dagObject, merge=False, scopeName='Looks', purpose='all',
     for i, mesh in zip(range(omList.length()), meshList):
         path = omList.getDagPath(i).fullPathName()
 
+        if cmds.objectType(path) != "mesh":
+            continue
+
         if cmds.attributeQuery('intermediateObject', node=path, ex=True):
             if cmds.getAttr("{}.intermediateObject".format(path)):
                 continue
