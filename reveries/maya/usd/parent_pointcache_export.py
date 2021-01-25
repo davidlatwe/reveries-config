@@ -36,7 +36,8 @@ class ParentPointcacheExporter(object):
         return self.children_data
 
     def export(self, output_dir):
-        from reveries.common import get_publish_files
+        from reveries.common import get_publish_files, get_fps
+        from reveries.common.usd.utils import get_UpAxis
 
         if not self.children_data:
             self.get_children_data()
@@ -44,8 +45,7 @@ class ParentPointcacheExporter(object):
         stage = Usd.Stage.CreateInMemory()
 
         UsdGeom.Xform.Define(stage, "/ROOT")
-        shot_prim = stage.GetPrimAtPath('/ROOT')
-        stage.SetDefaultPrim(shot_prim)
+        root_prim = stage.GetPrimAtPath('/ROOT')
 
         # Set parent prim
         parent_prim_name = "/ROOT/main"
@@ -66,9 +66,14 @@ class ParentPointcacheExporter(object):
             if _file:
                 _prim.GetReferences().SetReferences([Sdf.Reference(_file)])
 
-        # Set frame range
+        # Set metadata
+        stage.SetDefaultPrim(root_prim)
         stage.SetStartTimeCode(self.frame_in)
         stage.SetEndTimeCode(self.frame_out)
+
+        stage.SetFramesPerSecond(get_fps())
+        stage.SetTimeCodesPerSecond(get_fps())
+        UsdGeom.SetStageUpAxis(stage, get_UpAxis(host="Maya"))
 
         self.output_path = os.path.join(
             output_dir, "pointcache_prim_tmp.usda").replace('\\', '/')

@@ -2,6 +2,8 @@
 import os
 import json
 import platform
+
+import avalon
 import pyblish.api
 
 
@@ -21,12 +23,15 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         "reveries.camera",
         "reveries.standin",
         "reveries.vdbcache",
+        "reveries.fx.layer_prim",
+        "reveries.fx.usd",
+        "reveries.final.usd"
     ]
 
     targets = ["deadline"]
 
     def process(self, instance):
-        from reveries.houdini import lib
+        import reveries
 
         context = instance.context
 
@@ -91,32 +96,33 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         else:
             init_state = "Active"
 
-        ropnode = instance[0]
+        try:
+            ropnode = instance[0]
+        except Exception as e:
+            # In USD publish, few instance don't need ropnode.
+            print("Get ropnode failed: {}".format(e))
+            ropnode = None
 
-        # Override output to use original $HIP
-        output = lib.get_output_parameter(ropnode).rawValue()
-        on_HIP = output.startswith("$HIP")
-        origin_HIP = os.path.dirname(context.data["originMaking"])
-        output = output.replace("$HIP", origin_HIP, 1) if on_HIP else None
-        # (NOTE) ^^^ For a fixed staging dir
-        #   We need this because the scene file we submit to Deadline is a
-        #   backup under `$HIP/_published` dir which copied via extractor
-        #   plugin `AvalonSaveScene`.
-        #
-        #   Note that the Deadline (10.0.27.2) Houdini plugin does not support
-        #   output filename override if the ROP node type is `alembic`. So to
-        #   make this work, I have modified the Deadline Houdini plugin script
-        #   `{DeadlineRepo}/plugins/Houdini/hrender_dl.py` at line 375:
-        #   ```diff
-        #   - elif ropType == "rop_alembic":
-        #   + elif ropType in ("rop_alembic", "alembic"):
-        #   ```
+        # Get output path
+        output = self._get_output(ropnode, context)
+
+        _plugin_name = instance.data.get("deadline_plugin", "Houdini")
+
+        # Get HoudiniBatch arguments
+        _arguments = ""
+        if _plugin_name in ["HoudiniBatch"]:
+            reveries_path = reveries.__file__
+            script_file = os.path.join(os.path.dirname(reveries_path),
+                                       "scripts",
+                                       "deadline_extract_houdini.py")
+            _arguments = "{} {}".format(
+                script_file, instance.data.get("deadline_arguments", "")
+            )
 
         # Assemble payload
-
         payload = {
             "JobInfo": {
-                "Plugin": "Houdini",
+                "Plugin": _plugin_name,  # HoudiniBatch/Houdini
                 "BatchName": batch_name,  # Top-level group name
                 "Name": job_name,
                 "UserName": username,
@@ -131,6 +137,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
                 "InitialStatus": init_state,
 
                 "ExtraInfo0": project["name"],
+                # "Whitelist": platform.node().lower()
             },
             "PluginInfo": {
 
@@ -139,9 +146,12 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
                 "Version": houdini_version,
 
                 # Renderer Node
-                "OutputDriver": ropnode.path(),
+                "OutputDriver": ropnode.path() if ropnode else None,
                 # Output Filename
                 "Output": output,
+
+                "Arguments": _arguments,  # E:\..\deadline_extract_houdini.py
+                "ScriptOnly": instance.data.get("deadline_script_only", False),
 
                 "IgnoreInputs": False,
                 "GPUsPerTask": 0,
@@ -152,8 +162,12 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
             "IdOnly": True
         }
 
-        # Environment
+        # Add dependency for pointcache usd
+        if instance.data.get("deadline_dependency", False):
+            payload = self._add_dependency(
+                instance, payload)
 
+        # Environment
         environment = self.assemble_environment(instance)
 
         parsed_environment = {
@@ -170,9 +184,48 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         )
 
         # Submit
-
         submitter = context.data["deadlineSubmitter"]
-        submitter.add_job(payload)
+        index = submitter.add_job(payload)
+        instance.data["deadline_index"] = index
+
+    def _get_output(self, ropnode, context):
+        from reveries.houdini import lib
+
+        output = ""
+        if ropnode:
+            # Override output to use original $HIP
+            output = lib.get_output_parameter(ropnode).rawValue()
+            on_HIP = output.startswith("$HIP")
+            origin_HIP = os.path.dirname(context.data["originMaking"])
+            output = output.replace("$HIP", origin_HIP, 1) if on_HIP else output
+            # (NOTE) ^^^ For a fixed staging dir
+            #   We need this because the scene file we submit to Deadline is a
+            #   backup under `$HIP/_published` dir which copied via extractor
+            #   plugin `AvalonSaveScene`.
+            #
+            #   Note that the Deadline (10.0.27.2) Houdini plugin does not support
+            #   output filename override if the ROP node type is `alembic`. So to
+            #   make this work, I have modified the Deadline Houdini plugin script
+            #   `{DeadlineRepo}/plugins/Houdini/hrender_dl.py` at line 375:
+            #   ```diff
+            #   - elif ropType == "rop_alembic":
+            #   + elif ropType in ("rop_alembic", "alembic"):
+            #   ```
+
+        return output
+
+    def _add_dependency(self, instance, payload):
+        _child_indexs = []
+
+        for _instance in instance.data.get("deadline_dependency", []):
+            if "deadline_index" in list(_instance.data.keys()):
+                _child_indexs.append(_instance.data.get("deadline_index", ""))
+        if _child_indexs:
+            dependency_list = {
+                "JobDependencies": ",".join(_child_indexs)
+            }
+            payload["JobInfo"].update(dependency_list)
+        return payload
 
     def assemble_environment(self, instance):
         """Compose submission required environment variables for instance
@@ -190,6 +243,9 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
             "AVALON_CACHE_ROOT",
             "JOB",
         ]
+
+        optional_vars += self._check_redshift_vars()
+
         for var in optional_vars:
             value = os.getenv(var)
             if value:
@@ -201,3 +257,20 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         environment["PYBLISH_DUMP_FILE"] = instance.data["dumpPath"]
 
         return environment
+
+    def _check_redshift_vars(self):
+        project = avalon.io.find_one({
+            "name": avalon.api.Session["AVALON_PROJECT"],
+            "type": "project"
+        })
+        renderer = project.get('renderer', None)
+        if renderer == "redshift":
+            return [
+                "PATH",
+                "HOUDINI_PATH",
+                "solidangle_LICENSE",
+                "redshift_LICENSE",
+                "PXR_PLUGINPATH_NAME"
+            ]
+
+        return []

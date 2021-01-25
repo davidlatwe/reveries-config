@@ -20,6 +20,8 @@ class CreateSetDressUSD(houdini.Creator):
         # Set node type to create for output
         self.data.update({"node_type": "usd"})
 
+        self.data["overSessionAsset"] = False
+
         self.data["deadlinePriority"] = 80
         self.data["deadlinePool"] = lib.get_deadline_pools()
 
@@ -29,7 +31,7 @@ class CreateSetDressUSD(houdini.Creator):
         import hou
 
         instance = super(CreateSetDressUSD, self).process()
-        file_path = "$HIP/pyblish/{0}/{0}_prim.usda".format(self.name)
+        file_path = "$HIP/pyblish/{0}/{0}_prim.usd".format(self.name)
 
         parms = {
             "lopoutput": file_path,

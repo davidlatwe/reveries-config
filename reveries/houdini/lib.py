@@ -184,7 +184,8 @@ def get_output_parameter(node):
             return node.parm("ar_ass_file")
         else:
             return node.parm("ar_picture")
-
+    elif node_type == "usd":
+        return node.parm("lopoutput")
     else:
         raise TypeError("Node type '%s' not supported" % node_type)
 

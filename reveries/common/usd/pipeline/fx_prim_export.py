@@ -62,7 +62,7 @@ class FxPrimExport(object):
                 root_layer.subLayerPaths.append(_data["file"])
 
             # Create reference
-            if _data["usd_type"] == "Reference":
+            elif _data["usd_type"] == "Reference":
                 prim_path = "/ROOT/Fx/{}".format(_subset_name)
                 UsdGeom.Xform.Define(stage, prim_path)
                 _prim = stage.GetPrimAtPath(prim_path)
@@ -70,6 +70,9 @@ class FxPrimExport(object):
                     assetPath=_data["file"],
                     primPath="/ROOT"
                 )
+            else:
+                print("{}: Can't found usd type in publish data. "
+                      "Skip it.".format(_subset_name))
 
         stage.GetRootLayer().Export(self.output_path)
         # print(stage.GetRootLayer().ExportToString())

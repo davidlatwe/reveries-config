@@ -63,7 +63,7 @@ class ShotgunIO(object):
         ] + filters
 
         frame_range = self.shotgun.find_one('Shot', _filters, _fields)
-        return frame_range
+        return frame_range or {}
 
 
 def test():

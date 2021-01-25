@@ -95,9 +95,9 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         import maya.cmds as cmds
         from reveries.maya.usd import assign_export
 
-        cmds.select(root_node)
-        sel = cmds.ls(sl=True)[0]
-        assign_export.export(sel, merge=True, outPath=outpath)
+        # cmds.select(root_node)
+        # sel = cmds.ls(sl=True)[0]
+        assign_export.export(root_node, merge=True, out_path=outpath)
 
     def _export_looks(self, instance, outpath, root_node):
         from avalon import maya
@@ -128,9 +128,9 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
                 capsule.attribute_values(file_node_attrs),
                 capsule.no_refresh(),
         ):
-            cmds.select(root_node)
-            print()
-            looks_export.export(file_path=outpath)
+            # cmds.select(root_node)
+            # sel = cmds.ls(sl=True)[0]
+            looks_export.export(root_node, out_path=outpath)
 
     def _get_file_node_attrs(self, instance):
         # Change texture path to published path
