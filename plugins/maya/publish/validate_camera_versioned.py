@@ -24,6 +24,8 @@ class ValidateCameraVersioned(pyblish.api.InstancePlugin):
         SelectInvalid,
     ]
 
+    optional = True
+
     camera_family = "reveries.camera"
 
     @classmethod
