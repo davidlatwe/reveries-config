@@ -28,6 +28,8 @@ def install():
     avalon.register_plugin_path(avalon.InventoryAction, INVENTORY_PATH)
 
     # Check USD pipeline
+    if "AVALON_PROJECT" not in avalon.Session.keys():
+        io.install()
     project = io.find_one({"name": avalon.Session["AVALON_PROJECT"], "type": "project"})
 
     if project.get('usd_pipeline', False):
@@ -63,3 +65,12 @@ def install():
             "targets": ["default", "deadline"],
         },
     }
+
+    # Setting fps
+    import hou
+    _filter = {"type": "project"}
+    project_data = io.find_one(_filter) or {}
+
+    _fps = project_data.get("data", {}).get("fps", 24.0)
+    hou.setFps(_fps)
+    print("Setting FPS to {}".format(_fps))

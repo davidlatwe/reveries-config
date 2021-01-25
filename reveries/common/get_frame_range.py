@@ -20,11 +20,8 @@ def get(shot_name):
         print("shotgun_shot_name from db: {}\n".format(shotgun_shot_name))
         if shotgun_shot_name:
             _frame_ranges = shotgun.get_frame_range(shotgun_shot_name)
-            if _frame_ranges:
-                if _frame_ranges.get("sg_cut_in", None) and \
-                        _frame_ranges.get("sg_cut_out", None):
-                    frame_in = _frame_ranges["sg_cut_in"]
-                    frame_out = _frame_ranges["sg_cut_out"]
+            frame_in = _frame_ranges.get("sg_cut_in", None)
+            frame_out = _frame_ranges.get("sg_cut_out", None)
 
     # Get frame range from project
     if not frame_in and not frame_out:

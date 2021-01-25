@@ -373,6 +373,17 @@ class ReferenceLoader(MayaBaseLoader):
         from maya import cmds
 
         node = container["objectName"]
+        namespace = container["namespace"]
+
+        if not cmds.objExists(node):
+            self.log.warning("Container not exists '%s', skip.." % node)
+            try:
+                cmds.namespace(removeNamespace=namespace,
+                               deleteNamespaceContent=True)
+            except RuntimeError:
+                pass
+
+            return True
 
         # Get reference node from container
         try:
@@ -381,7 +392,7 @@ class ReferenceLoader(MayaBaseLoader):
             # Reference node not found, try removing as imported subset
             self.log.info("Removing '%s' from Maya as imported.."
                           % container["name"])
-            namespace = container["namespace"]
+
             container_content = cmds.sets(node, query=True)
             nodes = cmds.ls(container_content, long=True)
             nodes.append(node)
@@ -389,8 +400,13 @@ class ReferenceLoader(MayaBaseLoader):
                 cmds.delete(nodes)
             except ValueError:
                 pass
-            cmds.namespace(removeNamespace=namespace,
-                           deleteNamespaceContent=True)
+
+            try:
+                cmds.namespace(removeNamespace=namespace,
+                               deleteNamespaceContent=True)
+            except RuntimeError:
+                pass
+
             return True
 
         self.log.info("Removing '%s' from Maya.." % container["name"])
@@ -494,19 +510,28 @@ class ImportLoader(MayaBaseLoader):
         namespace = container["namespace"]
         container_name = container["objectName"]
 
-        container_content = cmds.sets(container_name, query=True)
-        nodes = cmds.ls(container_content, long=True)
+        if cmds.objExists(container_name):
+            container_content = cmds.sets(container_name, query=True)
+            nodes = cmds.ls(container_content, long=True)
 
-        nodes.append(container_name)
+            nodes.append(container_name)
 
-        self.log.info("Removing '%s' from Maya.." % container["name"])
+            self.log.info("Removing '%s' from Maya.." % container["name"])
+
+            try:
+                cmds.delete(nodes)
+            except ValueError:
+                pass
+
+        else:
+            self.log.warning("Container not exists '%s', skip.."
+                             % container_name)
 
         try:
-            cmds.delete(nodes)
-        except ValueError:
-            pass
-
-        cmds.namespace(removeNamespace=namespace, deleteNamespaceContent=True)
+            cmds.namespace(removeNamespace=namespace,
+                           deleteNamespaceContent=True)
+        except RuntimeError as e:
+            self.log.warning(str(e))
 
         return True
 

@@ -1,3 +1,6 @@
+import os
+import uuid
+
 from avalon import houdini
 from reveries import lib
 
@@ -33,7 +36,9 @@ class CreateFxLayerUSD(houdini.Creator):
         import hou
 
         instance = super(CreateFxLayerUSD, self).process()
-        file_path = "$HIP/pyblish/{0}/{0}_prim.usd".format(self.name)
+        file_path = "{0}/_stage/pyblish_tmp_{1}/{1}_prim.usd".format(
+            os.environ["HIP"], self.name
+        )
 
         parms = {
             "lopoutput": file_path,

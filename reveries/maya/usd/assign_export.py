@@ -39,22 +39,24 @@ def _checkActive(path):
 
 def export(dagObject, merge=False, scopeName='Looks', purpose='all',
            assetVersion=None, assetName=None, stripNS=True,
-           transformAssign=False, outPath=''):
+           transformAssign=False, out_path='', force=False):
     """
     transformAssign not works when face-assign
     """
     import maya.api.OpenMaya as om
     import maya.cmds as cmds
 
-    if not dagObject or not outPath:
+    if not dagObject or not out_path:
         return
 
     # Check root node is top node
-    parent_node = cmds.listRelatives(dagObject, allParents=True)
-    if parent_node:
-        cmds.select(dagObject)
-        cmds.parent(w=True)
-        cmds.select(cl=True)
+    parent_node = None
+    if not force:
+        parent_node = cmds.listRelatives(dagObject, allParents=True)
+        if parent_node:
+            cmds.select(dagObject)
+            cmds.parent(w=True)
+            cmds.select(cl=True)
 
     # Start export
     shapeChildren = cmds.listRelatives(dagObject, ad=True, f=True, typ='shape')
@@ -127,7 +129,7 @@ def export(dagObject, merge=False, scopeName='Looks', purpose='all',
     stage.SetDefaultPrim(rootPrim)
 
     # Export tmp path
-    outpath_tmp = os.path.join(os.path.dirname(outPath), 'assign_tmp.usda')
+    outpath_tmp = os.path.join(os.path.dirname(out_path), 'assign_tmp.usda')
     stage.Export(outpath_tmp)
 
     # Add active
@@ -142,9 +144,12 @@ def export(dagObject, merge=False, scopeName='Looks', purpose='all',
         prim.SetActive(_checkActive(str(prim.GetPath())))
 
     # print(stage.GetRootLayer().ExportToString())
-    stage.GetRootLayer().Export(outPath)
+    stage.GetRootLayer().Export(out_path)
 
     if parent_node:
         cmds.parent(dagObject, parent_node)
+
+    # Remove tmp usda
+    os.remove(outpath_tmp)
 
     return True
