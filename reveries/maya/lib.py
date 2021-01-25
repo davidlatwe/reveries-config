@@ -208,6 +208,12 @@ def query_by_renderlayer(node, attr, layer):
     return cmds.getAttr(node_attr, asString=True)
 
 
+if float(cmds.about(version=True)) >= 2020.0:
+    _attr_highest_col = "containerHighest"
+else:
+    _attr_highest_col = "collectionHighest"
+
+
 def query_by_setuplayer(node, attr, layer):
     """Query attribute without switching renderSetupLayer
 
@@ -221,6 +227,7 @@ def query_by_setuplayer(node, attr, layer):
 
     """
     from maya.app.renderSetup.model import selector as rs_selector
+    from maya.app.renderSetup.model import renderSettings as rs_render_settings
 
     node_attr = node + "." + attr
 
@@ -269,7 +276,7 @@ def query_by_setuplayer(node, attr, layer):
     #        being collected in multiple collections, only the overrides
     #        in higher collection has effect.
     #
-    highest_col = cmds.listConnections(setup_layer + ".collectionHighest")
+    highest_col = cmds.listConnections(setup_layer + "." + _attr_highest_col)
     if highest_col is None:
         # Empty layer, get original value
         return original_value()
@@ -322,7 +329,7 @@ def query_by_setuplayer(node, attr, layer):
 
         return False
 
-    def is_selected_by(selector):
+    def is_selected_by(selector, collection):
         """Did the collection selector select this node ?"""
 
         # Special selector
@@ -331,8 +338,11 @@ def query_by_setuplayer(node, attr, layer):
             return node == selected
 
         # Static selection
-        static = cmds.getAttr(selector + ".staticSelection")
-        if _node_in_(static.split()):
+        if cmds.nodeType(collection) == "renderSettingsCollection":
+            static = rs_render_settings.getDefaultNodes()
+        else:
+            static = cmds.getAttr(selector + ".staticSelection").split()
+        if _node_in_(static):
             return True
 
         # Pattern selection
@@ -389,7 +399,7 @@ def query_by_setuplayer(node, attr, layer):
 
         else:
             # Is a collection
-            if is_selected_by(selector):
+            if is_selected_by(selector, item):
                 if not cmds.getAttr(item + ".selfEnabled"):
                     # Collection not enabled, not a member
                     return original_value()
