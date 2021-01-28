@@ -70,6 +70,14 @@ class ExtractFxPrimUSD(pyblish.api.InstancePlugin):
         # ==== Publish instance ==== #
         self._publish_instance(instance_data, context_data)
 
+        # === Cleanup Stage === #
+        # self._cleanup_stage(context_data)
+
+    def _cleanup_stage(self, context_data):
+        pub_file = context_data.get("currentMaking", "")
+        if os.path.exists(pub_file) and "/.publish_" in pub_file:
+            os.remove(pub_file)
+
     def _publish_instance(self, instance_data, context_data=None):
 
         # === Publish instance === #

@@ -1,9 +1,9 @@
 import os
-import re
+# import re
 import pyblish.api
 
 
-class ValidateFileCacheAbs(pyblish.api.InstancePlugin):
+class _ValidateFileCacheAbs(pyblish.api.InstancePlugin):
     """Switch cache path to abs on "File Cache" node."""
 
     order = pyblish.api.ValidatorOrder + 0.22
@@ -58,12 +58,11 @@ class ValidateFileCacheAbs(pyblish.api.InstancePlugin):
         for node in nodes:
             files_num = node.parm("files").eval()
             for _index in range(1, files_num+1):
-                # TODO: Need to find a bettry way
                 _parm = node.parm("filepath{}".format(_index))
-                _find = re.findall(
-                    "hou_parm.set\(\"(\\S+)\"\)", _parm.asCode())
-                source_path = _find[0] if _find else ""
+                # _find = re.findall(
+                #     "hou_parm.set\(\"(\\S+)\"\)", _parm.asCode())
+                # source_path = _find[0] if _find else ""
+                source_path = _parm.unexpandedString()
                 if "$HIP" in source_path:
-                    abs_path = source_path.replace(
-                        "$HIP", os.environ["HIP"])
+                    abs_path = source_path.replace("$HIP", os.environ["HIP"])
                     _parm.set(abs_path)
