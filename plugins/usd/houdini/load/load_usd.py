@@ -1,7 +1,7 @@
 import os
 
 import avalon.api
-from reveries.houdini.plugins import HoudiniBaseLoader
+from reveries.houdini.plugins import HoudiniUSDBaseLoader
 
 
 def env_embedded_path(path):
@@ -21,7 +21,7 @@ def env_embedded_path(path):
     return path
 
 
-class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
+class USDLoader(HoudiniUSDBaseLoader, avalon.api.Loader):
     """Load the model"""
 
     label = "Load USD"
@@ -52,24 +52,14 @@ class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
         "USD",
     ]
 
-    def _file_path(self, representation):
-        file_name = representation["data"]["entryFileName"]
-        entry_path = os.path.join(self.package_path, file_name)
-
-        if not os.path.isfile(entry_path):
-            raise IOError("File Not Found: {!r}".format(entry_path))
-
-        return env_embedded_path(entry_path)
-
     def load(self, context, name=None, namespace=None, data=None):
         import hou
-
-        root = context["project"]["data"]["root"]
-        proj_name = context["project"]["name"]
+        from avalon.houdini import pipeline
+        from reveries.common.utils import project_root_path
 
         # Get usd file
         representation = context["representation"]
-        entry_path = self._file_path(representation)
+        entry_path = self.file_path(representation)
         usd_file = os.path.expandvars(entry_path).replace("\\", "/")
 
         if not usd_file:
@@ -92,10 +82,7 @@ class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
             usd_file = os.path.join(directory, files[0]).replace("\\", "/")
 
         # Update os environ
-        project_root = r'{}/{}'.format(root, proj_name)
-        if "PROJECT_ROOT" not in os.environ.keys():
-            os.environ["PROJECT_ROOT"] = project_root
-        usd_file = usd_file.replace(project_root, "$PROJECT_ROOT")
+        usd_file = project_root_path(usd_file)
 
         asset_name = context['asset']['name']
         subset_data = context['subset']
@@ -107,7 +94,23 @@ class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
             'file_path': usd_file
         }
 
-        self._add_usd(usd_info)
+        index, node = self._add_usd(usd_info)
+
+        # Create container
+        obj = hou.node("/obj")
+        node_name = "{}_{}".format(node.name(), index)
+        obj.createNode("geo", node_name=node_name)
+        extra_data = {
+            "subnet_usd_path": node.path(),
+            "usd_index": str(index)
+        }
+
+        return pipeline.containerise(node_name,
+                                     asset_name,
+                                     [],
+                                     context,
+                                     self.__class__.__name__,
+                                     extra_data=extra_data)
 
     def _add_usd(self, usd_info):
         """
@@ -139,7 +142,9 @@ class HoudiniUSDLoader(HoudiniBaseLoader, avalon.api.Loader):
                 node = stage.createNode("subnet_usd_2", 'subnet_usd')
                 node.moveToGoodPosition()
 
-        update_node(node, usd_info)
+        index = update_node(node, usd_info)
         node.setSelected(1, 1)
         self.log.info('Current node: {}'.format(node))
         self.log.info('Add done.\nInfo: {}\n'.format(usd_info))
+
+        return index, node
