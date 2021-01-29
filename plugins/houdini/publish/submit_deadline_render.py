@@ -22,6 +22,7 @@ class SubmitDeadlineRender(pyblish.api.InstancePlugin):
         "reveries.pointcache",
         "reveries.camera",
         "reveries.standin",
+        "reveries.rsproxy",
         "reveries.vdbcache",
         "reveries.fx.layer_prim",
         "reveries.fx.usd",
