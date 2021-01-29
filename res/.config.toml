@@ -175,6 +175,11 @@ label = "Arnold Stand-In"
 icon = "coffee"
 
 [[families]]
+name = "reveries.rsproxy"
+label = "Redshift Proxy"
+icon = "coffee"
+
+[[families]]
 name = "reveries.atomscrowd"
 label = "Atoms Crowd"
 icon = "building"
