@@ -12,6 +12,7 @@ class CollectShadingNetwork(pyblish.api.InstancePlugin):
     families = [
         "reveries.look",
         "reveries.standin",
+        "reveries.rsproxy",
     ]
 
     def process(self, instance):

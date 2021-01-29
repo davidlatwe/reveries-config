@@ -16,6 +16,7 @@ class CollectTextureFiles(pyblish.api.InstancePlugin):
     families = [
         "reveries.texture",
         "reveries.standin",
+        "reveries.rsproxy",
     ]
 
     def process(self, instance):

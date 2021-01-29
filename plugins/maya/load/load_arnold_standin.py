@@ -16,7 +16,7 @@ class ArnoldStandInLoader(ReferenceLoader, avalon.api.Loader):
     hosts = ["maya"]
 
     families = [
-        "reveries.standin",
+        # "reveries.standin",  # Deprecated plugin
     ]
 
     representations = [
