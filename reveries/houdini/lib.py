@@ -184,8 +184,19 @@ def get_output_parameter(node):
             return node.parm("ar_ass_file")
         else:
             return node.parm("ar_picture")
+
+    elif node_type == "Redshift_ROP":
+        if node.parm("RS_archive_enable").eval():
+            return node.parm("RS_archive_file")
+        else:
+            return node.parm("RS_outputFileNamePrefix")
+
     elif node_type == "usd":
         return node.parm("lopoutput")
+
+    elif node_type == "usdrender":
+        return node.parm("outputimage")
+
     else:
         raise TypeError("Node type '%s' not supported" % node_type)
 

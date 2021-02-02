@@ -2,13 +2,13 @@ import os
 import pyblish.api
 
 
-class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
+class ExtractRedshiftProxy(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ExtractorOrder + 0.1
-    label = "Extract Arnold Stand-In"
+    label = "Extract Redshift Proxy"
     hosts = ["houdini"]
     families = [
-        "reveries.standin",
+        "reveries.rsproxy",
     ]
 
     def process(self, instance):
@@ -33,21 +33,22 @@ class ExtractArnoldStandIn(pyblish.api.InstancePlugin):
         staging_dir, filename = os.path.split(output)
         repr_root = instance.data["reprRoot"]
 
-        instance.data["repr.Ass._stage"] = staging_dir
-        instance.data["repr.Ass._hardlinks"] = files or [filename]
-        instance.data["repr.Ass.entryFileName"] = filename
-        instance.data["repr.Ass.useSequence"] = use_sequence
-        instance.data["repr.Ass.reprRoot"] = repr_root
+        instance.data["repr.RsProxy._stage"] = staging_dir
+        instance.data["repr.RsProxy._hardlinks"] = files or [filename]
+        instance.data["repr.RsProxy.entryFileName"] = filename
+        instance.data["repr.RsProxy.useSequence"] = use_sequence
+        instance.data["repr.RsProxy.reprRoot"] = repr_root
 
-        instance.data["repr.Ass._delayRun"] = {
+        instance.data["repr.RsProxy._delayRun"] = {
             "func": self.render,
-            "args": [ropnode],
+            "args": [ropnode.path()],
         }
 
-    def render(self, ropnode):
+    def render(self, ropnode_path):
         import hou
 
         try:
+            ropnode = hou.node(ropnode_path)
             ropnode.render()
         except hou.Error as exc:
             # The hou.Error is not inherited from a Python Exception class,
