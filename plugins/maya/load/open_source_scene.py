@@ -154,6 +154,12 @@ class OpenSourceAiStandIn(OpenMayaSource, avalon.api.Loader):
     representations = ["Ass"]
 
 
+class OpenSourceRsProxy(OpenMayaSource, avalon.api.Loader):
+
+    families = ["reveries.rsproxy"]
+    representation = ["RsProxy"]
+
+
 class OpenSourceAtomsCrowdCache(OpenMayaSource, avalon.api.Loader):
 
     families = ["reveries.atomscrowd"]

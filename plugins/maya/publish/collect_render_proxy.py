@@ -3,14 +3,14 @@ import pyblish.api
 from reveries import plugins
 
 
-def create_texture_subset_from_standin(instance, textures):
+def create_texture_subset_from_standin(instance, textures, use_txmaps):
     """
     """
     family = "reveries.texture"
     subset = instance.data["subset"]
     subset = "texture" + subset[0].upper() + subset[1:]
 
-    data = {"useTxMaps": True}
+    data = {"useTxMaps": use_txmaps}
 
     plugins.create_dependency_instance(instance,
                                        subset,
@@ -19,20 +19,21 @@ def create_texture_subset_from_standin(instance, textures):
                                        data=data)
 
 
-class CollectArnoldStandIn(pyblish.api.InstancePlugin):
+class CollectRenderProxy(pyblish.api.InstancePlugin):
     """Collect mesh's shading network and objectSets
     """
 
     order = pyblish.api.CollectorOrder + 0.2
     hosts = ["maya"]
-    label = "Collect Arnold Stand-In"
+    label = "Collect Render Proxy"
     families = [
-        "reveries.standin"
+        "reveries.standin",
+        "reveries.rsproxy",
     ]
 
     def process(self, instance):
         from maya import cmds
-        from reveries.maya import pipeline
+        from reveries.maya import pipeline, utils
 
         upstream_nodes = instance.data.get("shadingNetwork", [])
         file_nodes = cmds.ls(upstream_nodes, type="file")
@@ -53,7 +54,8 @@ class CollectArnoldStandIn(pyblish.api.InstancePlugin):
         if stray:
             self.log.info("Found not versioned textures, creating "
                           "instance for publish.")
-            create_texture_subset_from_standin(instance, stray)
+            is_arnold = utils.get_renderer_by_layer() == "arnold"
+            create_texture_subset_from_standin(instance, stray, is_arnold)
 
         # Yeti
         if cmds.ls(instance, type="pgYetiMaya"):

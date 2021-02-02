@@ -25,6 +25,7 @@ class SubmitDeadlinePublish(pyblish.api.ContextPlugin):
 
     SCRIPT_SEQUENCE_TYPES = [
         "reveries.standin",
+        "reveries.rsproxy",
     ]
 
     def process(self, context):

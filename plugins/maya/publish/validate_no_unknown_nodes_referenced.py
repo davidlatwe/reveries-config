@@ -23,6 +23,7 @@ class ValidateNoUnknownNodesReferenced(pyblish.api.InstancePlugin):
         "reveries.camera",
         "reveries.mayashare",
         "reveries.standin",
+        "reveries.rsproxy",
         "reveries.lightset",
     ]
 

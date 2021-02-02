@@ -34,3 +34,22 @@ class ArnoldStandInCreator(avalon.maya.Creator):
         self.data["deadlinePool"] = lib.get_deadline_pools()
 
         return put_instance_icon(super(ArnoldStandInCreator, self).process())
+
+
+class RedshiftProxyCreator(avalon.maya.Creator):
+    """Redshift render proxy
+    """
+
+    label = "Redshift Proxy"
+    family = "reveries.rsproxy"
+    icon = "coffee"
+
+    def process(self):
+
+        self.data["staticCache"] = True
+
+        self.data["deadlineFramesPerTask"] = 1
+        self.data["deadlinePriority"] = 80
+        self.data["deadlinePool"] = lib.get_deadline_pools()
+
+        return put_instance_icon(super(RedshiftProxyCreator, self).process())
