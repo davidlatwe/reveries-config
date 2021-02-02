@@ -74,8 +74,24 @@ class RedshiftProxyLoader(ImportLoader, avalon.api.Loader):
         return group
 
     def retrive(self, representation):
+        if "useSequence" not in representation["data"]:
+            entry_path, use_sequence = self._compat(representation)
+        else:
+            entry_path = self.file_path(representation)
+            use_sequence = representation["data"]["useSequence"]
+
+        return entry_path, use_sequence
+
+    def _compat(self, representation):
+        """For backwards compatibility"""
         entry_path = self.file_path(representation)
-        use_sequence = representation["data"]["useSequence"]
+        entry_dir = os.path.dirname(entry_path)
+        asses = [f for f in os.listdir(os.path.expandvars(entry_dir))
+                 if f.endswith(".rs")]
+
+        entry_path = os.path.join(entry_dir, asses[0])
+        use_sequence = len(asses) > 1
+
         return entry_path, use_sequence
 
     def update(self, container, representation):
