@@ -67,9 +67,10 @@ class RedshiftProxyLoader(ImportLoader, avalon.api.Loader):
         if use_sequence:
             cmds.setAttr(proxy + ".useFrameExtension", True)
 
-        self[:] = [group] + cmds.listRelatives(group,
-                                               allDescendents=True,
-                                               path=True) or []
+        self[:] = [
+            group,
+            proxy,
+        ] + cmds.listRelatives(group, allDescendents=True, path=True) or []
 
         return group
 
