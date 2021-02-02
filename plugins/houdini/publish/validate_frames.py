@@ -12,6 +12,7 @@ class ValidateFrames(pyblish.api.InstancePlugin):
         "reveries.vdbcache",
         "reveries.pointcache",
         "reveries.standin",
+        "reveries.rsproxy",
     ]
 
     def process(self, instance):

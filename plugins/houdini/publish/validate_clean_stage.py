@@ -45,6 +45,7 @@ class ValidateCleanStage(pyblish.api.InstancePlugin):
         "reveries.vdbcache",
         "reveries.pointcache",
         "reveries.standin",
+        "reveries.rsproxy",
     ]
 
     actions = [

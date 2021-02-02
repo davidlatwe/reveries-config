@@ -16,6 +16,7 @@ class ValidateTextureNoFunnyPath(pyblish.api.InstancePlugin):
     families = [
         "reveries.texture",
         "reveries.standin",
+        "reveries.rsproxy",
     ]
     actions = [
         pyblish.api.Category("Select"),

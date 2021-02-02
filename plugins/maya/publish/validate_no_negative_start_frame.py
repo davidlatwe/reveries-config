@@ -9,6 +9,7 @@ class ValidateNoNegativeStartFrame(pyblish.api.InstancePlugin):
     label = "No Negative Start Frame"
     families = [
         "reveries.standin",
+        "reveries.rsproxy",
         "reveries.atomscrowd",
         "reveries.renderlayer",
     ]

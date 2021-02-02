@@ -15,6 +15,7 @@ class CollectDeadlineExcluded(pyblish.api.ContextPlugin):
         supported = [
             "reveries.pointcache",
             "reveries.standin",
+            "reveries.rsproxy",
             "reveries.camera",
             "reveries.renderlayer",
         ]

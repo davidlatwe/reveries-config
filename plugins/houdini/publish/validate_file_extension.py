@@ -20,6 +20,7 @@ class ValidateFileExtension(pyblish.api.InstancePlugin):
         "reveries.camera",
         "reveries.vdbcache",
         "reveries.standin",
+        "reveries.rsproxy",
     ]
 
     family_extensions = {
@@ -27,6 +28,7 @@ class ValidateFileExtension(pyblish.api.InstancePlugin):
         "reveries.camera": ".abc",
         "reveries.vdbcache": ".vdb",
         "reveries.standin": ".ass",
+        "reveries.rsproxy": ".rs",
     }
 
     def process(self, instance):

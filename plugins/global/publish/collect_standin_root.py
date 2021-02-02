@@ -6,9 +6,10 @@ class CollectStandInRoot(pyblish.api.InstancePlugin):
     """Inject arnold standin storage root path into instance"""
 
     order = pyblish.api.CollectorOrder
-    label = "Root Path For Arnold Stand-In"
+    label = "Root Path For Render Proxy"
     families = [
         "reveries.standin",
+        "reveries.rsproxy",
     ]
 
     def process(self, instance):

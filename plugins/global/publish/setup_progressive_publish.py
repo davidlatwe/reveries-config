@@ -9,6 +9,7 @@ class SetupProgressivePublish(pyblish.api.InstancePlugin):
     label = "Setup Progressive"
     families = [
         "reveries.standin",
+        "reveries.rsproxy",
         "reveries.renderlayer",
     ]
 

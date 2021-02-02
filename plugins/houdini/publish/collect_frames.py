@@ -12,6 +12,7 @@ class CollectFrames(pyblish.api.InstancePlugin):
         "reveries.vdbcache",
         "reveries.pointcache",
         "reveries.standin",
+        "reveries.rsproxy",
         "reveries.fx.layer_prim"
     ]
 
