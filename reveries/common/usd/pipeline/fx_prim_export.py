@@ -27,6 +27,9 @@ class FxPrimExport(object):
         fx_usd_files = {}
         if fx_data:
             for _data in fx_data:
+                if _data["data"].get("subsetGroup", "") == "Trash Bin":
+                    continue
+
                 _file = get_publish_files.get_files(
                     _data["_id"],
                     key="entryFileName").get("USD", "")

@@ -62,9 +62,16 @@ class AniUsdBuilder(object):
         pprint(self.asset_usd_dict)
 
     def _build(self):
+        from reveries.common import get_fps
+        from reveries.common.usd.utils import get_UpAxis
+
         self.stage = Usd.Stage.CreateInMemory()
         self.stage.SetStartTimeCode(self.frame_in)
         self.stage.SetEndTimeCode(self.frame_out)
+
+        self.stage.SetFramesPerSecond(get_fps())
+        self.stage.SetTimeCodesPerSecond(get_fps())
+        UsdGeom.SetStageUpAxis(self.stage, get_UpAxis(host="Maya"))
 
         # Create ani prim
         shot_define = UsdGeom.Xform.Define(self.stage, "/ROOT")

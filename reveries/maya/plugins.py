@@ -155,12 +155,13 @@ class USDLoader(MayaBaseLoader):
         self.package_path = get_representation_path_(representation, parents)
 
         entry_path = self.file_path(representation).replace("\\", "/")
-        entry_path = entry_path.replace(
-            "$AVALON_PROJECTS",
-            os.environ["AVALON_PROJECTS"])
-        entry_path = entry_path.replace(
-            "$AVALON_PROJECT",
-            os.environ["AVALON_PROJECT"])
+        # entry_path = entry_path.replace(
+        #     "$AVALON_PROJECTS",
+        #     os.environ["AVALON_PROJECTS"])
+        # entry_path = entry_path.replace(
+        #     "$AVALON_PROJECT",
+        #     os.environ["AVALON_PROJECT"])
+        entry_path = os.path.expandvars(entry_path)
 
         subset_group = container["subsetGroup"]
         proxy_shape_node = cmds.listRelatives(subset_group, children=True)[0]
