@@ -19,6 +19,8 @@ def update_node(node, usd_info):
     cur_ver_name = re.findall("/(v\\d+)/USD", file_path)[0]
     node.parm("ex_ver_name_{}".format(current_num)).set(cur_ver_name)
 
+    return current_num
+
 
 # Old function, will delete later
 def update_node_1026(node, usd_info):

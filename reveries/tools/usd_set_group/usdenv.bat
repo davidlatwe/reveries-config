@@ -2,7 +2,7 @@
 echo off
 
 set USDFILEPATH=%1
-set USDFILEPATH=F:\usd\test\usd_avalon\reveries-config\reveries\tools\usd_set_group\core.py
+:: set USDFILEPATH=F:\usd\test\usd_avalon\reveries-config\reveries\tools\usd_set_group\core.py
 
 set PATH=Q:\Resource\USD\lib;Q:\Resource\USD\bin;%PATH%
 set PATH=T:\third-party\python27\;T:\third-party\python27\Scripts\;%PATH%

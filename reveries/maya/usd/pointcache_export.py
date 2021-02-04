@@ -76,6 +76,9 @@ class PointCacheExtractor(object):
                 over_vis.Set(source_value)
 
     def process(self):
+        from reveries.common import get_fps
+        from reveries.common.usd.utils import get_UpAxis
+
         self._open_stage()
         self._create_stage()
         for prim in self.source_stage.Traverse():
@@ -145,6 +148,10 @@ class PointCacheExtractor(object):
             self.override_stage.RemovePrim('/rigDefault')
         except Exception as e:
             print(e)
+
+        self.override_stage.SetFramesPerSecond(get_fps())
+        self.override_stage.SetTimeCodesPerSecond(get_fps())
+        UsdGeom.SetStageUpAxis(self.override_stage, get_UpAxis(host="Maya"))
 
     def get_stage(self):
         return self.override_stage
