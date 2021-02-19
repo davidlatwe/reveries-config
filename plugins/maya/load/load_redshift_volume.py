@@ -48,6 +48,12 @@ class RedshiftVolumeLoader(ImportLoader, avalon.api.Loader):
 
         self[:] = [volume, transform, group]
 
+    def file_path(self, representation):
+        import os
+        _e_path = super(RedshiftVolumeLoader, self).file_path(representation)
+        # looks like redshift volume doesn't support in-path-env-var
+        return os.path.expandvars(_e_path)
+
     def is_sequence(self, path):
         """single vdb or vdb sequence"""
         import os
