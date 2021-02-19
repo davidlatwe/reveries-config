@@ -220,7 +220,7 @@ class ExtractLook(pyblish.api.InstancePlugin):
                         # (NOTE) Some attribute like `castsShadows` does not
                         #        startswith "ai", but also affect rendering in
                         #        Arnold.
-                        value = read(node + "." + attr)
+                        value = read(ai_set + "." + attr)
                         if value is not None:
                             attrs[attr] = value
 
