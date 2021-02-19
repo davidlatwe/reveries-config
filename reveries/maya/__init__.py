@@ -104,6 +104,10 @@ def install():  # pragma: no cover
     cmds.evalDeferred("import reveries.maya;"
                       "reveries.maya._override_deferred()")
 
+    # Maya 2020 renderSetup
+    log.info("Disabling 'includeAllLights' for RenderSetup.")
+    cmds.optionVar(intValue=["renderSetup_includeAllLights", 0])
+
     # Config Pyblish QML
     pyblish_qml.settings.Directions = {
         "Local Publish": {

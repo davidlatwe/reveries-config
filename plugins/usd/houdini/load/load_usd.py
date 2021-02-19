@@ -105,12 +105,14 @@ class USDLoader(HoudiniUSDBaseLoader, avalon.api.Loader):
             "usd_index": str(index)
         }
 
-        return pipeline.containerise(node_name,
-                                     asset_name,
-                                     [],
-                                     context,
-                                     self.__class__.__name__,
-                                     extra_data=extra_data)
+        container = pipeline.containerise(
+            node_name, asset_name, [], context,
+            self.__class__.__name__,
+            extra_data=extra_data
+        )
+
+        node.setSelected(1, 1)
+        return container
 
     def _add_usd(self, usd_info):
         """
@@ -143,7 +145,6 @@ class USDLoader(HoudiniUSDBaseLoader, avalon.api.Loader):
                 node.moveToGoodPosition()
 
         index = update_node(node, usd_info)
-        node.setSelected(1, 1)
         self.log.info('Current node: {}'.format(node))
         self.log.info('Add done.\nInfo: {}\n'.format(usd_info))
 
