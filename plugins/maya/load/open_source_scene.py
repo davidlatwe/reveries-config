@@ -157,7 +157,7 @@ class OpenSourceAiStandIn(OpenMayaSource, avalon.api.Loader):
 class OpenSourceRsProxy(OpenMayaSource, avalon.api.Loader):
 
     families = ["reveries.rsproxy"]
-    representation = ["RsProxy"]
+    representations = ["RsProxy"]
 
 
 class OpenSourceAtomsCrowdCache(OpenMayaSource, avalon.api.Loader):
