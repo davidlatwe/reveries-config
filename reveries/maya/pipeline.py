@@ -602,3 +602,8 @@ def set_resolution(project=None, asset_name=None):
     width, height = utils.get_resolution_data(project, asset_name)
     cmds.setAttr("defaultResolution.width", width)
     cmds.setAttr("defaultResolution.height", height)
+
+
+def set_linear_unit(project=None, asset_name=None):
+    unit = utils.get_linear_unit_data(project, asset_name)
+    cmds.currentUnit(linear=unit)

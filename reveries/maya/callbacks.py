@@ -38,6 +38,8 @@ def on_task_changed(_, *args):
     utils.init_app_workdir()
     maya.pipeline._on_task_changed()
 
+    pipeline.set_linear_unit()
+
     if not cmds.file(query=True, sceneName=True):
         pipeline.set_scene_timeline()
 
@@ -96,6 +98,7 @@ def before_new(_):
 def on_new(_):
     try:
         pipeline.set_scene_timeline()
+        pipeline.set_linear_unit()
     except Exception as e:
         cmds.warning(e.message)
 

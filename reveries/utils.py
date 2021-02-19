@@ -140,6 +140,37 @@ def get_resolution_data(project=None, asset_name=None):
     return resolution_width, resolution_height
 
 
+def get_linear_unit_data(project=None, asset_name=None):
+    """Get scene linear unit from asset/project settings
+
+    * cm (default)
+    * meter
+
+    Args:
+        project (dict, optional): Project document, query from database if
+            not provided.
+        asset_name (str, optional): Asset name, get from `avalon.Session` if
+            not provided.
+
+    Returns:
+        linear_unit (str)
+
+    """
+    if project is None:
+        project = avalon.io.find_one({"type": "project"},
+                                     projection={"data": True})
+    asset_name = asset_name or avalon.Session["AVALON_ASSET"]
+    asset = avalon.io.find_one({"name": asset_name, "type": "asset"})
+
+    assert asset is not None, ("Asset {!r} not found, this is a bug."
+                               "".format(asset_name))
+
+    def get(key):
+        return asset["data"].get(key, project["data"].get(key))
+
+    return get("linear_unit") or "cm"
+
+
 def init_app_workdir(*args):
     """Wrapped function of app initialize
 
