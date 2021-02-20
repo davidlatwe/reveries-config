@@ -47,6 +47,7 @@ class RedshiftProxyCreator(avalon.maya.Creator):
     def process(self):
 
         self.data["staticCache"] = True
+        self.data["enableMotionBlur"] = True
 
         self.data["deadlineFramesPerTask"] = 1
         self.data["deadlinePriority"] = 80

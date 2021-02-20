@@ -102,6 +102,9 @@ class CreateRedshiftProxy(houdini.Creator):
             "RS_archive_enable": True,
             "RS_archive_file": file_path,
             "RS_archive_exportConn": True,
+            "MotionBlurEnabled": True,
+            "MotionBlurDeformationEnabled": True,
+            "RS_mbPoints": True,
         }
 
         instance.setParms(parms)

@@ -71,6 +71,8 @@ class ExtractRedshiftProxy(pyblish.api.InstancePlugin):
         else:
             file_node_attrs = texture.data.get("fileNodeAttrs", dict())
 
+        enable_motion_blur = instance.data.get("enableMotionBlur", True)
+
         instance.data["repr.RsProxy._delayRun"] = {
             "func": self.export_rs,
             "args": [
@@ -83,6 +85,7 @@ class ExtractRedshiftProxy(pyblish.api.InstancePlugin):
                 "start": start,
                 "end": end,
                 "step": step,
+                "enable_motion_blur": enable_motion_blur,
             }
         }
 
@@ -93,7 +96,8 @@ class ExtractRedshiftProxy(pyblish.api.InstancePlugin):
                   has_yeti,
                   start,
                   end,
-                  step):
+                  step,
+                  enable_motion_blur=False):
         from maya import cmds, mel
         from reveries.maya import capsule
 
@@ -103,6 +107,12 @@ class ExtractRedshiftProxy(pyblish.api.InstancePlugin):
             # be 4, and won't affected by renderSettings.
             "defaultRenderGlobals.extensionPadding": 4,
         }
+        if enable_motion_blur:
+            render_settings.update({
+                "redshiftOptions.motionBlurEnable": True,
+                "redshiftOptions.motionBlurDeformationEnable": True,
+                "redshiftOptions.motionBlurMASHMode": True,
+            })
 
         # Yeti
         if has_yeti:
