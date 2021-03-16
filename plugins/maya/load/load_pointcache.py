@@ -91,8 +91,15 @@ class PointCacheReferenceLoader(ReferenceLoader, avalon.api.Loader):
         """
         import maya.cmds as cmds
 
+        is_meter = cmds.currentUnit(query=True, linear=True) == "m"
+
         for conversion in cmds.ls(nodes, type="unitConversion"):
             attr = conversion + ".conversionFactor"
             factor = cmds.getAttr(attr)
+            if is_meter and factor == 100:
+                # alembic stores transformation in centimeter and not respect
+                # Maya's scene unit when loading them back.
+                factor = 1
+
             cmds.setAttr(attr, 1)  # To trigger reference edit
             cmds.setAttr(attr, factor)
