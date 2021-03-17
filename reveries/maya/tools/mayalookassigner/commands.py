@@ -217,7 +217,8 @@ def create_items(nodes, by_selection=False):
 
     for asset_id, asset_nodes in id_hashes.items():
         asset = io.find_one({"_id": io.ObjectId(asset_id)},
-                            projection={"name": True})
+                            projection={"name": True,
+                                        "data.visualParent": True})
 
         # Skip if asset id is not found
         if not asset:
@@ -226,8 +227,8 @@ def create_items(nodes, by_selection=False):
             continue
 
         # Collect available look subsets for this asset
-        looks = list_looks(asset["_id"])
-        loaded_looks = list_loaded_looks(asset["_id"])
+        looks = list_looks(asset)
+        loaded_looks = list_loaded_looks(asset)
 
         # Collect namespaces the asset is found in
         subsets = dict()
@@ -271,10 +272,17 @@ def create_items(nodes, by_selection=False):
     return asset_view_items
 
 
-def list_looks(asset_id):
+def list_looks(asset):
     """Return all look subsets from database for the given asset
     """
-    look_subsets = list(io.find({"parent": asset_id,
+    asset_id = asset["_id"]
+    parent_id = asset["data"]["visualParent"]
+    if parent_id:
+        parent = {"$in": [asset_id, parent_id]}
+    else:
+        parent = asset_id
+
+    look_subsets = list(io.find({"parent": parent,
                                  "type": "subset",
                                  "name": {"$regex": "look*"},
                                  # Ignore looks that have been dump to trash
@@ -290,13 +298,26 @@ def list_looks(asset_id):
     return look_subsets
 
 
-def list_loaded_looks(asset_id):
+def list_loaded_looks(asset):
     look_subsets = list()
     cached_look = dict()
 
-    for container in lib.lsAttrs({"id": AVALON_CONTAINER_ID,
-                                  "loader": "LookLoader",
-                                  "assetId": str(asset_id)}):
+    asset_id = asset["_id"]
+    parent_id = asset["data"]["visualParent"]
+
+    containers = lib.lsAttrs({
+        "id": AVALON_CONTAINER_ID,
+        "loader": "LookLoader",
+        "assetId": str(asset_id),
+    })
+    if parent_id:
+        containers += lib.lsAttrs({
+            "id": AVALON_CONTAINER_ID,
+            "loader": "LookLoader",
+            "assetId": str(parent_id),
+        })
+
+    for container in containers:
 
         subset_id = cmds.getAttr(container + ".subsetId")
         if subset_id in cached_look:
