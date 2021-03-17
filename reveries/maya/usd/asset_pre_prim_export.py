@@ -4,7 +4,7 @@ from pxr import Usd, Sdf, UsdGeom
 from avalon import io
 
 
-def _get_variant_data(asset_name, prim_type='default'):
+def _get_variant_data(asset_name):
     """
     Get variant data from asset name
     :param asset_name: str. Asset name. eg.'HanMaleA'
@@ -42,8 +42,7 @@ def _get_variant_data(asset_name, prim_type='default'):
         regex = re.compile("^.*?(?<!Proxy)$")
         _subset_name = subset['name']
         if regex.search(_subset_name):
-            # subset_data.append(subset)
-            variant_key.append(_subset_name)  #
+            variant_key.append(_subset_name)
 
     # Get assign/look usd file
     lookfiles_data = {}
@@ -114,15 +113,13 @@ def _get_geom_usd(asset_name):
 
 def prim_export(asset_name, output_path, prim_type='default'):
     # Get variant data
-    variant_data, variant_key = _get_variant_data(
-        asset_name, prim_type=prim_type
-    )
+    variant_data, variant_key = _get_variant_data(asset_name)
 
     # Check prim name
-    if prim_type == 'proxy':
-        prim_name = 'modelDefaultProxy'
-    else:
-        prim_name = 'modelDefault'
+    # if prim_type == 'proxy':
+    #     prim_name = 'modelDefaultProxy'
+    # else:
+    #     prim_name = 'modelDefault'
 
     # Get model usd file
     # geom_file_path = _get_geom_usd(asset_name)
@@ -155,11 +152,9 @@ def prim_export(asset_name, output_path, prim_type='default'):
         #
         with variants.GetVariantEditContext():
             # Add step variants
-            UsdGeom.Xform.Define(stage, "/ROOT/{}".format(prim_name))
-            _prim = stage.GetPrimAtPath("/ROOT/{}".format(prim_name))
-            # _usd_paths = [
-            #     Sdf.Reference(geom_file_path)
-            # ]
+            UsdGeom.Xform.Define(stage, "/ROOT")
+            _prim = stage.GetPrimAtPath("/ROOT")
+
             _usd_paths = []
             for ref_path in usd_file_paths:
                 _usd_paths.append(Sdf.Reference(ref_path))

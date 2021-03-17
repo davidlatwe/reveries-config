@@ -3,6 +3,7 @@ import contextlib
 import importlib
 
 import pyblish.api
+from avalon import io
 
 
 class ExtractLookUSDExport(pyblish.api.InstancePlugin):
@@ -18,6 +19,8 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
     families = [
         "reveries.look",
     ]
+
+    # optional = True
 
     def process(self, instance):
         from reveries import utils
@@ -35,8 +38,8 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
         assert self.renderer, \
             "There is no renderer setting in db. Please check with TD."
 
-        asset_doc = instance.data["assetDoc"]
-        self.asset_name = asset_doc["name"]
+        # asset_doc = instance.data["assetDoc"]
+        # self.asset_name = asset_doc["name"]
 
         self.files_info = {
             'assign': 'assign.usd',
@@ -72,18 +75,15 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
 
         # === Export assign.usd === #
         outpath = os.path.join(self.staging_dir, self.files_info['assign'])
-        self._export_assign(outpath, root_node)
+        self._export_assign(outpath, root_node, instance)
 
         # === Export look.usd === #
         outpath = os.path.join(self.staging_dir, self.files_info['look'])
         self._export_looks(instance, outpath, root_node)
 
-        # === Switch texture path to published path === #
-        # self._switch_tex_path(instance, outpath)
-
         self.log.info('Export assign/look usd done.')
 
-    def _export_assign(self, outpath, root_node):
+    def _export_assign(self, outpath, root_node, instance):
         """
         Export assign.usd file
         :param outpath: (str) Output file path
@@ -92,16 +92,51 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
             e.g. BoxB_model_01_:ROOT
         :return:
         """
-        import maya.cmds as cmds
         from reveries.maya.usd import assign_export
 
-        # cmds.select(root_node)
-        # sel = cmds.ls(sl=True)[0]
-        assign_export.export(root_node, merge=True, out_path=outpath)
+        model_subset_id = instance.data.get("model_subset_id")
+
+        # Get shape merge value
+        # _filter = {
+        #     "type": "version",
+        #     "parent": io.ObjectId(model_subset_id)
+        # }
+        # version_data = io.find_one(_filter, sort=[("name", -1)])
+        # shape_merge = version_data.get("data", {}).get("shape_merge", False)
+
+        # Export
+        shape_merge = True
+        assign_export.export(root_node, merge=shape_merge, out_path=outpath)
+
+        instance.data["shape_merge"] = shape_merge
+
+        # Mapping model subset id with db
+        self._mapping_model_subset_id(instance, model_subset_id)
+
+    def _mapping_model_subset_id(self, instance, model_subset_id):
+        _filter = {
+            'type': 'asset',
+            'name': instance.data["asset"]
+        }
+        asset_data = io.find_one(_filter)
+
+        subset_filter = {
+            'type': 'subset',
+            'name': instance.data["subset"],
+            'parent': asset_data['_id']
+        }
+
+        subset_data = io.find_one(subset_filter)
+
+        if subset_data:
+            if subset_data["data"].get("model_subset_id", "") != model_subset_id:
+                update = {
+                    "data.model_subset_id": model_subset_id
+                }
+                io.update_many(subset_filter, update={"$set": update})
 
     def _export_looks(self, instance, outpath, root_node):
         from avalon import maya
-        import maya.cmds as cmds
         from reveries.maya import capsule
 
         # Get look exporter python file
@@ -128,8 +163,6 @@ class ExtractLookUSDExport(pyblish.api.InstancePlugin):
                 capsule.attribute_values(file_node_attrs),
                 capsule.no_refresh(),
         ):
-            # cmds.select(root_node)
-            # sel = cmds.ls(sl=True)[0]
             looks_export.export(root_node, out_path=outpath)
 
     def _get_file_node_attrs(self, instance):

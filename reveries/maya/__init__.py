@@ -67,6 +67,10 @@ def install():  # pragma: no cover
             os.path.join(PLUGINS_DIR, "usd", "maya", "publish")
         )
         avalon.register_plugin_path(
+            avalon.Creator,
+            os.path.join(PLUGINS_DIR, "usd", "maya", "create")
+        )
+        avalon.register_plugin_path(
             avalon.InventoryAction,
             os.path.join(PLUGINS_DIR, "usd", "maya", "inventory")
         )
@@ -103,6 +107,10 @@ def install():  # pragma: no cover
 
     cmds.evalDeferred("import reveries.maya;"
                       "reveries.maya._override_deferred()")
+
+    # Maya 2020 renderSetup
+    log.info("Disabling 'includeAllLights' for RenderSetup.")
+    cmds.optionVar(intValue=["renderSetup_includeAllLights", 0])
 
     # Config Pyblish QML
     pyblish_qml.settings.Directions = {

@@ -200,7 +200,7 @@ label = "USD (Asset)"
 icon = "list"
 
 [[families]]
-name = "reveries.ani.ani_prim"
+name = "reveries.ani.usd"
 label = "USD (Animation)"
 icon = "list"
 

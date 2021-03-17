@@ -7,6 +7,11 @@ from reveries import common as utils
 from reveries.common import get_frame_range
 from reveries.common import get_publish_files
 
+ANI_CACHE_FAMILY = [
+    'reveries.pointcache.usd',
+    'reveries.skeletoncache'
+]
+
 
 class AniUsdBuilder(object):
     def __init__(self, shot_name='', frame_in=None, frame_out=None):
@@ -38,19 +43,20 @@ class AniUsdBuilder(object):
         shot_data = io.find_one(_filter)
         shot_id = shot_data['_id']
 
-        #
+        # Get animation cache
         _filter = {"type": "subset", "parent": shot_id}
         asset_datas = io.find(_filter)
         for asset_data in asset_datas:
             subset_name = asset_data['name']
 
-            # Skip child usd
-            families = asset_data['data']["families"]
-            if "reveries.pointcache.child.usd" in families:
+            if asset_data["data"].get("subsetGroup", "") not in ["Animation"]:
                 continue
 
-            if subset_name.startswith('pointcache.'):
-                ns = subset_name.split('.')[1]
+            # Check family
+            families = asset_data['data']["families"]
+
+            if set(families).intersection(set(ANI_CACHE_FAMILY)):
+                ns = self.__get_group_name(subset_name)
                 asset_type = utils.check_asset_type_from_ns(ns)
                 subset_id = asset_data['_id']
                 files = get_publish_files.get_files(
@@ -60,6 +66,16 @@ class AniUsdBuilder(object):
 
         from pprint import pprint
         pprint(self.asset_usd_dict)
+
+    def __get_group_name(self, subset_name):
+        _type = subset_name.split('.')[0]
+        if _type in ["pointcache"]:
+            _prefix = "pc"
+        else:
+            _prefix = "sc"
+        ns = "{}_{}".format(subset_name.split('.')[1], _prefix)
+
+        return ns
 
     def _build(self):
         from reveries.common import get_fps
@@ -110,9 +126,12 @@ class AniUsdBuilder(object):
         ani_cam_subset_name = self._get_ani_cam_subset_name(self.shot_name)
         if ani_cam_subset_name:
             over_xform_prim = self.stage.OverridePrim("/ROOT/Camera")
-            variants = over_xform_prim.GetVariantSets(). \
-                AddVariantSet("camera_subset")
-            variants.SetVariantSelection(ani_cam_subset_name)
+            # variants = over_xform_prim.GetVariantSets(). \
+            #     AddVariantSet("camera_subset")
+            # variants.SetVariantSelection(ani_cam_subset_name)
+
+            vs = over_xform_prim.GetVariantSet("camera_subset")
+            vs.SetVariantSelection(ani_cam_subset_name)
 
     def _get_ani_cam_subset_name(self, shot_name):
         _filter = {'type': 'asset', 'name': shot_name}
@@ -150,4 +169,4 @@ class AniUsdBuilder(object):
 
     def export(self, save_path):
         self.stage.GetRootLayer().Export(save_path)
-        # print self.stage.GetRootLayer().ExportToString()
+        # print(self.stage.GetRootLayer().ExportToString())

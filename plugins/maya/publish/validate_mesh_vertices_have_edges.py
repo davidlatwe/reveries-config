@@ -58,7 +58,7 @@ class ValidateMeshVerticesHaveEdges(pyblish.api.InstancePlugin):
     hosts = ["maya"]
     families = [
         "reveries.model",
-        "reveries.rig",
+        # "reveries.rig",
     ]
     label = "Mesh Vertices Have Edges"
     actions = [

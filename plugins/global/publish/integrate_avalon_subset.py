@@ -382,11 +382,6 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             "dependents": dict(),
         }
 
-        # For rig publish
-        if instance.data.get("model_subset_data", None):
-            version_data["model_subset_data"] = \
-                instance.data["model_subset_data"]
-
         # Include optional data if present in
         optionals = [
             "startFrame",
@@ -395,6 +390,8 @@ class IntegrateAvalonSubset(pyblish.api.InstancePlugin):
             "handles",
             "hasUnversionedSurfaces",
             "deadlineJobId",
+            # "model_subset_data",  # For rig publish
+            "shape_merge"  # For model/lookdev publish
         ]
         for key in optionals:
             if key in instance.data:

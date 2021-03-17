@@ -1,4 +1,6 @@
 import os
+import json
+
 import pyblish.api
 
 
@@ -26,19 +28,21 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         if skip_instance(context, ['reveries.xgen']):
             return
 
-        asset_doc = instance.data["assetDoc"]
-        self.asset_name = asset_doc["name"]
-
         self.files_info = {
             'geom': 'geom.usd',
+            'hierarchy': 'hierarchy.json'
         }
-
         self.staging_dir = utils.stage_dir(dir=instance.data["_sharedStage"])
+        self.shape_merge = instance.data.get("USD_shape_merge", False)
 
         # Update information in instance data
         instance.data["repr.USD._stage"] = self.staging_dir
-        instance.data["repr.USD._files"] = [self.files_info['geom']]
+        instance.data["repr.USD._files"] = [
+            self.files_info['geom'], self.files_info['hierarchy']]
         instance.data["repr.USD.entryFileName"] = self.files_info['geom']
+        instance.data["repr.USD.hierarchyFileName"] = self.files_info['hierarchy']
+
+        instance.data["shape_merge"] = self.shape_merge
 
         self.export_usd()
 
@@ -48,39 +52,39 @@ class ExtractModUSDExport(pyblish.api.InstancePlugin):
         load_maya_plugin()
 
         # === Export geom.usd === #
-        outpath = os.path.join(self.staging_dir, self.files_info['geom'])
-        self._export_geom(outpath)
+        self._export_geom()
 
-        self.log.info('Export geom usd done.')
+        # === Export hierarchy === #
+        self._export_hierarchy()
 
-    def _export_geom(self, outpath):
+        self.log.info('Export model usd done.')
+
+    def _export_geom(self):
         import maya.cmds as cmds
         from reveries.maya.usd.maya_export import MayaUsdExporter
 
-        # Rename uv set
-        self._rename_uv_set("st")
+        outpath = os.path.join(self.staging_dir, self.files_info['geom'])
 
         cmds.select('ROOT')
-        exporter = MayaUsdExporter(export_path=outpath, export_selected=True)
+        exporter = MayaUsdExporter(export_path=outpath)
         exporter.exportUVs = True
-        exporter.mergeTransformAndShape = True
+        exporter.mergeTransformAndShape = True  # self.shape_merge
         exporter.animation = False
-        exporter.exportColorSets = True
-        exporter.exportDisplayColor = True
         exporter.export()
 
-        self._rename_uv_set("map1")
+        self.log.info('Export geom usd done.')
 
-    def _rename_uv_set(self, new_name):
-        import maya.cmds as cmds
+    def _export_hierarchy(self):
+        from reveries.maya import utils
 
-        meshs = cmds.listRelatives("ROOT",
-                                   type="shape",
-                                   allDescendents=True,
-                                   path=True)
-        for _mesh in meshs:
-            uvset = cmds.polyUVSet(_mesh, query=True, currentUVSet=True)
-            if uvset:
-                if uvset[0] != new_name:
-                    cmds.polyUVSet(
-                        _mesh, rename=True, newUVSet=new_name, uvSet=uvset[0])
+        skip_type = [
+            'parentConstraint',
+            'scaleConstraint'
+        ]
+
+        hierarchy_obj = utils.HierarchyGetter(skip_type=skip_type)
+        hierarchy_tree = hierarchy_obj.get_hierarchy('ROOT')
+
+        json_path = os.path.join(self.staging_dir, self.files_info['hierarchy'])
+        with open(json_path, 'w') as f:
+            json.dump(hierarchy_tree, f, ensure_ascii=False, indent=4)
